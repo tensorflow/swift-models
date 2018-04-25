@@ -12,5 +12,5 @@ Make sure you've added the correct version of `swift` to your path.
 To train the model, run:
 
 ```
-./MNIST.swift
+swift -O MNIST.swift
 ```
