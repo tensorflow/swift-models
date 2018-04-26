@@ -18,7 +18,7 @@ mailing list.
 
 ## Contributing
 
-We welcome contributions: please read the (Contributor Guide)[CONTRIBUTING.md]
+We welcome contributions: please read the [Contributor Guide](CONTRIBUTING.md)
 to get started. It's always a good idea to discuss your plans on the mailing
 list before making any major submissions.
 
