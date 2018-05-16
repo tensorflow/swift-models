@@ -15,6 +15,7 @@
 import Foundation
 import TensorFlow
 
+/// Returns the images tensor and labels tensor.
 public func readMnist(
     imagesFile: String, labelsFile: String
 ) -> (Tensor<Float>, Tensor<Int32>) {
@@ -51,6 +52,10 @@ func main() {
     let (images, numericLabels) = readMnist(imagesFile: imagesFile,
                                             labelsFile: labelsFile)
     let labels = Tensor<Float>(oneHotAtIndices: numericLabels, depth: 10)
+    // FIXME: Defining batchSize tensor as follows instead of returning it from
+    // readMnist() crashes the compiler: https://bugs.swift.org/browse/SR-7706
+    // let batchSize = Tensor<Float>(Float(images.shape[0]))
+    let batchSize = Tensor<Float>(images.shapeTensor[0])
 
     // Hyper-parameters.
     let iterationCount: Int32 = 20
@@ -75,7 +80,7 @@ func main() {
         let predictions = sigmoid(z2)
 
         // Backward pass.
-        let dz2 = predictions - labels
+        let dz2 = (predictions - labels) / batchSize
         let dw2 = h1.transposed(withPermutations: 1, 0) ⊗ dz2
         let db2 = dz2.sum(squeezingAxes: 0)
         let dz1 = dz2.dot(w2.transposed(withPermutations: 1, 0)) * h1 * (1 - h1)
@@ -88,8 +93,24 @@ func main() {
         w2 -= dw2 * learningRate
         b2 -= db2 * learningRate
 
-        // Update loss.
-        loss = dz2.squared().mean(squeezingAxes: 1, 0).scalarized()
+        // Update the sigmoid-based cross-entropy loss, where we treat the 10
+        // class labels as independent. This is unnecessary for the MNIST case,
+        // where we want to predict a single label. In that case we should
+        // consider switching to a softmax-based cross-entropy loss.
+        //
+        // Let m be the batch size, y be the target labels, and A be the
+        // predictions.  The formula expressed in TF expression is:
+        // 1/m * tf.reduce_sum(- y * tf.log(A) - (1-y) * tf.log(1-A))
+        let part1 = -(labels) * log(predictions)
+        let part2 = -(1 - labels) * log(1 - predictions)
+        loss = ((part1 + part2).sum(squeezingAxes: 1, 0) / batchSize)
+          .scalarized()
+        // To print out the loss value per iteration, uncomment the following
+        // code.
+        // FIXME: Fix runtime hanging when we print loss directly instead of
+        // printing via lossTensor: https://bugs.swift.org/browse/SR-7705
+        // let lossTensor = Tensor<Float>(loss)
+        // print(lossTensor)
 
         // Update iteration count.
         i += 1
@@ -97,6 +118,11 @@ func main() {
 
     // Print loss.
     print("Loss: \(loss)")
+    // Uncomment the code below if we also print out loss per loop iteration
+    // above. This will not be necessary after fixing
+    // https://bugs.swift.org/browse/SR-7705.
+    // let lossTensor = Tensor<Float>(loss)
+    // print(lossTensor)
 }
 
 main()
