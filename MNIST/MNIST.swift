@@ -18,7 +18,7 @@ import TensorFlow
 /// Returns the images tensor and labels tensor.
 public func readMnist(
     imagesFile: String, labelsFile: String
-) -> (Tensor<Float>, Tensor<Int32>, Tensor<Float>) {
+) -> (Tensor<Float>, Tensor<Int32>) {
     print("Reading data.")
     let imageData =
         try! Data(contentsOf: URL(fileURLWithPath: imagesFile)).dropFirst(16)
@@ -32,9 +32,7 @@ public func readMnist(
     print("Constructing data tensors.")
     let imagesTensor = Tensor(shape: [rowCount, columnCount], scalars: images)
     let labelsTensor = Tensor(labels)
-    return (imagesTensor.toDevice(),
-            labelsTensor.toDevice(),
-            Tensor<Float>(Float(rowCount)).toDevice())
+    return (imagesTensor.toDevice(), labelsTensor.toDevice())
 }
 
 func main() {
@@ -51,8 +49,8 @@ func main() {
         scriptDirectory.appendingPathComponent("train-images-idx3-ubyte").path
     let labelsFile =
         scriptDirectory.appendingPathComponent("train-labels-idx1-ubyte").path
-    let (images, numericLabels, batchSize) = readMnist(imagesFile: imagesFile,
-                                                       labelsFile: labelsFile)
+    let (images, numericLabels) = readMnist(imagesFile: imagesFile,
+                                            labelsFile: labelsFile)
     let labels = Tensor<Float>(oneHotAtIndices: numericLabels, depth: 10)
     // FIXME: Defining batchSize tensor as follows instead of returning it from
     // readMnist() crashes the compiler: https://bugs.swift.org/browse/SR-7706
