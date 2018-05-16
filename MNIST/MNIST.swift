@@ -52,8 +52,9 @@ func main() {
     let (images, numericLabels) = readMnist(imagesFile: imagesFile,
                                             labelsFile: labelsFile)
     let labels = Tensor<Float>(oneHotAtIndices: numericLabels, depth: 10)
-    // FIXME: Defining batchSize tensor as follows instead of returning it from
-    // readMnist() crashes the compiler: https://bugs.swift.org/browse/SR-7706
+    // FIXME: Defining batchSize as a scalar, or as a tensor as follows instead
+    // of returning it from readMnist() crashes the compiler:
+    // https://bugs.swift.org/browse/SR-7706
     // let batchSize = Tensor<Float>(Float(images.shape[0]))
     let batchSize = Tensor<Float>(images.shapeTensor[0])
 
@@ -84,8 +85,8 @@ func main() {
         let dw2 = h1.transposed(withPermutations: 1, 0) ⊗ dz2
         let db2 = dz2.sum(squeezingAxes: 0)
         let dz1 = dz2.dot(w2.transposed(withPermutations: 1, 0)) * h1 * (1 - h1)
-        let dw1 = images.transposed(withPermutations: 1, 0) ⊗ dz1  / batchSize
-        let db1 = dz1.sum(squeezingAxes: 0)  / batchSize
+        let dw1 = images.transposed(withPermutations: 1, 0) ⊗ dz1
+        let db1 = dz1.sum(squeezingAxes: 0)
 
         // Gradient descent.
         w1 -= dw1 * learningRate
@@ -101,10 +102,11 @@ func main() {
         // Let m be the batch size, y be the target labels, and A be the
         // predictions.  The formula expressed in TF expression is:
         // 1/m * tf.reduce_sum(- y * tf.log(A) - (1-y) * tf.log(1-A))
-        let part1 = -(labels) * log(predictions)
+        let part1 = -labels * log(predictions)
         let part2 = -(1 - labels) * log(1 - predictions)
-        loss = ((part1 + part2).sum(squeezingAxes: 1, 0) / batchSize)
-          .scalarized()
+        // FIXME: Remove scalarized() call when we make `batchSize` scalar,
+        // after fixing https://bugs.swift.org/browse/SR-7706
+        loss = (part1 + part2).sum() / batchSize.scalarized()
         // To print out the loss value per iteration, uncomment the following
         // code.
         // FIXME: Fix runtime hanging when we print loss directly instead of
