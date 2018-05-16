@@ -15,9 +15,10 @@
 import Foundation
 import TensorFlow
 
+/// Returns the images tensor, labels tensor, and the batch size.
 public func readMnist(
     imagesFile: String, labelsFile: String
-) -> (Tensor<Float>, Tensor<Int32>) {
+) -> (Tensor<Float>, Tensor<Int32>, Tensor<Float>) {
     print("Reading data.")
     let imageData =
         try! Data(contentsOf: URL(fileURLWithPath: imagesFile)).dropFirst(16)
@@ -31,7 +32,9 @@ public func readMnist(
     print("Constructing data tensors.")
     let imagesTensor = Tensor(shape: [rowCount, columnCount], scalars: images)
     let labelsTensor = Tensor(labels)
-    return (imagesTensor.toDevice(), labelsTensor.toDevice())
+    return (imagesTensor.toDevice(),
+            labelsTensor.toDevice(),
+            Tensor<Float>(Float(rowCount)).toDevice())
 }
 
 func main() {
@@ -48,9 +51,12 @@ func main() {
         scriptDirectory.appendingPathComponent("train-images-idx3-ubyte").path
     let labelsFile =
         scriptDirectory.appendingPathComponent("train-labels-idx1-ubyte").path
-    let (images, numericLabels) = readMnist(imagesFile: imagesFile,
-                                            labelsFile: labelsFile)
+    let (images, numericLabels, batchSize) = readMnist(imagesFile: imagesFile,
+                                                       labelsFile: labelsFile)
     let labels = Tensor<Float>(oneHotAtIndices: numericLabels, depth: 10)
+    // FIXME: Defining batchSize tensor as follows instead of returning it from
+    // readMnist() would cause S4TF compiler to crash in OSS.
+    // let batchSize = Tensor<Float>(Float(images.shape[0]))
 
     // Hyper-parameters.
     let iterationCount: Int32 = 20
@@ -76,11 +82,11 @@ func main() {
 
         // Backward pass.
         let dz2 = predictions - labels
-        let dw2 = h1.transposed(withPermutations: 1, 0) ⊗ dz2
-        let db2 = dz2.sum(squeezingAxes: 0)
+        let dw2 = h1.transposed(withPermutations: 1, 0) ⊗ dz2  / batchSize
+        let db2 = dz2.sum(squeezingAxes: 0) / batchSize
         let dz1 = dz2.dot(w2.transposed(withPermutations: 1, 0)) * h1 * (1 - h1)
-        let dw1 = images.transposed(withPermutations: 1, 0) ⊗ dz1
-        let db1 = dz1.sum(squeezingAxes: 0)
+        let dw1 = images.transposed(withPermutations: 1, 0) ⊗ dz1  / batchSize
+        let db1 = dz1.sum(squeezingAxes: 0)  / batchSize
 
         // Gradient descent.
         w1 -= dw1 * learningRate
@@ -88,8 +94,20 @@ func main() {
         w2 -= dw2 * learningRate
         b2 -= db2 * learningRate
 
-        // Update loss.
-        loss = dz2.squared().mean(squeezingAxes: 1, 0).scalarized()
+        // Update the cross-entropy loss.
+        // Let m be the batch size, y be the target labels and A be the
+        // predictions.  The formula expressed in TF expression is:
+        // 1/m * tf.reduce_sum(- y * tf.log(A) - (1-y) * tf.log(1-A))
+        let part1 = -(labels) * log(predictions)
+        let part2 = -(1 - labels) * log(1 - predictions)
+        loss = ((part1 + part2).sum(squeezingAxes: 1, 0) / batchSize)
+          .scalarized()
+        // To print out the loss value per iteration, uncomment the following
+        // code.
+        // FIXME: Fix runtime hanging when we print loss directly instead of
+        // printing via lossTensor.
+        // let lossTensor = Tensor<Float>(loss)
+        // print(lossTensor)
 
         // Update iteration count.
         i += 1
