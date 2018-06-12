@@ -44,7 +44,7 @@ func readDataset() throws -> (images: Tensor<Float>, labels: Tensor<Int32>) {
     return (imagesTensor, labelsTensor)
 }
 
-func plot(tensor: [Float], labels: Tensor<Int32>, step: Int) {
+func plot(image: [Float], labels: Tensor<Int32>, step: Int) {
     // Import Python modules
     let matplotlib = Python.import("matplotlib")
     // Turn off using display on server / linux
@@ -52,7 +52,6 @@ func plot(tensor: [Float], labels: Tensor<Int32>, step: Int) {
     
     let np = Python.import("numpy")
     let plt = Python.import("matplotlib.pyplot")
-    
     // Create figure
     let ax = plt.gca()
     // Create colors
@@ -61,17 +60,17 @@ func plot(tensor: [Float], labels: Tensor<Int32>, step: Int) {
     let colors = np.r_[linspace, linspace]
     let mappedColors = colorMap(colors)
     for element in 0..<10 {
-        let xElementIndex = labels.scalars.enumerated().filter { $0.element == element}.map { 2 * $0.offset + 0}
-        let yElementIndex = labels.scalars.enumerated().filter { $0.element == element}.map { 2 * $0.offset + 1}
-        let x = tensor.enumerated().filter { xElementIndex.contains($0.offset) }.map { $0.element }
-        let y = tensor.enumerated().filter { yElementIndex.contains($0.offset) }.map { $0.element }
+        let xElementIndex = labels.scalars.enumerated().filter { $0.element == element }.map { 2 * $0.offset + 0 }
+        let yElementIndex = labels.scalars.enumerated().filter { $0.element == element }.map { 2 * $0.offset + 1 }
+        let x = image.enumerated().filter { xElementIndex.contains($0.offset) }.map { $0.element }
+        let y = image.enumerated().filter { yElementIndex.contains($0.offset) }.map { $0.element }
         ax.scatter(x: x, y: y, color: mappedColors[element], label: "\(element)", s: 20, alpha: 0.8)
     }
     ax.set_xlabel("Autoencoder clasterization.")
     ax.legend()
     //plt.axis.dynamicallyCall(withArguments:[-0.3, 0.3, -0.3, 0.3])
     if !FileManager.default.fileExists(atPath: outputFolder) {
-        try? FileManager.default.createDirectory(atPath: outputFolder, withIntermediateDirectories: false, attributes: nil)
+        try! FileManager.default.createDirectory(atPath: outputFolder, withIntermediateDirectories: false, attributes: nil)
     }
     plt.savefig("\(outputFolder)autoencoder-\(step).png", dpi: 300)
     plt.close()
@@ -92,14 +91,14 @@ func plot(image: [Float], name: String) {
     
     let pixels = array.reshape([Autoencoder.imageEdge * 5, Autoencoder.imageEdge * 5])
     if !FileManager.default.fileExists(atPath: outputFolder) {
-        try? FileManager.default.createDirectory(atPath: outputFolder, withIntermediateDirectories: false, attributes: nil)
+        try! FileManager.default.createDirectory(atPath: outputFolder, withIntermediateDirectories: false, attributes: nil)
     }
     ax.imshow(pixels, cmap: "gray")
-    plt.savefig("\(outputFolder)\(name).png", dpi : 300)
+    plt.savefig("\(outputFolder)\(name).png", dpi: 300)
     plt.close()
 }
 
-public struct Autoencoder {
+struct Autoencoder {
     static let imageEdge: Int32 = 28
     static let imageSize: Int32 = imageEdge * imageEdge
     static let decoderLayerSize: Int32 = 50
@@ -109,7 +108,7 @@ public struct Autoencoder {
     var w1: Tensor<Float>
     var w2: Tensor<Float>
     var w3: Tensor<Float>
-    var w4:Tensor<Float>
+    var w4: Tensor<Float>
     
     var b2 = Tensor<Float>(zeros: [1, Autoencoder.hiddenLayerSize])
     var learningRate: Float = 0.001
@@ -128,7 +127,7 @@ public struct Autoencoder {
     }
 }
 
-public extension Autoencoder {
+extension Autoencoder {
     @inline(never)
     func embedding(for input: Tensor<Float>) -> (tensor: Tensor<Float>, loss: Float, input: Tensor<Float>, output: Tensor<Float>) {
         let inputNormalized = input / 255.0
@@ -147,7 +146,6 @@ public extension Autoencoder {
     }
     
     mutating func trainStep(input: Tensor<Float>) -> Float {
-        
         let learningRate = self.learningRate
         
         // Batch normalization
@@ -192,7 +190,7 @@ public extension Autoencoder {
     }
 }
 
-public extension Autoencoder {
+extension Autoencoder {
     @inline(never)
     mutating public func train(on dataset: (images: Tensor<Float>, labels: Tensor<Int32>)) {
         print("Train on dataset")
@@ -212,16 +210,16 @@ public extension Autoencoder {
         } while iterationNumber < maxIterations
     }
     
-    static func reshape(image: [Float], numberOfImagesInLine: Int) -> [Float] {
-        var fullImage = [Float]()
+    private static func reshape(image: [Float], imageCountPerLine: Int) -> [Float] {
+        var fullImage: [Float] = []
         let imageEdge = Int(Autoencoder.imageEdge)
         
         
         //FIXME: Improve fors.
-        for rowIndex in 0..<numberOfImagesInLine {
+        for rowIndex in 0..<imageCountPerLine {
             for pixelIndex in 0..<imageEdge {
-                for imageIndex in 0..<numberOfImagesInLine {
-                    let rowShift: Int = rowIndex * Int(Autoencoder.imageSize) * numberOfImagesInLine
+                for imageIndex in 0..<imageCountPerLine {
+                    let rowShift: Int = rowIndex * Int(imageSize) * imageCountPerLine
                     let startIndex = rowShift + ((imageIndex * imageEdge) + pixelIndex) * imageEdge
                     let endIndex = startIndex + imageEdge
                     fullImage.append(contentsOf: image[startIndex..<endIndex])
@@ -231,51 +229,51 @@ public extension Autoencoder {
         return fullImage
     }
     
-    func embedding(from dataset: (images: Tensor<Float>, labels: Tensor<Int32>), saveInput: Bool, numberOfElements: Int32, step: Int) -> (labels: Tensor<Int32>, tensor: [Float]) {
-        let images = dataset.images.slice(lowerBounds: [0, 0], upperBounds: [numberOfElements, Autoencoder.imageSize])
-        let labels = dataset.labels.slice(lowerBounds: [0], upperBounds: [numberOfElements])
+    func embedding(from dataset: (images: Tensor<Float>, labels: Tensor<Int32>), shouldSaveInput: Bool, elementCount: Int32, step: Int) -> (labels: Tensor<Int32>, tensor: [Float]) {
+        let images = dataset.images.slice(lowerBounds: [0, 0], upperBounds: [elementCount, Autoencoder.imageSize])
+        let labels = dataset.labels.slice(lowerBounds: [0], upperBounds: [elementCount])
         let result = embedding(for: images)
         print("Embedding loss: ", result.loss)
         let size = Int(Autoencoder.imageSize)
         let imagesInLine = 5
-        if saveInput {
+        if shouldSaveInput {
             let inputImage = Array(result.input.scalars[0..<imagesInLine * imagesInLine * size])
-            plot(image: Autoencoder.reshape(image: inputImage, numberOfImagesInLine: imagesInLine), name: "input-\(step)")
+            plot(image: Autoencoder.reshape(image: inputImage, imageCountPerLine: imagesInLine), name: "input-\(step)")
         }
         let outputImage = Array(result.output.scalars[0..<imagesInLine * imagesInLine * size])
-        plot(image: Autoencoder.reshape(image: outputImage, numberOfImagesInLine: imagesInLine), name: "output-\(step)")
+        plot(image: Autoencoder.reshape(image: outputImage, imageCountPerLine: imagesInLine), name: "output-\(step)")
         return (labels: labels, tensor: result.tensor.scalars)
     }
 }
 
 
-public func main() {
+func main() {
     do {
         let dataset = try readDataset()
         var autoencoder = Autoencoder()
         
-        var embedding = autoencoder.embedding(from: dataset, saveInput: true, numberOfElements: 300, step:0)
-        plot(tensor: embedding.tensor, labels: embedding.labels, step:0)
+        var embedding = autoencoder.embedding(from: dataset, shouldSaveInput: true, elementCount: 300, step: 0)
+        plot(image: embedding.tensor, labels: embedding.labels, step: 0)
         
         autoencoder.train(on: dataset)
-        embedding = autoencoder.embedding(from: dataset, saveInput: false, numberOfElements: 300, step:1)
-        plot(tensor: embedding.tensor, labels: embedding.labels, step:1)
+        embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 1)
+        plot(image: embedding.tensor, labels: embedding.labels, step: 1)
         
         autoencoder.train(on: dataset)
-        embedding = autoencoder.embedding(from: dataset, saveInput: false, numberOfElements: 300, step:2)
-        plot(tensor: embedding.tensor, labels: embedding.labels, step:2)
+        embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 2)
+        plot(image: embedding.tensor, labels: embedding.labels, step: 2)
         
         autoencoder.train(on: dataset)
-        embedding = autoencoder.embedding(from: dataset, saveInput: false, numberOfElements: 300, step:3)
-        plot(tensor: embedding.tensor, labels: embedding.labels, step:3)
+        embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 3)
+        plot(image: embedding.tensor, labels: embedding.labels, step: 3)
         
         autoencoder.train(on: dataset)
-        embedding = autoencoder.embedding(from: dataset, saveInput: false, numberOfElements: 300, step:4)
-        plot(tensor: embedding.tensor, labels: embedding.labels, step:4)
+        embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 4)
+        plot(image: embedding.tensor, labels: embedding.labels, step: 4)
         
         autoencoder.train(on: dataset)
-        embedding = autoencoder.embedding(from: dataset, saveInput: false, numberOfElements: 300, step:5)
-        plot(tensor: embedding.tensor, labels: embedding.labels, step:5)
+        embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 5)
+        plot(image: embedding.tensor, labels: embedding.labels, step: 5)
         
         print("Now, you can open /tmp/mnist-test/ folder and review the resolts.")
     } catch {
