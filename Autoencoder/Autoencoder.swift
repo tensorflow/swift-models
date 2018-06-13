@@ -49,7 +49,6 @@ func plot(image: [Float], labels: Tensor<Int32>, step: Int) {
     let matplotlib = Python.import("matplotlib")
     // Turn off using display on server / linux
     matplotlib.use("Agg")
-    
     let np = Python.import("numpy")
     let plt = Python.import("matplotlib.pyplot")
     // Create figure
@@ -68,7 +67,6 @@ func plot(image: [Float], labels: Tensor<Int32>, step: Int) {
     }
     ax.set_xlabel("Autoencoder clasterization.")
     ax.legend()
-    //plt.axis.dynamicallyCall(withArguments:[-0.3, 0.3, -0.3, 0.3])
     if !FileManager.default.fileExists(atPath: outputFolder) {
         try! FileManager.default.createDirectory(atPath: outputFolder, withIntermediateDirectories: false, attributes: nil)
     }
@@ -85,10 +83,7 @@ func plot(image: [Float], name: String) {
     let plt = Python.import("matplotlib.pyplot")
     // Create figure
     let ax = plt.gca()
-    // Create colors
-    
     let array = np.array([image])
-    
     let pixels = array.reshape([Autoencoder.imageEdge * 5, Autoencoder.imageEdge * 5])
     if !FileManager.default.fileExists(atPath: outputFolder) {
         try! FileManager.default.createDirectory(atPath: outputFolder, withIntermediateDirectories: false, attributes: nil)
@@ -214,7 +209,6 @@ extension Autoencoder {
         var fullImage: [Float] = []
         let imageEdge = Int(Autoencoder.imageEdge)
         
-        
         //FIXME: Improve fors.
         for rowIndex in 0..<imageCountPerLine {
             for pixelIndex in 0..<imageEdge {
@@ -275,7 +269,7 @@ func main() {
         embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 5)
         plot(image: embedding.tensor, labels: embedding.labels, step: 5)
         
-        print("Now, you can open /tmp/mnist-test/ folder and review the resolts.")
+        print("Now, you can open /tmp/mnist-test/ folder and review the results.")
     } catch {
         print(error)
     }
