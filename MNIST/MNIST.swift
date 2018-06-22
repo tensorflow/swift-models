@@ -32,7 +32,7 @@ public func readMnist(
     print("Constructing data tensors.")
     let imagesTensor = Tensor(shape: [rowCount, columnCount], scalars: images)
     let labelsTensor = Tensor(labels)
-    return (imagesTensor.toDevice(), labelsTensor.toDevice())
+    return (imagesTensor.toAccelerator(), labelsTensor.toAccelerator())
 }
 
 func main() {
