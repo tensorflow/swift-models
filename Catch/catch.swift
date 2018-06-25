@@ -64,7 +64,7 @@ public struct CatchAgent : Agent {
 }
 
 public extension CatchAgent {
-    @inlinable @inline(__always)
+    @inlinable
     init(learningRate: Float) {
         weight1 = Tensor(randomNormal: [3, 50])
         bias1 = Tensor(zeros: [1, 50])
