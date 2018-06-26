@@ -128,13 +128,13 @@ extension Autoencoder {
         let inputNormalized = input / 255.0
         
         // Forward pass
-        let z1 = inputNormalized ⊗ w1
+        let z1 = inputNormalized • w1
         let h1 = tanh(z1)
-        let z2 = h1 ⊗ w2 + b2
+        let z2 = h1 • w2 + b2
         let h2 = z2
-        let z3 = h2 ⊗ w3
+        let z3 = h2 • w3
         let h3 = tanh(z3)
-        let z4 = h3 ⊗ w4
+        let z4 = h3 • w4
         let predictions = sigmoid(z4)
         let loss: Float = 0.5 * (predictions - inputNormalized).squared().mean()
         return (h2, loss, inputNormalized, predictions)
@@ -148,28 +148,28 @@ extension Autoencoder {
         let batchSize = Tensor<Float>(inputNormalized.shapeTensor[0])
         
         // Forward pass
-        let z1 = inputNormalized ⊗ w1
+        let z1 = inputNormalized • w1
         let h1 = tanh(z1)
-        let z2 = h1 ⊗ w2 + b2
+        let z2 = h1 • w2 + b2
         let h2 = z2
-        let z3 = h2 ⊗ w3
+        let z3 = h2 • w3
         let h3 = tanh(z3)
-        let z4 = h3 ⊗ w4
+        let z4 = h3 • w4
         let predictions = sigmoid(z4)
         
         // Backward pass
         let dz4 = ((predictions - inputNormalized) / batchSize)
-        let dw4 = h3.transposed(withPermutations: 1, 0) ⊗ dz4
+        let dw4 = h3.transposed(withPermutations: 1, 0) • dz4
         
         let dz3 = matmul(dz4, w4.transposed(withPermutations: 1, 0)) * (1 - h3.squared())
-        let dw3 = h2.transposed(withPermutations: 1, 0) ⊗ dz3
+        let dw3 = h2.transposed(withPermutations: 1, 0) • dz3
         
         let dz2 = matmul(dz3, w3.transposed(withPermutations: 1, 0))
-        let dw2 = h1.transposed(withPermutations: 1, 0) ⊗ dz2
+        let dw2 = h1.transposed(withPermutations: 1, 0) • dz2
         let db2 = dz2.sum(squeezingAxes: 0)
         
         let dz1 = matmul(dz2, w2.transposed(withPermutations: 1, 0)) * (1 - h1.squared())
-        let dw1 = inputNormalized.transposed(withPermutations: 1, 0) ⊗ dz1
+        let dw1 = inputNormalized.transposed(withPermutations: 1, 0) • dz1
         
         let loss: Float = 0.5 * (predictions - inputNormalized).squared().mean()
         
