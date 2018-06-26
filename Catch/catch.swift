@@ -56,16 +56,20 @@ public protocol Agent {
 public struct CatchAgent : Agent {
     public typealias Action = CatchAction
 
-    @_versioned var layer1: FullyConnectedLayer<Float>
-    @_versioned var layer2: FullyConnectedLayer<Float>
-    @_versioned let learningRate: Float
+    @usableFromInline var weight1: Tensor<Float>
+    @usableFromInline var bias1: Tensor<Float>
+    @usableFromInline var weight2: Tensor<Float>
+    @usableFromInline var bias2: Tensor<Float>
+    @usableFromInline let learningRate: Float
 }
 
 public extension CatchAgent {
-    @_inlineable @inline(__always)
+    @inlinable
     init(learningRate: Float) {
-        layer1 = FullyConnectedLayer(inputCount: 3, outputCount: 50)
-        layer2 = FullyConnectedLayer(inputCount: 50, outputCount: 3)
+        weight1 = Tensor(randomNormal: [3, 50])
+        bias1 = Tensor(zeros: [1, 50])
+        weight2 = Tensor(randomNormal: [50, 3])
+        bias2 = Tensor(zeros: [1, 3])
         self.learningRate = learningRate
     }
 
@@ -85,47 +89,61 @@ public extension CatchAgent {
 
         // Initial setup.
         let (observation, reward) = state
-        var layer1 = self.layer1
-        var layer2 = self.layer2
+        var weight1 = self.weight1
+        var bias1 = self.bias1
+        var weight2 = self.weight2
+        var bias2 = self.bias2
         let learningRate = self.learningRate
 
         // Inference.
         let input = Tensor<Float>(observation).rankLifted()
-        let pred1 = layer1.applied(to: input)
+        let matmul1 = matmul(input, weight1)
+        let pred1 = matmul1 + bias1
         let output1 = sigmoid(pred1)
-        let pred2 = layer2.applied(to: output1)
+        let matmul2 = matmul(output1, weight2)
+        let pred2 = matmul2 + bias2
         let output2 = sigmoid(pred2)
         let maxIndex = output2.argmax()
 
         // Back-propagation.
         let dOutput2 = output2 * (1 - output2)
-        let (_, dParameters2) = layer2.gradient(for: output1,
-                                                backpropagating: dOutput2)
-        let dOutput1 = output1 * (1 - output1)
-        let (_, dParameters1) = layer1.gradient(for: input,
-                                                backpropagating: dOutput1)
+        let (dMatmul2, dBias2) = #adjoint(Tensor.+)(
+          matmul2, bias2, originalValue: pred2, seed: dOutput2
+        )
+        let (dOutput1, dWeight2) = #adjoint(matmul)(
+          output1, weight2, originalValue: matmul2, seed: dMatmul2
+        )
+        let (dMatmul1, dBias1) = #adjoint(Tensor.+)(
+            matmul1, bias1, originalValue: pred1, seed: dOutput1
+        )
+        let (_, dWeight1) = #adjoint(matmul)(
+          input, weight1, originalValue: matmul1, seed: dMatmul1
+        )
 
         // Negative log loss.
         // FIXME: Loss is calculated from the wrong reward! It should be
         // calculated from the previous state. Fixing this is *most likely* to
         // improve training.
 
-        // FIXME: indexing with `maxIndex` directly causes a send.
-        // let loss = -log(output2[maxIndex]) * reward
+        // NOTE: indexing with `maxIndex` directly causes a send/receive.
+        // let loss = -log(output2.flattened()[maxIndex]) * reward
 
         // FIXME: `output2.max()` in the line below infers to the variadic `max`
         // function, which acts as a no-op.
         // let loss = -log(output2.max()) * reward
+
         let maxValue: Float = output2.max()
         let loss = -log(Tensor(maxValue)) * reward
 
-        layer1.parameters.update(with: dParameters1,
-                                 by: { $0 -= learningRate * loss * $1 })
-        layer2.parameters.update(with: dParameters2,
-                                 by: { $0 -= learningRate * loss * $1 })
+        weight1 -= learningRate * loss * dWeight1
+        bias1 -= learningRate * loss * dBias1
+        weight2 -= learningRate * loss * dWeight2
+        bias2 -= learningRate * loss * dBias2
 
-        self.layer1 = layer1
-        self.layer2 = layer2
+        self.weight1 = weight1
+        self.bias1 = bias1
+        self.weight2 = weight2
+        self.bias2 = bias2
         let action = CatchAction(rawValue: Int(maxIndex))!
         return action
     }
