@@ -16,7 +16,7 @@ import Foundation
 import TensorFlow
 
 /// Reads MNIST images and labels from specified file paths.
-public func readMnist(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>, labels: Tensor<Int32>) {
+func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>, labels: Tensor<Int32>) {
     print("Reading data.")
     let imageData = try! Data(contentsOf: URL(fileURLWithPath: imagesFile)).dropFirst(16)
     let labelData = try! Data(contentsOf: URL(fileURLWithPath: labelsFile)).dropFirst(8)
@@ -33,34 +33,26 @@ public func readMnist(imagesFile: String, labelsFile: String) -> (images: Tensor
 
 /// Parameters of an MNIST classifier.
 struct MNISTParameters : ParameterAggregate {
-  var w1 = Tensor<Float>(randomUniform: [784, 30])
-  var w2 = Tensor<Float>(randomUniform: [30, 10])
-  var b1 = Tensor<Float>(zeros: [1, 30])
-  var b2 = Tensor<Float>(zeros: [1, 10])
+    var w1 = Tensor<Float>(randomUniform: [784, 30])
+    var w2 = Tensor<Float>(randomUniform: [30, 10])
+    var b1 = Tensor<Float>(zeros: [1, 30])
+    var b2 = Tensor<Float>(zeros: [1, 10])
 }
 
 /// Train a MNIST classifier for the specified number of iterations.
 func train(_ parameters: inout MNISTParameters, iterationCount: Int) {
     // Get script directory. This is necessary for MNIST.swift to work when
     // invoked from any directory.
-    let currentDirectory =
-        URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+    let currentDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
     let currentScriptPath = URL(fileURLWithPath: CommandLine.arguments[0],
                                 relativeTo: currentDirectory)
     let scriptDirectory = currentScriptPath.appendingPathComponent("..")
 
     // Get training data.
-    let imagesFile =
-        scriptDirectory.appendingPathComponent("train-images-idx3-ubyte").path
-    let labelsFile =
-        scriptDirectory.appendingPathComponent("train-labels-idx1-ubyte").path
-    let (images, numericLabels) = readMnist(imagesFile: imagesFile,
-                                            labelsFile: labelsFile)
+    let imagesFile = scriptDirectory.appendingPathComponent("train-images-idx3-ubyte").path
+    let labelsFile = scriptDirectory.appendingPathComponent("train-labels-idx1-ubyte").path
+    let (images, numericLabels) = readMNIST(imagesFile: imagesFile, labelsFile: labelsFile)
     let labels = Tensor<Float>(oneHotAtIndices: numericLabels, depth: 10)
-    // FIXME: Defining batchSize as a scalar, or as a tensor as follows instead
-    // of returning it from readMnist() crashes the compiler:
-    // https://bugs.swift.org/browse/SR-7706
-    // let batchSize = Tensor<Float>(Float(images.shape[0]))
     let batchSize = Float(images.shape[0])
 
     // Hyper-parameters.
@@ -70,7 +62,7 @@ func train(_ parameters: inout MNISTParameters, iterationCount: Int) {
     // Training loop.
     print("Begin training for \(iterationCount) iterations.")
 
-    for i in 0...iterationCount {
+    for _ in 0...iterationCount {
         // Forward pass.
         let z1 = images • parameters.w1 + parameters.b1
         let h1 = sigmoid(z1)
@@ -89,7 +81,7 @@ func train(_ parameters: inout MNISTParameters, iterationCount: Int) {
 
         // Update parameters.
         parameters.update(withGradients: gradients) { param, grad in
-          param -= grad * learningRate
+            param -= grad * learningRate
         }
 
         // Update the sigmoid-based cross-entropy loss, where we treat the 10
