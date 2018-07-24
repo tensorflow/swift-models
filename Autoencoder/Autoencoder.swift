@@ -18,26 +18,25 @@ import TensorFlow
 import Python
 
 let outputFolder = "/tmp/mnist-test/"
-enum AutoencoderError: Error {
-    case noDatasetFound
-}
 
-func readDataset() throws -> (images: Tensor<Float>, labels: Tensor<Int32>) {
+func readDataset() -> (images: Tensor<Float>, labels: Tensor<Int32>)? {
     print("Reading the data.")
-    guard let swiftFile = CommandLine.arguments.first else { throw AutoencoderError.noDatasetFound }
+    guard let swiftFile = CommandLine.arguments.first else { return nil }
     let swiftFileURL = URL(fileURLWithPath: swiftFile)
     var imageFolderURL = swiftFileURL.deletingLastPathComponent()
     var labelFolderURL = swiftFileURL.deletingLastPathComponent()
     imageFolderURL.appendPathComponent("Resources/train-images-idx3-ubyte")
     labelFolderURL.appendPathComponent("Resources/train-labels-idx1-ubyte")
-    
-    let imageData = try Data(contentsOf: imageFolderURL).dropFirst(16)
-    let labelData = try Data(contentsOf: labelFolderURL).dropFirst(8)
+
+    guard let imageData = try? Data(contentsOf: imageFolderURL).dropFirst(16),
+          let labelData = try? Data(contentsOf: labelFolderURL).dropFirst(8) else {
+      return nil
+    }
     let images = imageData.map { Float($0) }
     let labels = labelData.map { Int32($0) }
     let rowCount = Int32(labels.count)
     let columnCount = Int32(images.count) / rowCount
-    
+
     print("Constructing the data tensors.")
     let imagesTensor = Tensor(shape: [rowCount, columnCount], scalars: images)
     let labelsTensor = Tensor(labels)
@@ -93,27 +92,27 @@ func plot(image: [Float], name: String) {
     plt.close()
 }
 
-struct Autoencoder {
+struct Autoencoder : Parameterized {
     static let imageEdge: Int32 = 28
     static let imageSize: Int32 = imageEdge * imageEdge
     static let decoderLayerSize: Int32 = 50
     static let encoderLayerSize: Int32 = 50
     static let hiddenLayerSize: Int32 = 2
-    
-    var w1: Tensor<Float>
-    var w2: Tensor<Float>
-    var w3: Tensor<Float>
-    var w4: Tensor<Float>
-    
-    var b2 = Tensor<Float>(zeros: [1, Autoencoder.hiddenLayerSize])
+
+    @TFParameter var w1: Tensor<Float>
+    @TFParameter var w2: Tensor<Float>
+    @TFParameter var w3: Tensor<Float>
+    @TFParameter var w4: Tensor<Float>
+    @TFParameter var b2 = Tensor<Float>(zeros: [1, Autoencoder.hiddenLayerSize])
+
     var learningRate: Float = 0.001
-    
+
     init() {
         let w1 = Tensor<Float>(randomUniform: [Autoencoder.imageSize, Autoencoder.decoderLayerSize])
         let w2 = Tensor<Float>(randomUniform: [Autoencoder.decoderLayerSize, Autoencoder.hiddenLayerSize])
         let w3 = Tensor<Float>(randomUniform: [Autoencoder.hiddenLayerSize, Autoencoder.encoderLayerSize])
         let w4 = Tensor<Float>(randomUniform: [Autoencoder.encoderLayerSize, Autoencoder.imageSize])
-        
+
         // Xavier initialization
         self.w1 = w1 / sqrtf(Float(Autoencoder.imageSize))
         self.w2 = w2 / sqrtf(Float(Autoencoder.decoderLayerSize))
@@ -126,7 +125,7 @@ extension Autoencoder {
     @inline(never)
     func embedding(for input: Tensor<Float>) -> (tensor: Tensor<Float>, loss: Float, input: Tensor<Float>, output: Tensor<Float>) {
         let inputNormalized = input / 255.0
-        
+
         // Forward pass
         let z1 = inputNormalized • w1
         let h1 = tanh(z1)
@@ -139,14 +138,14 @@ extension Autoencoder {
         let loss: Float = 0.5 * (predictions - inputNormalized).squared().mean()
         return (h2, loss, inputNormalized, predictions)
     }
-    
+
     mutating func trainStep(input: Tensor<Float>) -> Float {
         let learningRate = self.learningRate
-        
+
         // Batch normalization
         let inputNormalized = input / 255.0
         let batchSize = Tensor<Float>(inputNormalized.shapeTensor[0])
-        
+
         // Forward pass
         let z1 = inputNormalized • w1
         let h1 = tanh(z1)
@@ -156,31 +155,26 @@ extension Autoencoder {
         let h3 = tanh(z3)
         let z4 = h3 • w4
         let predictions = sigmoid(z4)
-        
+
         // Backward pass
         let dz4 = ((predictions - inputNormalized) / batchSize)
-        let dw4 = h3.transposed(withPermutations: 1, 0) • dz4
-        
-        let dz3 = matmul(dz4, w4.transposed(withPermutations: 1, 0)) * (1 - h3.squared())
-        let dw3 = h2.transposed(withPermutations: 1, 0) • dz3
-        
-        let dz2 = matmul(dz3, w3.transposed(withPermutations: 1, 0))
-        let dw2 = h1.transposed(withPermutations: 1, 0) • dz2
+        let dw4 = h3.transposed() • dz4
+        let dz3 = matmul(dz4, w4.transposed()) * (1 - h3.squared())
+        let dw3 = h2.transposed() • dz3
+        let dz2 = matmul(dz3, w3.transposed())
+        let dw2 = h1.transposed() • dz2
         let db2 = dz2.sum(squeezingAxes: 0)
-        
-        let dz1 = matmul(dz2, w2.transposed(withPermutations: 1, 0)) * (1 - h1.squared())
-        let dw1 = inputNormalized.transposed(withPermutations: 1, 0) • dz1
-        
+        let dz1 = matmul(dz2, w2.transposed()) * (1 - h1.squared())
+        let dw1 = inputNormalized.transposed() • dz1
+        let gradients = Parameters(w1: dw1, w2: dw2, w3: dw3, w4: dw4, b2: db2)
+
         let loss: Float = 0.5 * (predictions - inputNormalized).squared().mean()
-        
+
         // Gradient descent.
-        w1 -= dw1 * learningRate
-        w2 -= dw2 * learningRate
-        w3 -= dw3 * learningRate
-        w4 -= dw4 * learningRate
-        
-        b2 -= db2 * learningRate
-        
+        allParameters.update(withGradients: gradients) { p, g in
+            p -= g * learningRate
+        }
+
         return loss
     }
 }
@@ -204,11 +198,11 @@ extension Autoencoder {
             }
         } while iterationNumber < maxIterations
     }
-    
+
     private static func reshape(image: [Float], imageCountPerLine: Int) -> [Float] {
         var fullImage: [Float] = []
         let imageEdge = Int(Autoencoder.imageEdge)
-        
+
         //FIXME: Improve fors.
         for rowIndex in 0..<imageCountPerLine {
             for pixelIndex in 0..<imageEdge {
@@ -222,7 +216,7 @@ extension Autoencoder {
         }
         return fullImage
     }
-    
+
     func embedding(from dataset: (images: Tensor<Float>, labels: Tensor<Int32>), shouldSaveInput: Bool, elementCount: Int32, step: Int) -> (labels: Tensor<Int32>, tensor: [Float]) {
         let images = dataset.images.slice(lowerBounds: [0, 0], upperBounds: [elementCount, Autoencoder.imageSize])
         let labels = dataset.labels.slice(lowerBounds: [0], upperBounds: [elementCount])
@@ -240,38 +234,45 @@ extension Autoencoder {
     }
 }
 
-
-func main() {
-    do {
-        let dataset = try readDataset()
-        var autoencoder = Autoencoder()
-        
-        var embedding = autoencoder.embedding(from: dataset, shouldSaveInput: true, elementCount: 300, step: 0)
-        plot(image: embedding.tensor, labels: embedding.labels, step: 0)
-        
-        autoencoder.train(on: dataset)
-        embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 1)
-        plot(image: embedding.tensor, labels: embedding.labels, step: 1)
-        
-        autoencoder.train(on: dataset)
-        embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 2)
-        plot(image: embedding.tensor, labels: embedding.labels, step: 2)
-        
-        autoencoder.train(on: dataset)
-        embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 3)
-        plot(image: embedding.tensor, labels: embedding.labels, step: 3)
-        
-        autoencoder.train(on: dataset)
-        embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 4)
-        plot(image: embedding.tensor, labels: embedding.labels, step: 4)
-        
-        autoencoder.train(on: dataset)
-        embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 5)
-        plot(image: embedding.tensor, labels: embedding.labels, step: 5)
-        
-        print("Now, you can open /tmp/mnist-test/ folder and review the results.")
-    } catch {
-        print(error)
-    }
+guard let dataset = readDataset() else {
+  print("Error: could not read dataset.")
+  exit(0)
 }
-main()
+
+var autoencoder = Autoencoder()
+
+// Initial prediction.
+var embedding = autoencoder.embedding(from: dataset, shouldSaveInput: true, elementCount: 300, step: 0)
+plot(image: embedding.tensor, labels: embedding.labels, step: 0)
+
+autoencoder.train(on: dataset)
+embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 1)
+plot(image: embedding.tensor, labels: embedding.labels, step: 1)
+
+autoencoder.train(on: dataset)
+embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 2)
+plot(image: embedding.tensor, labels: embedding.labels, step: 2)
+
+autoencoder.train(on: dataset)
+embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 3)
+plot(image: embedding.tensor, labels: embedding.labels, step: 3)
+
+autoencoder.train(on: dataset)
+embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 4)
+plot(image: embedding.tensor, labels: embedding.labels, step: 4)
+
+autoencoder.train(on: dataset)
+embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 5)
+plot(image: embedding.tensor, labels: embedding.labels, step: 5)
+
+// Ideally this would be written as a loop. This is currently blocked on some graph program extraction bugs.
+//
+// for i in 1...5 {
+//   autoencoder.train(on: dataset)
+//   embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: i)
+//   plot(image: embedding.tensor, labels: embedding.labels, step: i)
+// }
+
+print("Now, you can open /tmp/mnist-test/ folder and review the results.")
+
+
