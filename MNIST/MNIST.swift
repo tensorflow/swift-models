@@ -16,7 +16,7 @@ import Foundation
 import TensorFlow
 
 /// Reads MNIST images and labels from specified file paths.
-public func readMnist(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>, labels: Tensor<Int32>) {
+func readMnist(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>, labels: Tensor<Int32>) {
     print("Reading data.")
     let imageData = try! Data(contentsOf: URL(fileURLWithPath: imagesFile)).dropFirst(16)
     let labelData = try! Data(contentsOf: URL(fileURLWithPath: labelsFile)).dropFirst(8)
