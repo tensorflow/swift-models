@@ -235,7 +235,7 @@ extension Autoencoder {
 }
 
 guard let dataset = readDataset() else {
-  print("Error")
+  print("Error: could not read dataset.")
   exit(0)
 }
 
