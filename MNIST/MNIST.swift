@@ -33,10 +33,10 @@ public func readMnist(imagesFile: String, labelsFile: String) -> (images: Tensor
 
 /// Parameters of an MNIST classifier.
 struct MNISTParameters : ParameterAggregate {
-  var w1 = Tensor<Float>(randomUniform: [784, 30])
-  var w2 = Tensor<Float>(randomUniform: [30, 10])
-  var b1 = Tensor<Float>(zeros: [1, 30])
-  var b2 = Tensor<Float>(zeros: [1, 10])
+    var w1 = Tensor<Float>(randomUniform: [784, 30])
+    var w2 = Tensor<Float>(randomUniform: [30, 10])
+    var b1 = Tensor<Float>(zeros: [1, 30])
+    var b2 = Tensor<Float>(zeros: [1, 10])
 }
 
 /// Train a MNIST classifier for the specified number of iterations.
