@@ -62,7 +62,7 @@ func train(_ parameters: inout MNISTParameters, iterationCount: Int) {
     // Training loop.
     print("Begin training for \(iterationCount) iterations.")
 
-    for i in 0...iterationCount {
+    for _ in 0...iterationCount {
         // Forward pass.
         let z1 = images • parameters.w1 + parameters.b1
         let h1 = sigmoid(z1)
