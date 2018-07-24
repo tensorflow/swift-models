@@ -16,7 +16,7 @@ import Foundation
 import TensorFlow
 
 /// Reads MNIST images and labels from specified file paths.
-func readMnist(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>, labels: Tensor<Int32>) {
+func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>, labels: Tensor<Int32>) {
     print("Reading data.")
     let imageData = try! Data(contentsOf: URL(fileURLWithPath: imagesFile)).dropFirst(16)
     let labelData = try! Data(contentsOf: URL(fileURLWithPath: labelsFile)).dropFirst(8)
@@ -54,13 +54,8 @@ func train(_ parameters: inout MNISTParameters, iterationCount: Int) {
         scriptDirectory.appendingPathComponent("train-images-idx3-ubyte").path
     let labelsFile =
         scriptDirectory.appendingPathComponent("train-labels-idx1-ubyte").path
-    let (images, numericLabels) = readMnist(imagesFile: imagesFile,
-                                            labelsFile: labelsFile)
+    let (images, numericLabels) = readMNIST(imagesFile: imagesFile, labelsFile: labelsFile)
     let labels = Tensor<Float>(oneHotAtIndices: numericLabels, depth: 10)
-    // FIXME: Defining batchSize as a scalar, or as a tensor as follows instead
-    // of returning it from readMnist() crashes the compiler:
-    // https://bugs.swift.org/browse/SR-7706
-    // let batchSize = Tensor<Float>(Float(images.shape[0]))
     let batchSize = Float(images.shape[0])
 
     // Hyper-parameters.
