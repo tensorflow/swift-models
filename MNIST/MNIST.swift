@@ -43,17 +43,14 @@ struct MNISTParameters : ParameterAggregate {
 func train(_ parameters: inout MNISTParameters, iterationCount: Int) {
     // Get script directory. This is necessary for MNIST.swift to work when
     // invoked from any directory.
-    let currentDirectory =
-        URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+    let currentDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
     let currentScriptPath = URL(fileURLWithPath: CommandLine.arguments[0],
                                 relativeTo: currentDirectory)
     let scriptDirectory = currentScriptPath.appendingPathComponent("..")
 
     // Get training data.
-    let imagesFile =
-        scriptDirectory.appendingPathComponent("train-images-idx3-ubyte").path
-    let labelsFile =
-        scriptDirectory.appendingPathComponent("train-labels-idx1-ubyte").path
+    let imagesFile = scriptDirectory.appendingPathComponent("train-images-idx3-ubyte").path
+    let labelsFile = scriptDirectory.appendingPathComponent("train-labels-idx1-ubyte").path
     let (images, numericLabels) = readMNIST(imagesFile: imagesFile, labelsFile: labelsFile)
     let labels = Tensor<Float>(oneHotAtIndices: numericLabels, depth: 10)
     let batchSize = Float(images.shape[0])
@@ -84,7 +81,7 @@ func train(_ parameters: inout MNISTParameters, iterationCount: Int) {
 
         // Update parameters.
         parameters.update(withGradients: gradients) { param, grad in
-          param -= grad * learningRate
+            param -= grad * learningRate
         }
 
         // Update the sigmoid-based cross-entropy loss, where we treat the 10
