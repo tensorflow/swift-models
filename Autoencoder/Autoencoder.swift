@@ -245,33 +245,11 @@ var autoencoder = Autoencoder()
 var embedding = autoencoder.embedding(from: dataset, shouldSaveInput: true, elementCount: 300, step: 0)
 plot(image: embedding.tensor, labels: embedding.labels, step: 0)
 
-autoencoder.train(on: dataset)
-embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 1)
-plot(image: embedding.tensor, labels: embedding.labels, step: 1)
-
-autoencoder.train(on: dataset)
-embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 2)
-plot(image: embedding.tensor, labels: embedding.labels, step: 2)
-
-autoencoder.train(on: dataset)
-embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 3)
-plot(image: embedding.tensor, labels: embedding.labels, step: 3)
-
-autoencoder.train(on: dataset)
-embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 4)
-plot(image: embedding.tensor, labels: embedding.labels, step: 4)
-
-autoencoder.train(on: dataset)
-embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 5)
-plot(image: embedding.tensor, labels: embedding.labels, step: 5)
-
-// Ideally this would be written as a loop. This is currently blocked on some graph program extraction bugs.
-//
-// for i in 1...5 {
-//   autoencoder.train(on: dataset)
-//   embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: i)
-//   plot(image: embedding.tensor, labels: embedding.labels, step: i)
-// }
+for i in 1...5 {
+  autoencoder.train(on: dataset)
+  embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: i)
+  plot(image: embedding.tensor, labels: embedding.labels, step: i)
+}
 
 print("Now, you can open /tmp/mnist-test/ folder and review the results.")
 
