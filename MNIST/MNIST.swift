@@ -46,7 +46,7 @@ func train(_ parameters: inout MNISTParameters, iterationCount: Int) {
     let currentDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
     let currentScriptPath = URL(fileURLWithPath: CommandLine.arguments[0],
                                 relativeTo: currentDirectory)
-    let scriptDirectory = currentScriptPath.appendingPathComponent("..")
+    let scriptDirectory = currentScriptPath.deletingLastPathComponent()
 
     // Get training data.
     let imagesFile = scriptDirectory.appendingPathComponent("train-images-idx3-ubyte").path
@@ -91,7 +91,7 @@ func train(_ parameters: inout MNISTParameters, iterationCount: Int) {
         let part1 = -labels * log(predictions)
         let part2 = -(1 - labels) * log(1 - predictions)
         loss = (part1 + part2).sum() / batchSize
-      
+
         print("Loss:", loss)
     }
 }
