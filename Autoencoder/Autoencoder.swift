@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 import Foundation
 import TensorFlow
 import Python
@@ -272,6 +271,4 @@ plot(image: embedding.tensor, labels: embedding.labels, step: 5)
 //   plot(image: embedding.tensor, labels: embedding.labels, step: i)
 // }
 
-print("Now, you can open /tmp/mnist-test/ folder and review the results.")
-
-
+print("Autoencoder results saved to \(outputFolder).")
