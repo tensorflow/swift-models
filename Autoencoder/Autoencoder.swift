@@ -21,8 +21,7 @@ let outputFolder = "/tmp/mnist-test/"
 
 func readDataset() -> (images: Tensor<Float>, labels: Tensor<Int32>)? {
     print("Reading the data.")
-    guard let swiftFile = CommandLine.arguments.first else { return nil }
-    let swiftFileURL = URL(fileURLWithPath: swiftFile)
+    let swiftFileURL = URL(fileURLWithPath: #file)
     var imageFolderURL = swiftFileURL.deletingLastPathComponent()
     var labelFolderURL = swiftFileURL.deletingLastPathComponent()
     imageFolderURL.appendPathComponent("Resources/train-images-idx3-ubyte")

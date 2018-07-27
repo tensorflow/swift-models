@@ -41,11 +41,9 @@ struct MNISTParameters : ParameterAggregate {
 
 /// Train a MNIST classifier for the specified number of iterations.
 func train(_ parameters: inout MNISTParameters, iterationCount: Int) {
-    // Get script directory. This is necessary for MNIST.swift to work when
-    // invoked from any directory.
-    let currentDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-    let currentScriptPath = URL(fileURLWithPath: CommandLine.arguments[0],
-                                relativeTo: currentDirectory)
+    // Get script path. This is necessary for MNIST.swift to work when invoked
+    // from any directory.
+    let currentScriptPath = URL(fileURLWithPath: #file)
     let scriptDirectory = currentScriptPath.deletingLastPathComponent()
 
     // Get training data.
