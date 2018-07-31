@@ -39,8 +39,8 @@ struct MNISTParameters : ParameterAggregate {
     var b2 = Tensor<Float>(zeros: [1, 10])
 }
 
-/// Train a MNIST classifier for the specified number of iterations.
-func train(_ parameters: inout MNISTParameters, iterationCount: Int) {
+/// Train a MNIST classifier for the specified number of epochs.
+func train(_ parameters: inout MNISTParameters, epochCount: Int) {
     // Get script path. This is necessary for MNIST.swift to work when invoked
     // from any directory.
     let currentScriptPath = URL(fileURLWithPath: #file)
@@ -58,9 +58,9 @@ func train(_ parameters: inout MNISTParameters, iterationCount: Int) {
     var loss = Float.infinity
 
     // Training loop.
-    print("Begin training for \(iterationCount) iterations.")
+    print("Begin training for \(epochCount) epochs.")
 
-    for _ in 0...iterationCount {
+    for _ in 0...epochCount {
         // Forward pass.
         let z1 = images • parameters.w1 + parameters.b1
         let h1 = sigmoid(z1)
@@ -98,4 +98,4 @@ func train(_ parameters: inout MNISTParameters, iterationCount: Int) {
 
 var parameters = MNISTParameters()
 // Start training.
-train(&parameters, iterationCount: 20)
+train(&parameters, epochCount: 20)
