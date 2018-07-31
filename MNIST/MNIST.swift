@@ -26,7 +26,7 @@ func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>
     let columnCount = Int32(images.count) / rowCount
 
     print("Constructing data tensors.")
-    let imagesTensor = Tensor(shape: [rowCount, columnCount], scalars: images)
+    let imagesTensor = Tensor(shape: [rowCount, columnCount], scalars: images) / 255
     let labelsTensor = Tensor(labels)
     return (imagesTensor.toAccelerator(), labelsTensor.toAccelerator())
 }
