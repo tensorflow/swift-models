@@ -82,13 +82,15 @@ func train(_ parameters: inout MNISTParameters, iterationCount: Int) {
             param -= grad * learningRate
         }
 
-        // Update the sigmoid-based cross-entropy loss, where we treat the 10
-        // class labels as independent. This is unnecessary for the MNIST case,
-        // where we want to predict a single label. In that case we should
-        // consider switching to a softmax-based cross-entropy loss.
-        let part1 = -labels * log(predictions)
-        let part2 = -(1 - labels) * log(1 - predictions)
-        loss = (part1 + part2).sum() / batchSize
+        // Calculate the sigmoid-based cross-entropy loss.
+        // TODO: Use softmax-based cross-entropy loss instead. Sigmoid
+        // cross-entropy loss treats class labels as independent, which is
+        // unnecessary for single-label classification tasks like MNIST.
+        // Sigmoid cross-entropy formula from:
+        // https://www.tensorflow.org/api_docs/python/tf/nn/sigmoid_cross_entropy_with_logits
+        let part1 = max(predictions, 0) - predictions * labels
+        let part2 = log(1 + exp(-abs(predictions)))
+        loss = ((part1 + part2).sum(squeezingAxes: 0, 1) / batchSize).scalarized()
 
         print("Loss:", loss)
     }
