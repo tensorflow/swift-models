@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 import Foundation
 import TensorFlow
 import Python
@@ -21,8 +20,7 @@ let outputFolder = "/tmp/mnist-test/"
 
 func readDataset() -> (images: Tensor<Float>, labels: Tensor<Int32>)? {
     print("Reading the data.")
-    guard let swiftFile = CommandLine.arguments.first else { return nil }
-    let swiftFileURL = URL(fileURLWithPath: swiftFile)
+    let swiftFileURL = URL(fileURLWithPath: #file)
     var imageFolderURL = swiftFileURL.deletingLastPathComponent()
     var labelFolderURL = swiftFileURL.deletingLastPathComponent()
     imageFolderURL.appendPathComponent("Resources/train-images-idx3-ubyte")
@@ -235,7 +233,7 @@ extension Autoencoder {
 }
 
 guard let dataset = readDataset() else {
-  print("Error")
+  print("Error: could not read dataset.")
   exit(0)
 }
 
@@ -251,6 +249,4 @@ for i in 1...5 {
   plot(image: embedding.tensor, labels: embedding.labels, step: i)
 }
 
-print("Now, you can open /tmp/mnist-test/ folder and review the results.")
-
-
+print("Autoencoder results saved to \(outputFolder).")
