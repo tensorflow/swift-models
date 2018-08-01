@@ -26,27 +26,25 @@ func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>
     let columnCount = Int32(images.count) / rowCount
 
     print("Constructing data tensors.")
-    let imagesTensor = Tensor(shape: [rowCount, columnCount], scalars: images)
+    let imagesTensor = Tensor(shape: [rowCount, columnCount], scalars: images) / 255
     let labelsTensor = Tensor(labels)
     return (imagesTensor.toAccelerator(), labelsTensor.toAccelerator())
 }
 
 /// Parameters of an MNIST classifier.
 struct MNISTParameters : ParameterAggregate {
-    var w1 = Tensor<Float>(randomUniform: [784, 30])
-    var w2 = Tensor<Float>(randomUniform: [30, 10])
+    var w1 = Tensor<Float>(randomNormal: [784, 30])
+    var w2 = Tensor<Float>(randomNormal: [30, 10])
     var b1 = Tensor<Float>(zeros: [1, 30])
     var b2 = Tensor<Float>(zeros: [1, 10])
 }
 
-/// Train a MNIST classifier for the specified number of iterations.
-func train(_ parameters: inout MNISTParameters, iterationCount: Int) {
-    // Get script directory. This is necessary for MNIST.swift to work when
-    // invoked from any directory.
-    let currentDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-    let currentScriptPath = URL(fileURLWithPath: CommandLine.arguments[0],
-                                relativeTo: currentDirectory)
-    let scriptDirectory = currentScriptPath.appendingPathComponent("..")
+/// Train a MNIST classifier for the specified number of epochs.
+func train(_ parameters: inout MNISTParameters, epochCount: Int32) {
+    // Get script path. This is necessary for MNIST.swift to work when invoked
+    // from any directory.
+    let currentScriptPath = URL(fileURLWithPath: #file)
+    let scriptDirectory = currentScriptPath.deletingLastPathComponent()
 
     // Get training data.
     let imagesFile = scriptDirectory.appendingPathComponent("train-images-idx3-ubyte").path
@@ -56,46 +54,74 @@ func train(_ parameters: inout MNISTParameters, iterationCount: Int) {
     let batchSize = Float(images.shape[0])
 
     // Hyper-parameters.
+    let minibatchSize: Int32 = 10
     let learningRate: Float = 0.2
     var loss = Float.infinity
 
     // Training loop.
-    print("Begin training for \(iterationCount) iterations.")
+    print("Begin training for \(epochCount) epochs.")
 
-    for _ in 0...iterationCount {
-        // Forward pass.
-        let z1 = images • parameters.w1 + parameters.b1
-        let h1 = sigmoid(z1)
-        let z2 = h1 • parameters.w2 + parameters.b2
-        let predictions = sigmoid(z2)
+    func minibatch<Scalar>(_ x: Tensor<Scalar>, index: Int32) -> Tensor<Scalar> {
+      let start = index * minibatchSize
+      return x[start..<start+minibatchSize]
+    }
 
-        // Backward pass. This will soon be replaced by automatic
-        // differentiation.
-        let dz2 = (predictions - labels) / batchSize
-        let dw2 = h1.transposed() • dz2
-        let db2 = dz2.sum(squeezingAxes: 0)
-        let dz1 = matmul(dz2, parameters.w2.transposed()) * h1 * (1 - h1)
-        let dw1 = images.transposed() • dz1
-        let db1 = dz1.sum(squeezingAxes: 0)
-        let gradients = MNISTParameters(w1: dw1, w2: dw2, b1: db1, b2: db2)
+    for _ in 0...epochCount {
+        // Store number of correct/total guesses, used to print accuracy.
+        var correctGuesses = 0
+        var totalGuesses = 0
 
-        // Update parameters.
-        parameters.update(withGradients: gradients) { param, grad in
-            param -= grad * learningRate
+        // TODO: Randomly sample minibatches using TensorFlow dataset APIs.
+        let iterationCount = Int32(batchSize) / minibatchSize
+        for i in 0..<iterationCount {
+            let images = minibatch(images, index: i)
+            let numericLabels = minibatch(numericLabels, index: i)
+            let labels = minibatch(labels, index: i)
+
+            // Forward pass.
+            let z1 = images • parameters.w1 + parameters.b1
+            let h1 = sigmoid(z1)
+            let z2 = h1 • parameters.w2 + parameters.b2
+            let predictions = sigmoid(z2)
+
+            // Backward pass. This will soon be replaced by automatic
+            // differentiation.
+            let dz2 = predictions - labels
+            let dw2 = h1.transposed() • dz2
+            let db2 = dz2.sum(squeezingAxes: 0)
+            let dz1 = matmul(dz2, parameters.w2.transposed()) * h1 * (1 - h1)
+            let dw1 = images.transposed() • dz1
+            let db1 = dz1.sum(squeezingAxes: 0)
+            let gradients = MNISTParameters(w1: dw1, w2: dw2, b1: db1, b2: db2)
+
+            // Update parameters.
+            parameters.update(withGradients: gradients) { param, grad in
+                param -= grad * learningRate
+            }
+
+            // Calculate the sigmoid-based cross-entropy loss.
+            // TODO: Use softmax-based cross-entropy loss instead. Sigmoid
+            // cross-entropy loss treats class labels as independent, which is
+            // unnecessary for single-label classification tasks like MNIST.
+            // Sigmoid cross-entropy formula from:
+            // https://www.tensorflow.org/api_docs/python/tf/nn/sigmoid_cross_entropy_with_logits
+
+            // let part1 = max(predictions, 0) - predictions * labels
+            // let part2 = log(1 + exp(-abs(predictions)))
+            // loss = ((part1 + part2).sum(squeezingAxes: 0, 1) / batchSize).scalarized()
+
+            // Update number of correct/total guesses.
+            let correctPredictions = predictions.argmax(squeezingAxis: 1).elementsEqual(numericLabels)
+            correctGuesses += Int(Tensor<Int32>(correctPredictions).sum())
+            totalGuesses += Int(minibatchSize)
         }
-
-        // Update the sigmoid-based cross-entropy loss, where we treat the 10
-        // class labels as independent. This is unnecessary for the MNIST case,
-        // where we want to predict a single label. In that case we should
-        // consider switching to a softmax-based cross-entropy loss.
-        let part1 = -labels * log(predictions)
-        let part2 = -(1 - labels) * log(1 - predictions)
-        loss = (part1 + part2).sum() / batchSize
-      
-        print("Loss:", loss)
+        print("""
+              Accuracy: \(correctGuesses)/\(totalGuesses) \
+              (\(Float(correctGuesses) / Float(totalGuesses)))
+              """)
     }
 }
 
 var parameters = MNISTParameters()
 // Start training.
-train(&parameters, iterationCount: 20)
+train(&parameters, epochCount: 20)
