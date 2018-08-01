@@ -33,8 +33,8 @@ func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>
 
 /// Parameters of an MNIST classifier.
 struct MNISTParameters : ParameterAggregate {
-    var w1 = Tensor<Float>(randomUniform: [784, 30]) * 0.1
-    var w2 = Tensor<Float>(randomUniform: [30, 10]) * 0.1
+    var w1 = Tensor<Float>(randomNormal: [784, 30])
+    var w2 = Tensor<Float>(randomNormal: [30, 10])
     var b1 = Tensor<Float>(zeros: [1, 30])
     var b2 = Tensor<Float>(zeros: [1, 10])
 }
@@ -62,7 +62,8 @@ func train(_ parameters: inout MNISTParameters, epochCount: Int32) {
     print("Begin training for \(epochCount) epochs.")
 
     func minibatch<Scalar>(_ x: Tensor<Scalar>, index: Int32) -> Tensor<Scalar> {
-      return x[index*minibatchSize..<(index+1)*minibatchSize]
+      let start = index * minibatchSize
+      return x[start..<start+minibatchSize]
     }
 
     for _ in 0...epochCount {
