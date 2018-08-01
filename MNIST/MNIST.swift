@@ -105,9 +105,10 @@ func train(_ parameters: inout MNISTParameters, epochCount: Int32) {
             // unnecessary for single-label classification tasks like MNIST.
             // Sigmoid cross-entropy formula from:
             // https://www.tensorflow.org/api_docs/python/tf/nn/sigmoid_cross_entropy_with_logits
-            let part1 = max(predictions, 0) - predictions * labels
-            let part2 = log(1 + exp(-abs(predictions)))
-            loss = ((part1 + part2).sum(squeezingAxes: 0, 1) / batchSize).scalarized()
+
+            // let part1 = max(predictions, 0) - predictions * labels
+            // let part2 = log(1 + exp(-abs(predictions)))
+            // loss = ((part1 + part2).sum(squeezingAxes: 0, 1) / batchSize).scalarized()
 
             // Update number of correct/total guesses.
             let correctPredictions = predictions.argmax(squeezingAxis: 1).elementsEqual(numericLabels)
