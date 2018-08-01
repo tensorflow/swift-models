@@ -72,7 +72,8 @@ func train(_ parameters: inout MNISTParameters, epochCount: Int32) {
         var totalGuesses = 0
 
         // TODO: Randomly sample minibatches using TensorFlow dataset APIs.
-        for i in 0..<(Int32(batchSize)/minibatchSize) {
+        let iterationCount = Int32(batchSize) / minibatchSize
+        for i in 0..<iterationCount {
             let images = minibatch(images, index: i)
             let numericLabels = minibatch(numericLabels, index: i)
             let labels = minibatch(labels, index: i)
