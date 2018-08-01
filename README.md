@@ -1,6 +1,11 @@
 # Swift for TensorFlow Models
 
-This repository contains TensorFlow models written in Swift. 
+This repository contains TensorFlow models written in Swift.
+
+The `stable` branch works with the latest [Swift for TensorFlow prebuilt packages](https://github.com/tensorflow/swift/blob/master/Installation.md#pre-built-packages).
+
+Actual development occurs on the `master` branch.
+As new packages are released, `master` is pushed to `stable`.
 
 For general information about Swift for TensorFlow development, please visit
 [tensorflow/swift](https://github.com/tensorflow/swift).
