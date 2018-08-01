@@ -193,7 +193,7 @@ extension Autoencoder {
                 let images = dataset.images.slice(lowerBounds: [batch, 0], upperBounds: [batch + batchSize, Autoencoder.imageSize])
                 let loss = trainStep(input: images)
                 if iterationNumber % 10 == 0 && batchStep == 0 {
-                    print("\(iterationNumber) step, loss: \(loss)")
+                    print("\(iterationNumber) steps, loss: \(loss)")
                 }
             }
         } while iterationNumber < maxIterations
