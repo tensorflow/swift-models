@@ -16,9 +16,16 @@ import Foundation
 import TensorFlow
 import Python
 
+// Import Python modules
+let matplotlib = Python.import("matplotlib")
+let np = Python.import("numpy")
+let plt = Python.import("matplotlib.pyplot")
+// Turn off using display on server / linux
+matplotlib.use("Agg")
+
 let outputFolder = "/tmp/mnist-test/"
 
-func readDataset() -> (images: Tensor<Float>, labels: Tensor<Int32>)? {
+func readDataset() -> (images: Tensor<Float>, labels: Tensor<Int32>) {
     print("Reading the data.")
     let swiftFileURL = URL(fileURLWithPath: #file)
     var imageFolderURL = swiftFileURL.deletingLastPathComponent()
@@ -28,7 +35,8 @@ func readDataset() -> (images: Tensor<Float>, labels: Tensor<Int32>)? {
 
     guard let imageData = try? Data(contentsOf: imageFolderURL).dropFirst(16),
           let labelData = try? Data(contentsOf: labelFolderURL).dropFirst(8) else {
-      return nil
+        print("Error: could not read dataset.")
+        exit(-1)
     }
     let images = imageData.map { Float($0) }
     let labels = labelData.map { Int32($0) }
@@ -36,18 +44,12 @@ func readDataset() -> (images: Tensor<Float>, labels: Tensor<Int32>)? {
     let columnCount = Int32(images.count) / rowCount
 
     print("Constructing the data tensors.")
-    let imagesTensor = Tensor(shape: [rowCount, columnCount], scalars: images)
-    let labelsTensor = Tensor(labels)
+    let imagesTensor = Tensor(shape: [rowCount, columnCount], scalars: images).toAccelerator() / 255.0
+    let labelsTensor = Tensor(labels).toAccelerator()
     return (imagesTensor, labelsTensor)
 }
 
 func plot(image: [Float], labels: Tensor<Int32>, step: Int) {
-    // Import Python modules
-    let matplotlib = Python.import("matplotlib")
-    // Turn off using display on server / linux
-    matplotlib.use("Agg")
-    let np = Python.import("numpy")
-    let plt = Python.import("matplotlib.pyplot")
     // Create figure
     let ax = plt.gca()
     // Create colors
@@ -72,12 +74,6 @@ func plot(image: [Float], labels: Tensor<Int32>, step: Int) {
 }
 
 func plot(image: [Float], name: String) {
-    // Import Python modules
-    let matplotlib = Python.import("matplotlib")
-    // Turn off using display on server / linux
-    matplotlib.use("Agg")
-    let np = Python.import("numpy")
-    let plt = Python.import("matplotlib.pyplot")
     // Create figure
     let ax = plt.gca()
     let array = np.array([image])
@@ -120,12 +116,9 @@ struct Autoencoder : Parameterized {
 }
 
 extension Autoencoder {
-    @inline(never)
     func embedding(for input: Tensor<Float>) -> (tensor: Tensor<Float>, loss: Float, input: Tensor<Float>, output: Tensor<Float>) {
-        let inputNormalized = input / 255.0
-
         // Forward pass
-        let z1 = inputNormalized • w1
+        let z1 = input • w1
         let h1 = tanh(z1)
         let z2 = h1 • w2 + b2
         let h2 = z2
@@ -133,19 +126,18 @@ extension Autoencoder {
         let h3 = tanh(z3)
         let z4 = h3 • w4
         let predictions = sigmoid(z4)
-        let loss: Float = 0.5 * (predictions - inputNormalized).squared().mean()
-        return (h2, loss, inputNormalized, predictions)
+        let loss: Float = 0.5 * (predictions - input).squared().mean()
+        return (h2, loss, input, predictions)
     }
 
     mutating func trainStep(input: Tensor<Float>) -> Float {
         let learningRate = self.learningRate
 
         // Batch normalization
-        let inputNormalized = input / 255.0
-        let batchSize = Tensor<Float>(inputNormalized.shapeTensor[0])
+        let batchSize = Tensor<Float>(input.shapeTensor[0])
 
         // Forward pass
-        let z1 = inputNormalized • w1
+        let z1 = input • w1
         let h1 = tanh(z1)
         let z2 = h1 • w2 + b2
         let h2 = z2
@@ -155,7 +147,7 @@ extension Autoencoder {
         let predictions = sigmoid(z4)
 
         // Backward pass
-        let dz4 = ((predictions - inputNormalized) / batchSize)
+        let dz4 = (predictions - input) / batchSize
         let dw4 = h3.transposed() • dz4
         let dz3 = matmul(dz4, w4.transposed()) * (1 - h3.squared())
         let dw3 = h2.transposed() • dz3
@@ -163,10 +155,10 @@ extension Autoencoder {
         let dw2 = h1.transposed() • dz2
         let db2 = dz2.sum(squeezingAxes: 0)
         let dz1 = matmul(dz2, w2.transposed()) * (1 - h1.squared())
-        let dw1 = inputNormalized.transposed() • dz1
+        let dw1 = input.transposed() • dz1
         let gradients = Parameters(w1: dw1, w2: dw2, w3: dw3, w4: dw4, b2: db2)
 
-        let loss: Float = 0.5 * (predictions - inputNormalized).squared().mean()
+        let loss: Float = 0.5 * (predictions - input).squared().mean()
 
         // Gradient descent.
         allParameters.update(withGradients: gradients) { p, g in
@@ -178,30 +170,27 @@ extension Autoencoder {
 }
 
 extension Autoencoder {
-    @inline(never)
-    mutating public func train(on dataset: (images: Tensor<Float>, labels: Tensor<Int32>)) {
+    mutating public func train(on dataset: (images: Tensor<Float>, labels: Tensor<Int32>),
+                               iterationCount: Int) {
         print("Train on dataset")
-        var iterationNumber = 0
-        let maxIterations = 100
         let batchSize: Int32 = 50
-        repeat {
-            iterationNumber += 1
+        for i in 1...iterationCount {
             for batchStep in 0..<500 {
                 let batch = batchSize * Int32(batchStep)
                 let images = dataset.images.slice(lowerBounds: [batch, 0], upperBounds: [batch + batchSize, Autoencoder.imageSize])
                 let loss = trainStep(input: images)
-                if iterationNumber % 10 == 0 && batchStep == 0 {
-                    print("\(iterationNumber) step, loss: \(loss)")
+                if i % 10 == 0 && batchStep == 0 {
+                    print("\(i) steps, loss: \(loss)")
                 }
             }
-        } while iterationNumber < maxIterations
+        }
     }
 
     private static func reshape(image: [Float], imageCountPerLine: Int) -> [Float] {
         var fullImage: [Float] = []
         let imageEdge = Int(Autoencoder.imageEdge)
 
-        //FIXME: Improve fors.
+        // FIXME: Improve for's.
         for rowIndex in 0..<imageCountPerLine {
             for pixelIndex in 0..<imageEdge {
                 for imageIndex in 0..<imageCountPerLine {
@@ -215,6 +204,7 @@ extension Autoencoder {
         return fullImage
     }
 
+    @inline(never)
     func embedding(from dataset: (images: Tensor<Float>, labels: Tensor<Int32>), shouldSaveInput: Bool, elementCount: Int32, step: Int) -> (labels: Tensor<Int32>, tensor: [Float]) {
         let images = dataset.images.slice(lowerBounds: [0, 0], upperBounds: [elementCount, Autoencoder.imageSize])
         let labels = dataset.labels.slice(lowerBounds: [0], upperBounds: [elementCount])
@@ -232,43 +222,17 @@ extension Autoencoder {
     }
 }
 
-guard let dataset = readDataset() else {
-  print("Error: could not read dataset.")
-  exit(0)
-}
-
+let dataset = readDataset()
 var autoencoder = Autoencoder()
 
 // Initial prediction.
 var embedding = autoencoder.embedding(from: dataset, shouldSaveInput: true, elementCount: 300, step: 0)
 plot(image: embedding.tensor, labels: embedding.labels, step: 0)
 
-autoencoder.train(on: dataset)
-embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 1)
-plot(image: embedding.tensor, labels: embedding.labels, step: 1)
-
-autoencoder.train(on: dataset)
-embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 2)
-plot(image: embedding.tensor, labels: embedding.labels, step: 2)
-
-autoencoder.train(on: dataset)
-embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 3)
-plot(image: embedding.tensor, labels: embedding.labels, step: 3)
-
-autoencoder.train(on: dataset)
-embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 4)
-plot(image: embedding.tensor, labels: embedding.labels, step: 4)
-
-autoencoder.train(on: dataset)
-embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: 5)
-plot(image: embedding.tensor, labels: embedding.labels, step: 5)
-
-// Ideally this would be written as a loop. This is currently blocked on some graph program extraction bugs.
-//
-// for i in 1...5 {
-//   autoencoder.train(on: dataset)
-//   embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: i)
-//   plot(image: embedding.tensor, labels: embedding.labels, step: i)
-// }
+for i in 1...5 {
+    autoencoder.train(on: dataset, iterationCount: 100)
+    embedding = autoencoder.embedding(from: dataset, shouldSaveInput: false, elementCount: 300, step: i)
+    plot(image: embedding.tensor, labels: embedding.labels, step: i)
+}
 
 print("Autoencoder results saved to \(outputFolder).")
