@@ -30,5 +30,5 @@ If you using brew to install python2 and modules, change the path:
  - add TensorFlow swift Toolchain /Library/Developer/Toolchains/swift-latest/usr/bin
 
 ```
-export PATH=/Library/Developer/Toolchains/swift-latest/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin
+export PATH=/Library/Developer/Toolchains/swift-latest/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:"${PATH}"
 ``` 
