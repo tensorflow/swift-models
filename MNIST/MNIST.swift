@@ -32,7 +32,7 @@ func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>
 }
 
 /// Parameters of an MNIST classifier.
-struct MNISTParameters : ParameterAggregate {
+struct MNISTParameters : ParameterGroup {
     var w1 = Tensor<Float>(randomNormal: [784, 30])
     var w2 = Tensor<Float>(randomNormal: [30, 10])
     var b1 = Tensor<Float>(zeros: [1, 30])
