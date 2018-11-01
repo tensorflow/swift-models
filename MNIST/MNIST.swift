@@ -12,16 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Foundation
+import Python
 import TensorFlow
+
+let np = Python.import("numpy")
+
+func readFile(_ filename: String) -> [UInt8] {
+    let d = Python.open(filename, "rb").read()
+    return Array(numpyArray: np.frombuffer(d, dtype: np.uint8))!
+}
 
 /// Reads MNIST images and labels from specified file paths.
 func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>, labels: Tensor<Int32>) {
     print("Reading data.")
-    let imageData = try! Data(contentsOf: URL(fileURLWithPath: imagesFile)).dropFirst(16)
-    let labelData = try! Data(contentsOf: URL(fileURLWithPath: labelsFile)).dropFirst(8)
-    let images = imageData.map { Float($0) }
-    let labels = labelData.map { Int32($0) }
+    let images = readFile(imagesFile).dropFirst(16).map { Float($0) }
+    let labels = readFile(labelsFile).dropFirst(8).map { Int32($0) }
     let rowCount = Int32(labels.count)
     let columnCount = Int32(images.count) / rowCount
 
@@ -41,15 +46,9 @@ struct MNISTParameters : ParameterGroup {
 
 /// Train a MNIST classifier for the specified number of epochs.
 func train(_ parameters: inout MNISTParameters, epochCount: Int32) {
-    // Get script path. This is necessary for MNIST.swift to work when invoked
-    // from any directory.
-    let currentScriptPath = URL(fileURLWithPath: #file)
-    let scriptDirectory = currentScriptPath.deletingLastPathComponent()
-
     // Get training data.
-    let imagesFile = scriptDirectory.appendingPathComponent("train-images-idx3-ubyte").path
-    let labelsFile = scriptDirectory.appendingPathComponent("train-labels-idx1-ubyte").path
-    let (images, numericLabels) = readMNIST(imagesFile: imagesFile, labelsFile: labelsFile)
+    let (images, numericLabels) = readMNIST(imagesFile: "train-images-idx3-ubyte",
+                                            labelsFile: "train-labels-idx1-ubyte")
     let labels = Tensor<Float>(oneHotAtIndices: numericLabels, depth: 10)
     let batchSize = Float(images.shape[0])
 
