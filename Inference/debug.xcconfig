@@ -1,0 +1,3 @@
+LD_RUNPATH_SEARCH_PATHS = "/Library/Developer/Toolchains/swift-latest/usr/lib/swift/macosx"
+SWIFT_OPTIMIZATION_LEVEL = -O
+OTHER_LDFLAGS =  -lpython

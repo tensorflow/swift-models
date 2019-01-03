@@ -1,0 +1,20 @@
+name: Inference
+options:
+  bundleIdPrefix: com.inference
+configFiles:
+  Debug: debug.xcconfig
+  Release: debug.xcconfig
+
+targets:
+  Inference:
+    type: tool
+    platform: macOS
+    deploymentTarget: "10.13"
+    sources: 
+        - Sources
+    dependencies:
+      - framework: /Library/Developer/Toolchains/swift-latest/usr/lib/swift/macosx/libtensorflow_framework.so
+      - framework: /Library/Developer/Toolchains/swift-latest/usr/lib/swift/macosx/libtensorflow.so
+      - framework: python.framework
+      - framework: libpython2.7.tbd
+    SUPPORTED_PLATFORMS: macosx
