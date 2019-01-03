@@ -7,7 +7,7 @@ open project
 
 
 
-This uses the project.yml file included to handle these steps. 
+This uses the project.yml /debug.xcconfig file included to handle these steps. 
 
   In your target's Build Settings:
    * Go to `Swift Compiler > Code Generation > Optimization Level` and select `Optimize for Speed [-O]`.
