@@ -1,7 +1,7 @@
 
 # XCodeGen - generate Tensorflow for Swift xcode project #               
 **brew install xcodegen**    
-**xcodegen generate**    
+**xcodegen**    
 open project    
 **File > Project Settings > Build System > Legacy Build System** (otherwise you'll see TensorFlow not found error)    
 
