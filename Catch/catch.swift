@@ -26,6 +26,8 @@ import TensorFlow
 // - It may be better to use a different initialization scheme for the layers of
 //   `CatchAgent`.
 
+var rng = ARC4RandomNumberGenerator(seed: 42)
+
 extension Sequence {
     /// Returns elements' descriptions joined by a separator.
     func description(joinedBy separator: String) -> String {
@@ -167,7 +169,7 @@ public extension CatchAgent {
     /// Returns a random action.
     /// Note: This function is for reference and is not used by `CatchAgent`.
     func randomAction() -> Action {
-        let id = Int(RandomState.global.generate()) % 3
+        let id = Int.random(in: 0..<3, using: &rng)
         return CatchAction(rawValue: id)!
     }
 }
@@ -226,7 +228,7 @@ public extension CatchEnvironment {
     /// the paddle to be in the middle column of the bottom row.
     @discardableResult
     mutating func reset() -> Observation {
-        let randomColumn = Int(RandomState.global.generate()) % columnCount
+        let randomColumn = Int.random(in: 0..<columnCount, using: &rng)
         ballPosition = Position(x: randomColumn, y: 0)
         paddlePosition = Position(x: columnCount / 2, y: rowCount - 1)
         return observation()
@@ -271,9 +273,6 @@ extension CatchEnvironment : CustomStringConvertible {
 }
 
 public func main() {
-    // Set global seed.
-    RandomState.global.seed(with: 42)
-
     // Setup environment and agent.
     var environment = CatchEnvironment(rowCount: 5, columnCount: 5)
     var action: CatchAction = .none
