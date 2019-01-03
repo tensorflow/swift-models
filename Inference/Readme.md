@@ -1,5 +1,5 @@
 
-**XCodeGen - generate Tensorflow for Swift xcode project              
+* XCodeGen - generate Tensorflow for Swift xcode project *             
 **brew install xcodegen**    
 **xcodegen generate**    
 open project    
