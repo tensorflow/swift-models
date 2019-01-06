@@ -1,18 +1,22 @@
-name: Inference
+toolchain_path: "/Library/Developer/Toolchains/swift-latest/usr/lib/swift/macosx/"
+
+name: SwiftTensorflow
 options:
-  bundleIdPrefix: com.inference
-configFiles:
-  Debug: config.xcconfig
-  Release: config.xcconfig
+  bundleIdPrefix: com.swiftTensorflow
 
 targets:
-  Inference:
+  SwiftTensorflow:
     type: tool
     platform: macOS
     deploymentTarget: "10.13"
     sources: 
         - Sources
     dependencies:
-      - framework: /Library/Developer/Toolchains/swift-latest/usr/lib/swift/macosx/libtensorflow_framework.so
-      - framework: /Library/Developer/Toolchains/swift-latest/usr/lib/swift/macosx/libtensorflow.so
+      - framework: ${ toolchain_path }/libtensorflow_framework.so
+      - framework: ${ toolchain_path }/libtensorflow.so
       - framework: libpython2.7.tbd
+    settings:
+      SWIFT_OPTIMIZATION_LEVEL: -O
+      LD_RUNPATH_SEARCH_PATHS: ${ toolchain_path }
+      OTHER_LDFLAGS:  -lpython
+    
