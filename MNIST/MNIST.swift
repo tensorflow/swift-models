@@ -115,7 +115,7 @@ func train(_ parameters: inout MNISTParameters, epochCount: Int32) {
             totalGuesses += Int(minibatchSize)
         }
         print("""
-              Epoch[\(epoch)] Accuracy: \(correctGuesses)/\(totalGuesses) \
+              [Epoch \(epoch)] Accuracy: \(correctGuesses)/\(totalGuesses) \
               (\(Float(correctGuesses) / Float(totalGuesses)))
               """)
     }
