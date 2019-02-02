@@ -65,7 +65,7 @@ func train(_ parameters: inout MNISTParameters, epochCount: Int32) {
       return x[start..<start+minibatchSize]
     }
 
-    for _ in 0...epochCount {
+    for epoch in 0..<epochCount {
         // Store number of correct/total guesses, used to print accuracy.
         var correctGuesses = 0
         var totalGuesses = 0
@@ -115,7 +115,7 @@ func train(_ parameters: inout MNISTParameters, epochCount: Int32) {
             totalGuesses += Int(minibatchSize)
         }
         print("""
-              Accuracy: \(correctGuesses)/\(totalGuesses) \
+              Epoch[\(epoch)] Accuracy: \(correctGuesses)/\(totalGuesses) \
               (\(Float(correctGuesses) / Float(totalGuesses)))
               """)
     }
