@@ -1,11 +1,15 @@
-import Glibc
 import Python
 import TensorFlow
 
 func maybeDownload(to directory: String = ".") {
-    if (access("\(directory)/cifar-10-batches-py", F_OK) == -1) {
-        print("downloading data...")
-        system("wget -nv -O- https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz | tar xzf - -C \(directory)")
+    let subprocess = Python.import("subprocess")
+    let path = Python.import("os.path")
+    let filepath = "\(directory)/cifar-10-batches-py"
+    let isfile = Bool(path.isfile(filepath))!
+    if isfile {
+        print("Downloading CIFAR data...")
+        let command = "wget -nv -O- https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz | tar xzf - -C \(directory)"
+        subprocess.call(command)
     }
 }
 

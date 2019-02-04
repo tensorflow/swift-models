@@ -1,7 +1,7 @@
 import TensorFlow
 
 // Ported from pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
-public struct PyTorchNet : Layer {
+public struct PyTorchModel : Layer {
     var conv1: Conv2D<Float>
     var pool: MaxPool2D<Float>
     var conv2: Conv2D<Float>
@@ -34,7 +34,7 @@ public struct PyTorchNet : Layer {
 }
 
 // Ported from github.com/keras-team/keras/blob/master/examples/cifar10_cnn.py
-public struct KerasNet : Layer {
+public struct KerasModel : Layer {
     var conv1a: Conv2D<Float>
     var conv1b: Conv2D<Float>
     var pool1: MaxPool2D<Float>
@@ -46,20 +46,23 @@ public struct KerasNet : Layer {
     var dense1: Dense<Float>
     var dropout3: Dropout<Float>
     var dense2: Dense<Float>
-    public init(modeRef: ModeRef) {
+    public init(learningPhaseIndicator: LearningPhaseIndicator) {
         conv1a = Conv2D<Float>(filterShape: (3, 3, 3, 32), padding: .same)
         conv1b = Conv2D<Float>(filterShape: (3, 3, 32, 32), padding: .valid)
         pool1 = MaxPool2D<Float>(
             poolSize: (2, 2), strides: (2, 2), padding: .valid)
-        dropout1 = Dropout<Float>(dropProbability: 0.25, modeRef: modeRef)
+        dropout1 = Dropout<Float>(
+            probability: 0.25, learningPhaseIndicator: learningPhaseIndicator)
         conv2a = Conv2D<Float>(filterShape: (3, 3, 32, 64), padding: .same)
         conv2b = Conv2D<Float>(filterShape: (3, 3, 64, 64), padding: .same)
         pool2 = MaxPool2D<Float>(
             poolSize: (2, 2), strides: (2, 2), padding: .valid)
-        dropout2 = Dropout<Float>(dropProbability: 0.25, modeRef: modeRef)
+        dropout2 = Dropout<Float>(
+            probability: 0.25, learningPhaseIndicator: learningPhaseIndicator)
         dense1 = Dense<Float>(
             inputSize: 64 * 7 * 7, outputSize: 512, activation: relu)
-        dropout3 = Dropout<Float>(dropProbability: 0.5, modeRef: modeRef)
+        dropout3 = Dropout<Float>(
+            probability: 0.5, learningPhaseIndicator: learningPhaseIndicator)
         dense2 = Dense<Float>(
             inputSize: 512, outputSize: 10, activation: { $0 })
     }
@@ -79,10 +82,10 @@ public struct KerasNet : Layer {
     }
 }
 
-public typealias CIFARNet = PyTorchNet
+public typealias CIFARModel = PyTorchModel
 
 @differentiable(wrt: model)
-public func loss(model: CIFARNet, images: Tensor<Float>, labels: Tensor<Int32>)
+public func loss(model: CIFARModel, images: Tensor<Float>, labels: Tensor<Int32>)
     -> Tensor<Float> {
     let logits = model.applied(to: images)
     let oneHotLabels = Tensor<Float>(
