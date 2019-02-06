@@ -10,9 +10,9 @@ let learningPhaseIndicator = LearningPhaseIndicator()
 var model = CIFARModel() // learningPhaseIndicator: LearningPhaseIndicator)
 
 // optimizer used in the PyTorch code
-let optimizer = SGD<CIFARNet, Float>(learningRate: 0.001, momentum: 0.9)
+let optimizer = SGD<CIFARModel, Float>(learningRate: 0.001, momentum: 0.9)
 // optimizer used in the Keras code
-// let optimizer = RMSProp<CIFARNet, Float>(learningRate: 0.0001, decay: 1e-6)
+// let optimizer = RMSProp<CIFARModel, Float>(learningRate: 0.0001, decay: 1e-6)
 
 for epoch in 1...10 {
     print("Epoch \(epoch), training...")
@@ -21,7 +21,7 @@ for epoch in 1...10 {
     var trainingBatchCount = 0
     for batch in trainingBatches {
         let gradients = gradient(at: model) {
-            (model: CIFARNet) -> Tensor<Float> in
+            (model: CIFARModel) -> Tensor<Float> in
             let thisLoss = loss(
                 model: model, images: batch.second, labels: batch.first)
             trainingLossSum += thisLoss.scalarized()
