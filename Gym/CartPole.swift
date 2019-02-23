@@ -18,9 +18,6 @@ import TensorFlow
 let np = Python.import("numpy")
 let gym = Python.import("gym")
 
-_RuntimeConfig.printsDebugLog = false
-_RuntimeConfigP.printsDebugLog = false
-
 let HIDDEN_SIZE = 128
 let BATCH_SIZE = 16
 let PERCENTILE = 70
