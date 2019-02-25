@@ -24,20 +24,15 @@ let batchSize = 16
 /// Controls the amount of good/long episodes to retain for training.
 let percentile = 70
 
-func scalarFromPython<Scalar: PythonConvertible>(value: PythonObject) -> Scalar {
-  let swiftValue = Scalar.init(value)
-  // Before force-unwrapping, we use `assert()` to make unwrapping nil more
-  // debuggable (assert points to the source location.)
-  assert(swiftValue != nil)
-  return swiftValue!
-}
-
-func tensorFromPython<Scalar: NumpyScalarCompatible>(numpy: PythonObject) -> Tensor<Scalar> {
-  let tensor = Tensor<Scalar>(numpy: numpy)
-  // Before force-unwrapping, we use `assert()` to make unwrapping nil more
-  // debuggable (assert points to the source location.)
-  assert(tensor != nil)
-  return tensor!
+/// Force unwrapping with ! does not provide source location when unwrapping
+/// nil, so we instead make a util function for debuggability.
+fileprivate extension Optional {
+  func unwrapped(file: StaticString = #file, line: UInt = #line) -> Wrapped {
+    guard let unwrapped = self else {
+      fatalError("Value is nil", file: file, line: line)
+    }
+    return unwrapped
+  }
 }
 
 /// A simple two layer dense net.
@@ -123,7 +118,7 @@ func nextBatch(env: PythonObject,
                batchSize: Int,
                actionCount: Int32
 ) -> [Episode] {
-  var obsNumpy = env.reset()
+  var observationNumpy = env.reset()
 
   let context = Context(learningPhase: .inference)
   var episodes: [Episode] = []
@@ -134,34 +129,31 @@ func nextBatch(env: PythonObject,
     var episodeReward: Float = 0.0
 
     while true {
-      let obsDouble: Tensor<Double> = tensorFromPython(numpy: obsNumpy)
-      let obsFloat = Tensor<Float>(obsDouble).reshaped(to: [1, 4])
-      let actionProbabilities = softmax(net.applied(to: obsFloat, in: context))
-
-      let actProbs = actionProbabilities[0].makeNumpyArray()
-      let len = Python.len(actProbs)
-      assert(actionCount == scalarFromPython(value: len) as Int32)
+      let observationPython = Tensor<Double>(numpy: observationNumpy).unwrapped()
+      let actionProbabilities = softmax(
+        net.applied(to: Tensor<Float>(observationPython).reshaped(to: [1, 4]),
+                    in: context))
+      let actionProbabilitiesPython = actionProbabilities[0].makeNumpyArray()
+      let len = Python.len(actionProbabilitiesPython)
+      assert(actionCount == Int32(Python.len(actionProbabilitiesPython)))
       
-      let actionNumpy = np.random.choice(len, p: actProbs)
-      let (nextObs, reward, isDone, _) = env.step(actionNumpy).tuple4
-      // print(nextObs)
+      let actionPython = np.random.choice(len, p: actionProbabilitiesPython)
+      let (nextObservation, reward, isDone, _) = env.step(actionPython).tuple4
+      // print(nextObservation)
       // print(reward)
 
-      let observationDouble: Tensor<Double> = tensorFromPython(numpy: obsNumpy)
-      let observationFloat = Tensor<Float>(observationDouble)
-      let action: Int64 = scalarFromPython(value: actionNumpy)
+      steps.append(Episode.Step(observation: Tensor<Float>(observationPython),
+                                action: Int32(actionPython).unwrapped()))
 
-      steps.append(Episode.Step(observation: observationFloat, action: Int32(action)))
+      episodeReward += Float(reward).unwrapped()
 
-      episodeReward += scalarFromPython(value: reward)
-
-      if scalarFromPython(value: isDone) {
+      if Bool(isDone).unwrapped() {
         // print("Finishing an episode with \(observations.count) steps and total reward \(episodeReward)")
         episodes.append(Episode(steps: steps, reward: episodeReward))
-        obsNumpy = env.reset()
+        observationNumpy = env.reset()
         break
       } else {
-        obsNumpy = nextObs
+        observationNumpy = nextObservation
       }
     }
   }
@@ -170,9 +162,8 @@ func nextBatch(env: PythonObject,
 }
 
 let env = gym.make("CartPole-v0")
-let observationSize: Int32 = scalarFromPython(value: env.observation_space.shape[0])
-
-let actionCount: Int32 = scalarFromPython(value: env.action_space.n)
+let observationSize = Int32(env.observation_space.shape[0]).unwrapped()
+let actionCount = Int32(env.action_space.n).unwrapped()
 // print(actionCount)
 
 var net = Net(observationSize: Int(observationSize), hiddenSize: hiddenSize, actionCount: Int(actionCount))
