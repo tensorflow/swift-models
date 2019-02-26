@@ -1,43 +1,46 @@
 import TensorFlow
 
-let batchSize: Int32 = 4
+let batchSize: Int32 = 32
 
 let (trainingDataset, testDataset) = loadCIFAR10()
-let trainingBatches = trainingDataset.batched(Int64(batchSize))
 let testBatches = testDataset.batched(Int64(batchSize))
 
-let learningPhaseIndicator = LearningPhaseIndicator()
-var model = CIFARModel() // learningPhaseIndicator: LearningPhaseIndicator)
+var model = KerasModel() // or PyTorchModel()
 
 // optimizer used in the PyTorch code
-let optimizer = SGD<CIFARModel, Float>(learningRate: 0.001, momentum: 0.9)
+// let optimizer = SGD(for: model, learningRate: 0.001, momentum: 0.9, scalarType: Float.self)
 // optimizer used in the Keras code
-// let optimizer = RMSProp<CIFARModel, Float>(learningRate: 0.0001, decay: 1e-6)
+let optimizer = RMSProp(for: model, learningRate: 0.0001, decay: 1e-6, scalarType: Float.self)
 
 for epoch in 1...10 {
     print("Epoch \(epoch), training...")
-    learningPhaseIndicator.training = true
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
-    for batch in trainingBatches {
+    let trainingShuffled = trainingDataset.shuffled(sampleCount: 50000, randomSeed: Int64(epoch))
+    for batch in trainingShuffled.batched(Int64(batchSize)) {
+        let (labels, images) = (batch.first, batch.second)
         let gradients = gradient(at: model) {
-            (model: CIFARModel) -> Tensor<Float> in
-            let thisLoss = loss(
-                model: model, images: batch.second, labels: batch.first)
-            trainingLossSum += thisLoss.scalarized()
+            (model) -> Tensor<Float> in
+            let logits = model.applied(to: images, in: Context(learningPhase: .training))
+            let oneHotLabels = Tensor<Float>(
+                oneHotAtIndices: labels, depth: logits.shape[1])
+            let loss = softmaxCrossEntropy(logits: logits, labels: oneHotLabels)
+            trainingLossSum += loss.scalarized()
             trainingBatchCount += 1
-            return thisLoss
+            return loss
         }
         optimizer.update(&model.allDifferentiableVariables, along: gradients)
     }
     print("  average loss: \(trainingLossSum / Float(trainingBatchCount))")
     print("Epoch \(epoch), evaluating on test set...")
-    learningPhaseIndicator.training = false
     var testLossSum: Float = 0
     var testBatchCount = 0
     for batch in testBatches {
-        testLossSum += loss(
-        model: model, images: batch.second, labels: batch.first).scalarized()
+        let (labels, images) = (batch.first, batch.second)
+        let logits = model.applied(to: images, in: Context(learningPhase: .inference))
+        let oneHotLabels = Tensor<Float>(
+            oneHotAtIndices: labels, depth: logits.shape[1])
+        testLossSum += softmaxCrossEntropy(logits: logits, labels: oneHotLabels).scalarized()
         testBatchCount += 1
     }
     print("  average loss: \(testLossSum / Float(testBatchCount))")
