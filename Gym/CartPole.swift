@@ -18,14 +18,17 @@ import TensorFlow
 let np = Python.import("numpy")
 let gym = Python.import("gym")
 
+_RuntimeConfig.printsDebugLog = false
+_RuntimeConfigP.printsDebugLog = false
+
 /// Model parameters and hyper parameters.
 let hiddenSize = 128
 let batchSize = 16
 /// Controls the amount of good/long episodes to retain for training.
 let percentile = 70
 
-/// Force unwrapping with ! does not provide source location when unwrapping
-/// nil, so we instead make a util function for debuggability.
+// Force unwrapping with ! does not provide source location when unwrapping
+// nil, so we instead make a util function for debuggability.
 fileprivate extension Optional {
   func unwrapped(file: StaticString = #file, line: UInt = #line) -> Wrapped {
     guard let unwrapped = self else {
@@ -69,7 +72,7 @@ struct Episode {
 /// Filter out bad/short episodes before we feed them as neural net training
 /// data.
 func filteringBatch(episodes: [Episode],
-                    actionCount: Int32
+                    actionCount: Int
 ) -> (input: Tensor<Float>,
       target: Tensor<Float>,
       episodeCount: Int,
@@ -90,7 +93,7 @@ func filteringBatch(episodes: [Episode],
 
     let observationTensor = Tensor<Float>(episode.steps.map { $0.observation })
     let actionTensor = Tensor<Int32>(episode.steps.map { $0.action })
-    let oneHotLabels = Tensor<Float>(oneHotAtIndices: actionTensor, depth: actionCount)
+    let oneHotLabels = Tensor<Float>(oneHotAtIndices: actionTensor, depth: Int32(actionCount))
 
     // print("observations tensor has shape \(observationTensor.shapeTensor)")
     // print("actions tensor has shape \(actionTensor.shapeTensor)")
@@ -116,7 +119,7 @@ func filteringBatch(episodes: [Episode],
 func nextBatch(env: PythonObject,
                net: Net,
                batchSize: Int,
-               actionCount: Int32
+               actionCount: Int
 ) -> [Episode] {
   var observationNumpy = env.reset()
 
@@ -130,12 +133,11 @@ func nextBatch(env: PythonObject,
 
     while true {
       let observationPython = Tensor<Double>(numpy: observationNumpy).unwrapped()
-      let actionProbabilities = softmax(
-        net.applied(to: Tensor<Float>(observationPython).reshaped(to: [1, 4]),
-                    in: context))
+      let actionProbabilities =
+          softmax(net.applied(to: Tensor(observationPython).reshaped(to: [1, 4]), in: context))
       let actionProbabilitiesPython = actionProbabilities[0].makeNumpyArray()
       let len = Python.len(actionProbabilitiesPython)
-      assert(actionCount == Int32(Python.len(actionProbabilitiesPython)))
+      assert(actionCount == Int(Python.len(actionProbabilitiesPython)))
       
       let actionPython = np.random.choice(len, p: actionProbabilitiesPython)
       let (nextObservation, reward, isDone, _) = env.step(actionPython).tuple4
@@ -147,7 +149,7 @@ func nextBatch(env: PythonObject,
 
       episodeReward += Float(reward).unwrapped()
 
-      if Bool(isDone).unwrapped() {
+      if isDone == true {
         // print("Finishing an episode with \(observations.count) steps and total reward \(episodeReward)")
         episodes.append(Episode(steps: steps, reward: episodeReward))
         observationNumpy = env.reset()
@@ -162,11 +164,11 @@ func nextBatch(env: PythonObject,
 }
 
 let env = gym.make("CartPole-v0")
-let observationSize = Int32(env.observation_space.shape[0]).unwrapped()
-let actionCount = Int32(env.action_space.n).unwrapped()
+let observationSize = Int(env.observation_space.shape[0]).unwrapped()
+let actionCount = Int(env.action_space.n).unwrapped()
 // print(actionCount)
 
-var net = Net(observationSize: Int(observationSize), hiddenSize: hiddenSize, actionCount: Int(actionCount))
+var net = Net(observationSize: Int(observationSize), hiddenSize: hiddenSize, actionCount: actionCount)
 /// SGD optimizer reaches convergence with ~125 mini batches, while Adam uses ~25.
 // let optimizer = SGD<Net, Float>(learningRate: 0.1, momentum: 0.9)
 let optimizer = Adam<Net, Float>(learningRate: 0.01)
