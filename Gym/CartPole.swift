@@ -68,8 +68,9 @@ struct Episode {
 
 /// Filter out bad/short episodes before we feed them as neural net training
 /// data.
-func filteringBatch(episodes: [Episode],
-                    actionCount: Int
+func filteringBatch(
+    episodes: [Episode],
+    actionCount: Int
 ) -> (input: Tensor<Float>,
       target: Tensor<Float>,
       episodeCount: Int,
@@ -113,10 +114,11 @@ func filteringBatch(episodes: [Episode],
   return (input, target, retainedEpisodeCount, totalReward / Float(retainedEpisodeCount))
 }
 
-func nextBatch(env: PythonObject,
-               net: Net,
-               batchSize: Int,
-               actionCount: Int
+func nextBatch(
+    env: PythonObject,
+    net: Net,
+    batchSize: Int,
+    actionCount: Int
 ) -> [Episode] {
   var observationNumpy = env.reset()
 
@@ -166,7 +168,7 @@ let actionCount = Int(env.action_space.n).unwrapped()
 // print(actionCount)
 
 var net = Net(observationSize: Int(observationSize), hiddenSize: hiddenSize, actionCount: actionCount)
-/// SGD optimizer reaches convergence with ~125 mini batches, while Adam uses ~25.
+// SGD optimizer reaches convergence with ~125 mini batches, while Adam uses ~25.
 // let optimizer = SGD<Net, Float>(learningRate: 0.1, momentum: 0.9)
 let optimizer = Adam<Net, Float>(learningRate: 0.01)
 var batchIndex = 0
