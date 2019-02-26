@@ -18,9 +18,6 @@ import TensorFlow
 let np = Python.import("numpy")
 let gym = Python.import("gym")
 
-_RuntimeConfig.printsDebugLog = false
-_RuntimeConfigP.printsDebugLog = false
-
 /// Model parameters and hyper parameters.
 let hiddenSize = 128
 let batchSize = 16
