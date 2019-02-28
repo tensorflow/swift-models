@@ -9,7 +9,7 @@ struct ConvBN: Layer {
         self.norm = BatchNorm(featureCount: filterShape.3)
     }
 
-    @differentiable(wrt: (self, input))
+    @differentiable
     public func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
         return norm.applied(to: conv.applied(to: input, in: context), in: context)
     }
@@ -51,7 +51,7 @@ struct ResidualConvBlock: Layer {
             strides: strides, padding: .same)
     }
 
-    @differentiable(wrt: (self, input))
+    @differentiable
     func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
         var tmp = relu(layer1.applied(to: input, in: context))
         tmp = relu(layer2.applied(to: tmp, in: context))
@@ -80,7 +80,7 @@ struct ResidualIdentityBlock: Layer {
             padding: .valid)
     }
 
-    @differentiable(wrt: (self, input))
+    @differentiable
     func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
         var tmp = relu(layer1.applied(to: input, in: context))
         tmp = relu(layer2.applied(to: tmp, in: context))
@@ -167,7 +167,7 @@ public struct ResNet50: Layer {
             inputSize: 2048, outputSize: classCount, activation: { $0 })
     }
 
-    @differentiable(wrt: (self, input))
+    @differentiable
     public func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
         var tmp = input
         tmp = maxPool.applied(to: relu(l1.applied(to: input, in: context)), in: context)
