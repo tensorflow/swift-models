@@ -1,6 +1,15 @@
 # MiniGo
 
-This folder is the Swift ([S4TF]) verison of the [MiniGo] game.
+This folder is the Swift ([S4TF]) verison of the [MiniGo] game. It has been
+reimplemented from the MLPerf reference model.
+
+> Note: Due to temporary limitations, we only support inference (self-play)
+> for now. We hope to soon lift these restrictions.
+
+In order to use this code, first download a pre-trained set of weights from
+the MiniGo project. Then compile the code and run it locally! You can change
+around parameters like the board size, and the number of simulations per
+move by modifying constants at the top of `Sources/MiniGo/main.swift`.
 
 ## To Get a MiniGo Checkpoint
 
