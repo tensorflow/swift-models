@@ -47,7 +47,7 @@ struct Net: Layer {
       inputSize: hiddenSize, outputSize: actionCount, activation: { $0 })
   }
 
-  @differentiable(wrt: (self, input))
+  @differentiable
   func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
     return l2.applied(to: l1.applied(to: input, in: context), in: context)
   }

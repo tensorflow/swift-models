@@ -18,7 +18,7 @@ public struct PyTorchModel : Layer {
         dense2 = Dense<Float>(inputSize: 120, outputSize: 84, activation: relu)
         dense3 = Dense<Float>(inputSize: 84, outputSize: 10, activation: { $0 })
     }
-    @differentiable(wrt: (self, input))
+    @differentiable
     public func applied(to input: Tensor<Float>) -> Tensor<Float> {
         var tmp = input
         tmp = pool.applied(to: relu(conv1.applied(to: tmp)))
@@ -66,7 +66,7 @@ public struct KerasModel : Layer {
         dense2 = Dense<Float>(
             inputSize: 512, outputSize: 10, activation: { $0 })
     }
-    @differentiable(wrt: (self, input))
+    @differentiable
     public func applied(to input: Tensor<Float>) -> Tensor<Float> {
         var tmp = input
         tmp = relu(conv1b.applied(to: relu(conv1a.applied(to: tmp))))
