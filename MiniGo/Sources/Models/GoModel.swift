@@ -58,7 +58,7 @@ struct ConvBN: Layer {
       epsilon: Tensor<Float>(1e-5))
   }
 
-  @differentiable(wrt: (self, input))
+  @differentiable
   func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
     return norm.applied(to: conv.applied(to: input, in: context), in: context)
   }
@@ -87,7 +87,7 @@ struct ResidualIdentityBlock: Layer {
       bias: false)
   }
 
-  @differentiable(wrt: (self, input))
+  @differentiable
   func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
     var tmp = relu(layer1.applied(to: input, in: context))
     tmp = layer2.applied(to: tmp, in: context)
