@@ -25,8 +25,9 @@ In order to use [Swift Package Manager][SwiftPM], a toolchain is required. You
 can
 
 1. download the pre-built package from [official
-   site](https://github.com/tensorflow/swift/blob/master/Installation.md),
-2. compile the toolchain by your own, or
+   site](https://github.com/tensorflow/swift/blob/master/Installation.md)
+2. [compile the toolchain](https://github.com/apple/swift/tree/tensorflow#building-swift-for-tensorflow)
+   on your own
 
 
 [S4TF]: https://www.tensorflow.org/swift/
