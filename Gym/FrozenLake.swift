@@ -72,8 +72,14 @@ class Agent {
         state = State(environment.reset()).unwrapped()
     }
     
-    func sampleEnvironment(environment: PythonObject
-    ) -> (state: State, action: Int, reward: Float, newState: State) {
+    func sampleEnvironment(
+      environment: PythonObject
+    ) -> (
+      state: State,
+      action: Int,
+      reward: Float,
+      newState: State
+    ) {
         let action = environment.action_space.sample()
         let (newState, reward, isDone, _) = environment.step(action).tuple4
 
