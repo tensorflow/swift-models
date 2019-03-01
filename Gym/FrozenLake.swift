@@ -18,19 +18,16 @@ import TensorFlow
 let np = Python.import("numpy")
 let gym = Python.import("gym")
 
-_RuntimeConfig.printsDebugLog = false
-_RuntimeConfigP.printsDebugLog = false
-
 /// Solves the FrozenLake RL problem via Q-learning. This model does not use a
 /// neural net, and instead demonstrates Swift host-side numeric processing as
-/// well as python integration.
+/// well as Python integration.
 
 let discountRate: Float = 0.9
 let learningRate: Float = 0.2
 let testEpisodeCount = 20
 
-typealias StateT = Int64
-typealias ActionT = Int
+typealias State = Int
+typealias Action = Int
 
 // Force unwrapping with ! does not provide source location when unwrapping
 // nil, so we instead make a util function for debuggability.
@@ -46,7 +43,7 @@ fileprivate extension Optional {
 // This struct is defined so that `StateAction` can be a dictionary key
 // type. Swift tuples cannot be dictionary key types.
 struct StateAction : Hashable {
-  let values : (StateT, ActionT)
+  let values : (State, Action)
 
   var hashValue : Int {
     get {
@@ -62,44 +59,39 @@ func ==(lhs: StateAction, rhs: StateAction) -> Bool {
 }
 
 class Agent {
-  let env: PythonObject
-
   let actionCount: Int
 
-  var state: StateT
+  var state: State
 
   /// The "action value" (expected future reward value) of a (state, action)
   /// pair.
   var values: [StateAction : Float] = [:]
 
-  init() {
-    env = gym.make("FrozenLake-v0")
-    actionCount = Int(env.action_space.n).unwrapped()
-    state = StateT(env.reset()).unwrapped()
+  init(environment: PythonObject) {
+    actionCount = Int(environment.action_space.n).unwrapped()
+    state = State(environment.reset()).unwrapped()
   }
   
-  func sampleEnvironment() -> (state: StateT, action: Int, reward: Float, newState: StateT) {
-    let action = env.action_space.sample()
-    let (newState, reward, isDone, _) = env.step(action).tuple4
+  func sampleEnvironment(environment: PythonObject
+  ) -> (state: State, action: Int, reward: Float, newState: State) {
+    let action = environment.action_space.sample()
+    let (newState, reward, isDone, _) = environment.step(action).tuple4
 
-    // if reward > 0.0 {
-    //   print("cur state: \(state), new state: \(newState), reward: \(reward), isDone: \(isDone)")
-    // }
     let oldState = state
     if isDone == true {
-      state = StateT(env.reset()).unwrapped()
+      state = State(environment.reset()).unwrapped()
     } else {
-      state = StateT(newState).unwrapped()
+      state = State(newState).unwrapped()
     }
     return (oldState,
             Int(action).unwrapped(),
             Float(reward).unwrapped(),
-            StateT(newState).unwrapped())
+            State(newState).unwrapped())
   }
 
-  func bestValueAndAction(state: StateT) -> (bestValue: Float, bestAction: ActionT) {
+  func bestValueAndAction(state: State) -> (bestValue: Float, bestAction: Action) {
     var bestValue: Float = 0.0
-    var bestAction: ActionT = -1  // initialize to an invalid value
+    var bestAction: Action = -1  // initialize to an invalid value
     for action in (0..<actionCount) {
       let stateAction = StateAction(values: (state, action))
       let actionValue = values[stateAction] ?? 0.0
@@ -108,27 +100,21 @@ class Agent {
         bestAction = action
       }
     }
-    // if bestValue > 0.0 {
-    //   print("In state \(state), bestValue: \(bestValue), bestAction: \(bestAction)")
-    // }
     return (bestValue, bestAction)
   }
 
-  func updateActionValue(state: StateT, action: Int, reward: Float, nextState: StateT) {
+  func updateActionValue(state: State, action: Int, reward: Float, nextState: State) {
     let (bestValue, _) = bestValueAndAction(state: nextState)
     let newValue = reward + discountRate * bestValue
     let stateAction = StateAction(values: (state, action))
     let oldValue = values[stateAction] ?? 0.0
     let updatedValue = oldValue * (1-learningRate) + newValue * learningRate
     values[stateAction] = updatedValue
-    // if updatedValue > 0.0 {
-    //   print("For (state, action) (\(s), \(a)): updated action value from \(bestValue) to \(updatedValue)")
-    // }
   }
 
   func playEpisode(testEnvironment: PythonObject) -> Float {
     var totalReward: Float = 0.0
-    var testState = StateT(testEnvironment.reset()).unwrapped()
+    var testState = State(testEnvironment.reset()).unwrapped()
     while true {
       let (_, action) = bestValueAndAction(state: testState)
       let (newState, reward, isDone, _) = testEnvironment.step(action).tuple4
@@ -136,25 +122,23 @@ class Agent {
       if isDone == true {
         break
       }
-      testState = StateT(newState).unwrapped()
+      testState = State(newState).unwrapped()
     }
-    // if totalReward > 0.0 {
-    //   print("Got \(totalReward) reward when playing an episode.")
-    // }
     return totalReward
   }
 }
 
 var iterationIndex = 0
 var bestReward: Float = 0.0
-var agent = Agent()
+let trainEnvironment = gym.make("FrozenLake-v0")
+var agent = Agent(environment: trainEnvironment)
 let testEnvironment = gym.make("FrozenLake-v0")
 while true {
   if iterationIndex % 100 == 0 {
-    print("Running iter \(iterationIndex)")
+    print("Running iteration \(iterationIndex)")
   }
   iterationIndex += 1
-  let (state, action, reward, nextState) = agent.sampleEnvironment()
+  let (state, action, reward, nextState) = agent.sampleEnvironment(environment: trainEnvironment)
   agent.updateActionValue(state: state, action: action, reward: reward, nextState: nextState)
 
   var testReward: Float = 0.0
