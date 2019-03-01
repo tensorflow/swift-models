@@ -32,100 +32,100 @@ typealias Action = Int
 // Force unwrapping with ! does not provide source location when unwrapping
 // nil, so we instead make a util function for debuggability.
 fileprivate extension Optional {
-  func unwrapped(file: StaticString = #file, line: UInt = #line) -> Wrapped {
-    guard let unwrapped = self else {
-      fatalError("Value is nil", file: file, line: line)
+    func unwrapped(file: StaticString = #file, line: UInt = #line) -> Wrapped {
+        guard let unwrapped = self else {
+            fatalError("Value is nil", file: file, line: line)
+        }
+        return unwrapped
     }
-    return unwrapped
-  }
 }
 
 // This struct is defined so that `StateAction` can be a dictionary key
 // type. Swift tuples cannot be dictionary key types.
-struct StateAction : Hashable {
-  let values : (State, Action)
+struct StateAction: Hashable {
+    let values: (State, Action)
 
-  var hashValue : Int {
-    get {
-      let (state, action) = values
-      return state.hashValue &* 31 &+ action.hashValue
+    var hashValue : Int {
+        get {
+            let (state, action) = values
+            return state.hashValue &* 31 &+ action.hashValue
+        }
     }
-  }
 }
 
 // Comparison function for conforming to Equatable protocol.
-func ==(lhs: StateAction, rhs: StateAction) -> Bool {
-  return lhs.values == rhs.values
+func == (lhs: StateAction, rhs: StateAction) -> Bool {
+    return lhs.values == rhs.values
 }
 
 class Agent {
-  let actionCount: Int
+    let actionCount: Int
 
-  var state: State
+    var state: State
 
-  /// The "action value" (expected future reward value) of a (state, action)
-  /// pair.
-  var values: [StateAction : Float] = [:]
+    /// The "action value" (expected future reward value) of a (state, action)
+    /// pair.
+    var values: [StateAction: Float] = [:]
 
-  init(environment: PythonObject) {
-    actionCount = Int(environment.action_space.n).unwrapped()
-    state = State(environment.reset()).unwrapped()
-  }
-  
-  func sampleEnvironment(environment: PythonObject
-  ) -> (state: State, action: Int, reward: Float, newState: State) {
-    let action = environment.action_space.sample()
-    let (newState, reward, isDone, _) = environment.step(action).tuple4
-
-    let oldState = state
-    if isDone == true {
-      state = State(environment.reset()).unwrapped()
-    } else {
-      state = State(newState).unwrapped()
+    init(environment: PythonObject) {
+        actionCount = Int(environment.action_space.n).unwrapped()
+        state = State(environment.reset()).unwrapped()
     }
-    return (oldState,
-            Int(action).unwrapped(),
-            Float(reward).unwrapped(),
-            State(newState).unwrapped())
-  }
+    
+    func sampleEnvironment(environment: PythonObject
+    ) -> (state: State, action: Int, reward: Float, newState: State) {
+        let action = environment.action_space.sample()
+        let (newState, reward, isDone, _) = environment.step(action).tuple4
 
-  func bestValueAndAction(state: State) -> (bestValue: Float, bestAction: Action) {
-    var bestValue: Float = 0.0
-    var bestAction: Action = -1  // initialize to an invalid value
-    for action in (0..<actionCount) {
-      let stateAction = StateAction(values: (state, action))
-      let actionValue = values[stateAction] ?? 0.0
-      if action == 0 || bestValue < actionValue {
-        bestValue = actionValue
-        bestAction = action
-      }
+        let oldState = state
+        if isDone == true {
+            state = State(environment.reset()).unwrapped()
+        } else {
+            state = State(newState).unwrapped()
+        }
+        return (oldState,
+                Int(action).unwrapped(),
+                Float(reward).unwrapped(),
+                State(newState).unwrapped())
     }
-    return (bestValue, bestAction)
-  }
 
-  func updateActionValue(state: State, action: Int, reward: Float, nextState: State) {
-    let (bestValue, _) = bestValueAndAction(state: nextState)
-    let newValue = reward + discountRate * bestValue
-    let stateAction = StateAction(values: (state, action))
-    let oldValue = values[stateAction] ?? 0.0
-    let updatedValue = oldValue * (1-learningRate) + newValue * learningRate
-    values[stateAction] = updatedValue
-  }
-
-  func playEpisode(testEnvironment: PythonObject) -> Float {
-    var totalReward: Float = 0.0
-    var testState = State(testEnvironment.reset()).unwrapped()
-    while true {
-      let (_, action) = bestValueAndAction(state: testState)
-      let (newState, reward, isDone, _) = testEnvironment.step(action).tuple4
-      totalReward += Float(reward).unwrapped()
-      if isDone == true {
-        break
-      }
-      testState = State(newState).unwrapped()
+    func bestValueAndAction(state: State) -> (bestValue: Float, bestAction: Action) {
+        var bestValue: Float = 0.0
+        var bestAction: Action = -1  // initialize to an invalid value
+        for action in (0..<actionCount) {
+            let stateAction = StateAction(values: (state, action))
+            let actionValue = values[stateAction] ?? 0.0
+            if action == 0 || bestValue < actionValue {
+                bestValue = actionValue
+                bestAction = action
+            }
+        }
+        return (bestValue, bestAction)
     }
-    return totalReward
-  }
+
+    func updateActionValue(state: State, action: Int, reward: Float, nextState: State) {
+        let (bestValue, _) = bestValueAndAction(state: nextState)
+        let newValue = reward + discountRate * bestValue
+        let stateAction = StateAction(values: (state, action))
+        let oldValue = values[stateAction] ?? 0.0
+        let updatedValue = oldValue * (1-learningRate) + newValue * learningRate
+        values[stateAction] = updatedValue
+    }
+
+    func playEpisode(testEnvironment: PythonObject) -> Float {
+        var totalReward: Float = 0.0
+        var testState = State(testEnvironment.reset()).unwrapped()
+        while true {
+            let (_, action) = bestValueAndAction(state: testState)
+            let (newState, reward, isDone, _) = testEnvironment.step(action).tuple4
+            totalReward += Float(reward).unwrapped()
+            if isDone == true {
+                break
+            }
+            testState = State(newState).unwrapped()
+        }
+        return totalReward
+    }
 }
 
 var iterationIndex = 0
@@ -134,24 +134,24 @@ let trainEnvironment = gym.make("FrozenLake-v0")
 var agent = Agent(environment: trainEnvironment)
 let testEnvironment = gym.make("FrozenLake-v0")
 while true {
-  if iterationIndex % 100 == 0 {
-    print("Running iteration \(iterationIndex)")
-  }
-  iterationIndex += 1
-  let (state, action, reward, nextState) = agent.sampleEnvironment(environment: trainEnvironment)
-  agent.updateActionValue(state: state, action: action, reward: reward, nextState: nextState)
+    if iterationIndex % 100 == 0 {
+        print("Running iteration \(iterationIndex)")
+    }
+    iterationIndex += 1
+    let (state, action, reward, nextState) = agent.sampleEnvironment(environment: trainEnvironment)
+    agent.updateActionValue(state: state, action: action, reward: reward, nextState: nextState)
 
-  var testReward: Float = 0.0
-  for _ in (0..<testEpisodeCount) {
-    testReward += agent.playEpisode(testEnvironment: testEnvironment)
-  }
-  testReward /= Float(testEpisodeCount)
-  if testReward > bestReward {
-    print("Best reward updated \(bestReward) -> \(testReward)")
-    bestReward = testReward
-  }
-  if testReward > 0.80 {
-    print("Solved in \(iterationIndex) iterations!")
-    break
-  }
+    var testReward: Float = 0.0
+    for _ in (0..<testEpisodeCount) {
+        testReward += agent.playEpisode(testEnvironment: testEnvironment)
+    }
+    testReward /= Float(testEpisodeCount)
+    if testReward > bestReward {
+        print("Best reward updated \(bestReward) -> \(testReward)")
+        bestReward = testReward
+    }
+    if testReward > 0.80 {
+        print("Solved in \(iterationIndex) iterations!")
+        break
+    }
 }
