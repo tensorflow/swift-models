@@ -18,19 +18,19 @@ import TensorFlow
 ///
 /// This is mainly for testing and debugging purposes.
 public class MCTSRandomPredictor: MCTSPredictor {
-  private let boardSize: Int
+    private let boardSize: Int
 
-  public init(boardSize: Int) {
-    self.boardSize = boardSize
-  }
+    public init(boardSize: Int) {
+        self.boardSize = boardSize
+    }
 
-  public func prediction(for boardState: BoardState) -> MCTSPrediction {
-    let distribution = MCTSPrediction.Distribution(
-      positions: ShapedArray<Float>(shape: [boardSize, boardSize], repeating: 1.0),
-      pass: 1.0)
+    public func prediction(for boardState: BoardState) -> MCTSPrediction {
+        let distribution = MCTSPrediction.Distribution(
+            positions: ShapedArray<Float>(shape: [boardSize, boardSize], repeating: 1.0),
+            pass: 1.0)
 
-    // Randomize the reward (range: 0.0 +/- 0.05).
-    let reward = 0.0 + (Float(Int.random(in: 0..<100)) - 50.0) / 1000.0
-    return MCTSPrediction(rewardForNextPlayer: reward, distribution: distribution)
-  }
+        // Randomize the reward (range: 0.0 +/- 0.05).
+        let reward = 0.0 + (Float(Int.random(in: 0..<100)) - 50.0) / 1000.0
+        return MCTSPrediction(rewardForNextPlayer: reward, distribution: distribution)
+    }
 }

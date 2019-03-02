@@ -14,16 +14,16 @@
 
 /// The color of a player or a stone.
 enum Color: Int {
-  case black = 1
-  case white = -1
+    case black = 1
+    case white = -1
 }
 
 extension Color: CustomStringConvertible {
-  var description: String {
-    switch self {
-    case .black: return "X"
-    case .white: return "O"
+    var description: String {
+        switch self {
+        case .black: return "X"
+        case .white: return "O"
+        }
     }
-  }
 }
 
