@@ -14,59 +14,59 @@
 
 /// The configuration for MCTS algorithm.
 public struct MCTSConfiguration {
-  /// The configuration of the Go game.
-  let gameConfiguration: GameConfiguration
+    /// The configuration of the Go game.
+    let gameConfiguration: GameConfiguration
 
-  /// The total number of simulations to run for each move.
-  let simulationCountForOneMove: Int
+    /// The total number of simulations to run for each move.
+    let simulationCountForOneMove: Int
 
-  /// The maximum game depth to expand the tree during simulation.
-  ///
-  /// The maximum game depth is compared with `BoardState.playedMoveCount`. Once reached, score the
-  /// board immediately. This is used to avoid infinite game plays during simulation.
-  let maxGameDepth: Int
-
-  public enum ExplorationOption {
-    /// Disable exploration in MCTS algorithm when selecting a move.
+    /// The maximum game depth to expand the tree during simulation.
     ///
-    /// This should be used for real game play to generate strongest move.
-    case noExploration
+    /// The maximum game depth is compared with `BoardState.playedMoveCount`. Once reached, score the
+    /// board immediately. This is used to avoid infinite game plays during simulation.
+    let maxGameDepth: Int
 
-    /// Enable exploration in early stage of the game.
-    ///
-    /// To be specific, if the `BoardState.playedMoveCount` is no larger than the
-    /// `maximumMoveCountToExplore`, enable the / exploration to select move. This helps improving
-    /// the early stage diversity.
-    ///
-    /// This is recommended for self plays to generate training data.
-    case exploreMovesInEarlyStage(maximumMoveCountToExplore: Int)
-  }
+    public enum ExplorationOption {
+        /// Disable exploration in MCTS algorithm when selecting a move.
+        ///
+        /// This should be used for real game play to generate strongest move.
+        case noExploration
 
-  /// The configuration for exploration.
-  let explorationOption: ExplorationOption
+        /// Enable exploration in early stage of the game.
+        ///
+        /// To be specific, if the `BoardState.playedMoveCount` is no larger than the
+        /// `maximumMoveCountToExplore`, enable the / exploration to select move. This helps improving
+        /// the early stage diversity.
+        ///
+        /// This is recommended for self plays to generate training data.
+        case exploreMovesInEarlyStage(maximumMoveCountToExplore: Int)
+    }
 
-  // The default value, 1600, for `simulationCountForOneMove` was the number used by the AlphaGoZero
-  // paper.
-  //
-  // If `maxGameDepth` is `nil`, it will be set to (gameConfiguration.size)^2 * 1.4 according to the
-  // MiniGo reference model, i.e., 505 moves for 19x19, 113 for 9x9. The AlphaGo paper chooses 2.0
-  // instead of 1.4.
-  public init(
-    gameConfiguration: GameConfiguration,
-    simulationCountForOneMove: Int = 1600,
-    maxGameDepth: Int? = nil,
-    explorationOption: ExplorationOption = .noExploration
-  ) {
-    self.gameConfiguration = gameConfiguration
+    /// The configuration for exploration.
+    let explorationOption: ExplorationOption
 
-    precondition(simulationCountForOneMove > 0)
-    self.simulationCountForOneMove = simulationCountForOneMove
+    // The default value, 1600, for `simulationCountForOneMove` was the number used by the AlphaGoZero
+    // paper.
+    //
+    // If `maxGameDepth` is `nil`, it will be set to (gameConfiguration.size)^2 * 1.4 according to the
+    // MiniGo reference model, i.e., 505 moves for 19x19, 113 for 9x9. The AlphaGo paper chooses 2.0
+    // instead of 1.4.
+    public init(
+        gameConfiguration: GameConfiguration,
+        simulationCountForOneMove: Int = 1600,
+        maxGameDepth: Int? = nil,
+        explorationOption: ExplorationOption = .noExploration
+        ) {
+        self.gameConfiguration = gameConfiguration
 
-    let maxGameDepthValue = maxGameDepth ??
-      Int(Float(gameConfiguration.size * gameConfiguration.size) * 1.4)
-    precondition(maxGameDepthValue > 0)
-    self.maxGameDepth = maxGameDepthValue
+        precondition(simulationCountForOneMove > 0)
+        self.simulationCountForOneMove = simulationCountForOneMove
 
-    self.explorationOption = explorationOption
-  }
+        let maxGameDepthValue = maxGameDepth ??
+            Int(Float(gameConfiguration.size * gameConfiguration.size) * 1.4)
+        precondition(maxGameDepthValue > 0)
+        self.maxGameDepth = maxGameDepthValue
+
+        self.explorationOption = explorationOption
+    }
 }

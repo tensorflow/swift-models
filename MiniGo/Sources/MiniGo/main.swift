@@ -19,9 +19,9 @@ let boardSize = 19
 let simulationCountForOneMove = 40
 
 let gameConfiguration = GameConfiguration(
-  size: boardSize,
-  komi: 6.5,
-  isVerboseDebuggingEnabled: false)
+    size: boardSize,
+    komi: 6.5,
+    isVerboseDebuggingEnabled: false)
 
 // Creates the GoModel and loads the checkpoint.
 print("Loading checkpoint into GoModel. Might take a while.")
@@ -38,13 +38,13 @@ let predictor = MCTSModelBasedPredictor(boardSize: boardSize, model: model)
 //   - HumanPolicy
 //   - MCTSPolicy
 let mctsConfiguration = MCTSConfiguration(
-  gameConfiguration: gameConfiguration,
-  simulationCountForOneMove: simulationCountForOneMove)
+    gameConfiguration: gameConfiguration,
+    simulationCountForOneMove: simulationCountForOneMove)
 
 try playOneGame(
-  gameConfiguration: gameConfiguration,
-  participants: [
-    MCTSPolicy(participantName: "black", predictor: predictor, configuration: mctsConfiguration),
-    MCTSPolicy(participantName: "white", predictor: predictor, configuration: mctsConfiguration),
-  ])
+    gameConfiguration: gameConfiguration,
+    participants: [
+        MCTSPolicy(participantName: "black", predictor: predictor, configuration: mctsConfiguration),
+        MCTSPolicy(participantName: "white", predictor: predictor, configuration: mctsConfiguration),
+    ])
 

@@ -15,71 +15,71 @@
 /// A policy asking the user to provide the next move.
 public class HumanPolicy: Policy {
 
-  public let participantName: String
+    public let participantName: String
 
-  public init(participantName: String) {
-      self.participantName = participantName
-  }
-
-  public func nextMove(for boardState: BoardState, after previousMove: Move?) -> Move {
-    let legalMoves = boardState.legalMoves
-    guard !legalMoves.isEmpty else {
-      return .pass
+    public init(participantName: String) {
+        self.participantName = participantName
     }
 
-    func validator(_ position: Position) throws {
-      guard legalMoves.contains(position) else {
-        throw HumanInputError.invalidInput(message: "The move is not legal.")
-      }
+    public func nextMove(for boardState: BoardState, after previousMove: Move?) -> Move {
+        let legalMoves = boardState.legalMoves
+        guard !legalMoves.isEmpty else {
+            return .pass
+        }
+
+        func validator(_ position: Position) throws {
+            guard legalMoves.contains(position) else {
+                throw HumanInputError.invalidInput(message: "The move is not legal.")
+            }
+        }
+        guard let position = promptAndReadMove(validatingWith: validator) else {
+            return .pass
+        }
+        return .place(position: position)
     }
-    guard let position = promptAndReadMove(validatingWith: validator) else {
-      return .pass
-    }
-    return .place(position: position)
-  }
 }
 
 enum HumanInputError: Error {
-  case emptyInput
-  case invalidInput(message: String)
+    case emptyInput
+    case invalidInput(message: String)
 }
 
 /// Gets the next move from user via stdio.
 fileprivate func promptAndReadMove(validatingWith validator: (Position) throws -> ()) -> Position? {
-  while true {
-    do {
-      print("Your input (x: -1, y: -1) means `pass`:")
-      print("x: ", terminator: "")
-      let x = try readCoordinate()
-      print("y: ", terminator: "")
-      let y = try readCoordinate()
+    while true {
+        do {
+            print("Your input (x: -1, y: -1) means `pass`:")
+            print("x: ", terminator: "")
+            let x = try readCoordinate()
+            print("y: ", terminator: "")
+            let y = try readCoordinate()
 
-      if x == -1 && y == -1 {
-        return nil  // User chooses `pass`.
-      }
+            if x == -1 && y == -1 {
+                return nil  // User chooses `pass`.
+            }
 
-      let position = Position(x: x, y: y)
-      try validator(position)
-      return position
-    } catch let HumanInputError.invalidInput(message) {
-      print("The input is invalid: \(message)")
-      print("Please try again!")
-    } catch HumanInputError.emptyInput {
-      print("Empty input is now allowed.")
-      print("Please try again!")
-    } catch {
-      print("Unknown error: \(error)")
-      print("Please try again!")
+            let position = Position(x: x, y: y)
+            try validator(position)
+            return position
+        } catch let HumanInputError.invalidInput(message) {
+            print("The input is invalid: \(message)")
+            print("Please try again!")
+        } catch HumanInputError.emptyInput {
+            print("Empty input is now allowed.")
+            print("Please try again!")
+        } catch {
+            print("Unknown error: \(error)")
+            print("Please try again!")
+        }
     }
-  }
 }
 
 fileprivate func readCoordinate() throws -> Int {
-  guard let line = readLine() else {
-    throw HumanInputError.emptyInput
-  }
-  guard let coordinate = Int(line) else {
-    throw HumanInputError.invalidInput(message: "Coordinate must be Int.")
-  }
-  return coordinate
+    guard let line = readLine() else {
+        throw HumanInputError.emptyInput
+    }
+    guard let coordinate = Int(line) else {
+        throw HumanInputError.invalidInput(message: "Coordinate must be Int.")
+    }
+    return coordinate
 }
