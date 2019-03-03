@@ -56,7 +56,7 @@ public struct MCTSConfiguration {
         simulationCountForOneMove: Int = 1600,
         maxGameDepth: Int? = nil,
         explorationOption: ExplorationOption = .noExploration
-        ) {
+    ) {
         self.gameConfiguration = gameConfiguration
 
         precondition(simulationCountForOneMove > 0)

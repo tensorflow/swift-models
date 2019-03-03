@@ -89,7 +89,7 @@ public struct BoardState {
         history: [Board],
         board: Board,
         libertyTracker: LibertyTracker
-        ) {
+    ) {
         self.gameConfiguration = gameConfiguration
         self.nextPlayerColor = nextPlayerColor
         self.playedMoveCount = playedMoveCount
@@ -142,7 +142,7 @@ public struct BoardState {
             ko: self.ko,
             libertyTracker: self.libertyTracker,
             nextPlayerColor: self.nextPlayerColor
-            ) {
+        ) {
             throw reason
         }
 
@@ -224,7 +224,7 @@ extension Board {
         ko: Position?,
         libertyTracker: LibertyTracker,
         nextPlayerColor: Color
-        ) -> [Position] {
+    ) -> [Position] {
         var legalMoves = Array<Position>()
         for x in 0..<self.size {
             for y in 0..<self.size {
@@ -250,7 +250,7 @@ extension Board {
         ko: Position?,
         libertyTracker: LibertyTracker,
         nextPlayerColor: Color
-        ) -> PositionStatus {
+    ) -> PositionStatus {
         guard self.color(at: position) == nil else { return .illegal(reason: .occupied) }
         guard position != ko else { return .illegal(reason: .ko) }
 
@@ -271,7 +271,7 @@ extension Board {
         at position: Position,
         libertyTracker: LibertyTracker,
         nextPlayerColor: Color
-        ) -> Bool {
+    ) -> Bool {
         var possibleLiberties = Set<Position>()
 
         for neighbor in position.neighbors(boardSize: self.size) {
@@ -387,7 +387,7 @@ extension Board {
     /// `borders` will be empty.
     fileprivate func territoryAndBorders(
         startingFrom position: Position
-        ) -> (territory: Set<Position>, borders: Set<Position>) {
+    ) -> (territory: Set<Position>, borders: Set<Position>) {
         precondition(self.color(at: position) == nil)
 
         var territory = Set<Position>()
