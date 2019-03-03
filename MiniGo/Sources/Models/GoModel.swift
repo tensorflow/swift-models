@@ -48,7 +48,8 @@ struct ConvBN: Layer {
         strides: (Int, Int) = (1, 1),
         padding: Padding,
         bias: Bool = true,
-        affine: Bool = true) {
+        affine: Bool = true
+    ) {
         // TODO(jekbradbury): thread through bias and affine boolean arguments
         // (behavior is correct for inference but this should be changed for training)
         self.conv = Conv2D(filterShape: filterShape, strides: strides, padding: padding)

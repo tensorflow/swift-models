@@ -46,7 +46,7 @@ class MCTSNode {
         boardSize: Int,
         boardState: BoardState,
         distribution: MCTSPrediction.Distribution
-        ) {
+    ) {
         self.boardSize = boardSize
         self.boardState = boardState
 
@@ -143,7 +143,8 @@ extension MCTSNode {
                     actionValue += $0.qValueTotal / Float(visitedCount)
                 }
                 return actionValue
-        }).move
+            }
+        ).move
     }
 }
 
@@ -153,7 +154,7 @@ extension MCTSNode {
     private func maxScoringElement<T>(
         _ elements: [T],
         withScoringFunction scoringFunction: (T) -> Float
-        ) -> T {
+    ) -> T {
         precondition(elements.count > 0)
         var candidateIndexes = [0]
         var highestValue = scoringFunction(elements[0])

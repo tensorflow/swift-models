@@ -34,7 +34,7 @@ public struct GameConfiguration {
         komi: Float,
         maxHistoryCount: Int = 7,
         isVerboseDebuggingEnabled: Bool = false
-        ) {
+    ) {
         self.size = size
         self.komi = komi
         self.maxHistoryCount = maxHistoryCount

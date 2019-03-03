@@ -110,7 +110,7 @@ extension LibertyTracker {
             color: color,
             stone: position,
             liberties: emptyNeighbors
-            ).id
+        ).id
 
         // Merging all friend groups.
         for friendGroupID in friendlyNeighboringGroupIDs {
@@ -196,7 +196,7 @@ extension LibertyTracker {
         color: Color,
         stone: Position,
         liberties: Set<Position>
-        ) -> LibertyGroup {
+    ) -> LibertyGroup {
         let newID = assignNewGroupID()
         let newGroup = LibertyGroup(id: newID, color: color, stones: [stone], liberties: liberties)
 
