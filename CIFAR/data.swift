@@ -38,20 +38,21 @@ func loadBatches(from file: String, in directory: String = ".")
 }
 
 func loadTrainingBatches() -> (Tensor<Int32>, Tensor<Float>) {
-  let data = (1..<6).map { loadBatches(from: "data_batch_\($0)") }
-  return (Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.0 }),
-  Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.1 }))
+    let data = (1..<6).map { loadBatches(from: "data_batch_\($0)") }
+    return (Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.0 }),
+    Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.1 }))
 }
 
 func loadTestBatches() -> (Tensor<Int32>, Tensor<Float>) {
-  return loadBatches(from: "test_batch")
+    return loadBatches(from: "test_batch")
 }
 
 extension Dataset where Element == TensorPair<Tensor<Int32>, Tensor<Float>> {
-  init(fromTuple: (Tensor<Int32>, Tensor<Float>)) {
-    self = zip(Dataset<Tensor<Int32>>(elements: fromTuple.0),
-               Dataset<Tensor<Float>>(elements: fromTuple.1))
-  }
+    init(fromTuple: (Tensor<Int32>, Tensor<Float>)) {
+        self = zip(
+            Dataset<Tensor<Int32>>(elements: fromTuple.0),
+            Dataset<Tensor<Float>>(elements: fromTuple.1))
+    }
 }
 
 public func loadCIFAR10() -> (
