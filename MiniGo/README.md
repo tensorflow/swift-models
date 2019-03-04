@@ -1,45 +1,48 @@
 # MiniGo
 
-This folder is the Swift ([S4TF]) verison of the [MiniGo] game. It has been
-reimplemented from the MLPerf reference model.
+This is an implementation of [MiniGo] using [Swift for TensorFlow].
+The implementation is adapted from the
+[MLPerf reference model](https://github.com/mlperf/training/tree/master/reinforcement).
 
 > Note: Due to temporary limitations, we only support inference (self-play)
 > for now. We hope to soon lift these restrictions.
 
-In order to use this code, first download a pre-trained set of weights from
-the MiniGo project. Then compile the code and run it locally! You can change
-around parameters like the board size, and the number of simulations per
-move by modifying constants at the top of `Sources/MiniGo/main.swift`.
+In order to run this code, first download a pre-trained checkpoint from the
+MiniGo project. Then, compile the code and run it locally. Parameters like
+"board size" and "simulations per move" are defined as constants at the top of
+[`Sources/MiniGo/main.swift`](https://github.com/tensorflow/swift-models/blob/stable/MiniGo/Sources/MiniGo/main.swift)
+and can be modified.
 
-## To Get a MiniGo Checkpoint
+## Getting started
 
-Currently the inference uses a pre-trained checkpoint. To get it, run
+### Install Swift for TensorFlow
 
-    mkdir -p MiniGo
-    gsutil cp gs://minigo-pub/v15-19x19/models/000939-heron.* MiniGo/
+Building MiniGo requires a Swift for TensorFlow toolchain.
+To get a toolchain, you can:
 
-## To Compile and Run
+1. [Download a pre-built package](https://github.com/tensorflow/swift/blob/master/Installation.md).
+2. [Compile a toolchain from source](https://github.com/apple/swift/tree/tensorflow#building-swift-for-tensorflow).
 
-To compile and run the code, make sure you have the latest S4TF toolchain (see
-next section).
+### Restore a MiniGo checkpoint
 
-Then, follow the following steps:
+Currently, inference uses a pre-trained checkpoint. To download it, please
+install [`gsutil`](https://cloud.google.com/storage/docs/gsutil_install) and run
+the following:
 
-    swift test
-    swift run
+```sh
+mkdir -p MiniGo
+gsutil cp 'gs://minigo-pub/v15-19x19/models/000939-heron.*' MiniGo/
+```
 
-## Swift for TensorFlow Toolchain
+### Usage
 
-In order to use [Swift Package Manager][SwiftPM], a toolchain is required. You
-can
+```sh
+# Run inference (self-play).
+swift run -Xlinker -ltensorflow
+# Run unit tests.
+swift test -Xlinker -ltensorflow
+```
 
-1. download the pre-built package from [official
-   site](https://github.com/tensorflow/swift/blob/master/Installation.md)
-2. [compile the toolchain](https://github.com/apple/swift/tree/tensorflow#building-swift-for-tensorflow)
-   on your own
-
-
-[S4TF]: https://www.tensorflow.org/swift/
-[SwiftPM]: https://swift.org/package-manager/
+[Swift for TensorFlow]: https://www.tensorflow.org/swift
 [MiniGo]: https://github.com/mlperf/training/blob/master/reinforcement/tensorflow/minigo
 
