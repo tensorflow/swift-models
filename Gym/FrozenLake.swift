@@ -18,9 +18,9 @@ import TensorFlow
 let np = Python.import("numpy")
 let gym = Python.import("gym")
 
-/// Solves the FrozenLake RL problem via Q-learning. This model does not use a
-/// neural net, and instead demonstrates Swift host-side numeric processing as
-/// well as Python integration.
+// Solves the FrozenLake RL problem via Q-learning. This model does not use a
+// neural net, and instead demonstrates Swift host-side numeric processing as
+// well as Python integration.
 
 let discountRate: Float = 0.9
 let learningRate: Float = 0.2
@@ -41,15 +41,10 @@ fileprivate extension Optional {
 }
 
 // This struct is defined so that `StateAction` can be a dictionary key
-// type. Swift tuples cannot be dictionary key types.
+// type. Swift tuples cannot conform to `Hashable`.
 struct StateAction: Equatable, Hashable {
     let state: State
     let action: Action
-}
-
-// Comparison function for conforming to Equatable protocol.
-func == (lhs: StateAction, rhs: StateAction) -> Bool {
-    return lhs.state == rhs.state && lhs.action == rhs.action
 }
 
 class Agent {
@@ -58,15 +53,15 @@ class Agent {
     /// The current training environmental state that the agent is in.
     var state: State
     /// The "action value" (expected future reward value) of a pair of state and action.
-    var values: [StateAction: Float] = [:]
+    var actionValues: [StateAction: Float] = [:]
 
-    init(environment: PythonObject) {
+    init(_ environment: PythonObject) {
         actionCount = Int(environment.action_space.n).unwrapped()
         state = State(environment.reset()).unwrapped()
     }
     
     func sampleEnvironment(
-      environment: PythonObject
+      _ environment: PythonObject
     ) -> (
       state: State,
       action: Int,
@@ -90,10 +85,10 @@ class Agent {
 
     func bestValueAndAction(state: State) -> (bestValue: Float, bestAction: Action) {
         var bestValue: Float = 0.0
-        var bestAction: Action = -1  // initialize to an invalid value
-        for action in (0..<actionCount) {
+        var bestAction: Action = -1  // Initialize to an invalid value
+        for action in 0..<actionCount {
             let stateAction = StateAction(state: state, action: action)
-            let actionValue = values[stateAction] ?? 0.0
+            let actionValue = actionValues[stateAction] ?? 0.0
             if action == 0 || bestValue < actionValue {
                 bestValue = actionValue
                 bestAction = action
@@ -106,9 +101,8 @@ class Agent {
         let (bestValue, _) = bestValueAndAction(state: nextState)
         let newValue = reward + discountRate * bestValue
         let stateAction = StateAction(state: state, action: action)
-        let oldValue = values[stateAction] ?? 0.0
-        let updatedValue = oldValue * (1-learningRate) + newValue * learningRate
-        values[stateAction] = updatedValue
+        let oldValue = actionValues[stateAction] ?? 0.0
+        actionValues[stateAction] = oldValue * (1-learningRate) + newValue * learningRate
     }
 
     func playEpisode(testEnvironment: PythonObject) -> Float {
@@ -130,14 +124,14 @@ class Agent {
 var iterationIndex = 0
 var bestReward: Float = 0.0
 let trainEnvironment = gym.make("FrozenLake-v0")
-var agent = Agent(environment: trainEnvironment)
+var agent = Agent(trainEnvironment)
 let testEnvironment = gym.make("FrozenLake-v0")
 while true {
     if iterationIndex % 100 == 0 {
         print("Running iteration \(iterationIndex)")
     }
     iterationIndex += 1
-    let (state, action, reward, nextState) = agent.sampleEnvironment(environment: trainEnvironment)
+    let (state, action, reward, nextState) = agent.sampleEnvironment(trainEnvironment)
     agent.updateActionValue(state: state, action: action, reward: reward, nextState: nextState)
 
     var testReward: Float = 0.0
