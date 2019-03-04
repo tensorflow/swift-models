@@ -6,7 +6,7 @@ let (trainingDataset, testDataset) = loadCIFAR10()
 let trainingBatches = trainingDataset.batched(Int64(batchSize))
 let testBatches = testDataset.batched(Int64(batchSize))
 
-let trainContext = Context(learningPhase: LearningPhase.training)
+let trainContext = Context(learningPhase: .training)
 let testContext = Context(learningPhase: LearningPhase.inference)
 var model = CIFARModel()
 
