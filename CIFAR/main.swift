@@ -6,8 +6,8 @@ let (trainingDataset, testDataset) = loadCIFAR10()
 let trainingBatches = trainingDataset.batched(Int64(batchSize))
 let testBatches = testDataset.batched(Int64(batchSize))
 
-let trainContext = Context(learningPhase: LearningPhase.training)
-let testContext = Context(learningPhase: LearningPhase.inference)
+let trainContext = Context(learningPhase: .training)
+let testContext = Context(learningPhase: .inference)
 var model = CIFARModel()
 
 // optimizer used in the PyTorch code

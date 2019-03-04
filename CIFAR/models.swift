@@ -46,7 +46,7 @@ public struct KerasModel : Layer {
     var dense1: Dense<Float>
     var dropout3: Dropout<Float>
     var dense2: Dense<Float>
-    public init(learningPhase: LearningPhase) {
+    public init() {
         conv1a = Conv2D<Float>(filterShape: (3, 3, 3, 32), padding: .same)
         conv1b = Conv2D<Float>(filterShape: (3, 3, 32, 32), padding: .valid)
         pool1 = MaxPool2D<Float>(
