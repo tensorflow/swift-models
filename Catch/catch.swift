@@ -19,14 +19,8 @@ import TensorFlow
 // - Adopt a more principled reinforcement learning algorithm (e.g. policy
 //   gradients). The algorithm should perform some tensor computation (not a
 //   purely table-based approach).
-// - `CatchAgent.step` calculates loss from the wrong reward. It uses the reward
-//   at time `t+1`, but should actually use the reward from time `t`. This
-//   requires saving the previous reward somehow.
-// - The current back-propagation calculation may be incorrect.
-// - It may be better to use a different initialization scheme for the layers of
-//   `CatchAgent`.
 
-var rng = ARC4RandomNumberGenerator(seed: 42)
+var rng = PhiloxRandomNumberGenerator(seed: 0xdeadbeef)
 
 extension Sequence {
     /// Returns elements' descriptions joined by a separator.
@@ -35,126 +29,71 @@ extension Sequence {
     }
 }
 
-public typealias Observation = ShapedArray<Float>
-public typealias Reward = Float
+typealias Observation = ShapedArray<Float>
+typealias Reward = Float
 
-public protocol Environment {
-    associatedtype Action : Equatable
-
-    mutating func step(
-        with action: Action
-    ) -> (observation: Observation, reward: Reward)
+protocol Environment {
+    associatedtype Action: Equatable
+    mutating func step(with action: Action) -> (observation: Observation, reward: Reward)
     mutating func reset() -> Observation
 }
 
-public protocol Agent {
-    associatedtype Action : Equatable
-
-    mutating func step(
-        with state: (observation: Observation, reward: Reward)
-    ) -> Action
+protocol Agent: AnyObject {
+    associatedtype Action: Equatable
+    func step(observation: Observation, reward: Reward) -> Action
 }
 
-public struct CatchAgent : Agent {
-    public typealias Action = CatchAction
+struct Model: Layer {
+    var layer1 = Dense<Float>(inputSize: 3, outputSize: 50, activation: sigmoid,
+                              generator: &rng)
+    var layer2 = Dense<Float>(inputSize: 50, outputSize: 3, activation: sigmoid,
+                              generator: &rng)
 
-    @usableFromInline var weight1: Tensor<Float>
-    @usableFromInline var bias1: Tensor<Float>
-    @usableFromInline var weight2: Tensor<Float>
-    @usableFromInline var bias2: Tensor<Float>
-    @usableFromInline let learningRate: Float
-}
-
-public extension CatchAgent {
-    @inlinable
-    init(learningRate: Float) {
-        weight1 = Tensor(randomNormal: [3, 50])
-        bias1 = Tensor(zeros: [1, 50])
-        weight2 = Tensor(randomNormal: [50, 3])
-        bias2 = Tensor(zeros: [1, 3])
-        self.learningRate = learningRate
+    @differentiable
+    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
+        return input.sequenced(in: context, through: layer1, layer2)
     }
+}
 
+class CatchAgent: Agent {
+    typealias Action = CatchAction
+
+    var model: Model = Model()
+    let optimizer: Adam<Model, Float>
+    let context = Context(learningPhase: .training)
+    var previousReward: Reward
+
+    init(initialReward: Reward, learningRate: Float) {
+        optimizer = Adam(learningRate: learningRate)
+        previousReward = initialReward
+    }
+}
+
+extension CatchAgent {
     /// Performs one "step" (or parameter update) based on the specified
     /// observation and reward.
-    @inline(never)
-    mutating func step(
-        with state: (observation: Observation, reward: Reward)
+    func step(
+        observation: Observation, reward: Reward
     ) -> Action {
-        // NOTE: using `self.layer1` directly causes a send error. This is
-        // likely because the function is mutating so referencing `self.layer1`
-        // produces a load.
-        // The workaround here is to:
-        // - Bind `self.layer1` to a local variable.
-        // - Perform tensor computations using the local variable.
-        // - After all computations, set `self.layer1` to the local variable.
+        defer { previousReward = reward }
 
-        // Initial setup.
-        let (observation, reward) = state
-        var weight1 = self.weight1
-        var bias1 = self.bias1
-        var weight2 = self.weight2
-        var bias2 = self.bias2
-        let learningRate = self.learningRate
+        let x = Tensor(observation).rankLifted()
+        let (ŷ, backprop) = model.appliedForBackpropagation(to: x, in: context)
+        let maxIndex = ŷ.argmax().scalarized()
 
-        // Inference.
-        let input = Tensor<Float>(observation).rankLifted()
-        let matmul1 = matmul(input, weight1)
-        let pred1 = matmul1 + bias1
-        let output1 = sigmoid(pred1)
-        let matmul2 = matmul(output1, weight2)
-        let pred2 = matmul2 + bias2
-        let output2 = sigmoid(pred2)
-        let maxIndex = output2.argmax()
+        let 𝛁loss = -log(Tensor(ŷ.max())).broadcast(like: ŷ) * previousReward
+        let (𝛁model, _) = backprop(𝛁loss)
+        optimizer.update(&model.allDifferentiableVariables, along: 𝛁model)
 
-        // Back-propagation.
-        let dOutput2 = output2 * (1 - output2)
-        let (dMatmul2, dBias2) = #adjoint(Tensor.+)(
-          matmul2, bias2, originalValue: pred2, seed: dOutput2
-        )
-        let (dOutput1, dWeight2) = #adjoint(matmul)(
-          output1, weight2, originalValue: matmul2, seed: dMatmul2
-        )
-        let (dMatmul1, dBias1) = #adjoint(Tensor.+)(
-            matmul1, bias1, originalValue: pred1, seed: dOutput1
-        )
-        let (_, dWeight1) = #adjoint(matmul)(
-          input, weight1, originalValue: matmul1, seed: dMatmul1
-        )
-
-        // Negative log loss.
-        // FIXME: Loss is calculated from the wrong reward! It should be
-        // calculated from the previous state. Fixing this is *most likely* to
-        // improve training.
-
-        // NOTE: indexing with `maxIndex` directly causes a send/receive.
-        // let loss = -log(output2.flattened()[maxIndex]) * reward
-
-        // FIXME: `output2.max()` in the line below infers to the variadic `max`
-        // function, which acts as a no-op.
-        // let loss = -log(output2.max()) * reward
-
-        let maxValue: Float = output2.max()
-        let loss = -log(Tensor(maxValue)) * reward
-
-        weight1 -= learningRate * loss * dWeight1
-        bias1 -= learningRate * loss * dBias1
-        weight2 -= learningRate * loss * dWeight2
-        bias2 -= learningRate * loss * dBias2
-
-        self.weight1 = weight1
-        self.bias1 = bias1
-        self.weight2 = weight2
-        self.bias2 = bias2
-        let action = CatchAction(rawValue: Int(maxIndex))!
-        return action
+        return CatchAction(rawValue: Int(maxIndex))!
     }
 
     /// Returns the perfect action, given an observation.
     /// If the ball is left of the paddle, returns `left`.
     /// If the ball is right of the paddle, returns `right`.
     /// Otherwise, returns `none`.
-    /// Note: This function is for reference and is not used by `CatchAgent`.
+    ///
+    /// - Note: This function is for reference and is not used by `CatchAgent`.
     func perfectAction(for observation: Observation) -> Action {
         let paddleX = observation.scalars[0]
         let ballX = observation.scalars[1]
@@ -174,27 +113,27 @@ public extension CatchAgent {
     }
 }
 
-public enum CatchAction : Int {
+enum CatchAction: Int {
     case none
     case left
     case right
 }
 
-public struct Position : Equatable, Hashable {
-    public var x: Int
-    public var y: Int
+struct Position: Equatable, Hashable {
+    var x: Int
+    var y: Int
 }
 
-public struct CatchEnvironment : Environment {
-    public typealias Action = CatchAction
-    public let rowCount: Int
-    public let columnCount: Int
-    public var ballPosition: Position
-    public var paddlePosition: Position
+struct CatchEnvironment: Environment {
+    typealias Action = CatchAction
+    let rowCount: Int
+    let columnCount: Int
+    var ballPosition: Position
+    var paddlePosition: Position
 }
 
-public extension CatchEnvironment {
-    init(rowCount: Int, columnCount: Int, seed: UInt32? = nil) {
+extension CatchEnvironment {
+    init(rowCount: Int, columnCount: Int) {
         self.rowCount = rowCount
         self.columnCount = columnCount
         self.ballPosition = Position(x: 0, y: 0)
@@ -216,12 +155,12 @@ public extension CatchEnvironment {
         }
         ballPosition.y += 1
         // Get reward.
-        let currentReward = reward()
+        let currentReward = reward
         // Return observation and reward.
         if ballPosition.y == rowCount {
             return (reset(), currentReward)
         }
-        return (observation(), currentReward)
+        return (observation, currentReward)
     }
 
     /// Resets the ball to be in a random column in the first row, and resets
@@ -231,7 +170,7 @@ public extension CatchEnvironment {
         let randomColumn = Int.random(in: 0..<columnCount, using: &rng)
         ballPosition = Position(x: randomColumn, y: 0)
         paddlePosition = Position(x: columnCount / 2, y: rowCount - 1)
-        return observation()
+        return observation
     }
 
     /// If the ball is in the bottom row:
@@ -239,7 +178,7 @@ public extension CatchEnvironment {
     ///   less than or equal to 1.
     /// - Otherwise, returns -1.
     /// If the ball is not in the bottom row, returns 0.
-    func reward() -> Float {
+    var reward: Float {
         if ballPosition.y == rowCount {
             return abs(ballPosition.x - paddlePosition.x) <= 1 ? 1 : -1
         }
@@ -247,7 +186,7 @@ public extension CatchEnvironment {
     }
 
     /// Returns an obeservation of the game grid.
-    func observation() -> Observation {
+    var observation: Observation {
         return ShapedArray<Float>(
             shape: [3],
             scalars: [Float(ballPosition.x) / Float(columnCount),
@@ -260,54 +199,50 @@ public extension CatchEnvironment {
     /// positions of the ball and paddle, which are 1.
     var grid: ShapedArray<Float> {
         var result = ShapedArray<Float>(shape: [rowCount, columnCount], repeating: 0)
-        result[ballPosition.y][ballPosition.x] = ShapedArraySlice(1 as Float)
-        result[paddlePosition.y][paddlePosition.x] = ShapedArraySlice(1 as Float)
+        result[ballPosition.y][ballPosition.x] = ShapedArraySlice<Float>(1)
+        result[paddlePosition.y][paddlePosition.x] = ShapedArraySlice<Float>(1)
         return result
     }
 }
 
-extension CatchEnvironment : CustomStringConvertible {
-    public var description: String {
+extension CatchEnvironment: CustomStringConvertible {
+    var description: String {
         return grid.description(joinedBy: "\n")
     }
 }
 
-public func main() {
-    // Setup environment and agent.
-    var environment = CatchEnvironment(rowCount: 5, columnCount: 5)
-    var action: CatchAction = .none
-    var agent = CatchAgent(learningRate: 0.01)
+// Setup environment and agent.
+var environment = CatchEnvironment(rowCount: 5, columnCount: 5)
+var action: CatchAction = .none
+var agent = CatchAgent(initialReward: environment.reward, learningRate: 0.05)
 
-    var gameCount = 0
-    var winCount = 0
-    var totalWinCount = 0
-    let maxIterations = 1000
-    repeat {
-        // NOTE: the next line is the only one running tensor code.
-        let state = environment.step(with: action)
-        action = agent.step(with: state)
+var gameCount = 0
+var winCount = 0
+var totalWinCount = 0
+let maxIterations = 5000
+repeat {
+    let (observation, reward) = environment.step(with: action)
+    action = agent.step(observation: observation, reward: reward)
 
-        if !state.reward.isZero {
-            print("Game \(gameCount)", state.reward)
-            gameCount += 1
-            if state.reward > 0 {
-                winCount += 1
-                totalWinCount += 1
-            }
-            if gameCount % 20 == 0 {
-                print("Win rate (last 20 games): \(Float(winCount) / 20)")
-                print("""
-                    Win rate (total): \
-                    \(Float(totalWinCount) / Float(gameCount)) \
-                    [\(totalWinCount)/\(gameCount)]
-                    """)
-                winCount = 0
-            }
+    if !reward.isZero {
+        gameCount += 1
+        if reward > 0 {
+            winCount += 1
+            totalWinCount += 1
         }
-    } while gameCount < maxIterations
-    print("""
-        Win rate (final): \(Float(totalWinCount) / Float(gameCount)) \
-        [\(totalWinCount)/\(gameCount)]
-        """)
-}
-main()
+        if gameCount % 10 == 0 {
+            print("Win rate (last 20 games): \(Float(winCount) / 20)")
+            print("""
+                  Win rate (total): \
+                  \(Float(totalWinCount) / Float(gameCount)) \
+                  [\(totalWinCount)/\(gameCount)]
+                  """)
+            winCount = 0
+        }
+    }
+} while gameCount < maxIterations
+
+print("""
+      Win rate (final): \(Float(totalWinCount) / Float(gameCount)) \
+      [\(totalWinCount)/\(gameCount)]
+      """)
