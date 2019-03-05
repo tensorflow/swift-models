@@ -20,9 +20,8 @@ public struct PyTorchModel : Layer {
     }
     @differentiable
     public func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        return input.sequenced(
-            in: context,
-            through: conv1, pool, conv2, pool, flatten, dense1, dense2, dense3)
+        let convolved = input.sequenced(in: context, through: conv1, pool, conv2, pool)
+        return convolved.sequenced(in: context, through: flatten, dense1, dense2, dense3)
     }
 }
 
@@ -56,9 +55,8 @@ public struct KerasModel : Layer {
     }
     @differentiable(wrt: (self, input))
     public func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        return input.sequenced(
-            in: context,
-            through: conv2a, conv1b, pool1, dropout1, conv2a, conv2b, pool2, dropout2, flatten,
-              dense1, dropout3, dense2)
+        let conv1 = input.sequenced(in: context, through: conv1a, conv1b, pool1, dropout1)
+        let conv2 = conv1.sequenced(in: context, through: conv2a, conv2b, pool2, dropout2)
+        return conv2.sequenced(in: context, through: flatten, dense1, dropout3, dense2)
     }
 }
