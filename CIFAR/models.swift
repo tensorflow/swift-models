@@ -19,16 +19,16 @@ public struct PyTorchModel : Layer {
         dense3 = Dense<Float>(inputSize: 84, outputSize: 10, activation: { $0 })
     }
     @differentiable
-    public func applied(to input: Tensor<Float>) -> Tensor<Float> {
+    public func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
         var tmp = input
-        tmp = pool.applied(to: relu(conv1.applied(to: tmp)))
-        tmp = pool.applied(to: relu(conv2.applied(to: tmp)))
+        tmp = pool.applied(to: relu(conv1.applied(to: tmp, in: context)), in: context)
+        tmp = pool.applied(to: relu(conv2.applied(to: tmp, in: context)), in: context)
         let batchSize = tmp.shape[0]
         tmp = tmp.reshaped(
             toShape: Tensor<Int32>([batchSize, Int32(16 * 5 * 5)]))
-        tmp = dense1.applied(to: tmp)
-        tmp = dense2.applied(to: tmp)
-        tmp = dense3.applied(to: tmp)
+        tmp = dense1.applied(to: tmp, in: context)
+        tmp = dense2.applied(to: tmp, in: context)
+        tmp = dense3.applied(to: tmp, in: context)
         return tmp
     }
 }
@@ -46,38 +46,35 @@ public struct KerasModel : Layer {
     var dense1: Dense<Float>
     var dropout3: Dropout<Float>
     var dense2: Dense<Float>
-    public init(learningPhaseIndicator: LearningPhaseIndicator) {
+    public init() {
         conv1a = Conv2D<Float>(filterShape: (3, 3, 3, 32), padding: .same)
         conv1b = Conv2D<Float>(filterShape: (3, 3, 32, 32), padding: .valid)
         pool1 = MaxPool2D<Float>(
             poolSize: (2, 2), strides: (2, 2), padding: .valid)
-        dropout1 = Dropout<Float>(
-            probability: 0.25, learningPhaseIndicator: learningPhaseIndicator)
+        dropout1 = Dropout<Float>(probability: 0.25)
         conv2a = Conv2D<Float>(filterShape: (3, 3, 32, 64), padding: .same)
         conv2b = Conv2D<Float>(filterShape: (3, 3, 64, 64), padding: .same)
         pool2 = MaxPool2D<Float>(
             poolSize: (2, 2), strides: (2, 2), padding: .valid)
-        dropout2 = Dropout<Float>(
-            probability: 0.25, learningPhaseIndicator: learningPhaseIndicator)
+        dropout2 = Dropout<Float>(probability: 0.25)
         dense1 = Dense<Float>(
             inputSize: 64 * 7 * 7, outputSize: 512, activation: relu)
-        dropout3 = Dropout<Float>(
-            probability: 0.5, learningPhaseIndicator: learningPhaseIndicator)
+        dropout3 = Dropout<Float>(probability: 0.5)
         dense2 = Dense<Float>(
             inputSize: 512, outputSize: 10, activation: { $0 })
     }
     @differentiable
-    public func applied(to input: Tensor<Float>) -> Tensor<Float> {
+    public func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
         var tmp = input
-        tmp = relu(conv1b.applied(to: relu(conv1a.applied(to: tmp))))
-        tmp = dropout1.applied(to: pool1.applied(to: tmp))
-        tmp = relu(conv2b.applied(to: relu(conv2a.applied(to: tmp))))
-        tmp = dropout2.applied(to: pool2.applied(to: tmp))
+        tmp = relu(conv1b.applied(to: relu(conv1a.applied(to: tmp, in: context)), in: context))
+        tmp = dropout1.applied(to: pool1.applied(to: tmp, in: context), in: context)
+        tmp = relu(conv2b.applied(to: relu(conv2a.applied(to: tmp, in: context)), in: context))
+        tmp = dropout2.applied(to: pool2.applied(to: tmp, in: context), in: context)
         let batchSize = tmp.shape[0]
         tmp = tmp.reshaped(
             toShape: Tensor<Int32>([batchSize, Int32(64 * 7 * 7)]))
-        tmp = dropout3.applied(to: dense1.applied(to: tmp))
-        tmp = dense2.applied(to: tmp)
+        tmp = dropout3.applied(to: dense1.applied(to: tmp, in: context), in: context)
+        tmp = dense2.applied(to: tmp, in: context)
         return tmp
     }
 }
@@ -85,10 +82,8 @@ public struct KerasModel : Layer {
 public typealias CIFARModel = PyTorchModel
 
 @differentiable(wrt: model)
-public func loss(model: CIFARModel, images: Tensor<Float>, labels: Tensor<Int32>)
+public func loss(model: CIFARModel, images: Tensor<Float>, labels: Tensor<Int32>, in context: Context)
     -> Tensor<Float> {
-    let logits = model.applied(to: images)
-    let oneHotLabels = Tensor<Float>(
-        oneHotAtIndices: labels, depth: logits.shape[1])
-    return softmaxCrossEntropy(logits: logits, labels: oneHotLabels)
+    let logits = model.applied(to: images, in: context)
+    return softmaxCrossEntropy(logits: logits, labels: labels)
 }

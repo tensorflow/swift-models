@@ -6,8 +6,9 @@ let (trainingDataset, testDataset) = loadCIFAR10()
 let trainingBatches = trainingDataset.batched(Int64(batchSize))
 let testBatches = testDataset.batched(Int64(batchSize))
 
-let learningPhaseIndicator = LearningPhaseIndicator()
-var model = CIFARModel() // learningPhaseIndicator: LearningPhaseIndicator)
+let trainContext = Context(learningPhase: .training)
+let testContext = Context(learningPhase: .inference)
+var model = CIFARModel()
 
 // optimizer used in the PyTorch code
 let optimizer = SGD<CIFARModel, Float>(learningRate: 0.001, momentum: 0.9)
@@ -16,14 +17,13 @@ let optimizer = SGD<CIFARModel, Float>(learningRate: 0.001, momentum: 0.9)
 
 for epoch in 1...10 {
     print("Epoch \(epoch), training...")
-    learningPhaseIndicator.training = true
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
     for batch in trainingBatches {
         let gradients = gradient(at: model) {
             (model: CIFARModel) -> Tensor<Float> in
             let thisLoss = loss(
-                model: model, images: batch.second, labels: batch.first)
+                model: model, images: batch.second, labels: batch.first, in: trainContext)
             trainingLossSum += thisLoss.scalarized()
             trainingBatchCount += 1
             return thisLoss
@@ -32,12 +32,11 @@ for epoch in 1...10 {
     }
     print("  average loss: \(trainingLossSum / Float(trainingBatchCount))")
     print("Epoch \(epoch), evaluating on test set...")
-    learningPhaseIndicator.training = false
     var testLossSum: Float = 0
     var testBatchCount = 0
     for batch in testBatches {
         testLossSum += loss(
-        model: model, images: batch.second, labels: batch.first).scalarized()
+        model: model, images: batch.second, labels: batch.first, in: testContext).scalarized()
         testBatchCount += 1
     }
     print("  average loss: \(testLossSum / Float(testBatchCount))")
