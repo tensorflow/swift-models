@@ -19,12 +19,9 @@ for epoch in 1...10 {
     let trainingShuffled = trainingDataset.shuffled(sampleCount: 50000, randomSeed: Int64(epoch))
     for batch in trainingShuffled.batched(Int64(batchSize)) {
         let (labels, images) = (batch.first, batch.second)
-        let gradients = gradient(at: model) {
-            (model) -> Tensor<Float> in
+        let gradients = gradient(at: model) { model -> Tensor<Float> in
             let logits = model.applied(to: images, in: Context(learningPhase: .training))
-            let oneHotLabels = Tensor<Float>(
-                oneHotAtIndices: labels, depth: logits.shape[1])
-            let loss = softmaxCrossEntropy(logits: logits, labels: oneHotLabels)
+            let loss = softmaxCrossEntropy(logits: logits, labels: labels)
             trainingLossSum += loss.scalarized()
             trainingBatchCount += 1
             return loss
@@ -37,10 +34,8 @@ for epoch in 1...10 {
     var testBatchCount = 0
     for batch in testBatches {
         let (labels, images) = (batch.first, batch.second)
-        let logits = model.applied(to: images, in: Context(learningPhase: .inference))
-        let oneHotLabels = Tensor<Float>(
-            oneHotAtIndices: labels, depth: logits.shape[1])
-        testLossSum += softmaxCrossEntropy(logits: logits, labels: oneHotLabels).scalarized()
+        let logits = model.inferring(from: images)
+        testLossSum += softmaxCrossEntropy(logits: logits, labels: labels).scalarized()
         testBatchCount += 1
     }
     print("  average loss: \(testLossSum / Float(testBatchCount))")
