@@ -2,22 +2,14 @@ import TensorFlow
 
 // Ported from pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
 public struct PyTorchModel : Layer {
-    var conv1: Conv2D<Float>
-    var pool: MaxPool2D<Float>
-    var conv2: Conv2D<Float>
-    var flatten: Flatten<Float>
-    var dense1: Dense<Float>
-    var dense2: Dense<Float>
-    var dense3: Dense<Float>
-    public init() {
-        conv1 = Conv2D(filterShape: (5, 5, 3, 6), activation: relu)
-        pool = MaxPool2D(poolSize: (2, 2), strides: (2, 2))
-        conv2 = Conv2D(filterShape: (5, 5, 6, 16), activation: relu)
-        flatten = Flatten()
-        dense1 = Dense(inputSize: 16 * 5 * 5, outputSize: 120, activation: relu)
-        dense2 = Dense(inputSize: 120, outputSize: 84, activation: relu)
-        dense3 = Dense(inputSize: 84, outputSize: 10, activation: identity)
-    }
+    var conv1 = Conv2D<Float>(filterShape: (5, 5, 3, 6), activation: relu)
+    var pool = MaxPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
+    var conv2 = Conv2D<Float>(filterShape: (5, 5, 6, 16), activation: relu)
+    var flatten = Flatten<Float>()
+    var dense1 = Dense<Float>(inputSize: 16 * 6 * 5, outputSize: 120, activation: relu)
+    var dense2 = Dense<Float>(inputSize: 120, outputSize: 84, activation: relu)
+    var dense3 = Dense<Float>(inputSize: 84, outputSize: 10, activation: identity)
+
     @differentiable
     public func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
         let convolved = input.sequenced(in: context, through: conv1, pool, conv2, pool)
@@ -27,32 +19,19 @@ public struct PyTorchModel : Layer {
 
 // Ported from github.com/keras-team/keras/blob/master/examples/cifar10_cnn.py
 public struct KerasModel : Layer {
-    var conv1a: Conv2D<Float>
-    var conv1b: Conv2D<Float>
-    var pool1: MaxPool2D<Float>
-    var dropout1: Dropout<Float>
-    var conv2a: Conv2D<Float>
-    var conv2b: Conv2D<Float>
-    var pool2: MaxPool2D<Float>
-    var dropout2: Dropout<Float>
-    var flatten: Flatten<Float>
-    var dense1: Dense<Float>
-    var dropout3: Dropout<Float>
-    var dense2: Dense<Float>
-    public init() {
-        conv1a = Conv2D(filterShape: (3, 3, 3, 32), padding: .same, activation: relu)
-        conv1b = Conv2D(filterShape: (3, 3, 32, 32),activation: relu)
-        pool1 = MaxPool2D(poolSize: (2, 2), strides: (2, 2))
-        dropout1 = Dropout(probability: 0.25)
-        conv2a = Conv2D(filterShape: (3, 3, 32, 64), padding: .same, activation: relu)
-        conv2b = Conv2D(filterShape: (3, 3, 64, 64), activation: relu)
-        pool2 = MaxPool2D(poolSize: (2, 2), strides: (2, 2))
-        dropout2 = Dropout(probability: 0.25)
-        flatten = Flatten()
-        dense1 = Dense(inputSize: 64 * 6 * 6, outputSize: 512, activation: relu)
-        dropout3 = Dropout(probability: 0.5)
-        dense2 = Dense(inputSize: 512, outputSize: 10, activation: identity)
-    }
+    var conv1a = Conv2D<Float>(filterShape: (3, 3, 3, 32), padding: .same, activation: relu)
+    var conv1b = Conv2D<Float>(filterShape: (3, 3, 32, 32), activation: relu)
+    var pool1 = MaxPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
+    var dropout1 = Dropout<Float>(probability: 0.25)
+    var conv2a = Conv2D<Float>(filterShape: (3, 3, 32, 64), padding: .same, activation: relu)
+    var conv2b = Conv2D<Float>(filterShape: (3, 3, 64, 64), activation: relu))
+    var pool2 = MaxPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
+    var dropout2 = Dropout<Float>(probability: 0.25)
+    var flatten = Flatten<Float>()
+    var dense1 = Dense<Float>(inputSize: 64 * 6 * 6, outputSize: 512, activation: relu)
+    var dropout3 = Dropout<Float>(probability: 0.5)
+    var dense2 = Dense<Float>(inputSize: 512, outputSize: 10, activation: identity)
+
     @differentiable(wrt: (self, input))
     public func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
         let conv1 = input.sequenced(in: context, through: conv1a, conv1b, pool1, dropout1)
