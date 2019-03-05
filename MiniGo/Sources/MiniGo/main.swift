@@ -20,7 +20,7 @@ let simulationCountForOneMove = 40
 
 let gameConfiguration = GameConfiguration(
     size: boardSize,
-    komi: 6.5,
+    komi: 7.5,
     isVerboseDebuggingEnabled: false)
 
 // Creates the GoModel and loads the checkpoint.
