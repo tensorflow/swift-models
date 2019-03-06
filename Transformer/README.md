@@ -1,4 +1,4 @@
-# MiniGo
+# Transformer
 
 This is an implementation of [OpenAI's GPT-2 Transformer language model](github.com/openai/gpt-2) using [Swift for TensorFlow](github.com/tensorflow/swift).
 
