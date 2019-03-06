@@ -12,8 +12,11 @@ let start_token = Int32(encoder.encoder["<|endoftext|>"])!
 var tokens = Tensor(shape: [1, 1], scalars: [start_token])
 var temperature = Float(1.0)
 
-if CommandLine.arguments.count == 3 {
+if CommandLine.arguments.count >= 2 {
     temperature = Float(CommandLine.arguments[1])!
+}
+
+if CommandLine.arguments.count == 3 {
     let seed = CommandLine.arguments[2]
     print(seed, terminator: "")
     let pytok = encoder.encode(seed)
