@@ -7,7 +7,7 @@ using the included `download_model.sh` script. Then, compile using `swiftc`:
 
 ```sh
 bash download_model.sh
-swiftc -O Operators.swift Model.swift PythonCheckpointReader.swift main.swift
+swiftc -O -ltensorflow Operators.swift Model.swift PythonCheckpointReader.swift main.swift
 ```
 
 You can now sample from the model either unconditionally:
