@@ -19,13 +19,12 @@ for epoch in 1...10 {
     let trainingShuffled = trainingDataset.shuffled(sampleCount: 50000, randomSeed: Int64(epoch))
     for batch in trainingShuffled.batched(Int64(batchSize)) {
         let (labels, images) = (batch.first, batch.second)
-        let gradients = gradient(at: model) { model -> Tensor<Float> in
+        let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
             let logits = model.applied(to: images, in: Context(learningPhase: .training))
-            let loss = softmaxCrossEntropy(logits: logits, labels: labels)
-            trainingLossSum += loss.scalarized()
-            trainingBatchCount += 1
-            return loss
+            return softmaxCrossEntropy(logits: logits, labels: labels)
         }
+        trainingLossSum += loss.scalarized()
+        trainingBatchCount += 1
         optimizer.update(&model.allDifferentiableVariables, along: gradients)
     }
     print("  average loss: \(trainingLossSum / Float(trainingBatchCount))")
