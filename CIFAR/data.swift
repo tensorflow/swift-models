@@ -1,7 +1,9 @@
 import Python
 import TensorFlow
 
-func maybeDownload(to directory: String = ".") {
+/// Use Python and shell calls to download and extract the CIFAR-10 tarball if not already done
+/// This can fail for many reasons (e.g. lack of `wget`, `tar`, or an Internet connection)
+func downloadCIFAR10IfNotPresent(to directory: String = ".") {
     let subprocess = Python.import("subprocess")
     let path = Python.import("os.path")
     let filepath = "\(directory)/cifar-10-batches-py"
@@ -13,12 +15,12 @@ func maybeDownload(to directory: String = ".") {
     }
 }
 
-func loadBatches(from file: String, in directory: String = ".")
-    -> (Tensor<Int32>, Tensor<Float>) {
-    maybeDownload(to: directory)
+// Each CIFAR data file is provided as a Python pickle of NumPy arrays
+func loadCIFARFile(filename: String, in directory: String = ".") -> (Tensor<Int32>, Tensor<Float>) {
+    downloadCIFAR10IfNotPresent(to: directory)
     let np = Python.import("numpy")
     let pickle = Python.import("pickle")
-    let path = "\(directory)/cifar-10-batches-py/\(file)"
+    let path = "\(directory)/cifar-10-batches-py/\(filename)"
     let f = Python.open(path, "rb")
     let res = pickle.load(f, encoding: "bytes")
 
@@ -37,21 +39,23 @@ func loadBatches(from file: String, in directory: String = ".")
     return (Tensor<Int32>(labelTensor), imageTensor / Float(255.0))
 }
 
-func loadTrainingBatches() -> (Tensor<Int32>, Tensor<Float>) {
-    let data = (1..<6).map { loadBatches(from: "data_batch_\($0)") }
-    return (Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.0 }),
-    Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.1 }))
+func loadCIFARTrainingFiles() -> (Tensor<Int32>, Tensor<Float>) {
+    let data = (1..<6).map { loadCIFARFile(filename: "data_batch_\($0)") }
+    return (
+        Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.0 }),
+        Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.1 })
+    )
 }
 
-func loadTestBatches() -> (Tensor<Int32>, Tensor<Float>) {
-    return loadBatches(from: "test_batch")
+func loadCIFARTestFile() -> (Tensor<Int32>, Tensor<Float>) {
+    return loadCIFARFile(filename: "test_batch")
 }
 
 extension Dataset where Element == TensorPair<Tensor<Int32>, Tensor<Float>> {
-    init(fromTuple: (Tensor<Int32>, Tensor<Float>)) {
+    init(_ tuple: (Tensor<Int32>, Tensor<Float>)) {
         self = zip(
-            Dataset<Tensor<Int32>>(elements: fromTuple.0),
-            Dataset<Tensor<Float>>(elements: fromTuple.1))
+            Dataset<Tensor<Int32>>(elements: tuple.0),
+            Dataset<Tensor<Float>>(elements: tuple.1))
     }
 }
 
@@ -59,8 +63,7 @@ public func loadCIFAR10() -> (
     Dataset<TensorPair<Tensor<Int32>, Tensor<Float>>>,
     Dataset<TensorPair<Tensor<Int32>, Tensor<Float>>>) {
     let trainingDataset = Dataset<TensorPair<Tensor<Int32>, Tensor<Float>>>(
-        fromTuple: loadTrainingBatches())
-    let testDataset = Dataset<TensorPair<Tensor<Int32>, Tensor<Float>>>(
-        fromTuple: loadTestBatches())
+        loadCIFARTrainingFiles())
+    let testDataset = Dataset<TensorPair<Tensor<Int32>, Tensor<Float>>>(loadCIFARTestFile())
     return (trainingDataset, testDataset)
 }
