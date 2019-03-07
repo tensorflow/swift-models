@@ -1,13 +1,13 @@
 # Transformer
 
-This is an implementation of [OpenAI's GPT-2 Transformer language model](github.com/openai/gpt-2) using [Swift for TensorFlow](github.com/tensorflow/swift).
+This is an implementation of [OpenAI's GPT-2 Transformer language model](https://github.com/openai/gpt-2) using [Swift for TensorFlow](https://github.com/tensorflow/swift).
 
 In order to run this code, first download a pre-trained checkpoint from OpenAI
 using the included `download_model.sh` script. Then, compile using `swiftc`:
 
 ```sh
 bash download_model.sh
-swiftc -O Operators.swift Model.swift PythonCheckpointReader.swift main.swift
+swiftc -O -ltensorflow Operators.swift Model.swift PythonCheckpointReader.swift main.swift
 ```
 
 You can now sample from the model either unconditionally:
