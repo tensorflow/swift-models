@@ -26,7 +26,7 @@ public class MCTSRandomPredictor: MCTSPredictor {
 
     public func prediction(for boardState: BoardState) -> MCTSPrediction {
         let distribution = MCTSPrediction.Distribution(
-            positions: ShapedArray<Float>(shape: [boardSize, boardSize], repeating: 1.0),
+            positions: ShapedArray<Float>(repeating: 1.0, shape: [boardSize, boardSize]),
             pass: 1.0)
 
         // Randomize the reward (range: 0.0 +/- 0.05).

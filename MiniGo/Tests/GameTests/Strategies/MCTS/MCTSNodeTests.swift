@@ -32,7 +32,7 @@ final class MCTSNodeTests: XCTestCase {
             boardSize: boardSize,
             boardState: boardState,
             distribution: MCTSPrediction.Distribution(
-                positions: ShapedArray<Float>(shape: [boardSize, boardSize], repeating: 1.0),
+                positions: ShapedArray<Float>(repeating: 1.0, shape: [boardSize, boardSize]),
                 pass: 1.0))
 
         // All actions have equal prior values. So, with 100 runs, we should see they are randomly
@@ -57,7 +57,7 @@ extension MCTSNodeTests {
             boardSize: boardSize,
             boardState: boardState,
             distribution: MCTSPrediction.Distribution(
-                positions: ShapedArray<Float>(shape: [boardSize, boardSize], repeating: 1.0),
+                positions: ShapedArray<Float>(repeating: 1.0, shape: [boardSize, boardSize]),
                 pass: 1.0))
 
         node.backUp(for: .place(position: Position(x: 1, y: 0)), withRewardForBlackPlayer: 100.0)
