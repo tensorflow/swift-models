@@ -16,11 +16,11 @@ func downloadCIFAR10IfNotPresent(to directory: String = ".") {
 }
 
 // Each CIFAR data file is provided as a Python pickle of NumPy arrays
-func loadCIFARFile(filename: String, in directory: String = ".") -> (Tensor<Int32>, Tensor<Float>) {
+func loadCIFARFile(named name: String, in directory: String = ".") -> (Tensor<Int32>, Tensor<Float>) {
     downloadCIFAR10IfNotPresent(to: directory)
     let np = Python.import("numpy")
     let pickle = Python.import("pickle")
-    let path = "\(directory)/cifar-10-batches-py/\(filename)"
+    let path = "\(directory)/cifar-10-batches-py/\(name)"
     let f = Python.open(path, "rb")
     let res = pickle.load(f, encoding: "bytes")
 
@@ -40,7 +40,7 @@ func loadCIFARFile(filename: String, in directory: String = ".") -> (Tensor<Int3
 }
 
 func loadCIFARTrainingFiles() -> (Tensor<Int32>, Tensor<Float>) {
-    let data = (1..<6).map { loadCIFARFile(filename: "data_batch_\($0)") }
+    let data = (1..<6).map { loadCIFARFile(named: "data_batch_\($0)") }
     return (
         Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.0 }),
         Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.1 })
