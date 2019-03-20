@@ -19,7 +19,7 @@ eg.
 which swift
 /usr/bin/swift (this is the wrong path)
 ````
-The swift binary should be in the most updated toolchain bin path eg. 
+The swift binary should be referencing the most updated toolchain bin path eg. 
 ````shell
 export PATH="/Library/Developer/Toolchains/swift-latest/usr/bin/:$PATH"
 which swift
