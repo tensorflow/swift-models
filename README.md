@@ -11,7 +11,7 @@ For general information about Swift for TensorFlow development, please visit
 [tensorflow/swift](https://github.com/tensorflow/swift).
 
 
-## Troubleshooting - ##
+## macOS Troubleshooting - ##
 If you see tensorflow not found when building samples from command line,
 make sure you've added the correct version of `swift` to your path.
 eg. 
