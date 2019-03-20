@@ -10,6 +10,23 @@ As new packages are released, `master` is pushed to `stable`.
 For general information about Swift for TensorFlow development, please visit
 [tensorflow/swift](https://github.com/tensorflow/swift).
 
+
+## Troubleshooting - ##
+If you see tensorflow not found when building samples from command line,
+make sure you've added the correct version of `swift` to your path.
+eg. 
+````shell
+which swift
+/usr/bin/swift (this is the wrong path)
+````
+The swift binary should be in the most updated toolchain bin path eg. 
+````shell
+export PATH="/Library/Developer/Toolchains/swift-latest/usr/bin/:$PATH"
+which swift
+/Library/Developer/Toolchains/swift-latest/usr/bin/swift
+````
+
+
 ## Bugs
 
 Please report model-related bugs and feature requests using GitHub issues in
