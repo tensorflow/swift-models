@@ -11,13 +11,13 @@ For general information about Swift for TensorFlow development, please visit
 [tensorflow/swift](https://github.com/tensorflow/swift).
 
 
-## macOS Troubleshooting - ##
-If you see tensorflow not found when building samples from command line,
+## macOS Troubleshooting
+If you see ``TensorFlow not found`` when building samples from command line,
 make sure you've added the correct version of `swift` to your path.
 eg. 
 ````shell
 which swift
-/usr/bin/swift (this is the wrong path)
+/usr/bin/swift # This is the wrong path!
 ````
 The swift binary should be referencing the most updated toolchain bin path eg. 
 ````shell
