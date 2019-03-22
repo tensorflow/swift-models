@@ -25,7 +25,7 @@ which swift
 /usr/bin/swift # This is the wrong path!
 ```
 The swift binary should be referencing the most updated toolchain bin path eg. 
-````shell
+```shell
 export PATH="/Library/Developer/Toolchains/swift-latest/usr/bin/:$PATH"
 which swift
 /Library/Developer/Toolchains/swift-latest/usr/bin/swift
