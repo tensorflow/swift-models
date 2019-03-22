@@ -12,10 +12,10 @@ For general information about Swift for TensorFlow development, please visit
 
 
 ## macOS Troubleshooting
-If you see ``TensorFlow not found`` when building samples from command line,
+If you see `TensorFlow not found` when building samples from command line,
 make sure you've added the correct version of `swift` to your path.
 eg. 
-````shell
+```shell
 which swift
 /usr/bin/swift # This is the wrong path!
 ````
@@ -24,7 +24,7 @@ The swift binary should be referencing the most updated toolchain bin path eg.
 export PATH="/Library/Developer/Toolchains/swift-latest/usr/bin/:$PATH"
 which swift
 /Library/Developer/Toolchains/swift-latest/usr/bin/swift
-````
+```
 
 
 ## Bugs
