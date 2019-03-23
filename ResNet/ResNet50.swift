@@ -210,7 +210,7 @@ for _ in 0..<10 {
     let gradients = gradient(at: resnet) { model -> Tensor<Float> in
         let logits = model.applied(to: fakeImageBatch, in: context)
         let oneHotLabels = Tensor<Float>(oneHotAtIndices: fakeLabelBatch, depth: logits.shape[1])
-        return softmaxCrossEntropy(logits: logits, labels: oneHotLabels)
+        return softmaxCrossEntropy(logits: logits, oneHotLabels: oneHotLabels)
     }
     optimizer.update(&resnet.allDifferentiableVariables, along: gradients)
 }
