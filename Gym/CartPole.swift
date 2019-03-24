@@ -183,7 +183,7 @@ while true {
     let gradients = gradient(at: net) { model -> Tensor<Float> in
         let context = Context(learningPhase: .training)
         let logits = model.applied(to: input, in: context)
-        let loss = softmaxCrossEntropy(logits: logits, labels: target)
+        let loss = softmaxCrossEntropy(logits: logits, oneHotLabels: target)
         print("loss is \(loss)")
         return loss
     }
