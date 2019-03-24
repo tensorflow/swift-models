@@ -30,28 +30,46 @@ func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>
     let images = readFile(imagesFile).dropFirst(16).map { Float($0) }
     let labels = readFile(labelsFile).dropFirst(8).map { Int32($0) }
     let rowCount = Int32(labels.count)
-    let columnCount = Int32(images.count) / rowCount
+    let imgRows : Int32 = 28, imgCols : Int32 = 28
 
     print("Constructing data tensors.")
     return (
-        images: Tensor(shape: [rowCount, columnCount], scalars: images) / 255,
+        images: Tensor(shape: [rowCount, 1, imgRows, imgCols], scalars: images)
+		              .transposed(withPermutations: [0, 2, 3, 1]) / 255, // TF: NHWC
         labels: Tensor(labels)
     )
 }
 
 /// A classifier.
 struct Classifier: Layer {
-    var layer1 = Dense<Float>(inputSize: 784, outputSize: 30, activation: relu)
-    var layer2 = Dense<Float>(inputSize: 30, outputSize: 10, activation: relu)
+    /// original: https://github.com/keras-team/keras/blob/master/examples/mnist_cnn.py
+    var conv1a = Conv2D<Float>(filterShape: (3, 3, 1, 32), activation: relu)
+    var conv1b = Conv2D<Float>(filterShape: (3, 3, 32, 64), activation: relu)
+    var pool1 = MaxPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
+
+    var dropout1a = Dropout<Float>(probability: 0.25)
+    var flatten = Flatten<Float>()
+    var layer1a = Dense<Float>(inputSize: 9216, outputSize: 128, activation: relu)
+    var dropout1b = Dropout<Float>(probability: 0.5)
+    var layer1b = Dense<Float>(inputSize: 128, outputSize: 10, activation: softmax)
 
     @differentiable
     func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        return layer2.applied(to: layer1.applied(to: input, in: context), in: context)
+        var tmp = input
+        tmp = conv1a.applied(to: tmp, in: context)
+        tmp = conv1b.applied(to: tmp, in: context)
+        tmp = pool1.applied(to: tmp, in: context)
+        tmp = dropout1a.applied(to: tmp, in: context)
+        tmp = flatten.applied(to: tmp, in: context)
+        tmp = layer1a.applied(to: tmp, in: context)
+        tmp = dropout1b.applied(to: tmp, in: context)
+        tmp = layer1b.applied(to: tmp, in: context)
+        return tmp
     }
 }
 
-let epochCount = 20
-let batchSize = 20
+let epochCount = 12
+let batchSize = 100
 
 func minibatch<Scalar>(in x: Tensor<Scalar>, at index: Int) -> Tensor<Scalar> {
     let start = Int32(index * batchSize)
@@ -64,7 +82,7 @@ let labels = Tensor<Float>(oneHotAtIndices: numericLabels, depth: 10)
 
 var classifier = Classifier()
 let context = Context(learningPhase: .training)
-let optimizer = SGD<Classifier, Float>(learningRate: 0.02)
+let optimizer = RMSProp(for: classifier, scalarType: Float.self)
 
 // The training loop.
 for epoch in 0..<epochCount {
