@@ -6,7 +6,7 @@ sys.path = sys.path + ["."]
 let encoder = Python.import("encoder").get_encoder("117M")
 
 let checkpoint = "models/117M/model.ckpt"
-let model = TransformerLM(from: checkpoint, withScope: "model")
+let model = TransformerLM(contentsOfPythonCheckpointFile: checkpoint, scope: "model")
 
 let start_token = Int32(encoder.encoder["<|endoftext|>"])!
 var tokens = Tensor(shape: [1, 1], scalars: [start_token])
@@ -28,7 +28,7 @@ let empty = Tensor<Float>(
     zeros: [Int32(config.headCount), 0, Int32(config.embeddingSize / config.headCount)])
 var states = (0..<config.layerCount).map { _ in AttentionContext(key: empty, value: empty) }
 
-for t in 0..<100 {
+for _ in 0..<100 {
     let logits = model.applied(to: tokens, states: &states, in: Context(learningPhase: .inference))
     let (batchSize, timeSteps, vocabSize) = (logits.shape[0], logits.shape[1], logits.shape[2])
     let lastLogit = logits.slice(

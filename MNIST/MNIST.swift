@@ -64,7 +64,7 @@ let labels = Tensor<Float>(oneHotAtIndices: numericLabels, depth: 10)
 
 var classifier = Classifier()
 let context = Context(learningPhase: .training)
-let optimizer = SGD<Classifier, Float>(learningRate: 0.2)
+let optimizer = SGD<Classifier, Float>(learningRate: 0.02)
 
 // The training loop.
 for epoch in 0..<epochCount {

@@ -260,7 +260,7 @@ struct Embedding: Differentiable {
 
     @differentiable(wrt: self)
     func applied(to input: Tensor<Int32>, in context: Context) -> Tensor<Float> {
-        return weight.gathering(at: input)
+        return weight.gathering(atIndices: input)
     }
 }
 
@@ -278,7 +278,7 @@ struct TransformerLM {
         let positions = (0..<tokens.shape[1]).map {$0 + states[0].key.shape[1]}
         let positionsTensor = Tensor<Int32>(shape: [1, tokens.shape[1]], scalars: positions)
         var h = embedding.applied(to: tokens, in: context)
-        h = h + positionalEmbeddings.gathering(at: positionsTensor)
+        h = h + positionalEmbeddings.gathering(atIndices: positionsTensor)
         for i in 0..<layers.count {
             h = layers[i].applied(to: h, state: &states[i], in: context)
         }
