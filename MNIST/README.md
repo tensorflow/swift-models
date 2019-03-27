@@ -1,7 +1,7 @@
 # MNIST
 
-This directory builds a two-layer perceptron to classify the [MNIST
-dataset](http://yann.lecun.com/exdb/mnist/).
+This directory builds a simple convolutional neural network to classify the 
+[MNIST dataset](http://yann.lecun.com/exdb/mnist/).
 
 ## Setup
 
