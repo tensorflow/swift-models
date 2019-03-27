@@ -6,7 +6,7 @@ public struct PyTorchModel: Layer {
     var pool = MaxPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
     var conv2 = Conv2D<Float>(filterShape: (5, 5, 6, 16), activation: relu)
     var flatten = Flatten<Float>()
-    var dense1 = Dense<Float>(inputSize: 16 * 6 * 5, outputSize: 120, activation: relu)
+    var dense1 = Dense<Float>(inputSize: 16 * 5 * 5, outputSize: 120, activation: relu)
     var dense2 = Dense<Float>(inputSize: 120, outputSize: 84, activation: relu)
     var dense3 = Dense<Float>(inputSize: 84, outputSize: 10, activation: identity)
 
