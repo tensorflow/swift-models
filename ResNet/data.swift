@@ -48,7 +48,7 @@ func loadCIFARTrainingFiles() -> (Tensor<Int32>, Tensor<Float>) {
 }
 
 func loadCIFARTestFile() -> (Tensor<Int32>, Tensor<Float>) {
-    return loadCIFARFile(filename: "test_batch")
+    return loadCIFARFile(named: "test_batch")
 }
 
 extension Dataset where Element == TensorPair<Tensor<Int32>, Tensor<Float>> {
