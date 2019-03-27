@@ -30,19 +30,18 @@ func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>
     let images = readFile(imagesFile).dropFirst(16).map { Float($0) }
     let labels = readFile(labelsFile).dropFirst(8).map { Int32($0) }
     let rowCount = Int32(labels.count)
-    let imgRows : Int32 = 28, imgCols : Int32 = 28
+    let imageHeight: Int32 = 28, imageWidth: Int32 = 28
 
     print("Constructing data tensors.")
     return (
-        images: Tensor(shape: [rowCount, 1, imgRows, imgCols], scalars: images)
-		              .transposed(withPermutations: [0, 2, 3, 1]) / 255, // TF: NHWC
+        images: Tensor(shape: [rowCount, 1, imageHeight, imageWidth], scalars: images)
+          .transposed(withPermutations: [0, 2, 3, 1]) / 255, // NHWC
         labels: Tensor(labels)
     )
 }
 
 /// A classifier.
 struct Classifier: Layer {
-    /// original: https://github.com/keras-team/keras/blob/master/examples/mnist_cnn.py
     var conv1a = Conv2D<Float>(filterShape: (3, 3, 1, 32), activation: relu)
     var conv1b = Conv2D<Float>(filterShape: (3, 3, 32, 64), activation: relu)
     var pool1 = MaxPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
@@ -82,7 +81,7 @@ let labels = Tensor<Float>(oneHotAtIndices: numericLabels, depth: 10)
 
 var classifier = Classifier()
 let context = Context(learningPhase: .training)
-let optimizer = RMSProp(for: classifier, scalarType: Float.self)
+let optimizer = RMSProp<Classifier, Float>()
 
 // The training loop.
 for epoch in 0..<epochCount {
