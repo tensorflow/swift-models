@@ -13,5 +13,5 @@ Python 2.7), `wget`, and numpy.
 To train the default model, run:
 
 ```
-swift -O models.swift data.swift main.swift
+cat models.swift data.swift main.swift | swift -O -
 ```
