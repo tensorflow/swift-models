@@ -36,7 +36,11 @@ func loadCIFARFile(named name: String, in directory: String = ".") -> (Tensor<In
         .reshaped(to: [imageCount, 3, 32, 32])
         .transposed(withPermutations: [0, 2, 3, 1]))
 
-    return (Tensor<Int32>(labelTensor), imageTensor / Float(255.0))
+    let mean = Tensor<Float>([0.485, 0.456, 0.406])
+    let std  = Tensor<Float>([0.229, 0.224, 0.225])
+    let imagesNormalized = ((imageTensor / 255.0) - mean) / std
+
+    return (Tensor<Int32>(labelTensor), imagesNormalized)
 }
 
 func loadCIFARTrainingFiles() -> (Tensor<Int32>, Tensor<Float>) {
