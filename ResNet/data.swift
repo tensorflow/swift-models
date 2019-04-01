@@ -57,8 +57,9 @@ func loadCIFARTestFile() -> Example {
     return loadCIFARFile(named: "test_batch")
 }
 
-public func loadCIFAR10() -> (Dataset<Example>, Dataset<Example>) {
+public func loadCIFAR10() -> (
+    training: Dataset<Example>, test: Dataset<Example>) {
     let trainingDataset = Dataset<Example>(elements: loadCIFARTrainingFiles())
     let testDataset = Dataset<Example>(elements: loadCIFARTestFile())
-    return (trainingDataset, testDataset)
+    return (training: trainingDataset, test: testDataset)
 }

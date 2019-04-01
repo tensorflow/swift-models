@@ -2,8 +2,8 @@ import TensorFlow
 
 let batchSize: Int32 = 100
 
-let (trainingDataset, testDataset) = loadCIFAR10()
-let testBatches = testDataset.batched(Int64(batchSize))
+let cifarDataset = loadCIFAR10()
+let testBatches = cifarDataset.test.batched(Int64(batchSize))
 
 //var model = ResNet20()
 //var model = PyTorchModel()
@@ -18,7 +18,8 @@ print("Starting training...")
 for epoch in 1...100 {
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
-    let trainingShuffled = trainingDataset.shuffled(sampleCount: 50000, randomSeed: Int64(epoch))
+    let trainingShuffled = cifarDataset.training.shuffled(
+        sampleCount: 50000, randomSeed: Int64(epoch))
     for batch in trainingShuffled.batched(Int64(batchSize)) {
         let (labels, images) = (batch.label, batch.data)
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
