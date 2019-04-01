@@ -55,7 +55,7 @@ func loadCIFARTestFile() -> (Tensor<Int32>, Tensor<Float>) {
     return loadCIFARFile(named: "test_batch")
 }
 
-extension Dataset where Element == TensorPair<Tensor<Int32>, Tensor<Float>> {
+extension Dataset where Element == Zip2TensorGroup<Tensor<Int32>, Tensor<Float>> {
     init(_ tuple: (Tensor<Int32>, Tensor<Float>)) {
         self = zip(
             Dataset<Tensor<Int32>>(elements: tuple.0),
@@ -64,10 +64,10 @@ extension Dataset where Element == TensorPair<Tensor<Int32>, Tensor<Float>> {
 }
 
 public func loadCIFAR10() -> (
-    Dataset<TensorPair<Tensor<Int32>, Tensor<Float>>>,
-    Dataset<TensorPair<Tensor<Int32>, Tensor<Float>>>) {
-    let trainingDataset = Dataset<TensorPair<Tensor<Int32>, Tensor<Float>>>(
+    Dataset<Zip2TensorGroup<Tensor<Int32>, Tensor<Float>>>,
+    Dataset<Zip2TensorGroup<Tensor<Int32>, Tensor<Float>>>) {
+    let trainingDataset = Dataset<Zip2TensorGroup<Tensor<Int32>, Tensor<Float>>>(
         loadCIFARTrainingFiles())
-    let testDataset = Dataset<TensorPair<Tensor<Int32>, Tensor<Float>>>(loadCIFARTestFile())
+    let testDataset = Dataset<Zip2TensorGroup<Tensor<Int32>, Tensor<Float>>>(loadCIFARTestFile())
     return (trainingDataset, testDataset)
 }
