@@ -15,8 +15,13 @@ func downloadCIFAR10IfNotPresent(to directory: String = ".") {
     }
 }
 
+public struct Example: TensorGroup {
+    var label: Tensor<Int32>
+    var data: Tensor<Float>
+}
+
 // Each CIFAR data file is provided as a Python pickle of NumPy arrays
-func loadCIFARFile(named name: String, in directory: String = ".") -> (Tensor<Int32>, Tensor<Float>) {
+func loadCIFARFile(named name: String, in directory: String = ".") -> Example {
     downloadCIFAR10IfNotPresent(to: directory)
     let np = Python.import("numpy")
     let pickle = Python.import("pickle")
@@ -40,33 +45,23 @@ func loadCIFARFile(named name: String, in directory: String = ".") -> (Tensor<In
     let std  = Tensor<Float>([0.229, 0.224, 0.225])
     let imagesNormalized = ((imageTensor / 255.0) - mean) / std
 
-    return (Tensor<Int32>(labelTensor), imagesNormalized)
+    return Example(label: Tensor<Int32>(labelTensor), data: imagesNormalized)
 }
 
-func loadCIFARTrainingFiles() -> (Tensor<Int32>, Tensor<Float>) {
+func loadCIFARTrainingFiles() -> Example {
     let data = (1..<6).map { loadCIFARFile(named: "data_batch_\($0)") }
-    return (
-        Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.0 }),
-        Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.1 })
+    return Example(
+        label: Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.label }),
+        data: Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.data })
     )
 }
 
-func loadCIFARTestFile() -> (Tensor<Int32>, Tensor<Float>) {
+func loadCIFARTestFile() -> Example {
     return loadCIFARFile(named: "test_batch")
 }
 
-public typealias Example = Zip2TensorGroup<Tensor<Int32>, Tensor<Float>>
-
-extension Dataset where Element == Example {
-    init(_ tuple: (Tensor<Int32>, Tensor<Float>)) {
-        self = zip(
-            Dataset<Tensor<Int32>>(elements: tuple.0),
-            Dataset<Tensor<Float>>(elements: tuple.1))
-    }
-}
-
 public func loadCIFAR10() -> (Dataset<Example>, Dataset<Example>) {
-    let trainingDataset = Dataset<Example>(loadCIFARTrainingFiles())
-    let testDataset = Dataset<Example>(loadCIFARTestFile())
+    let trainingDataset = Dataset<Example>(elements: loadCIFARTrainingFiles())
+    let testDataset = Dataset<Example>(elements: loadCIFARTestFile())
     return (trainingDataset, testDataset)
 }
