@@ -15,8 +15,13 @@ func downloadCIFAR10IfNotPresent(to directory: String = ".") {
     }
 }
 
+struct Example: TensorGroup {
+    var label: Tensor<Int32>
+    var data: Tensor<Float>
+}
+
 // Each CIFAR data file is provided as a Python pickle of NumPy arrays
-func loadCIFARFile(named name: String, in directory: String = ".") -> (Tensor<Int32>, Tensor<Float>) {
+func loadCIFARFile(named name: String, in directory: String = ".") -> Example {
     downloadCIFAR10IfNotPresent(to: directory)
     let np = Python.import("numpy")
     let pickle = Python.import("pickle")
@@ -36,34 +41,25 @@ func loadCIFARFile(named name: String, in directory: String = ".") -> (Tensor<In
         .reshaped(to: [imageCount, 3, 32, 32])
         .transposed(withPermutations: [0, 2, 3, 1]))
 
-    return (Tensor<Int32>(labelTensor), imageTensor / Float(255.0))
+    return Example(
+        label: Tensor<Int32>(labelTensor), data: imageTensor / Float(255.0))
 }
 
-func loadCIFARTrainingFiles() -> (Tensor<Int32>, Tensor<Float>) {
+func loadCIFARTrainingFiles() -> Example {
     let data = (1..<6).map { loadCIFARFile(named: "data_batch_\($0)") }
-    return (
-        Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.0 }),
-        Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.1 })
+    return Example(
+        label: Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.label }),
+        data: Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.data })
     )
 }
 
-func loadCIFARTestFile() -> (Tensor<Int32>, Tensor<Float>) {
+func loadCIFARTestFile() -> Example {
     return loadCIFARFile(named: "test_batch")
 }
 
-extension Dataset where Element == TensorPair<Tensor<Int32>, Tensor<Float>> {
-    init(_ tuple: (Tensor<Int32>, Tensor<Float>)) {
-        self = zip(
-            Dataset<Tensor<Int32>>(elements: tuple.0),
-            Dataset<Tensor<Float>>(elements: tuple.1))
-    }
-}
-
-public func loadCIFAR10() -> (
-    Dataset<TensorPair<Tensor<Int32>, Tensor<Float>>>,
-    Dataset<TensorPair<Tensor<Int32>, Tensor<Float>>>) {
-    let trainingDataset = Dataset<TensorPair<Tensor<Int32>, Tensor<Float>>>(
-        loadCIFARTrainingFiles())
-    let testDataset = Dataset<TensorPair<Tensor<Int32>, Tensor<Float>>>(loadCIFARTestFile())
-    return (trainingDataset, testDataset)
+func loadCIFAR10() -> (
+    training: Dataset<Example>, test: Dataset<Example>) {
+    let trainingDataset = Dataset<Example>(elements: loadCIFARTrainingFiles())
+    let testDataset = Dataset<Example>(elements: loadCIFARTestFile())
+    return (training: trainingDataset, test: testDataset)
 }
