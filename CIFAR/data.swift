@@ -15,7 +15,7 @@ func downloadCIFAR10IfNotPresent(to directory: String = ".") {
     }
 }
 
-public struct Example: TensorGroup {
+struct Example: TensorGroup {
     var label: Tensor<Int32>
     var data: Tensor<Float>
 }
@@ -60,7 +60,7 @@ func loadCIFARTestFile() -> Example {
     return loadCIFARFile(named: "test_batch")
 }
 
-public func loadCIFAR10() -> (
+func loadCIFAR10() -> (
   training: Dataset<Example>, test: Dataset<Example>) {
     let trainingDataset = Dataset<Example>(elements: loadCIFARTrainingFiles())
     let testDataset = Dataset<Example>(elements: loadCIFARTestFile())
