@@ -38,7 +38,6 @@ struct ResidualBasicBlock: Layer {
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
             strides: strides,
             padding: .same)
-
         self.layer2 = ConvBN(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.3),
             strides: strides,
@@ -57,20 +56,15 @@ struct ResidualBasicBlockShortcut: Layer {
     var layer2: ConvBN
     var shortcut: ConvBN
 
-    init(
-        featureCounts: (Int, Int, Int, Int),
-        kernelSize: Int = 3
-    ) {
+    init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3) {
         self.layer1 = ConvBN(
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
             strides: (2, 2),
             padding: .same)
-
         self.layer2 = ConvBN(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             strides: (1, 1),
             padding: .same)
-
         self.shortcut = ConvBN(
             filterShape: (1, 1, featureCounts.0, featureCounts.3),
             strides: (2, 2),
@@ -99,11 +93,9 @@ struct ResidualConvBlock: Layer {
         self.layer1 = ConvBN(
             filterShape: (1, 1, featureCounts.0, featureCounts.1),
             strides: strides)
-
         self.layer2 = ConvBN(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.layer3 = ConvBN(filterShape: (1, 1, featureCounts.2, featureCounts.3))
 
         self.shortcut = ConvBN(
@@ -128,11 +120,9 @@ struct ResidualIdentityBlock: Layer {
 
     init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3) {
         self.layer1 = ConvBN(filterShape: (1, 1, featureCounts.0, featureCounts.1))
-
         self.layer2 = ConvBN(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.layer3 = ConvBN(filterShape: (1, 1, featureCounts.2, featureCounts.3))
     }
 
@@ -142,6 +132,31 @@ struct ResidualIdentityBlock: Layer {
         tmp = relu(layer2.applied(to: tmp, in: context))
         tmp = layer3.applied(to: tmp, in: context)
         return relu(tmp + input)
+    }
+}
+
+struct ResidualIdentityBlockStack: Layer {
+    var block1: ResidualIdentityBlock
+    var block2: ResidualIdentityBlock
+    var block3: ResidualIdentityBlock
+    var block4: ResidualIdentityBlock
+    var block5: ResidualIdentityBlock
+
+    init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3) {
+        self.block1 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
+        self.block2 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
+        self.block3 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
+        self.block4 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
+        self.block5 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
+    }
+
+    @differentiable
+    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
+        var tmp = block1.applied(to: input, in: context)
+        tmp = block2.applied(to: tmp, in: context)
+        tmp = block3.applied(to: tmp, in: context)
+        tmp = block4.applied(to: tmp, in: context)
+        return block5.applied(to: tmp, in: context)
     }
 }
 
@@ -287,11 +302,7 @@ struct ResNet50: Layer {
     var l3d = ResidualIdentityBlock(featureCounts: (512, 128, 128, 512))
 
     var l4a = ResidualConvBlock(featureCounts: (512, 256, 256, 1024))
-    var l4b = ResidualIdentityBlock(featureCounts: (1024, 256, 256, 1024))
-    var l4c = ResidualIdentityBlock(featureCounts: (1024, 256, 256, 1024))
-    var l4d = ResidualIdentityBlock(featureCounts: (1024, 256, 256, 1024))
-    var l4e = ResidualIdentityBlock(featureCounts: (1024, 256, 256, 1024))
-    var l4f = ResidualIdentityBlock(featureCounts: (1024, 256, 256, 1024))
+    var l4b = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
 
     var l5a = ResidualConvBlock(featureCounts: (1024, 512, 512, 2048))
     var l5b = ResidualIdentityBlock(featureCounts: (2048, 512, 512, 2048))
@@ -330,10 +341,158 @@ struct ResNet50: Layer {
 
         tmp = l4a.applied(to: tmp, in: context)
         tmp = l4b.applied(to: tmp, in: context)
+
+        tmp = l5a.applied(to: tmp, in: context)
+        tmp = l5b.applied(to: tmp, in: context)
+        tmp = l5c.applied(to: tmp, in: context)
+
+        tmp = avgPool.applied(to: tmp, in: context)
+        tmp = flatten.applied(to: tmp, in: context)
+        return classifier.applied(to: tmp, in: context)
+    }
+}
+
+struct ResNet101: Layer {
+    var l1: ConvBN
+    var maxPool: MaxPool2D<Float>
+
+    var l2a = ResidualConvBlock(featureCounts: (64, 64, 64, 256), strides: (1, 1))
+    var l2b = ResidualIdentityBlock(featureCounts: (256, 64, 64, 256))
+    var l2c = ResidualIdentityBlock(featureCounts: (256, 64, 64, 256))
+
+    var l3a = ResidualConvBlock(featureCounts: (256, 128, 128, 512))
+    var l3b = ResidualIdentityBlock(featureCounts: (512, 128, 128, 512))
+    var l3c = ResidualIdentityBlock(featureCounts: (512, 128, 128, 512))
+    var l3d = ResidualIdentityBlock(featureCounts: (512, 128, 128, 512))
+
+    var l4a = ResidualConvBlock(featureCounts: (512, 256, 256, 1024))
+    var l4b = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
+    var l4c = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
+    var l4d = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
+    var l4e = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
+    var l4f = ResidualIdentityBlock(featureCounts: (1024, 256, 256, 1024))
+    var l4g = ResidualIdentityBlock(featureCounts: (1024, 256, 256, 1024))
+
+    var l5a = ResidualConvBlock(featureCounts: (1024, 512, 512, 2048))
+    var l5b = ResidualIdentityBlock(featureCounts: (2048, 512, 512, 2048))
+    var l5c = ResidualIdentityBlock(featureCounts: (2048, 512, 512, 2048))
+    var avgPool: AvgPool2D<Float>
+
+    var flatten = Flatten<Float>()
+    var classifier: Dense<Float>
+
+    init(imageSize: Int, classCount: Int) {
+        // default to the ImageNet case where imageSize == 224
+        // Swift requires that all properties get initialized outside control flow
+        l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
+        maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
+        avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
+        if imageSize == 32 {
+            l1 = ConvBN(filterShape: (3, 3, 3, 64), padding: .same)
+            maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1)) // no-op
+            avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
+        }
+        classifier = Dense(inputSize: 2048, outputSize: classCount)
+    }
+
+    @differentiable
+    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
+        var tmp = input
+        tmp = maxPool.applied(to: relu(l1.applied(to: input, in: context)), in: context)
+        tmp = l2a.applied(to: tmp, in: context)
+        tmp = l2b.applied(to: tmp, in: context)
+        tmp = l2c.applied(to: tmp, in: context)
+
+        tmp = l3a.applied(to: tmp, in: context)
+        tmp = l3b.applied(to: tmp, in: context)
+        tmp = l3c.applied(to: tmp, in: context)
+        tmp = l3d.applied(to: tmp, in: context)
+
+        tmp = l4a.applied(to: tmp, in: context)
+
+        tmp = l4b.applied(to: tmp, in: context)
         tmp = l4c.applied(to: tmp, in: context)
         tmp = l4d.applied(to: tmp, in: context)
         tmp = l4e.applied(to: tmp, in: context)
         tmp = l4f.applied(to: tmp, in: context)
+        tmp = l4g.applied(to: tmp, in: context)
+
+        tmp = l5a.applied(to: tmp, in: context)
+        tmp = l5b.applied(to: tmp, in: context)
+        tmp = l5c.applied(to: tmp, in: context)
+
+        tmp = avgPool.applied(to: tmp, in: context)
+        tmp = flatten.applied(to: tmp, in: context)
+        return classifier.applied(to: tmp, in: context)
+    }
+}
+
+struct ResNet152: Layer {
+    var l1: ConvBN
+    var maxPool: MaxPool2D<Float>
+
+    var l2a = ResidualConvBlock(featureCounts: (64, 64, 64, 256), strides: (1, 1))
+    var l2b = ResidualIdentityBlock(featureCounts: (256, 64, 64, 256))
+    var l2c = ResidualIdentityBlock(featureCounts: (256, 64, 64, 256))
+
+    var l3a = ResidualConvBlock(featureCounts: (256, 128, 128, 512))
+    var l3b = ResidualIdentityBlockStack(featureCounts: (512, 128, 128, 512))
+    var l3c = ResidualIdentityBlock(featureCounts: (512, 128, 128, 512))
+    var l3d = ResidualIdentityBlock(featureCounts: (512, 128, 128, 512))
+
+    var l4a = ResidualConvBlock(featureCounts: (512, 256, 256, 1024))
+    var l4b = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
+    var l4c = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
+    var l4d = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
+    var l4e = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
+    var l4f = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
+    var l4g = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
+    var l4h = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
+
+    var l5a = ResidualConvBlock(featureCounts: (1024, 512, 512, 2048))
+    var l5b = ResidualIdentityBlock(featureCounts: (2048, 512, 512, 2048))
+    var l5c = ResidualIdentityBlock(featureCounts: (2048, 512, 512, 2048))
+
+    var avgPool: AvgPool2D<Float>
+    var flatten = Flatten<Float>()
+    var classifier: Dense<Float>
+
+    init(imageSize: Int, classCount: Int) {
+        // default to the ImageNet case where imageSize == 224
+        // Swift requires that all properties get initialized outside control flow
+        l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
+        maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
+        avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
+        if imageSize == 32 {
+            l1 = ConvBN(filterShape: (3, 3, 3, 64), padding: .same)
+            maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1)) // no-op
+            avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
+        }
+        classifier = Dense(inputSize: 2048, outputSize: classCount)
+    }
+
+    @differentiable
+    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
+        var tmp = input
+        tmp = maxPool.applied(to: relu(l1.applied(to: input, in: context)), in: context)
+        tmp = l2a.applied(to: tmp, in: context)
+        tmp = l2b.applied(to: tmp, in: context)
+        tmp = l2c.applied(to: tmp, in: context)
+
+        tmp = l3a.applied(to: tmp, in: context)
+        tmp = l3b.applied(to: tmp, in: context)
+        tmp = l3c.applied(to: tmp, in: context)
+        tmp = l3d.applied(to: tmp, in: context)
+
+        tmp = l4a.applied(to: tmp, in: context)
+
+        tmp = l4b.applied(to: tmp, in: context)
+        tmp = l4c.applied(to: tmp, in: context)
+        tmp = l4d.applied(to: tmp, in: context)
+        tmp = l4e.applied(to: tmp, in: context)
+        tmp = l4f.applied(to: tmp, in: context)
+        tmp = l4g.applied(to: tmp, in: context)
+        tmp = l4h.applied(to: tmp, in: context)
 
         tmp = l5a.applied(to: tmp, in: context)
         tmp = l5b.applied(to: tmp, in: context)
