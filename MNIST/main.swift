@@ -24,11 +24,9 @@ func readFile(_ filename: String) -> [UInt8] {
     for folder in possibleFolders {
         let parent = URL(fileURLWithPath: folder)
         let filePath = parent.appendingPathComponent(filename).path
-
         guard FileManager.default.fileExists(atPath: filePath) else {
             continue
         }
-
         let d = Python.open(filePath, "rb").read()
         return Array(numpy: np.frombuffer(d, dtype: np.uint8))!
     }
