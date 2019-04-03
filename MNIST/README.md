@@ -1,6 +1,6 @@
 # MNIST
 
-This directory builds a simple convolutional neural network to classify the 
+This directory builds a simple convolutional neural network to classify the
 [MNIST dataset](http://yann.lecun.com/exdb/mnist/).
 
 ## Setup
@@ -12,5 +12,6 @@ installed. Make sure you've added the correct version of `swift` to your path.
 To train the model, run:
 
 ```
-swift -O MNIST.swift
+cd swift-models
+swift run -c release MNIST
 ```
