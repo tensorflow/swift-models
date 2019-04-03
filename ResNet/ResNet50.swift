@@ -38,7 +38,6 @@ struct ResidualBasicBlock: Layer {
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
             strides: strides,
             padding: .same)
-
         self.layer2 = ConvBN(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.3),
             strides: strides,
@@ -57,20 +56,15 @@ struct ResidualBasicBlockShortcut: Layer {
     var layer2: ConvBN
     var shortcut: ConvBN
 
-    init(
-        featureCounts: (Int, Int, Int, Int),
-        kernelSize: Int = 3
-    ) {
+    init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3) {
         self.layer1 = ConvBN(
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
             strides: (2, 2),
             padding: .same)
-
         self.layer2 = ConvBN(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             strides: (1, 1),
             padding: .same)
-
         self.shortcut = ConvBN(
             filterShape: (1, 1, featureCounts.0, featureCounts.3),
             strides: (2, 2),
@@ -99,11 +93,9 @@ struct ResidualConvBlock: Layer {
         self.layer1 = ConvBN(
             filterShape: (1, 1, featureCounts.0, featureCounts.1),
             strides: strides)
-
         self.layer2 = ConvBN(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.layer3 = ConvBN(filterShape: (1, 1, featureCounts.2, featureCounts.3))
 
         self.shortcut = ConvBN(
@@ -128,11 +120,9 @@ struct ResidualIdentityBlock: Layer {
 
     init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3) {
         self.layer1 = ConvBN(filterShape: (1, 1, featureCounts.0, featureCounts.1))
-
         self.layer2 = ConvBN(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.layer3 = ConvBN(filterShape: (1, 1, featureCounts.2, featureCounts.3))
     }
 
@@ -146,29 +136,27 @@ struct ResidualIdentityBlock: Layer {
 }
 
 struct ResidualIdentityBlockStack: Layer {
-    var layer1: ResidualIdentityBlock
-    var layer2: ResidualIdentityBlock
-    var layer3: ResidualIdentityBlock
-    var layer4: ResidualIdentityBlock
-    var layer5: ResidualIdentityBlock
+    var block1: ResidualIdentityBlock
+    var block2: ResidualIdentityBlock
+    var block3: ResidualIdentityBlock
+    var block4: ResidualIdentityBlock
+    var block5: ResidualIdentityBlock
 
     init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3) {
-        self.layer1 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
-        self.layer2 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
-        self.layer3 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
-        self.layer4 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
-        self.layer5 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
+        self.block1 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
+        self.block2 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
+        self.block3 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
+        self.block4 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
+        self.block5 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
     }
 
     @differentiable
     func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = input
-        tmp = layer1.applied(to: input, in: context))
-        tmp = layer2.applied(to: input, in: context))
-        tmp = layer3.applied(to: input, in: context))
-        tmp = layer4.applied(to: input, in: context))
-        tmp = layer5.applied(to: input, in: context))
-        return tmp
+        var tmp = block1.applied(to: input, in: context)
+        tmp = block2.applied(to: tmp, in: context)
+        tmp = block3.applied(to: tmp, in: context)
+        tmp = block4.applied(to: tmp, in: context)
+        return block5.applied(to: tmp, in: context)
     }
 }
 
