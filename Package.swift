@@ -5,6 +5,9 @@ import PackageDescription
 
 let package = Package(
     name: "TensorFlowModels",
+    products: [
+        .executable(name: "MNIST", targets: ["MNIST"]),
+    ],
     targets: [
         .target(
             name: "MNIST",
