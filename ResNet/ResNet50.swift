@@ -10,7 +10,7 @@ struct ConvBN: Layer {
     var conv: Conv2D<Float>
     var norm: BatchNorm<Float>
 
-    public init(
+    init(
         filterShape: (Int, Int, Int, Int),
         strides: (Int, Int) = (1, 1),
         padding: Padding = .valid
@@ -20,7 +20,7 @@ struct ConvBN: Layer {
     }
 
     @differentiable
-    public func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
+    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
         return norm.applied(to: conv.applied(to: input, in: context), in: context)
     }
 }
@@ -29,7 +29,7 @@ struct ResidualBasicBlock: Layer {
     var layer1: ConvBN
     var layer2: ConvBN
 
-    public init(
+    init(
         featureCounts: (Int, Int, Int, Int),
         kernelSize: Int = 3,
         strides: (Int, Int) = (1, 1)
@@ -57,7 +57,7 @@ struct ResidualBasicBlockShortcut: Layer {
     var layer2: ConvBN
     var shortcut: ConvBN
 
-    public init(
+    init(
         featureCounts: (Int, Int, Int, Int),
         kernelSize: Int = 3
     ) {
@@ -91,7 +91,7 @@ struct ResidualConvBlock: Layer {
     var layer3: ConvBN
     var shortcut: ConvBN
 
-    public init(
+    init(
         featureCounts: (Int, Int, Int, Int),
         kernelSize: Int = 3,
         strides: (Int, Int) = (2, 2)
@@ -126,7 +126,7 @@ struct ResidualIdentityBlock: Layer {
     var layer2: ConvBN
     var layer3: ConvBN
 
-    public init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3) {
+    init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3) {
         self.layer1 = ConvBN(filterShape: (1, 1, featureCounts.0, featureCounts.1))
 
         self.layer2 = ConvBN(
@@ -165,7 +165,7 @@ struct ResNet18: Layer {
     var flatten = Flatten<Float>()
     var classifier: Dense<Float>
 
-    public init(imageSize: Int, classCount: Int) {
+    init(imageSize: Int, classCount: Int) {
         // default to the ImageNet case where imageSize == 224
         // Swift requires that all properties get initialized outside control flow
         l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
@@ -180,7 +180,7 @@ struct ResNet18: Layer {
     }
 
     @differentiable
-    public func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
+    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
         var tmp = input
         tmp = maxPool.applied(to: relu(l1.applied(to: input, in: context)), in: context)
         tmp = l2a.applied(to: tmp, in: context)
@@ -229,7 +229,7 @@ struct ResNet34: Layer {
     var flatten = Flatten<Float>()
     var classifier: Dense<Float>
 
-    public init(imageSize: Int, classCount: Int) {
+    init(imageSize: Int, classCount: Int) {
         // default to the ImageNet case where imageSize == 224
         // Swift requires that all properties get initialized outside control flow
         l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
@@ -244,7 +244,7 @@ struct ResNet34: Layer {
     }
 
     @differentiable
-    public func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
+    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
         var tmp = input
         tmp = maxPool.applied(to: relu(l1.applied(to: input, in: context)), in: context)
         tmp = l2a.applied(to: tmp, in: context)
@@ -301,7 +301,7 @@ struct ResNet50: Layer {
     var flatten = Flatten<Float>()
     var classifier: Dense<Float>
 
-    public init(imageSize: Int, classCount: Int) {
+    init(imageSize: Int, classCount: Int) {
         // default to the ImageNet case where imageSize == 224
         // Swift requires that all properties get initialized outside control flow
         l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
@@ -316,7 +316,7 @@ struct ResNet50: Layer {
     }
 
     @differentiable
-    public func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
+    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
         var tmp = input
         tmp = maxPool.applied(to: relu(l1.applied(to: input, in: context)), in: context)
         tmp = l2a.applied(to: tmp, in: context)
