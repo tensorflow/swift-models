@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "Swift-Models",
+    name: "TensorFlowModels",
     targets: [
         .target(
             name: "MNIST",
