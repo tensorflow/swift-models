@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Foundation
 import TensorFlow
 import Python
 
@@ -19,8 +20,17 @@ let np = Python.import("numpy")
 
 /// Reads a file into an array of bytes.
 func readFile(_ filename: String) -> [UInt8] {
-    let d = Python.open(filename, "rb").read()
-    return Array(numpy: np.frombuffer(d, dtype: np.uint8))!
+    let possibleFolders = [".", "MNIST"]
+    for folder in possibleFolders {
+        let parent = URL(fileURLWithPath: folder)
+        let filePath = parent.appendingPathComponent(filename).path
+        guard FileManager.default.fileExists(atPath: filePath) else {
+            continue
+        }
+        let d = Python.open(filePath, "rb").read()
+        return Array(numpy: np.frombuffer(d, dtype: np.uint8))!
+    }
+    fatalError("Failed to find file with name \(filename) in following folders: \(possibleFolders)")
 }
 
 /// Reads MNIST images and labels from specified file paths.
