@@ -43,11 +43,9 @@ struct BasicBlock20: Layer {
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
             strides: strides,
             padding: .same)
-
         self.layer2 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.shortcut = Conv2DBatchNorm(
             filterShape: (1, 1, featureCounts.0, featureCounts.3),
             strides: strides,
@@ -103,19 +101,15 @@ struct BasicBlock32: Layer {
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
             strides: strides,
             padding: .same)
-
         self.layer2 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.layer3 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.layer4 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.shortcut = Conv2DBatchNorm(
             filterShape: (1, 1, featureCounts.0, featureCounts.3),
             strides: strides,
@@ -175,27 +169,21 @@ struct BasicBlock44: Layer {
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
             strides: strides,
             padding: .same)
-
         self.layer2 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.layer3 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.layer4 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.layer5 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.layer6 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.shortcut = Conv2DBatchNorm(
             filterShape: (1, 1, featureCounts.0, featureCounts.3),
             strides: strides,
@@ -259,35 +247,27 @@ struct BasicBlock56: Layer {
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
             strides: strides,
             padding: .same)
-
         self.layer2 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.layer3 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.layer4 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.layer5 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.layer6 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.layer7 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.layer8 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
             padding: .same)
-
         self.shortcut = Conv2DBatchNorm(
             filterShape: (1, 1, featureCounts.0, featureCounts.3),
             strides: strides,
