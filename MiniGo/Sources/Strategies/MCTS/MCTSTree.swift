@@ -25,12 +25,11 @@ class MCTSTree {
         self.predictor = predictor
 
         let emptyBoard = BoardState(gameConfiguration: gameConfiguration)
-        let prediction = predictor.prediction(for: emptyBoard)
 
         let newNode = MCTSNode(
-            boardSize: gameConfiguration.size,
-            boardState: emptyBoard,
-            distribution: prediction.distribution)
+            gameConfiguration: gameConfiguration,
+            predictor: predictor,
+            boardState: emptyBoard)
         root = newNode
     }
 
@@ -41,32 +40,12 @@ class MCTSTree {
             return root
         }
 
-        // Tries to find the new root if it is already one of the children of current root.
-        if let newRoot = root.children[action] {
-            root = newRoot
-            return newRoot
+        switch child(of: root, for: action) {
+        case .existingNode(let node):
+            root = node
+        case .newNode(let node, _):
+            root = node
         }
-
-        // Creates a new node and promotes it.
-        let newBoardState: BoardState
-        switch action {
-        case .pass:
-            newBoardState = root.boardState.passing()
-        case .place(let position):
-            do {
-                newBoardState = try root.boardState.placingNewStone(at: position)
-            } catch {
-                fatalError("MCTS algorithm should never emit an illegal action. Got error: \(error).")
-            }
-        }
-
-        // creates the new node by calling the predictor.
-        let prediction = predictor.prediction(for: newBoardState)
-
-        root = MCTSNode(
-            boardSize: gameConfiguration.size,
-            boardState: newBoardState,
-            distribution: prediction.distribution)
         return root
     }
 
@@ -77,31 +56,19 @@ class MCTSTree {
 
     /// Returns the child node for `action`.
     func child(of node: MCTSNode, for action: Move) -> NodeKind {
-        if let child = node.children[action] {
-            return .existingNode(node: child)
+        guard case let .stem(children) = node.kind else {
+            fatalError("The node type is not expected.")
         }
 
-        let newBoardState: BoardState
-        switch action {
-        case .pass:
-            newBoardState = node.boardState.passing()
-        case .place(let position):
-            do {
-                newBoardState = try node.boardState.placingNewStone(at: position)
-            } catch {
-                fatalError("MCTS algorithm should never emit an illegal action. Got error: \(error).")
-            }
+        guard let actionNodePair = children.first(where: { $0.action == action }) else {
+            fatalError("The action must exist for node \(node).")
         }
 
-        // Creates the new node by calling the predictor.
-        let prediction = predictor.prediction(for: newBoardState)
-
-        // TODO(xiejw): Implement noise injection for predictions.
-        let newNode = MCTSNode(
-            boardSize: gameConfiguration.size,
-            boardState: newBoardState,
-            distribution: prediction.distribution)
-        node.children[action] = newNode
-        return .newNode(node: newNode, rewardForNextPlayer: prediction.rewardForNextPlayer)
+        let node = actionNodePair.child
+        if node.statistic.totalVisitedCount == 0 {
+            return .newNode(node: node, rewardForNextPlayer: node.statistic.rewardForNextPlayer)
+        } else {
+            return .existingNode(node: node)
+        }
     }
 }

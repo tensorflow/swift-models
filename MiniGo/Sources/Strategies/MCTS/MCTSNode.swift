@@ -14,18 +14,82 @@
 
 /// Tree node for the MCTS algorithm.
 class MCTSNode {
+
+    enum Kind {
+        case stem([(action: Move, child: MCTSNode)])
+    }
+
+    // To avoid the tree grows automatically during construction, uses lazy var here.
+    lazy var kind: Kind = {
+        var actions: [Move] = [.pass]  // .pass must be the first one.
+        actions.reserveCapacity(boardState.legalMoves.count + 1)
+        boardState.legalMoves.forEach {
+            actions.append(.place(position: $0))
+        }
+
+        let children = actions.map { action -> (action: Move, child: MCTSNode) in
+            let newBoardState: BoardState
+            switch action {
+            case .pass:
+                newBoardState = boardState.passing()
+            case .place(let position):
+                do {
+                    newBoardState = try boardState.placingNewStone(at: position)
+                } catch {
+                    fatalError("MCTS algorithm should never emit an illegal action. Got error: \(error).")
+                }
+            }
+
+            let newNode = MCTSNode(
+                gameConfiguration: gameConfiguration,
+                predictor: predictor,
+                boardState: newBoardState
+            )
+            return (action, newNode)
+        }
+        return .stem(children)
+    }()
+
+    lazy var statistic: MultiArmedBanditStatistic = {
+        // Creates the new node by calling the predictor.
+        let prediction = predictor.prediction(for: boardState)
+
+        // TODO(xiejw): Implement noise injection for predictions.
+        return MultiArmedBanditStatistic(
+            boardSize: gameConfiguration.size,
+            boardState: boardState,
+            distribution: prediction.distribution,
+            rewardForNextPlayer: prediction.rewardForNextPlayer)
+    }()
+
+    private let gameConfiguration: GameConfiguration
+    private let predictor: MCTSPredictor
+    let boardState: BoardState
+
+    init(gameConfiguration: GameConfiguration,
+         predictor: MCTSPredictor,
+         boardState: BoardState
+    ) {
+        self.gameConfiguration = gameConfiguration
+        self.predictor = predictor
+        self.boardState = boardState
+    }
+}
+
+class MultiArmedBanditStatistic {
+
     private let boardSize: Int
 
     /// Total visited count for this node during simulations.
-    private var totalVisitedCount: Int = 0
+    var totalVisitedCount: Int = 0
+
+    /// Rewards for next player.
+    let rewardForNextPlayer: Float
 
     /// The corresponding board state for this node.
     let boardState: BoardState
 
-    /// All children (nodes) for this node in the `MCTSTree`.
-    var children: [Move: MCTSNode] = [:]
-
-    private struct Action {
+    struct Action {
         let move: Move
         var prior: Float
         var qValueTotal: Float
@@ -36,7 +100,7 @@ class MCTSNode {
     /// `.pass`, followed by all legal positions.
     ///
     /// Note: `prior` in `actionSpace` must be normalized to form a valid probability.
-    private var actionSpace: [Action]
+    var actionSpace: [Action]
 
     /// Creates a MCTS node.
     ///
@@ -45,12 +109,15 @@ class MCTSNode {
     init(
         boardSize: Int,
         boardState: BoardState,
-        distribution: MCTSPrediction.Distribution
+        distribution: MCTSPrediction.Distribution,
+        rewardForNextPlayer: Float
     ) {
         self.boardSize = boardSize
         self.boardState = boardState
+        self.rewardForNextPlayer = rewardForNextPlayer
 
         var actions: [Move] = [.pass]  // .pass must be the first one.
+
         actions.reserveCapacity(boardState.legalMoves.count + 1)
         boardState.legalMoves.forEach {
             actions.append(.place(position: $0))
@@ -82,13 +149,14 @@ class MCTSNode {
 extension MCTSNode {
     /// Backs up the reward.
     func backUp(for move: Move, withRewardForBlackPlayer rewardForBlackPlayer: Float) {
-        guard let index = actionSpace.firstIndex(where: { $0.move == move }) else {
-            fatalError("The action \(move) taken must be legal (all legal actions: \(actionSpace)).")
+        guard let index = statistic.actionSpace.firstIndex(where: { $0.move == move }) else {
+            fatalError(
+                "The action \(move) taken must be legal (all legal actions: \(statistic.actionSpace)).")
         }
 
-        totalVisitedCount += 1
-        actionSpace[index].visitedCount += 1
-        actionSpace[index].qValueTotal += rewardForBlackPlayer *
+        statistic.totalVisitedCount += 1
+        statistic.actionSpace[index].visitedCount += 1
+        statistic.actionSpace[index].qValueTotal += rewardForBlackPlayer *
             (boardState.nextPlayerColor == .black ? 1.0 : -1.0)
     }
 }
@@ -97,11 +165,13 @@ extension MCTSNode {
 extension MCTSNode {
     /// Returns the next move to take based on current learned statistic in Node.
     func nextMove(withExplorationEnabled: Bool) -> Move {
-        precondition(totalVisitedCount > 0, "The node has not been visited after creation.")
+        precondition(
+            statistic.totalVisitedCount > 0,
+            "The node has not been visited after creation.")
         if withExplorationEnabled {
-            return sampleFromPMF(actionSpace) { Float($0.visitedCount) }.move
+            return sampleFromPMF(statistic.actionSpace) { Float($0.visitedCount) }.move
         } else {
-            return maxScoringElement(actionSpace) { Float($0.visitedCount) }.move
+            return maxScoringElement(statistic.actionSpace) { Float($0.visitedCount) }.move
         }
     }
 
@@ -114,7 +184,7 @@ extension MCTSNode {
     ///
     /// See the AlphaGoZero paper and its references for details.
     var actionByPUCT: Move {
-        guard totalVisitedCount > 0 else {
+        guard statistic.totalVisitedCount > 0 else {
             // If the node has not be visited after creation, we select the move based on prior
             // probability.
             return nextMoveWithHighestPrior
@@ -125,19 +195,19 @@ extension MCTSNode {
 
 extension MCTSNode {
     private var nextMoveWithHighestPrior: Move {
-        return maxScoringElement(actionSpace) { $0.prior }.move
+        return maxScoringElement(statistic.actionSpace) { $0.prior }.move
     }
 
     private var nextMoveWithHighestActionValue: Move {
         return maxScoringElement(
-            actionSpace,
+            statistic.actionSpace,
             withScoringFunction: {
                 // See the AlphaGoZero paper ("Methods" -> "Select" section) for the formula of action
                 // value.
                 let visitedCount = $0.visitedCount
 
                 var actionValue = $0.prior *
-                    (Float(totalVisitedCount) / (1.0 + Float(visitedCount))).squareRoot()
+                    (Float(statistic.totalVisitedCount) / (1.0 + Float(visitedCount))).squareRoot()
 
                 if visitedCount > 0 {
                     actionValue += $0.qValueTotal / Float(visitedCount)
