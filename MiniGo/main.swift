@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Foundation
 import TensorFlow
-import Game
+import MiniGo
 
 let boardSize = 19
 let simulationCountForOneMove = 40
@@ -27,7 +28,13 @@ let gameConfiguration = GameConfiguration(
 print("Loading checkpoint into GoModel. Might take a while.")
 let modelConfig = ModelConfiguration(boardSize: boardSize)
 var model = GoModel(configuration: modelConfig)
-let reader = PythonCheckpointReader(path: "./MiniGo/000939-heron")
+
+guard FileManager.default.fileExists(
+    atPath: "./MiniGoCheckpoint/000939-heron.data-00000-of-00001"
+) else {
+    fatalError("Please download the MiniGo checkpoint according to the README.md.")
+}
+let reader = PythonCheckpointReader(path: "./MiniGoCheckpoint/000939-heron")
 model.load(from: reader)
 
 let predictor = MCTSModelBasedPredictor(boardSize: boardSize, model: model)

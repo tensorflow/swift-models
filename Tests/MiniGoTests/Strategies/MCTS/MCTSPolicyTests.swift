@@ -1,6 +1,6 @@
 import XCTest
 
-@testable import Game
+@testable import MiniGo
 
 final class MCTSPolicyTests: XCTestCase {
     func testChooseReasonableMove() {

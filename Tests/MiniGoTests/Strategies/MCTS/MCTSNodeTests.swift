@@ -1,7 +1,7 @@
 import TensorFlow
 import XCTest
 
-@testable import Game
+@testable import MiniGo
 
 final class MCTSNodeTests: XCTestCase {
     func testSelectActionWithHighestPriorForNewNode() {
