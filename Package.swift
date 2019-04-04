@@ -7,11 +7,16 @@ let package = Package(
     name: "TensorFlowModels",
     products: [
         .executable(name: "MNIST", targets: ["MNIST"]),
+        .executable(name: "CIFAR", targets: ["CIFAR"]),
     ],
     targets: [
         .target(
             name: "MNIST",
             dependencies: [],
             path: "MNIST"),
-    ]
+        .target(
+            name: "CIFAR",
+            dependencies: [],
+            path: "CIFAR"),
+]
 )
