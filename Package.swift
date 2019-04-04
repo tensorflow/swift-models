@@ -18,5 +18,5 @@ let package = Package(
             name: "CIFAR",
             dependencies: [],
             path: "CIFAR"),
-]
+    ]
 )
