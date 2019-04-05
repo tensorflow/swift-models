@@ -1,6 +1,6 @@
 import XCTest
 
-@testable import Game
+@testable import MiniGo
 
 final class BoardStateTests: XCTestCase {
     func testEmtpyBoard() throws {

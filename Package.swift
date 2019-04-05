@@ -8,6 +8,7 @@ let package = Package(
     products: [
         .executable(name: "MNIST", targets: ["MNIST"]),
         .executable(name: "CIFAR", targets: ["CIFAR"]),
+        .executable(name: "MiniGo", targets: ["MiniGo", "MiniGoMain"]),
     ],
     targets: [
         .target(
@@ -18,5 +19,18 @@ let package = Package(
             name: "CIFAR",
             dependencies: [],
             path: "CIFAR"),
+        .target(
+            name: "MiniGoMain",
+            dependencies: ["MiniGo"],
+            path: "MiniGo",
+            sources: ["main.swift"]),
+        .target(
+            name: "MiniGo",
+            dependencies: [],
+            path: "MiniGo",
+            exclude: ["main.swift"]),
+        .testTarget(
+            name: "MiniGoTests",
+            dependencies: ["MiniGo"]),
     ]
 )
