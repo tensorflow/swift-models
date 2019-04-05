@@ -8,6 +8,7 @@ let package = Package(
     products: [
         .executable(name: "MNIST", targets: ["MNIST"]),
         .executable(name: "CIFAR", targets: ["CIFAR"]),
+        .executable(name: "ResNet", targets: ["ResNet"]),
         .executable(name: "MiniGo", targets: ["MiniGo", "MiniGoMain"]),
     ],
     targets: [
@@ -19,6 +20,10 @@ let package = Package(
             name: "CIFAR",
             dependencies: [],
             path: "CIFAR"),
+        .target(
+            name: "ResNet",
+            dependencies: [],
+            path: "ResNet"),
         .target(
             name: "MiniGoMain",
             dependencies: ["MiniGo"],

@@ -6,13 +6,18 @@ dataset.
 
 ## Setup
 
-You'll need the [latest version of Swift for TensorFlow]
-(https://github.com/tensorflow/swift/blob/master/Installation.md)
-installed and added to your path. Additionally, the data loader requires Python 3.x (rather than
-Python 2.7), `wget`, and numpy.
+You'll need the latest version of [Swift for TensorFlow][SwiftForTensorFlow]
+installed and added to your path. Additionally, the data loader requires Python
+3.x (rather than Python 2.7), `wget`, and `numpy`.
+
+> Note: For MacOS, you need to set up the `PYTHON_LIBRARY` to help the Swift for
+> TensorFlow find the `libpython3.<minor-value>.dylib` file, e.g., in `homebrew`.
 
 To train the model on CIFAR-10, run:
 
 ```
-swift -O ResNet50.swift data.swift main.swift
+cd swift-models
+swift run ResNet
 ```
+
+[SwiftForTensorFlow]: (https://github.com/tensorflow/swift/blob/master/Installation.md)

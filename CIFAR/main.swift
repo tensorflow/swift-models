@@ -1,4 +1,6 @@
 import TensorFlow
+import Python
+PythonLibrary.useVersion(3)
 
 let batchSize: Int32 = 100
 
