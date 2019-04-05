@@ -24,6 +24,35 @@ where T.CotangentVector : TensorGroup, U.CotangentVector : TensorGroup
   }
 }
 
+public extension Tensor where Scalar : TensorFlowFloatingPoint {
+  @inlinable @inline(__always)
+  @differentiable(
+    wrt: self, vjp: _vjpMean(alongAxes:)
+    where Scalar : TensorFlowFloatingPoint
+  )
+  func mean(alongAxes axes: Tensor<Int32>) -> Tensor {
+    return Raw.mean(self, reductionIndices: axes, keepDims: true)
+  }
+
+  
+  @inlinable
+  func _vjpMean(alongAxes axes: Tensor<Int32>) -> (Tensor, (Tensor) -> Tensor) {
+    let value = mean(alongAxes: axes)
+    return (value, { [shape = shapeTensor,
+            count = Raw.gather(params: shapeTensor, indices: axes).product()] in
+       $0.broadcast(toShape: shape) / Tensor(count)
+    })
+  }
+
+  @inlinable @inline(__always)
+  @differentiable(wrt: self where Scalar : TensorFlowFloatingPoint)
+  func variance(alongAxes axes: Tensor<Int32>) -> Tensor {
+    let mean = self.mean(alongAxes: axes)
+    let squaredDiff = (self - mean).squared()
+    return squaredDiff.mean(alongAxes: axes)
+  }
+}
+
 
 @_fixed_layout
 public struct XLABatchNorm<Scalar: TensorFlowFloatingPoint>: Layer {
@@ -71,10 +100,11 @@ public struct XLABatchNorm<Scalar: TensorFlowFloatingPoint>: Layer {
         self.epsilon = epsilon
         self.runningMean = Parameter(runningMean)
         self.runningVariance = Parameter(runningVariance)
-        self.compiledBatchNormTraining = xlaCompiled({ [axis=self.axis, momentum=self.momentum, epsilon=self.epsilon]
+    self.compiledBatchNormTraining = xlaCompiled(
+      { [axis=self.axis, momentum=self.momentum, epsilon=self.epsilon]
         (arg: BatchNormInput)  in
              XLABatchNorm.batchNormTraining(
-                 axis, momentum, arg.offset, arg.scale,
+                 Tensor<Int32>(axis), momentum, arg.offset, arg.scale,
                  epsilon, arg.runningMeanValue,
                  arg.runningVarianceValue, arg.input)})
     }
@@ -114,7 +144,7 @@ public struct XLABatchNorm<Scalar: TensorFlowFloatingPoint>: Layer {
     }
 
     private static func batchNormTraining(
-        _ axis: Int32,
+        _ axis: Tensor<Int32>,
         _ momentum: Tensor<Scalar>,
         _ offset: Tensor<Scalar>,
         _ scale: Tensor<Scalar>,
@@ -122,10 +152,11 @@ public struct XLABatchNorm<Scalar: TensorFlowFloatingPoint>: Layer {
         _ runningMeanValue: Tensor<Scalar>,
         _ runningVarianceValue: Tensor<Scalar>,
         _ input: Tensor<Scalar>
-     ) -> BatchNormResult {
-        let positiveAxis = (input.rank + axis) % input.rank
-        let mean = input.mean(alongAxes: [0, positiveAxis])
-        let variance = input.variance(alongAxes: [0, positiveAxis])
+    ) -> BatchNormResult {
+        let positiveAxis = Raw.mod((input.rankTensor + axis), input.rankTensor)
+        let axes = Tensor<Int32>([Tensor<Int32>(0), positiveAxis])
+        let mean = input.mean(alongAxes: axes).withoutDerivative()
+        let variance = input.variance(alongAxes: axes).withoutDerivative()
         let newRunningMeanValue =
             runningMeanValue + (mean - runningMeanValue) * (1 - momentum)
         let newRunningVariance =
@@ -196,9 +227,10 @@ public struct XLABatchNorm<Scalar: TensorFlowFloatingPoint>: Layer {
         self.epsilon = epsilon
         self.runningMean = Parameter(Tensor(0))
         self.runningVariance = Parameter(Tensor(1))
-        self.compiledBatchNormTraining = xlaCompiled({(arg: BatchNormInput)  in
+       self.compiledBatchNormTraining = xlaCompiled(
+      {(arg: BatchNormInput)  in
              XLABatchNorm.batchNormTraining(
-                 Int32(axis), momentum, arg.offset, arg.scale,
+                 Tensor<Int32>(Int32(axis)), momentum, arg.offset, arg.scale,
                  epsilon, arg.runningMeanValue,
                  arg.runningVarianceValue, arg.input)})
 
