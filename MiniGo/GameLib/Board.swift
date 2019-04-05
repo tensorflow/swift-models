@@ -25,7 +25,7 @@ struct Board: Hashable {
     let size: Int
 
     init(size: Int) {
-        self.stones = ShapedArray<Color?>(shape: [size, size], repeating: nil)
+        self.stones = ShapedArray<Color?>(repeating: nil, shape: [size, size])
         self.size = size
     }
 
