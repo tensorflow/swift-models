@@ -2,22 +2,19 @@ import TensorFlow
 import Python
 PythonLibrary.useVersion(3)
 
-let batchSize: Int32 = 100
+let batchSize = 128
 
 let cifarDataset = loadCIFAR10()
 let testBatches = cifarDataset.test.batched(Int64(batchSize))
 
-//var model = ResNet20()
-//var model = PyTorchModel()
-var model = KerasModel()
+var model = ResNet50(imageSize: 32, classCount: 10) // Use the network sized for CIFAR-10
 
-// optimizer used in the PyTorch code
-// let optimizer = SGD(for: model, learningRate: 0.001, momentum: 0.9, scalarType: Float.self)
-// optimizer used in the Keras code
-let optimizer = RMSProp(for: model, learningRate: 0.0001, decay: 1e-6, scalarType: Float.self)
+// the classic ImageNet optimizer setting diverges on CIFAR-10
+// let optimizer = SGD(for: model, learningRate: 0.1, momentum: 0.9, scalarType: Float.self)
+let optimizer = SGD(for: model, learningRate: 0.001, scalarType: Float.self)
 
-print("Starting training...")
-for epoch in 1...100 {
+for epoch in 1...10 {
+    print("Epoch \(epoch), training...")
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
     let trainingShuffled = cifarDataset.training.shuffled(
@@ -32,27 +29,15 @@ for epoch in 1...100 {
         trainingBatchCount += 1
         optimizer.update(&model.allDifferentiableVariables, along: gradients)
     }
-
+    print("  average loss: \(trainingLossSum / Float(trainingBatchCount))")
+    print("Epoch \(epoch), evaluating on test set...")
     var testLossSum: Float = 0
     var testBatchCount = 0
-    var correctGuessCount = 0
-    var totalGuessCount: Int32 = 0
     for batch in testBatches {
         let (labels, images) = (batch.label, batch.data)
         let logits = model.inferring(from: images)
         testLossSum += softmaxCrossEntropy(logits: logits, labels: labels).scalarized()
         testBatchCount += 1
-
-        let correctPredictions = logits.argmax(squeezingAxis: 1) .== labels
-        correctGuessCount = correctGuessCount +
-            Int(Tensor<Int32>(correctPredictions).sum().scalarized())
-        totalGuessCount = totalGuessCount + batchSize
     }
-
-    let accuracy = Float(correctGuessCount) / Float(totalGuessCount)
-    print("""
-          [Epoch \(epoch)] \
-          Accuracy: \(correctGuessCount)/\(totalGuessCount) (\(accuracy)) \
-          Loss: \(testLossSum / Float(testBatchCount))
-          """)
+    print("  average loss: \(testLossSum / Float(testBatchCount))")
 }

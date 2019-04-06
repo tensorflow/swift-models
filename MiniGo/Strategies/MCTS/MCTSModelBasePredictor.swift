@@ -112,8 +112,8 @@ extension BoardState {
         // The final feature plane represents the color to play. 1.0 if black is to play or 0.0 if white
         // is to play.
         featurePlanes[16] = ShapedArraySlice<Float>(
-            shape: [boardSize, boardSize],
-            repeating: self.nextPlayerColor == .black ? 1.0 : 0.0)
+            repeating: self.nextPlayerColor == .black ? 1.0 : 0.0,
+            shape: [boardSize, boardSize])
 
         let featureTensor = Tensor(featurePlanes)
 

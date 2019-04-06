@@ -30,19 +30,17 @@ install [`gsutil`](https://cloud.google.com/storage/docs/gsutil_install) and run
 the following:
 
 ```sh
-mkdir -p MiniGo
-gsutil cp 'gs://minigo-pub/v15-19x19/models/000939-heron.*' MiniGo/
+mkdir -p MiniGoCheckpoint
+gsutil cp 'gs://minigo-pub/v15-19x19/models/000939-heron.*' MiniGoCheckpoint/
 ```
 
 ### Usage
 
 ```sh
-# Run inference (self-play).
-swift run -Xlinker -ltensorflow
-# Run unit tests.
-swift test -Xlinker -ltensorflow
+# Run inference (self-plays).
+cd swift-models
+swift run -Xlinker -ltensorflow -c release MiniGo
 ```
 
 [Swift for TensorFlow]: https://www.tensorflow.org/swift
 [MiniGo]: https://github.com/mlperf/training/blob/master/reinforcement/tensorflow/minigo
-
