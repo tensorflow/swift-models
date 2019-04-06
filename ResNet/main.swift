@@ -7,7 +7,8 @@ let batchSize = 100
 let cifarDataset = loadCIFAR10()
 let testBatches = cifarDataset.test.batched(Int64(batchSize))
 
-// ResNet18, ResNet34, ResNet50
+// ResNet18, ResNet34, ResNet50, ResNet101, ResNet152
+// PreActivatedResNet18, PreActivatedResNet34
 var model = ResNet50(imageSize: 32, classCount: 10) // Use the network sized for CIFAR-10
 
 // the classic ImageNet optimizer setting diverges on CIFAR-10
