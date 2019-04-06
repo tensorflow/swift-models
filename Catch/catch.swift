@@ -198,7 +198,7 @@ extension CatchEnvironment {
     /// Returns the game grid as a 2D matrix where all scalars are 0 except the
     /// positions of the ball and paddle, which are 1.
     var grid: ShapedArray<Float> {
-        var result = ShapedArray<Float>(shape: [rowCount, columnCount], repeating: 0)
+        var result = ShapedArray<Float>(repeating: 0, shape: [rowCount, columnCount])
         result[ballPosition.y][ballPosition.x] = ShapedArraySlice<Float>(1)
         result[paddlePosition.y][paddlePosition.x] = ShapedArraySlice<Float>(1)
         return result
