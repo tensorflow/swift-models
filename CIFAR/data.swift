@@ -1,6 +1,11 @@
 import Python
 import TensorFlow
 
+struct Example: TensorGroup {
+    var label: Tensor<Int32>
+    var data: Tensor<Float>
+}
+
 /// Use Python and shell calls to download and extract the CIFAR-10 tarball if not already done
 /// This can fail for many reasons (e.g. lack of `wget`, `tar`, or an Internet connection)
 func downloadCIFAR10IfNotPresent(to directory: String = ".") {
@@ -13,11 +18,6 @@ func downloadCIFAR10IfNotPresent(to directory: String = ".") {
         let command = "wget -nv -O- https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz | tar xzf - -C \(directory)"
         subprocess.call(command, shell: true)
     }
-}
-
-struct Example: TensorGroup {
-    var label: Tensor<Int32>
-    var data: Tensor<Float>
 }
 
 // Each CIFAR data file is provided as a Python pickle of NumPy arrays
@@ -41,9 +41,10 @@ func loadCIFARFile(named name: String, in directory: String = ".") -> Example {
         .reshaped(to: [imageCount, 3, 32, 32])
         .transposed(withPermutations: [0, 2, 3, 1]))
 
-    let mean = Tensor<Float>([0.485, 0.456, 0.406])
-    let std  = Tensor<Float>([0.229, 0.224, 0.225])
-    let imagesNormalized = ((imageTensor / 255.0) - mean) / std
+    //https://github.com/facebook/fb.resnet.torch/blob/master/datasets/cifar10.lua#L38
+    let mean = Tensor<Float>([125.3, 123.0, 113.9])
+    let std  = Tensor<Float>([63.0,  62.1,  66.7])
+    let imagesNormalized = ((imageTensor - mean) / std) / 255.0
 
     return Example(label: Tensor<Int32>(labelTensor), data: imagesNormalized)
 }
@@ -64,5 +65,55 @@ func loadCIFAR10() -> (
   training: Dataset<Example>, test: Dataset<Example>) {
     let trainingDataset = Dataset<Example>(elements: loadCIFARTrainingFiles())
     let testDataset = Dataset<Example>(elements: loadCIFARTestFile())
+    return (training: trainingDataset, test: testDataset)
+}
+
+/// Use Python and shell calls to download and extract the CIFAR-100 tarball if not already done
+/// This can fail for many reasons (e.g. lack of `wget`, `tar`, or an Internet connection)
+func downloadCIFAR100IfNotPresent(to directory: String = ".") {
+    let subprocess = Python.import("subprocess")
+    let path = Python.import("os.path")
+    let filepath = "\(directory)/cifar-100-python"
+    let isdir = Bool(path.isdir(filepath))!
+    if !isdir {
+        print("Downloading CIFAR 100 data...")
+        let command = "wget -nv -O- https://www.cs.toronto.edu/~kriz/cifar-100-python.tar.gz | tar xzf - -C \(directory)"
+        subprocess.call(command, shell: true)
+    }
+}
+
+// Each CIFAR data file is provided as a Python pickle of NumPy arrays
+func loadCIFAR100File(named name: String, in directory: String = ".") -> Example {
+    let np = Python.import("numpy")
+    let pickle = Python.import("pickle")
+    let path = "\(directory)/cifar-100-python/\(name)"
+    let f = Python.open(path, "rb")
+    let res = pickle.load(f, encoding: "bytes")
+
+    let bytes = res[Python.bytes("data", encoding: "utf8")]
+    let fine_labels = res[Python.bytes("fine_labels", encoding: "utf8")]
+
+    let labelTensor = Tensor<Int64>(numpy: np.array(fine_labels))!
+    let images = Tensor<UInt8>(numpy: bytes)!
+    let imageCount = images.shape[0]
+
+    // reshape and transpose from the provided N(CHW) to TF default NHWC
+    let imageTensor = Tensor<Float>(images
+        .reshaped(to: [imageCount, 3, 32, 32])
+        .transposed(withPermutations: [0, 2, 3, 1]))
+
+    //https://github.com/facebook/fb.resnet.torch/blob/master/datasets/cifar100.lua#L49
+    let mean = Tensor<Float>([129.3, 124.1, 112.4])
+    let std  = Tensor<Float>([68.2,  65.4,  70.4])
+    let imagesNormalized = ((imageTensor - mean) / std) / 255.0
+
+    return Example(label: Tensor<Int32>(labelTensor), data: imagesNormalized)
+}
+
+func loadCIFAR100() -> (
+  training: Dataset<Example>, test: Dataset<Example>) {
+    downloadCIFAR100IfNotPresent()
+    let trainingDataset = Dataset<Example>(elements: loadCIFAR100File(named: "train"))
+    let testDataset = Dataset<Example>(elements: loadCIFAR100File(named: "test"))
     return (training: trainingDataset, test: testDataset)
 }
