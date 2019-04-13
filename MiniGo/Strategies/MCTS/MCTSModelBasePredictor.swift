@@ -80,7 +80,7 @@ extension BoardState {
 
         let boardSize = gameConfiguration.size
 
-        var featurePlanes = ShapedArray<Float>(repeating: 0.0, shape: [17, boardSize, boardSize])
+        var featurePlanes = ShapedArray<Float>(shape: [17, boardSize, boardSize], repeating: 0.0)
 
         // The first 16 feature planes represent recent board states. Each board state needs two planes.
         //
@@ -112,8 +112,8 @@ extension BoardState {
         // The final feature plane represents the color to play. 1.0 if black is to play or 0.0 if white
         // is to play.
         featurePlanes[16] = ShapedArraySlice<Float>(
-            repeating: self.nextPlayerColor == .black ? 1.0 : 0.0,
-            shape: [boardSize, boardSize])
+            shape: [boardSize, boardSize],
+            repeating: self.nextPlayerColor == .black ? 1.0 : 0.0)
 
         let featureTensor = Tensor(featurePlanes)
 
@@ -149,7 +149,7 @@ extension Board {
 
         let opponentColor: Color = activePlayerColor == .black ? .white : .black
 
-        var result = ShapedArraySlice<Float>(repeating: 0.0, shape: [2, boardSize, boardSize])
+        var result = ShapedArraySlice<Float>(shape: [2, boardSize, boardSize], repeating: 0.0)
         for x in 0..<boardSize {
             for y in 0..<boardSize {
                 guard let stoneColor = color(at: Position(x: x, y: y)) else {
