@@ -5,10 +5,11 @@ let imageDirectory = "imagenette-160"
 //let imageDirectory = "imagewoof-160"
 let inputImageSize = 128
 
+print("Building dataset...")
 let trainingImageDirectoryURL = URL(fileURLWithPath:"\(imageDirectory)/train")
-let trainingImageDataset = try! ImageDataset(imageDirectory: trainingImageDirectoryURL, imageSize: (inputImageSize, inputImageSize))
+let trainingImageDataset = try! ImageDataset(imageDirectory: trainingImageDirectoryURL, imageSize: (inputImageSize, inputImageSize), trainingData: true)
 let validationImageDirectoryURL = URL(fileURLWithPath:"\(imageDirectory)/val")
-let validationImageDataset = try! ImageDataset(imageDirectory: validationImageDirectoryURL, imageSize: (inputImageSize, inputImageSize))
+let validationImageDataset = try! ImageDataset(imageDirectory: validationImageDirectoryURL, imageSize: (inputImageSize, inputImageSize), trainingData: false)
 
 let classCount = trainingImageDataset.classes
 let totalTrainingImages = trainingImageDataset.imageData.shape[0]
@@ -18,7 +19,10 @@ var model = BasicCNNModel()
 let optimizer = SGD(for: model, learningRate: 0.001, momentum: 0.9, nesterov: true, scalarType: Float.self)
 
 print("Starting training...")
-for epoch in 1...20 {
+for epoch in 1...50 {
+    if (epoch > 30) { optimizer.learningRate = 0.0001 }
+    if (epoch > 40) { optimizer.learningRate = 0.00001 }
+
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
     let shuffledDataset = trainingImageDataset.combinedDataset.shuffled(sampleCount: Int64(totalTrainingImages), randomSeed: Int64(epoch))
