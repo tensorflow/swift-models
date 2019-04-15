@@ -19,12 +19,11 @@ let totalTrainingImages = trainingImageDataset.imageData.shape[0]
 let totalValidationImages = validationImageDataset.imageData.shape[0]
 
 var model = BasicCNNModel()
-let optimizer = SGD(for: model, learningRate: 0.002, momentum: 0.9, nesterov: true,
+let optimizer = SGD(for: model, learningRate: 0.001, momentum: 0.9, nesterov: true,
     scalarType: Float.self)
 
 print("Starting training...")
 for epoch in 1...80 {
-    if epoch > 8 { optimizer.learningRate = 0.001 }
     if epoch > 70 { optimizer.learningRate = 0.0001 }
 
     var trainingLossSum: Float = 0
