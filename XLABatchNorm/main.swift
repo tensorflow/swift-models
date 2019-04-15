@@ -5,40 +5,39 @@ let batchSize = 128
 let cifarDataset = loadCIFAR10()
 let testBatches = cifarDataset.test.batched(Int64(batchSize))
 
-// For imageSize = 32
-var model = ConvBN(filterShape: (3, 3, 3, 64), padding: .same)
-
-// the classic ImageNet optimizer setting diverges on CIFAR-10
-// let optimizer = SGD(for: model, learningRate: 0.1, momentum: 0.9, scalarType: Float.self)
-let optimizer = SGD(for: model, learningRate: 0.001, scalarType: Float.self)
-
-for epoch in 1...2 {
-    print("Epoch \(epoch), training...")
-    var trainingLossSum: Float = 0
-    var trainingBatchCount = 0
-    let trainingShuffled = cifarDataset.training.shuffled(
-        sampleCount: 50000, randomSeed: Int64(epoch))
-    for batch in trainingShuffled.batched(Int64(batchSize)) {
-       let (labels, images) = (batch.label, batch.data)
-       let _ =  model.applied(to: images, in: Context(learningPhase: .training))
-      //   let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
-      //       // let logits = model.applied(to: images, in: Context(learningPhase: .training))
-      // // return softmaxCrossEntropy(logits: logits, labels: labels)
-      //      return  model.applied(to: images, in: Context(learningPhase: .training))
-      //   }
-      //   trainingLossSum += loss.scalarized()
-      //   trainingBatchCount += 1
-      //   optimizer.update(&model.allDifferentiableVariables, along: gradients)
+// Returns an empty Array if saveResults is false.
+func computeBnorm(useXLA: Bool, nResults: Int, epoch: Int64 = 1) -> Array<Tensor<Float>> {
+  let model = ConvBN(filterShape: (3, 3, 3, 64), padding: .same, useXLA: useXLA)
+  var results:Array<Tensor<Float>> = []
+  let trainingShuffled = cifarDataset.training.shuffled(
+    sampleCount: 50000, randomSeed: epoch)
+  for batch in trainingShuffled.batched(Int64(batchSize)) {
+    let images = batch.data
+    let res =  model.applied(to: images, in: Context(learningPhase: .training))
+    results.append(res);
+    if results.count > nResults {
+      break
     }
-    // print("  average loss: \(trainingLossSum / Float(trainingBatchCount))")
-    // print("Epoch \(epoch), evaluating on test set...")
-    // var testLossSum: Float = 0
-    // var testBatchCount = 0
-    // for batch in testBatches {
-    //     let (labels, images) = (batch.label, batch.data)
-    //     let logits = model.inferring(from: images)
-    //     testLossSum += softmaxCrossEntropy(logits: logits, labels: labels).scalarized()
-    //     testBatchCount += 1
-    // }
-    // print("  average loss: \(testLossSum / Float(testBatchCount))")
+  }
+  return results
 }
+
+func checkBnormResults() {
+  let nResultsToCheck = 100
+  let resultsNoXLA = computeBnorm(useXLA: false, nResults: nResultsToCheck)
+  let resultsXLA = computeBnorm(useXLA: true, nResults: nResultsToCheck)
+  let error: Float = 0.000001
+  var i = 0
+  print("Checking nearly equal with error: \(error)")
+  for (l, r) in zip(resultsNoXLA, resultsXLA) {
+    if (abs(l - r) > error) {
+      print("Mismatch at \(i):\n")// \(resultsNoXLA[i]) \n vs \(resultsXLA[i])\n")
+    }
+    i += 1
+  }
+}
+
+
+simpleTest()
+checkBnormResults()
+

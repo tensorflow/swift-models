@@ -1,29 +1,5 @@
 import TensorFlow
 
-struct PullbackArgs<T : TensorGroup, U : TensorGroup> : TensorGroup {
-  let input: T
-  let cotangent: U
-}
-
-func xlaCompiled<T : Differentiable & TensorGroup, U : Differentiable & TensorGroup>(
-  _ fn: @escaping @differentiable (T) -> U) -> @differentiable (T) -> U
-where T.CotangentVector : TensorGroup, U.CotangentVector : TensorGroup
-{
-  let xlaCompiledFn: (T) -> U = _graph(fn, useXla: true)
-  let xlaCompiledPullback = _graph(
-    { (pbArgs: PullbackArgs<T, U.CotangentVector>) in
-      pullback(at: pbArgs.input, in: fn)(pbArgs.cotangent)
-    },
-    useXla: true)
-  return  differentiableFunction { x in
-      (value: xlaCompiledFn(x),
-      pullback: {
-        v in
-        xlaCompiledPullback(PullbackArgs(input: x, cotangent: v))}
-      )
-  }
-}
-
 public extension Tensor where Scalar : TensorFlowFloatingPoint {
   @inlinable @inline(__always)
   @differentiable(
@@ -219,7 +195,8 @@ public struct XLABatchNorm<Scalar: TensorFlowFloatingPoint>: Layer {
     public init(featureCount: Int,
                 axis: Int = -1,
                 momentum: Tensor<Scalar> = Tensor(0.99),
-                epsilon: Tensor<Scalar> = Tensor(0.001)) {
+                epsilon: Tensor<Scalar> = Tensor(0.001),
+                useXLA: Bool) {
         self.axis = Int32(axis)
         self.momentum = momentum
         self.scale = Tensor<Scalar>(ones: [Int32(featureCount)])
@@ -227,13 +204,12 @@ public struct XLABatchNorm<Scalar: TensorFlowFloatingPoint>: Layer {
         self.epsilon = epsilon
         self.runningMean = Parameter(Tensor(0))
         self.runningVariance = Parameter(Tensor(1))
-       self.compiledBatchNormTraining = xlaCompiled(
-      {(arg: BatchNormInput)  in
+        let helper: @differentiable (BatchNormInput) ->  BatchNormResult = {(arg: BatchNormInput)  in
              XLABatchNorm.batchNormTraining(
                  Tensor<Int32>(Int32(axis)), momentum, arg.offset, arg.scale,
                  epsilon, arg.runningMeanValue,
-                 arg.runningVarianceValue, arg.input)})
-
+                 arg.runningVarianceValue, arg.input)}
+        self.compiledBatchNormTraining = (useXLA ? xlaCompiled(helper) : helper)
     }
 }
 
@@ -244,10 +220,11 @@ struct ConvBN: Layer {
     public init(
         filterShape: (Int, Int, Int, Int),
         strides: (Int, Int) = (1, 1),
-        padding: Padding = .valid
+        padding: Padding = .valid,
+        useXLA: Bool
     ) {
         self.conv = Conv2D(filterShape: filterShape, strides: strides, padding: padding)
-        self.norm = XLABatchNorm(featureCount: filterShape.3)
+        self.norm = XLABatchNorm(featureCount: filterShape.3, useXLA: useXLA)
     }
 
     @differentiable

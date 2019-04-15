@@ -9,12 +9,12 @@ func xlaCompiled<T : Differentiable & TensorGroup, U : Differentiable & TensorGr
   _ fn: @escaping @differentiable (T) -> U) -> @differentiable (T) -> U
 where T.CotangentVector : TensorGroup, U.CotangentVector : TensorGroup
 {
-  let xlaCompiledFn: (T) -> U = _graph(fn, useXla: true)
+  let xlaCompiledFn: (T) -> U = _graph(fn, useXLA: true)
   let xlaCompiledPullback = _graph(
     { (pbArgs: PullbackArgs<T, U.CotangentVector>) in
       pullback(at: pbArgs.input, in: fn)(pbArgs.cotangent)
     },
-    useXla: true)
+    useXLA: true)
   return  differentiableFunction { x in
       (value: xlaCompiledFn(x),
       pullback: {
@@ -25,17 +25,12 @@ where T.CotangentVector : TensorGroup, U.CotangentVector : TensorGroup
 }
   
 
-
 @differentiable 
 func square(_ a: Tensor<Float>) -> Tensor<Float>{
   return a * a 
-}
+}  
 
-let blah = xlaCompiled(square)
-let b = blah(Tensor<Float>(5.0))
-print("b \(b)")
-
-withDevice(.cpu) {
+func simpleTest() {
   let input = Tensor<Float>(10.0)
   let computation = xlaCompiled(square)
   let res = computation(input)
