@@ -8,25 +8,29 @@ let internalImageSize: Int32 = 128
 
 print("Building dataset...")
 let trainingImageDirectoryURL = URL(fileURLWithPath:"\(imageDirectory)/train")
-let trainingImageDataset = try! ImageDataset(imageDirectory: trainingImageDirectoryURL, imageSize: (inputImageSize, inputImageSize))
+let trainingImageDataset = try! ImageDataset(imageDirectory: trainingImageDirectoryURL,
+    imageSize: (inputImageSize, inputImageSize))
 let validationImageDirectoryURL = URL(fileURLWithPath:"\(imageDirectory)/val")
-let validationImageDataset = try! ImageDataset(imageDirectory: validationImageDirectoryURL, imageSize: (inputImageSize, inputImageSize))
+let validationImageDataset = try! ImageDataset(imageDirectory: validationImageDirectoryURL,
+    imageSize: (inputImageSize, inputImageSize))
 
 let classCount = trainingImageDataset.classes
 let totalTrainingImages = trainingImageDataset.imageData.shape[0]
 let totalValidationImages = validationImageDataset.imageData.shape[0]
 
 var model = BasicCNNModel()
-let optimizer = SGD(for: model, learningRate: 0.002, momentum: 0.9, nesterov: true, scalarType: Float.self)
+let optimizer = SGD(for: model, learningRate: 0.002, momentum: 0.9, nesterov: true,
+    scalarType: Float.self)
 
 print("Starting training...")
 for epoch in 1...80 {
-    if (epoch > 8) { optimizer.learningRate = 0.001 }
-    if (epoch > 70) { optimizer.learningRate = 0.0001 }
+    if epoch > 8 { optimizer.learningRate = 0.001 }
+    if epoch > 70 { optimizer.learningRate = 0.0001 }
 
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
-    let shuffledDataset = trainingImageDataset.combinedDataset.shuffled(sampleCount: Int64(totalTrainingImages), randomSeed: Int64(epoch))
+    let shuffledDataset = trainingImageDataset.combinedDataset.shuffled(
+        sampleCount: Int64(totalTrainingImages), randomSeed: Int64(epoch))
     let batchSize: Int32 = 42
 
     for batch in shuffledDataset.batched(Int64(batchSize)) {
@@ -50,10 +54,12 @@ for epoch in 1...80 {
         let boxesWrapped = Tensor<Float>(shape:[batchSize, 4], scalars: boxList)
         let boxIndicies = Tensor<Int32>(boxIndiciesList)
 
-        let randomlyCroppedImages = Raw.cropAndResize(image: images, boxes: boxesWrapped, boxInd: boxIndicies, cropSize:Tensor<Int32>([internalImageSize,internalImageSize]))
+        let randomlyCroppedImages = Raw.cropAndResize(image: images, boxes: boxesWrapped,
+            boxInd: boxIndicies, cropSize:Tensor<Int32>([internalImageSize,internalImageSize]))
 
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
-            let logits = model.applied(to: randomlyCroppedImages, in: Context(learningPhase: .training))
+            let logits = model.applied(to: randomlyCroppedImages,
+                in: Context(learningPhase: .training))
             return softmaxCrossEntropy(logits: logits, labels: labels)
         }
         trainingLossSum += loss.scalarized()
@@ -79,8 +85,8 @@ for epoch in 1...80 {
             let xPrime: Float = (Float(maxX) - Float(internalImageSize))/2.0
             let yPrime: Float = (Float(maxY) - Float(internalImageSize))/2.0
 
-            let xOne = (xPrime)/maxX
-            let yOne = (yPrime)/maxY
+            let xOne = xPrime/maxX
+            let yOne = yPrime/maxY
             let xTwo = (xPrime + Float(internalImageSize))/maxX
             let yTwo = (yPrime + Float(internalImageSize))/maxY
 
@@ -90,7 +96,8 @@ for epoch in 1...80 {
         let boxesWrapped = Tensor<Float>(shape:[testBatchSize, 4], scalars: boxList)
         let boxIndicies = Tensor<Int32>(boxIndiciesList)
 
-        let centerCroppedImages = Raw.cropAndResize(image: images, boxes: boxesWrapped, boxInd: boxIndicies, cropSize:Tensor<Int32>([internalImageSize,internalImageSize]))
+        let centerCroppedImages = Raw.cropAndResize(image: images, boxes: boxesWrapped,
+            boxInd: boxIndicies, cropSize:Tensor<Int32>([internalImageSize,internalImageSize]))
 
         let logits = model.inferring(from: centerCroppedImages)
         testLossSum += softmaxCrossEntropy(logits: logits, labels: labels).scalarized()
