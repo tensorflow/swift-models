@@ -3,34 +3,57 @@ import Foundation
 
 let imageDirectory = "imagenette-160"
 //let imageDirectory = "imagewoof-160"
-let inputImageSize = 128
+let inputImageSize: Int32 = 160
+let internalImageSize: Int32 = 128
 
 print("Building dataset...")
 let trainingImageDirectoryURL = URL(fileURLWithPath:"\(imageDirectory)/train")
-let trainingImageDataset = try! ImageDataset(imageDirectory: trainingImageDirectoryURL, imageSize: (inputImageSize, inputImageSize), trainingData: true)
+let trainingImageDataset = try! ImageDataset(imageDirectory: trainingImageDirectoryURL, imageSize: (inputImageSize, inputImageSize))
 let validationImageDirectoryURL = URL(fileURLWithPath:"\(imageDirectory)/val")
-let validationImageDataset = try! ImageDataset(imageDirectory: validationImageDirectoryURL, imageSize: (inputImageSize, inputImageSize), trainingData: false)
+let validationImageDataset = try! ImageDataset(imageDirectory: validationImageDirectoryURL, imageSize: (inputImageSize, inputImageSize))
 
 let classCount = trainingImageDataset.classes
 let totalTrainingImages = trainingImageDataset.imageData.shape[0]
 let totalValidationImages = validationImageDataset.imageData.shape[0]
 
 var model = BasicCNNModel()
-let optimizer = SGD(for: model, learningRate: 0.001, momentum: 0.9, nesterov: true, scalarType: Float.self)
+let optimizer = SGD(for: model, learningRate: 0.002, momentum: 0.9, nesterov: true, scalarType: Float.self)
 
 print("Starting training...")
-for epoch in 1...50 {
-    if (epoch > 30) { optimizer.learningRate = 0.0001 }
-    if (epoch > 40) { optimizer.learningRate = 0.00001 }
+for epoch in 1...80 {
+    if (epoch > 8) { optimizer.learningRate = 0.001 }
+    if (epoch > 70) { optimizer.learningRate = 0.0001 }
 
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
     let shuffledDataset = trainingImageDataset.combinedDataset.shuffled(sampleCount: Int64(totalTrainingImages), randomSeed: Int64(epoch))
+    let batchSize: Int32 = 42
 
-    for batch in shuffledDataset.batched(Int64(42)) {
+    for batch in shuffledDataset.batched(Int64(batchSize)) {
         let (labels, images) = (batch.label, batch.data)
+
+        var boxList: [Float] = []
+        var boxIndiciesList: [Int32] = []
+        for i in 1...batchSize {
+            let max: Int32 = Int32(inputImageSize - internalImageSize)
+            let xOffset = Float(Int32.random(in: 0..<max))/Float(inputImageSize)
+            let yOffset = Float(Int32.random(in: 0..<max))/Float(inputImageSize)
+            let offset: Float = Float(internalImageSize)/Float(inputImageSize)
+
+            if Bool.random() {
+                boxList.append(contentsOf:[yOffset, xOffset, yOffset + offset, xOffset + offset])
+            } else { // using X2 > X1 to add random flips here
+                boxList.append(contentsOf:[yOffset, xOffset + offset, yOffset + offset, xOffset])
+            }
+            boxIndiciesList.append(Int32(i-1))
+        }
+        let boxesWrapped = Tensor<Float>(shape:[batchSize, 4], scalars: boxList)
+        let boxIndicies = Tensor<Int32>(boxIndiciesList)
+
+        let randomlyCroppedImages = Raw.cropAndResize(image: images, boxes: boxesWrapped, boxInd: boxIndicies, cropSize:Tensor<Int32>([internalImageSize,internalImageSize]))
+
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
-            let logits = model.applied(to: images, in: Context(learningPhase: .training))
+            let logits = model.applied(to: randomlyCroppedImages, in: Context(learningPhase: .training))
             return softmaxCrossEntropy(logits: logits, labels: labels)
         }
         trainingLossSum += loss.scalarized()
@@ -42,10 +65,34 @@ for epoch in 1...50 {
     var testBatchCount = 0
     var correctGuessCount = 0
     let totalGuessCount: Int32 = totalValidationImages
+    let testBatchSize: Int32 = 50
 
-    for batch in validationImageDataset.combinedDataset.batched(Int64(50)) {
+    for batch in validationImageDataset.combinedDataset.batched(Int64(testBatchSize)) {
         let (labels, images) = (batch.label, batch.data)
-        let logits = model.inferring(from: images)
+
+        var boxList: [Float] = []
+        var boxIndiciesList: [Int32] = []
+        for i in 1...testBatchSize {
+            let maxX: Float = Float(inputImageSize)
+            let maxY: Float = Float(inputImageSize)
+
+            let xPrime: Float = (Float(maxX) - Float(internalImageSize))/2.0
+            let yPrime: Float = (Float(maxY) - Float(internalImageSize))/2.0
+
+            let xOne = (xPrime)/maxX
+            let yOne = (yPrime)/maxY
+            let xTwo = (xPrime + Float(internalImageSize))/maxX
+            let yTwo = (yPrime + Float(internalImageSize))/maxY
+
+            boxList.append(contentsOf:[yOne, xOne, yTwo, xTwo])
+            boxIndiciesList.append(Int32(i-1))
+        }
+        let boxesWrapped = Tensor<Float>(shape:[testBatchSize, 4], scalars: boxList)
+        let boxIndicies = Tensor<Int32>(boxIndiciesList)
+
+        let centerCroppedImages = Raw.cropAndResize(image: images, boxes: boxesWrapped, boxInd: boxIndicies, cropSize:Tensor<Int32>([internalImageSize,internalImageSize]))
+
+        let logits = model.inferring(from: centerCroppedImages)
         testLossSum += softmaxCrossEntropy(logits: logits, labels: labels).scalarized()
         testBatchCount += 1
 
