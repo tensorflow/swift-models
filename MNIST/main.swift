@@ -64,17 +64,9 @@ struct Classifier: Layer {
     var layer1b = Dense<Float>(inputSize: 128, outputSize: 10, activation: softmax)
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = input
-        tmp = conv1a.applied(to: tmp, in: context)
-        tmp = conv1b.applied(to: tmp, in: context)
-        tmp = pool1.applied(to: tmp, in: context)
-        tmp = dropout1a.applied(to: tmp, in: context)
-        tmp = flatten.applied(to: tmp, in: context)
-        tmp = layer1a.applied(to: tmp, in: context)
-        tmp = dropout1b.applied(to: tmp, in: context)
-        tmp = layer1b.applied(to: tmp, in: context)
-        return tmp
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        let convolved = input.sequenced(through: conv1a, conv1b, pool1)
+        return convolved.sequenced(through: dropout1a, flatten, layer1a, dropout1b, layer1b)
     }
 }
 
@@ -91,11 +83,10 @@ let (images, numericLabels) = readMNIST(imagesFile: "train-images-idx3-ubyte",
 let labels = Tensor<Float>(oneHotAtIndices: numericLabels, depth: 10)
 
 var classifier = Classifier()
-let context = Context(learningPhase: .training)
 let optimizer = RMSProp<Classifier, Float>()
 
 // The training loop.
-for epoch in 0..<epochCount {
+for epoch in 1...epochCount {
     var correctGuessCount = 0
     var totalGuessCount = 0
     var totalLoss: Float = 0
@@ -104,7 +95,7 @@ for epoch in 0..<epochCount {
         let y = minibatch(in: numericLabels, at: i)
         // Compute the gradient with respect to the model.
         let 𝛁model = classifier.gradient { classifier -> Tensor<Float> in
-            let ŷ = classifier.applied(to: x, in: context)
+            let ŷ = classifier.applied(to: x)
             let correctPredictions = ŷ.argmax(squeezingAxis: 1) .== y
             correctGuessCount += Int(Tensor<Int32>(correctPredictions).sum().scalarized())
             totalGuessCount += batchSize
