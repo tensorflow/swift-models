@@ -48,8 +48,8 @@ struct Net: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        return l2.applied(to: l1.applied(to: input, in: context), in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        return input.sequenced(through: l1, l2)
     }
 }
 
@@ -122,7 +122,6 @@ func nextBatch(
 ) -> [Episode] {
     var observationNumpy = env.reset()
 
-    let context = Context(learningPhase: .inference)
     var episodes: [Episode] = []
 
     // We build up a batch of observations and actions.
@@ -133,7 +132,7 @@ func nextBatch(
         while true {
             let observationPython = Tensor<Double>(numpy: observationNumpy).unwrapped()
             let actionProbabilities =
-              softmax(net.applied(to: Tensor(observationPython).reshaped(to: [1, 4]), in: context))
+              softmax(net.applied(to: Tensor(observationPython).reshaped(to: [1, 4])))
             let actionProbabilitiesPython = actionProbabilities[0].makeNumpyArray()
             let len = Python.len(actionProbabilitiesPython)
             assert(actionCount == Int(Python.len(actionProbabilitiesPython)))
@@ -181,9 +180,8 @@ while true {
       episodes: episodes, actionCount: actionCount)
 
     let gradients = gradient(at: net) { model -> Tensor<Float> in
-        let context = Context(learningPhase: .training)
-        let logits = model.applied(to: input, in: context)
-        let loss = softmaxCrossEntropy(logits: logits, oneHotLabels: target)
+        let logits = model.applied(to: input)
+        let loss = softmaxCrossEntropy(logits: logits, probabilities: target)
         print("loss is \(loss)")
         return loss
     }
