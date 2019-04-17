@@ -50,8 +50,8 @@ struct Model: Layer {
                               generator: &rng)
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        return input.sequenced(in: context, through: layer1, layer2)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        return input.sequenced(through: layer1, layer2)
     }
 }
 
@@ -60,7 +60,6 @@ class CatchAgent: Agent {
 
     var model: Model = Model()
     let optimizer: Adam<Model, Float>
-    let context = Context(learningPhase: .training)
     var previousReward: Reward
 
     init(initialReward: Reward, learningRate: Float) {
@@ -78,7 +77,7 @@ extension CatchAgent {
         defer { previousReward = reward }
 
         let x = Tensor(observation).rankLifted()
-        let (ŷ, backprop) = model.appliedForBackpropagation(to: x, in: context)
+        let (ŷ, backprop) = model.appliedForBackpropagation(to: x)
         let maxIndex = ŷ.argmax().scalarized()
 
         let 𝛁loss = -log(Tensor(ŷ.max())).broadcast(like: ŷ) * previousReward
@@ -212,6 +211,7 @@ extension CatchEnvironment: CustomStringConvertible {
 }
 
 // Setup environment and agent.
+Context.local.learningPhase = .training
 var environment = CatchEnvironment(rowCount: 5, columnCount: 5)
 var action: CatchAction = .none
 var agent = CatchAgent(initialReward: environment.reward, learningRate: 0.05)
@@ -230,7 +230,7 @@ repeat {
             winCount += 1
             totalWinCount += 1
         }
-        if gameCount % 10 == 0 {
+        if gameCount % 20 == 0 {
             print("Win rate (last 20 games): \(Float(winCount) / 20)")
             print("""
                   Win rate (total): \
