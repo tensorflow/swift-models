@@ -134,7 +134,7 @@ struct PreActivatedResNet18: Layer {
 
     @differentiable
     func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        let inputLayer = input.sequenced(through:l1, maxPool)
+        let inputLayer = input.sequenced(through: l1, maxPool)
         let level2 = inputLayer.sequenced(through: l2a, l2b)
         let level3 = level2.sequenced(through: l3a, l3b)
         let level4 = level3.sequenced(through: l4a, l4b)
@@ -190,7 +190,7 @@ struct PreActivatedResNet34: Layer {
 
     @differentiable
     func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        let inputLayer = input.sequenced(through:l1, maxPool)
+        let inputLayer = input.sequenced(through: l1, maxPool)
         let level2 = inputLayer.sequenced(through: l2a, l2b, l2c)
         let level3 = level2.sequenced(through: l3a, l3b, l3c, l3d)
         let level4 = level3.sequenced(through: l4a, l4b, l4c, l4d, l4e, l4f)
