@@ -24,11 +24,9 @@ struct BatchNormConv2DBlock: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = relu(norm1.applied(to: input, in: context))
-        tmp = conv1.applied(to: tmp, in: context)
-        tmp = relu(norm2.applied(to: tmp, in: context))
-        return conv2.applied(to: tmp, in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        let firstLayer = conv1.applied(to: relu(norm1.applied(to: input)))
+        return conv2.applied(to: relu(norm2.applied(to: firstLayer)))
     }
 }
 
@@ -55,10 +53,8 @@ struct WideResnet16FirstBasicBlock: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = block1.applied(to: input, in: context)
-        tmp = block2.applied(to: tmp, in: context)
-        return tmp + shortcut.applied(to: input, in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        return input.sequenced(through: block1, block2) + shortcut.applied(to: input)
     }
 }
 
@@ -85,10 +81,8 @@ struct WideResnet16BasicBlock: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = block1.applied(to: input, in: context)
-        tmp = block2.applied(to: tmp, in: context)
-        return tmp + shortcut.applied(to: input, in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        return input.sequenced(through: block1, block2) + shortcut.applied(to: input)
     }
 }
 
@@ -112,17 +106,10 @@ struct WideResNet16: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = l1.applied(to: input, in: context)
-
-        tmp = l2a.applied(to: tmp, in: context)
-        tmp = l3a.applied(to: tmp, in: context)
-        tmp = l4a.applied(to: tmp, in: context)
-
-        tmp = relu(norm.applied(to: tmp, in: context))
-        tmp = avgPool.applied(to: tmp, in: context)
-        tmp = flatten.applied(to: tmp, in: context)
-        return classifier.applied(to: tmp, in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        let inputLayer = input.sequenced(through: l1, l2a, l3a, l4a)
+        let finalNorm = relu(norm.applied(to: inputLayer))
+        return finalNorm.sequenced(through: avgPool, flatten, classifier)
     }
 }
 
@@ -157,12 +144,8 @@ struct WideResnet28FirstBasicBlock: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = block1.applied(to: input, in: context)
-        tmp = block2.applied(to: tmp, in: context)
-        tmp = block3.applied(to: tmp, in: context)
-        tmp = block4.applied(to: tmp, in: context)
-        return tmp + shortcut.applied(to: input, in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        return input.sequenced(through: block1, block2, block3, block4) + shortcut.applied(to: input)
     }
 }
 
@@ -197,10 +180,8 @@ struct WideResnet28BasicBlock: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = block1.applied(to: input, in: context)
-        tmp = block2.applied(to: tmp, in: context)
-        return tmp + shortcut.applied(to: input, in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        return input.sequenced(through: block1, block2) + shortcut.applied(to: input)
     }
 }
 
@@ -224,16 +205,9 @@ struct WideResNet28: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = l1.applied(to: input, in: context)
-
-        tmp = l2a.applied(to: tmp, in: context)
-        tmp = l3a.applied(to: tmp, in: context)
-        tmp = l4a.applied(to: tmp, in: context)
-
-        tmp = relu(norm.applied(to: tmp, in: context))
-        tmp = avgPool.applied(to: tmp, in: context)
-        tmp = flatten.applied(to: tmp, in: context)
-        return classifier.applied(to: tmp, in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        let inputLayer = input.sequenced(through: l1, l2a, l3a, l4a)
+        let finalNorm = relu(norm.applied(to: inputLayer))
+        return finalNorm.sequenced(through: avgPool, flatten, classifier)
     }
 }
