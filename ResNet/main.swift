@@ -16,6 +16,8 @@ var model = ResNet50(imageSize: 32, classCount: 10) // Use the network sized for
 let optimizer = SGD(for: model, learningRate: 0.001, scalarType: Float.self)
 
 print("Starting training...")
+Context.local.learningPhase = .training
+
 for epoch in 1...10 {
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
@@ -24,7 +26,7 @@ for epoch in 1...10 {
     for batch in trainingShuffled.batched(Int64(batchSize)) {
         let (labels, images) = (batch.label, batch.data)
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
-            let logits = model.applied(to: images, in: Context(learningPhase: .training))
+            let logits = model.applied(to: images)
             return softmaxCrossEntropy(logits: logits, labels: labels)
         }
         trainingLossSum += loss.scalarized()
