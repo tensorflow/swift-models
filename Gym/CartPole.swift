@@ -171,6 +171,7 @@ var net = Net(observationSize: Int(observationSize), hiddenSize: hiddenSize, act
 // let optimizer = SGD<Net, Float>(learningRate: 0.1, momentum: 0.9)
 let optimizer = Adam<Net, Float>(learningRate: 0.01)
 var batchIndex = 0
+Context.local.learningPhase = .training
 while true {
     print("Processing mini batch \(batchIndex)")
     batchIndex += 1
