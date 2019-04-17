@@ -1,16 +1,16 @@
 import TensorFlow
 import Python
 PythonLibrary.useVersion(3)
+//needed to use batch norm in ResNet model layers
+Context.local.learningPhase = .training
 
 let batchSize: Int32 = 100
 
 let cifarDataset = loadCIFAR10()
 let testBatches = cifarDataset.test.batched(Int64(batchSize))
 
-//needed to use batch norm in ResNet model layers
-//Context.local.learningPhase = .training
-//var model = ResNet20()
 
+//var model = ResNet20()
 //var model = PyTorchModel()
 var model = KerasModel()
 
