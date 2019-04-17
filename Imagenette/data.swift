@@ -38,7 +38,7 @@ struct ImageDataset {
         self.classes = newLabels.count
         self.labels = newLabels
         self.imageData = Tensor<Float>(
-            shape:[Int32(newImageLabels.count), Int32(imageSize.0), Int32(imageSize.1), 3],
+            shape:[Int(newImageLabels.count), Int(imageSize.0), Int(imageSize.1), 3],
             scalars: newImageData)
         self.imageLabels = Tensor<Int32>(newImageLabels)
 

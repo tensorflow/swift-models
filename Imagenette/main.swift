@@ -30,7 +30,7 @@ for epoch in 1...80 {
     var trainingBatchCount = 0
     let shuffledDataset = trainingImageDataset.combinedDataset.shuffled(
         sampleCount: Int64(totalTrainingImages), randomSeed: Int64(epoch))
-    let batchSize: Int32 = 42
+    let batchSize: Int = 42
 
     for batch in shuffledDataset.batched(Int64(batchSize)) {
         let (labels, images) = (batch.label, batch.data)
@@ -57,8 +57,7 @@ for epoch in 1...80 {
             boxInd: boxIndicies, cropSize:Tensor<Int32>([internalImageSize,internalImageSize]))
 
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
-            let logits = model.applied(to: randomlyCroppedImages,
-                in: Context(learningPhase: .training))
+            let logits = model.applied(to: randomlyCroppedImages)
             return softmaxCrossEntropy(logits: logits, labels: labels)
         }
         trainingLossSum += loss.scalarized()
@@ -69,8 +68,8 @@ for epoch in 1...80 {
     var testLossSum: Float = 0
     var testBatchCount = 0
     var correctGuessCount = 0
-    let totalGuessCount: Int32 = totalValidationImages
-    let testBatchSize: Int32 = 50
+    let totalGuessCount: Int = totalValidationImages
+    let testBatchSize: Int = 50
 
     for batch in validationImageDataset.combinedDataset.batched(Int64(testBatchSize)) {
         let (labels, images) = (batch.label, batch.data)
