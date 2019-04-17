@@ -42,10 +42,12 @@ struct WideResnet16FirstBasicBlock: Layer {
         initialStride: (Int, Int) = (2, 2)
     ) {
         self.block1 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1 * widenFactor),
+            filterShape: (kernelSize, kernelSize,
+                featureCounts.0, featureCounts.1 * widenFactor),
             strides: initialStride)
         self.block2 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize, featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
+            filterShape: (kernelSize, kernelSize,
+                featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
             strides: (1, 1))
         self.shortcut = Conv2D(
             filterShape: (1, 1, featureCounts.0, featureCounts.1 * widenFactor),
@@ -70,10 +72,12 @@ struct WideResnet16BasicBlock: Layer {
         initialStride: (Int, Int) = (2, 2)
     ) {
         self.block1 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize, featureCounts.0 * widenFactor, featureCounts.1 * widenFactor),
+            filterShape: (kernelSize, kernelSize,
+                featureCounts.0 * widenFactor, featureCounts.1 * widenFactor),
             strides: initialStride)
         self.block2 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize, featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
+            filterShape: (kernelSize, kernelSize,
+                featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
             strides: (1, 1))
         self.shortcut = Conv2D(
             filterShape: (1, 1, featureCounts.0 * widenFactor, featureCounts.1 * widenFactor),
@@ -89,7 +93,8 @@ struct WideResnet16BasicBlock: Layer {
 struct WideResNet16: Layer {
     var l1: Conv2D<Float>
 
-    var l2 = WideResnet16FirstBasicBlock(featureCounts: (16, 16), widenFactor: 4, initialStride: (1, 1))
+    var l2 = WideResnet16FirstBasicBlock(featureCounts: (16, 16), widenFactor: 4,
+        initialStride: (1, 1))
     var l3 = WideResnet16BasicBlock(featureCounts: (16, 32), widenFactor: 4)
     var l4 = WideResnet16BasicBlock(featureCounts: (32, 64), widenFactor: 4)
  
@@ -130,13 +135,16 @@ struct WideResnet28FirstBasicBlock: Layer {
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1 * widenFactor),
             strides: initialStride)
         self.block2 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize, featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
+            filterShape: (kernelSize, kernelSize,
+                featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
             strides: (1, 1))
         self.block3 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize, featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
+            filterShape: (kernelSize, kernelSize,
+                featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
             strides: (1, 1))
         self.block4 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize, featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
+            filterShape: (kernelSize, kernelSize,
+                featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
             strides: (1, 1))
         self.shortcut = Conv2D(
             filterShape: (1, 1, featureCounts.0, featureCounts.1 * widenFactor),
@@ -145,7 +153,8 @@ struct WideResnet28FirstBasicBlock: Layer {
 
     @differentiable
     func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        return input.sequenced(through: block1, block2, block3, block4) + shortcut.applied(to: input)
+        let blockLayer = input.sequenced(through: block1, block2, block3, block4)
+        return blockLayer + shortcut.applied(to: input)
     }
 }
 
@@ -163,16 +172,20 @@ struct WideResnet28BasicBlock: Layer {
         initialStride: (Int, Int) = (2, 2)
     ) {
         self.block1 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize, featureCounts.0 * widenFactor, featureCounts.1 * widenFactor),
+            filterShape: (kernelSize, kernelSize,
+                featureCounts.0 * widenFactor, featureCounts.1 * widenFactor),
             strides: initialStride)
         self.block2 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize, featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
+            filterShape: (kernelSize, kernelSize,
+                featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
             strides: (1, 1))
         self.block3 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize, featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
+            filterShape: (kernelSize, kernelSize,
+                featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
             strides: (1, 1))
         self.block4 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize, featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
+            filterShape: (kernelSize, kernelSize,
+                featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
             strides: (1, 1))
         self.shortcut = Conv2D(
             filterShape: (1, 1, featureCounts.0 * widenFactor, featureCounts.1 * widenFactor),
@@ -188,7 +201,8 @@ struct WideResnet28BasicBlock: Layer {
 struct WideResNet28: Layer {
     var l1: Conv2D<Float>
 
-    var l2 = WideResnet28FirstBasicBlock(featureCounts: (16, 16), widenFactor: 10, initialStride: (1, 1))
+    var l2 = WideResnet28FirstBasicBlock(featureCounts: (16, 16), widenFactor: 10,
+        initialStride: (1, 1))
     var l3 = WideResnet28BasicBlock(featureCounts: (16, 32), widenFactor: 10)
     var l4 = WideResnet28BasicBlock(featureCounts: (32, 64), widenFactor: 10)
  
