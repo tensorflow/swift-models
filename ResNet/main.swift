@@ -2,9 +2,6 @@ import TensorFlow
 import Python
 PythonLibrary.useVersion(3)
 
-//needed to use batch norm in ResNet model layers
-Context.local.learningPhase = .training
-
 let batchSize = 100
 
 let cifarDataset = loadCIFAR10()
@@ -19,6 +16,8 @@ var model = ResNet50(imageSize: 32, classCount: 10) // Use the network sized for
 let optimizer = SGD(for: model, learningRate: 0.001, scalarType: Float.self)
 
 print("Starting training...")
+Context.local.learningPhase = .training
+
 for epoch in 1...10 {
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
