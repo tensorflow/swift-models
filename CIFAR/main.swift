@@ -1,8 +1,6 @@
 import TensorFlow
 import Python
 PythonLibrary.useVersion(3)
-//needed to use batch norm in ResNet model layers
-Context.local.learningPhase = .training
 
 let batchSize: Int32 = 100
 
@@ -20,6 +18,8 @@ var model = KerasModel()
 let optimizer = RMSProp(for: model, learningRate: 0.0001, decay: 1e-6, scalarType: Float.self)
 
 print("Starting training...")
+Context.local.learningPhase = .training
+
 for epoch in 1...100 {
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
