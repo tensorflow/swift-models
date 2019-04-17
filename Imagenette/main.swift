@@ -2,9 +2,8 @@ import TensorFlow
 import Foundation
 
 let imageDirectory = "imagenette-160"
-//let imageDirectory = "imagewoof-160"
-let inputImageSize: Int32 = 160
-let internalImageSize: Int32 = 128
+let inputImageSize = 160
+let internalImageSize = 128
 
 print("Building dataset...")
 let trainingImageDirectoryURL = URL(fileURLWithPath:"\(imageDirectory)/train")
@@ -38,10 +37,10 @@ for epoch in 1...80 {
         var boxList: [Float] = []
         var boxIndiciesList: [Int32] = []
         for i in 1...batchSize {
-            let max: Int32 = Int32(inputImageSize - internalImageSize)
-            let xOffset = Float(Int32.random(in: 0..<max))/Float(inputImageSize)
-            let yOffset = Float(Int32.random(in: 0..<max))/Float(inputImageSize)
-            let offset: Float = Float(internalImageSize)/Float(inputImageSize)
+            let max = inputImageSize - internalImageSize
+            let xOffset = Float(Int.random(in: 0..<max)) / Float(inputImageSize)
+            let yOffset = Float(Int.random(in: 0..<max)) / Float(inputImageSize)
+            let offset = Float(internalImageSize) / Float(inputImageSize)
 
             if Bool.random() {
                 boxList.append(contentsOf:[yOffset, xOffset, yOffset + offset, xOffset + offset])
@@ -54,7 +53,8 @@ for epoch in 1...80 {
         let boxIndicies = Tensor<Int32>(boxIndiciesList)
 
         let randomlyCroppedImages = Raw.cropAndResize(image: images, boxes: boxesWrapped,
-            boxInd: boxIndicies, cropSize:Tensor<Int32>([internalImageSize,internalImageSize]))
+            boxInd: boxIndicies,
+            cropSize:Tensor<Int32>([Int32(internalImageSize), Int32(internalImageSize)]))
 
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
             let logits = model.applied(to: randomlyCroppedImages)
@@ -68,8 +68,8 @@ for epoch in 1...80 {
     var testLossSum: Float = 0
     var testBatchCount = 0
     var correctGuessCount = 0
-    let totalGuessCount: Int = totalValidationImages
-    let testBatchSize: Int = 50
+    let totalGuessCount = totalValidationImages
+    let testBatchSize = 50
 
     for batch in validationImageDataset.combinedDataset.batched(Int64(testBatchSize)) {
         let (labels, images) = (batch.label, batch.data)
@@ -77,16 +77,16 @@ for epoch in 1...80 {
         var boxList: [Float] = []
         var boxIndiciesList: [Int32] = []
         for i in 1...testBatchSize {
-            let maxX: Float = Float(inputImageSize)
-            let maxY: Float = Float(inputImageSize)
+            let maxX = Float(inputImageSize)
+            let maxY = Float(inputImageSize)
 
-            let xPrime: Float = (Float(maxX) - Float(internalImageSize))/2.0
-            let yPrime: Float = (Float(maxY) - Float(internalImageSize))/2.0
+            let xPrime = (maxX - Float(internalImageSize)) / 2.0
+            let yPrime = (maxY - Float(internalImageSize)) / 2.0
 
-            let xOne = xPrime/maxX
-            let yOne = yPrime/maxY
-            let xTwo = (xPrime + Float(internalImageSize))/maxX
-            let yTwo = (yPrime + Float(internalImageSize))/maxY
+            let xOne = xPrime / maxX
+            let yOne = yPrime / maxY
+            let xTwo = (xPrime + Float(internalImageSize)) / maxX
+            let yTwo = (yPrime + Float(internalImageSize)) / maxY
 
             boxList.append(contentsOf:[yOne, xOne, yTwo, xTwo])
             boxIndiciesList.append(Int32(i-1))
@@ -95,7 +95,8 @@ for epoch in 1...80 {
         let boxIndicies = Tensor<Int32>(boxIndiciesList)
 
         let centerCroppedImages = Raw.cropAndResize(image: images, boxes: boxesWrapped,
-            boxInd: boxIndicies, cropSize:Tensor<Int32>([internalImageSize,internalImageSize]))
+            boxInd: boxIndicies,
+            cropSize:Tensor<Int32>([Int32(internalImageSize), Int32(internalImageSize)]))
 
         let logits = model.inferring(from: centerCroppedImages)
         testLossSum += softmaxCrossEntropy(logits: logits, labels: labels).scalarized()

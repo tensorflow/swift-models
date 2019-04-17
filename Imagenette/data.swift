@@ -13,7 +13,7 @@ struct ImageDataset {
     let imageLabels: Tensor<Int32>
     let combinedDataset: Dataset<Example>
 
-    init(imageDirectory: URL, imageSize: (Int32, Int32)) throws {
+    init(imageDirectory: URL, imageSize: (Int, Int)) throws {
         let dirContents = try FileManager.default.contentsOfDirectory(at: imageDirectory,
             includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])
         var newImageData: [Float] = []
@@ -38,8 +38,7 @@ struct ImageDataset {
         self.classes = newLabels.count
         self.labels = newLabels
         self.imageData = Tensor<Float>(
-            shape:[Int(newImageLabels.count), Int(imageSize.0), Int(imageSize.1), 3],
-            scalars: newImageData)
+            shape:[newImageLabels.count, imageSize.0, imageSize.1, 3], scalars: newImageData)
         self.imageLabels = Tensor<Int32>(newImageLabels)
 
         self.combinedDataset =  Dataset(elements: Example(label: Tensor<Int32>(self.imageLabels),
@@ -47,26 +46,26 @@ struct ImageDataset {
     }
 }
 
-func loadCenterCroppedImageUsingTensorFlow(from fileURL: URL, size: (Int32, Int32)) -> [Float]? {
+func loadCenterCroppedImageUsingTensorFlow(from fileURL: URL, size: (Int, Int)) -> [Float]? {
     let loadedFile = Raw.readFile(filename: StringTensor(fileURL.absoluteString))
     let loadedJpeg = Raw.decodeJpeg(contents: loadedFile, channels: 3, dctMethod: "")
 
-    let maxX: Float = Float(loadedJpeg.shape[0])
-    let maxY: Float = Float(loadedJpeg.shape[1])
+    let maxX = Float(loadedJpeg.shape[0])
+    let maxY = Float(loadedJpeg.shape[1])
 
-    let xPrime: Float = (Float(maxX) - Float(size.0))/2.0
-    let yPrime: Float = (Float(maxY) - Float(size.1))/2.0
+    let xPrime = (maxX - Float(size.0)) / 2.0
+    let yPrime = (maxY - Float(size.1)) / 2.0
 
-    let xOne = xPrime/maxX
-    let yOne = yPrime/maxY
-    let xTwo = (xPrime + Float(size.0))/maxX
-    let yTwo = (yPrime + Float(size.1))/maxY
+    let xOne = xPrime / maxX
+    let yOne = yPrime / maxY
+    let xTwo = (xPrime + Float(size.0)) / maxX
+    let yTwo = (yPrime + Float(size.1)) / maxY
 
     let boxesWrapped = Tensor<Float>(shape:[1, 4], scalars: [yOne, xOne, yTwo, xTwo])
     let boxIndicies = Tensor<Int32>([0])
 
     let centerCroppedImage = Raw.cropAndResize(image: Tensor<UInt8>([loadedJpeg]),
         boxes: boxesWrapped, boxInd: boxIndicies,
-        cropSize:Tensor<Int32>([Int32(size.0),Int32(size.1)]))
+        cropSize:Tensor<Int32>([Int32(size.0), Int32(size.1)]))
     return centerCroppedImage.scalars
 }
