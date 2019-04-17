@@ -21,8 +21,8 @@ struct Conv2DBatchNorm: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        return norm.applied(to: conv.applied(to: input, in: context), in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        return input.sequenced(through: conv, norm)
     }
 }
 
@@ -40,9 +40,8 @@ struct BatchNormConv2D: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        let tmp = relu(norm.applied(to: input, in: context))
-        return conv.applied(to: tmp, in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        return conv.applied(to: relu(norm.applied(to: input)))
     }
 }
 
@@ -66,9 +65,8 @@ struct PreActivatedResidualBasicBlock: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        let tmp = layer1.applied(to: input, in: context)
-        return layer2.applied(to: tmp, in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        return input.sequenced(through: layer1, layer2)
     }
 }
 
@@ -93,10 +91,8 @@ struct PreActivatedResidualBasicBlockShortcut: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = layer1.applied(to: input, in: context)
-        tmp = layer2.applied(to: tmp, in: context)
-        return tmp + shortcut.applied(to: input, in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        return input.sequenced(through: layer1, layer2) + shortcut.applied(to: input)
     }
 }
 
@@ -137,26 +133,14 @@ struct PreActivatedResNet18: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = l1.applied(to: input, in: context)
-        tmp = maxPool.applied(to: tmp, in: context)
-
-        tmp = l2a.applied(to: tmp, in: context)
-        tmp = l2b.applied(to: tmp, in: context)
-
-        tmp = l3a.applied(to: tmp, in: context)
-        tmp = l3b.applied(to: tmp, in: context)
-
-        tmp = l4a.applied(to: tmp, in: context)
-        tmp = l4b.applied(to: tmp, in: context)
-
-        tmp = l5a.applied(to: tmp, in: context)
-        tmp = l5b.applied(to: tmp, in: context)
-
-        tmp = relu(norm.applied(to: tmp, in: context))
-        tmp = avgPool.applied(to: tmp, in: context)
-        tmp = flatten.applied(to: tmp, in: context)
-        return classifier.applied(to: tmp, in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        let inputLayer = input.sequenced(through:l1, maxPool)
+        let level2 = inputLayer.sequenced(through: l2a, l2b)
+        let level3 = level2.sequenced(through: l3a, l3b)
+        let level4 = level3.sequenced(through: l4a, l4b)
+        let level5 = level4.sequenced(through: l5a, l5b)
+        let finalNorm = relu(norm.applied(to: level5))
+        return finalNorm.sequenced(through: avgPool, flatten, classifier)
     }
 }
 
@@ -205,33 +189,13 @@ struct PreActivatedResNet34: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = l1.applied(to: input, in: context)
-        tmp = maxPool.applied(to: tmp, in: context)
-
-        tmp = l2a.applied(to: tmp, in: context)
-        tmp = l2b.applied(to: tmp, in: context) 
-        tmp = l2c.applied(to: tmp, in: context)
-
-        tmp = l3a.applied(to: tmp, in: context)
-        tmp = l3b.applied(to: tmp, in: context)
-        tmp = l3c.applied(to: tmp, in: context)
-        tmp = l3d.applied(to: tmp, in: context)
-
-        tmp = l4a.applied(to: tmp, in: context)
-        tmp = l4b.applied(to: tmp, in: context)
-        tmp = l4c.applied(to: tmp, in: context)
-        tmp = l4d.applied(to: tmp, in: context)
-        tmp = l4e.applied(to: tmp, in: context)
-        tmp = l4f.applied(to: tmp, in: context)
-
-        tmp = l5a.applied(to: tmp, in: context)
-        tmp = l5b.applied(to: tmp, in: context)
-        tmp = l5c.applied(to: tmp, in: context)
-
-        tmp = relu(norm.applied(to: tmp, in: context))
-        tmp = avgPool.applied(to: tmp, in: context)
-        tmp = flatten.applied(to: tmp, in: context)
-        return classifier.applied(to: tmp, in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        let inputLayer = input.sequenced(through:l1, maxPool)
+        let level2 = inputLayer.sequenced(through: l2a, l2b, l2c)
+        let level3 = level2.sequenced(through: l3a, l3b, l3c, l3d)
+        let level4 = level3.sequenced(through: l4a, l4b, l4c, l4d, l4e, l4f)
+        let level5 = level4.sequenced(through: l5a, l5b, l5c)
+        let finalNorm = relu(norm.applied(to: level5))
+        return finalNorm.sequenced(through: avgPool, flatten, classifier)
     }
 }

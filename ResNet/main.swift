@@ -2,6 +2,9 @@ import TensorFlow
 import Python
 PythonLibrary.useVersion(3)
 
+//needed to use batch norm in ResNet model layers
+Context.local.learningPhase = .training
+
 let batchSize = 100
 
 let cifarDataset = loadCIFAR10()
@@ -24,7 +27,7 @@ for epoch in 1...10 {
     for batch in trainingShuffled.batched(Int64(batchSize)) {
         let (labels, images) = (batch.label, batch.data)
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
-            let logits = model.applied(to: images, in: Context(learningPhase: .training))
+            let logits = model.applied(to: images)
             return softmaxCrossEntropy(logits: logits, labels: labels)
         }
         trainingLossSum += loss.scalarized()
