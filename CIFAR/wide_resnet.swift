@@ -89,9 +89,9 @@ struct WideResnet16BasicBlock: Layer {
 struct WideResNet16: Layer {
     var l1: Conv2D<Float>
 
-    var l2a = WideResnet16FirstBasicBlock(featureCounts: (16, 16), widenFactor: 4, initialStride: (1, 1))
-    var l3a = WideResnet16BasicBlock(featureCounts: (16, 32), widenFactor: 4)
-    var l4a = WideResnet16BasicBlock(featureCounts: (32, 64), widenFactor: 4)
+    var l2 = WideResnet16FirstBasicBlock(featureCounts: (16, 16), widenFactor: 4, initialStride: (1, 1))
+    var l3 = WideResnet16BasicBlock(featureCounts: (16, 32), widenFactor: 4)
+    var l4 = WideResnet16BasicBlock(featureCounts: (32, 64), widenFactor: 4)
  
     var norm: BatchNorm<Float>
     var avgPool: AvgPool2D<Float>
@@ -107,7 +107,7 @@ struct WideResNet16: Layer {
 
     @differentiable
     func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        let inputLayer = input.sequenced(through: l1, l2a, l3a, l4a)
+        let inputLayer = input.sequenced(through: l1, l2, l3, l4)
         let finalNorm = relu(norm.applied(to: inputLayer))
         return finalNorm.sequenced(through: avgPool, flatten, classifier)
     }
@@ -188,9 +188,9 @@ struct WideResnet28BasicBlock: Layer {
 struct WideResNet28: Layer {
     var l1: Conv2D<Float>
 
-    var l2a = WideResnet28FirstBasicBlock(featureCounts: (16, 16), widenFactor: 10, initialStride: (1, 1))
-    var l3a = WideResnet28BasicBlock(featureCounts: (16, 32), widenFactor: 10)
-    var l4a = WideResnet28BasicBlock(featureCounts: (32, 64), widenFactor: 10)
+    var l2 = WideResnet28FirstBasicBlock(featureCounts: (16, 16), widenFactor: 10, initialStride: (1, 1))
+    var l3 = WideResnet28BasicBlock(featureCounts: (16, 32), widenFactor: 10)
+    var l4 = WideResnet28BasicBlock(featureCounts: (32, 64), widenFactor: 10)
  
     var norm: BatchNorm<Float>
     var avgPool: AvgPool2D<Float>
@@ -206,7 +206,7 @@ struct WideResNet28: Layer {
 
     @differentiable
     func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        let inputLayer = input.sequenced(through: l1, l2a, l3a, l4a)
+        let inputLayer = input.sequenced(through: l1, l2, l3, l4)
         let finalNorm = relu(norm.applied(to: inputLayer))
         return finalNorm.sequenced(through: avgPool, flatten, classifier)
     }
