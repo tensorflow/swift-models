@@ -7,6 +7,7 @@ let batchSize: Int32 = 100
 let cifarDataset = loadCIFAR10()
 let testBatches = cifarDataset.test.batched(Int64(batchSize))
 
+
 //var model = ResNet20()
 //var model = PyTorchModel()
 var model = KerasModel()
@@ -17,6 +18,8 @@ var model = KerasModel()
 let optimizer = RMSProp(for: model, learningRate: 0.0001, decay: 1e-6, scalarType: Float.self)
 
 print("Starting training...")
+Context.local.learningPhase = .training
+
 for epoch in 1...100 {
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
@@ -25,7 +28,7 @@ for epoch in 1...100 {
     for batch in trainingShuffled.batched(Int64(batchSize)) {
         let (labels, images) = (batch.label, batch.data)
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
-            let logits = model.applied(to: images, in: Context(learningPhase: .training))
+            let logits = model.applied(to: images)
             return softmaxCrossEntropy(logits: logits, labels: labels)
         }
         trainingLossSum += loss.scalarized()
