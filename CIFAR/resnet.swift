@@ -21,11 +21,8 @@ struct Conv2DBatchNorm: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = input
-        tmp = conv.applied(to: tmp, in: context)
-        tmp = norm.applied(to: tmp, in: context)
-        return tmp
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        return input.sequenced(through: conv, norm)
     }
 }
 
@@ -53,10 +50,10 @@ struct BasicBlock20: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = relu(layer1.applied(to: input, in: context))
-        tmp = relu(layer2.applied(to: tmp, in: context))
-        return relu(tmp + shortcut.applied(to: input, in: context))
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        var tmp = relu(layer1.applied(to: input))
+        tmp = relu(layer2.applied(to: tmp))
+        return relu(tmp + shortcut.applied(to: input))
     }
 }
 
@@ -72,16 +69,10 @@ struct ResNet20: Layer {
     var classifier = Dense<Float>(inputSize: 64, outputSize: 10, activation: softmax)
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = relu(inputLayer.applied(to: input, in: context))
-
-        tmp = basicBlock1.applied(to: tmp, in: context)
-        tmp = basicBlock2.applied(to: tmp, in: context)
-        tmp = basicBlock3.applied(to: tmp, in: context)
-
-        tmp = averagePool.applied(to: tmp, in: context)
-        tmp = flatten.applied(to: tmp, in: context)
-        return classifier.applied(to: tmp, in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        let tmp = relu(inputLayer.applied(to: input))
+        let convolved = tmp.sequenced(through: basicBlock1, basicBlock2, basicBlock3)
+        return convolved.sequenced(through: averagePool, flatten, classifier)
     }
 }
 
@@ -117,12 +108,12 @@ struct BasicBlock32: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = relu(layer1.applied(to: input, in: context))
-        tmp = relu(layer2.applied(to: tmp, in: context))
-        tmp = relu(layer3.applied(to: tmp, in: context))
-        tmp = relu(layer4.applied(to: tmp, in: context))
-        return relu(tmp + shortcut.applied(to: input, in: context))
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        var tmp = relu(layer1.applied(to: input))
+        tmp = relu(layer2.applied(to: tmp))
+        tmp = relu(layer3.applied(to: tmp))
+        tmp = relu(layer4.applied(to: tmp))
+        return relu(tmp + shortcut.applied(to: input))
     }
 }
 
@@ -138,16 +129,10 @@ struct ResNet32: Layer {
     var classifier = Dense<Float>(inputSize: 64, outputSize: 10, activation: softmax)
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = relu(inputLayer.applied(to: input, in: context))
-
-        tmp = basicBlock1.applied(to: tmp, in: context)
-        tmp = basicBlock2.applied(to: tmp, in: context)
-        tmp = basicBlock3.applied(to: tmp, in: context)
-
-        tmp = averagePool.applied(to: tmp, in: context)
-        tmp = flatten.applied(to: tmp, in: context)
-        return classifier.applied(to: tmp, in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        let tmp = relu(inputLayer.applied(to: input))
+        let convolved = tmp.sequenced(through: basicBlock1, basicBlock2, basicBlock3)
+        return convolved.sequenced(through: averagePool, flatten, classifier)
     }
 }
 
@@ -191,14 +176,14 @@ struct BasicBlock44: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = relu(layer1.applied(to: input, in: context))
-        tmp = relu(layer2.applied(to: tmp, in: context))
-        tmp = relu(layer3.applied(to: tmp, in: context))
-        tmp = relu(layer4.applied(to: tmp, in: context))
-        tmp = relu(layer5.applied(to: tmp, in: context))
-        tmp = relu(layer6.applied(to: tmp, in: context))
-        return relu(tmp + shortcut.applied(to: input, in: context))
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        var tmp = relu(layer1.applied(to: input))
+        tmp = relu(layer2.applied(to: tmp))
+        tmp = relu(layer3.applied(to: tmp))
+        tmp = relu(layer4.applied(to: tmp))
+        tmp = relu(layer5.applied(to: tmp))
+        tmp = relu(layer6.applied(to: tmp))
+        return relu(tmp + shortcut.applied(to: input))
     }
 }
 
@@ -214,16 +199,10 @@ struct ResNet44: Layer {
     var classifier = Dense<Float>(inputSize: 64, outputSize: 10, activation: softmax)
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = relu(inputLayer.applied(to: input, in: context))
-
-        tmp = basicBlock1.applied(to: tmp, in: context)
-        tmp = basicBlock2.applied(to: tmp, in: context)
-        tmp = basicBlock3.applied(to: tmp, in: context)
-
-        tmp = averagePool.applied(to: tmp, in: context)
-        tmp = flatten.applied(to: tmp, in: context)
-        return classifier.applied(to: tmp, in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        let tmp = relu(inputLayer.applied(to: input))
+        let convolved = tmp.sequenced(through: basicBlock1, basicBlock2, basicBlock3)
+        return convolved.sequenced(through: averagePool, flatten, classifier)
     }
 }
 
@@ -275,16 +254,16 @@ struct BasicBlock56: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = relu(layer1.applied(to: input, in: context))
-        tmp = relu(layer2.applied(to: tmp, in: context))
-        tmp = relu(layer3.applied(to: tmp, in: context))
-        tmp = relu(layer4.applied(to: tmp, in: context))
-        tmp = relu(layer5.applied(to: tmp, in: context))
-        tmp = relu(layer6.applied(to: tmp, in: context))
-        tmp = relu(layer7.applied(to: tmp, in: context))
-        tmp = relu(layer8.applied(to: tmp, in: context))
-        return relu(tmp + shortcut.applied(to: input, in: context))
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        var tmp = relu(layer1.applied(to: input))
+        tmp = relu(layer2.applied(to: tmp))
+        tmp = relu(layer3.applied(to: tmp))
+        tmp = relu(layer4.applied(to: tmp))
+        tmp = relu(layer5.applied(to: tmp))
+        tmp = relu(layer6.applied(to: tmp))
+        tmp = relu(layer7.applied(to: tmp))
+        tmp = relu(layer8.applied(to: tmp))
+        return relu(tmp + shortcut.applied(to: input))
     }
 }
 
@@ -300,15 +279,9 @@ struct ResNet56: Layer {
     var classifier = Dense<Float>(inputSize: 64, outputSize: 10, activation: softmax)
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = relu(inputLayer.applied(to: input, in: context))
-
-        tmp = basicBlock1.applied(to: tmp, in: context)
-        tmp = basicBlock2.applied(to: tmp, in: context)
-        tmp = basicBlock3.applied(to: tmp, in: context)
-
-        tmp = averagePool.applied(to: tmp, in: context)
-        tmp = flatten.applied(to: tmp, in: context)
-        return classifier.applied(to: tmp, in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        let tmp = relu(inputLayer.applied(to: input))
+        let convolved = tmp.sequenced(through: basicBlock1, basicBlock2, basicBlock3)
+        return convolved.sequenced(through: averagePool, flatten, classifier)
     }
 }

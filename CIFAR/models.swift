@@ -3,28 +3,18 @@ import TensorFlow
 // Ported from pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
 public struct PyTorchModel: Layer {
     var conv1 = Conv2D<Float>(filterShape: (5, 5, 3, 6), activation: relu)
-    var pool = MaxPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
+    var pool1 = MaxPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
     var conv2 = Conv2D<Float>(filterShape: (5, 5, 6, 16), activation: relu)
+    var pool2 = MaxPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
     var flatten = Flatten<Float>()
     var dense1 = Dense<Float>(inputSize: 16 * 5 * 5, outputSize: 120, activation: relu)
     var dense2 = Dense<Float>(inputSize: 120, outputSize: 84, activation: relu)
     var dense3 = Dense<Float>(inputSize: 84, outputSize: 10, activation: identity)
 
     @differentiable
-    public func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = input
-        tmp = conv1.applied(to: tmp, in: context)
-        tmp = pool.applied(to: tmp, in: context)
-        tmp = conv2.applied(to: tmp, in: context)
-        tmp = pool.applied(to: tmp, in: context)
-        tmp = flatten.applied(to: tmp, in: context)
-        tmp = dense1.applied(to: tmp, in: context)
-        tmp = dense2.applied(to: tmp, in: context)
-        tmp = dense3.applied(to: tmp, in: context)
-        return tmp
-        // blocked by TF-340
-        // let convolved = input.sequenced(in: context, through: conv1, pool, conv2, pool)
-        // return convolved.sequenced(in: context, through: flatten, dense1, dense2, dense3)
+    public func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        let convolved = input.sequenced(through: conv1, pool1, conv2, pool2)
+        return convolved.sequenced(through: flatten, dense1, dense2, dense3)
     }
 }
 
@@ -44,24 +34,9 @@ public struct KerasModel: Layer {
     var dense2 = Dense<Float>(inputSize: 512, outputSize: 10, activation: identity)
 
     @differentiable(wrt: (self, input))
-    public func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = input
-        tmp = conv1a.applied(to: tmp, in: context)
-        tmp = conv1b.applied(to: tmp, in: context)
-        tmp = pool1.applied(to: tmp, in: context)
-        tmp = dropout1.applied(to: tmp, in: context)
-        tmp = conv2a.applied(to: tmp, in: context)
-        tmp = conv2b.applied(to: tmp, in: context)
-        tmp = pool2.applied(to: tmp, in: context)
-        tmp = dropout2.applied(to: tmp, in: context)
-        tmp = flatten.applied(to: tmp, in: context)
-        tmp = dense1.applied(to: tmp, in: context)
-        tmp = dropout3.applied(to: tmp, in: context)
-        tmp = dense2.applied(to: tmp, in: context)
-        return tmp
-        // blocked by TF-340
-        // let conv1 = input.sequenced(in: context, through: conv1a, conv1b, pool1, dropout1)
-        // let conv2 = conv1.sequenced(in: context, through: conv2a, conv2b, pool2, dropout2)
-        // return conv2.sequenced(in: context, through: flatten, dense1, dropout3, dense2)
+    public func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        let conv1 = input.sequenced(through: conv1a, conv1b, pool1, dropout1)
+        let conv2 = conv1.sequenced(through: conv2a, conv2b, pool2, dropout2)
+        return conv2.sequenced(through: flatten, dense1, dropout3, dense2)
     }
 }
