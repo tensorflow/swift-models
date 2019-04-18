@@ -14,32 +14,20 @@
 
 import Foundation
 import TensorFlow
-import Python
-
-let np = Python.import("numpy")
 
 /// Reads a file into an array of bytes.
-func readFile(_ filename: String) -> [UInt8] {
-    let possibleFolders = [".", "MNIST"]
-    for folder in possibleFolders {
-        let parent = URL(fileURLWithPath: folder)
-        let filePath = parent.appendingPathComponent(filename).path
-        guard FileManager.default.fileExists(atPath: filePath) else {
-            continue
-        }
-        let d = Python.open(filePath, "rb").read()
-        return Array(numpy: np.frombuffer(d, dtype: np.uint8))!
-    }
-    fatalError(
-        "Failed to find file with name \(filename) in the following folders: \(possibleFolders).")
+func readFile(_ path: String) -> [UInt8] {
+    let url = URL(fileURLWithPath: path)
+    let data = try! Data(contentsOf: url, options: [])
+    return [UInt8](data)
 }
 
 /// Reads MNIST images and labels from specified file paths.
 func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>,
                                                            labels: Tensor<Int32>) {
     print("Reading data.")
-    let images = readFile(imagesFile).dropFirst(16).map { Float($0) }
-    let labels = readFile(labelsFile).dropFirst(8).map { Int32($0) }
+    let images = readFile(imagesFile).dropFirst(16).map(Float.init)
+    let labels = readFile(labelsFile).dropFirst(8).map(Int32.init)
     let rowCount = labels.count
     let imageHeight = 28, imageWidth = 28
 
