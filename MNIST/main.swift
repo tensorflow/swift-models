@@ -53,6 +53,9 @@ func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>
 
 /// A classifier.
 struct Classifier: Layer {
+    public typealias Input = Tensor<Float>
+    public typealias Output = Tensor<Float>
+
     var conv1a = Conv2D<Float>(filterShape: (3, 3, 1, 32), activation: relu)
     var conv1b = Conv2D<Float>(filterShape: (3, 3, 32, 64), activation: relu)
     var pool1 = MaxPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
@@ -64,7 +67,7 @@ struct Classifier: Layer {
     var layer1b = Dense<Float>(inputSize: 128, outputSize: 10, activation: softmax)
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+    public func call(_ input: Input) -> Output {
         let convolved = input.sequenced(through: conv1a, conv1b, pool1)
         return convolved.sequenced(through: dropout1a, flatten, layer1a, dropout1b, layer1b)
     }
@@ -83,7 +86,7 @@ let (images, numericLabels) = readMNIST(imagesFile: "train-images-idx3-ubyte",
 let labels = Tensor<Float>(oneHotAtIndices: numericLabels, depth: 10)
 
 var classifier = Classifier()
-let optimizer = RMSProp<Classifier, Float>()
+let optimizer = RMSProp(for:classifier)
 
 // The training loop.
 for epoch in 1...epochCount {
@@ -95,7 +98,7 @@ for epoch in 1...epochCount {
         let y = minibatch(in: numericLabels, at: i)
         // Compute the gradient with respect to the model.
         let 𝛁model = classifier.gradient { classifier -> Tensor<Float> in
-            let ŷ = classifier.applied(to: x)
+            let ŷ = classifier(x)
             let correctPredictions = ŷ.argmax(squeezingAxis: 1) .== y
             correctGuessCount += Int(Tensor<Int32>(correctPredictions).sum().scalarized())
             totalGuessCount += batchSize
