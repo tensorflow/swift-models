@@ -16,8 +16,8 @@ import Foundation
 import TensorFlow
 
 /// Reads a file into an array of bytes.
-func readFile(_ pathname: String) -> [UInt8] {
-    let url = URL(fileURLWithPath: pathname)
+func readFile(_ path: String) -> [UInt8] {
+    let url = URL(fileURLWithPath: path)
     let data = try! Data(contentsOf: url, options: [])
     return [UInt8](data)
 }
