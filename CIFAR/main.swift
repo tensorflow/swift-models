@@ -2,13 +2,12 @@ import TensorFlow
 import Python
 PythonLibrary.useVersion(3)
 
-let batchSize: Int32 = 100
+let batchSize = 100
 
 let cifarDataset = loadCIFAR10()
-let testBatches = cifarDataset.test.batched(Int64(batchSize))
+let testBatches = cifarDataset.test.batched(batchSize)
 
-
-//var model = ResNet20()
+// ResNet20, ResNet32, ResNet44, ResNet56, WideResNet16, WideResNet28
 //var model = PyTorchModel()
 var model = KerasModel()
 
@@ -25,7 +24,7 @@ for epoch in 1...100 {
     var trainingBatchCount = 0
     let trainingShuffled = cifarDataset.training.shuffled(
         sampleCount: 50000, randomSeed: Int64(epoch))
-    for batch in trainingShuffled.batched(Int64(batchSize)) {
+    for batch in trainingShuffled.batched(batchSize) {
         let (labels, images) = (batch.label, batch.data)
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
             let logits = model.applied(to: images)
@@ -39,7 +38,7 @@ for epoch in 1...100 {
     var testLossSum: Float = 0
     var testBatchCount = 0
     var correctGuessCount = 0
-    var totalGuessCount: Int32 = 0
+    var totalGuessCount = 0
     for batch in testBatches {
         let (labels, images) = (batch.label, batch.data)
         let logits = model.inferring(from: images)
