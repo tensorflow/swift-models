@@ -26,8 +26,8 @@ func readFile(_ pathname: String) -> [UInt8] {
 func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>,
                                                            labels: Tensor<Int32>) {
     print("Reading data.")
-    let images = readFile(imagesFile).dropFirst(16).map { Float($0) }
-    let labels = readFile(labelsFile).dropFirst(8).map { Int32($0) }
+    let images = readFile(imagesFile).dropFirst(16).map(Float.init)
+    let labels = readFile(labelsFile).dropFirst(8).map(Int32.init)
     let rowCount = Int32(labels.count)
     let imageHeight: Int32 = 28, imageWidth: Int32 = 28
 
