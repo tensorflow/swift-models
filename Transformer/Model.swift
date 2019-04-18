@@ -11,12 +11,10 @@ public struct TimeDistributed: Layer {
     @differentiable(wrt: (self, input))
     public func applied(to input: Tensor<Float>) -> Tensor<Float> {
         let (batchSize, timeSteps, features) = (input.shape[0], input.shape[1], input.shape[2])
-        let reshaped = input.reshaped(
-            toShape: Tensor([Int32(batchSize * timeSteps), Int32(features)]))
+        let reshaped = input.reshaped(to: [batchSize * timeSteps, features])
         let output = dense.applied(to: reshaped)
         let outputFeatures = output.shape[1]
-        return output.reshaped(
-            toShape: Tensor([Int32(batchSize), Int32(timeSteps), Int32(outputFeatures)]))
+        return output.reshaped(to: [batchSize, timeSteps, outputFeatures])
     }
 }
 
@@ -124,11 +122,9 @@ struct Attention: Layer {
 func splitHeads(_ input: Tensor<Float>, headCount: Int) -> Tensor<Float> {
     let (batchSize, timeSteps, features) = (input.shape[0], input.shape[1], input.shape[2])
     let featuresPerHead = features / headCount
-    let splitLastDim = input.reshaped(
-        toShape: Tensor([Int32(batchSize), Int32(timeSteps), Int32(headCount), Int32(featuresPerHead)]))
+    let splitLastDim = input.reshaped(to: [batchSize, timeSteps, headCount, featuresPerHead])
     let movedToFront = splitLastDim.transposed(withPermutations: 0, 2, 1, 3)
-    return movedToFront.reshaped(
-        toShape: Tensor([Int32(batchSize * headCount), Int32(timeSteps), Int32(featuresPerHead)]))
+    return movedToFront.reshaped(to: [batchSize * headCount, timeSteps, featuresPerHead])
 }
 
 @differentiable(wrt: input)
@@ -137,11 +133,9 @@ func joinHeads(_ input: Tensor<Float>, headCount: Int) -> Tensor<Float> {
         input.shape[0], input.shape[1], input.shape[2])
     let batchSize = generalizedBatch / headCount
     let features = featuresPerHead * headCount
-    let splitFirstDim = input.reshaped(
-        toShape: Tensor([Int32(batchSize), Int32(headCount), Int32(timeSteps), Int32(featuresPerHead)]))
+    let splitFirstDim = input.reshaped(to: [batchSize, headCount, timeSteps, featuresPerHead])
     let movedToBack = splitFirstDim.transposed(withPermutations: 0, 2, 1, 3)
-    return movedToBack.reshaped(
-        toShape: Tensor([Int32(batchSize), Int32(timeSteps), Int32(features)]))
+    return movedToBack.reshaped(to: [batchSize, timeSteps, features])
 }
 
 @differentiable(wrt: input, vjp: _vjpSplitQKV)
