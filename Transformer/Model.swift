@@ -9,12 +9,12 @@ public struct TimeDistributed: Layer {
     }
 
     @differentiable(wrt: (self, input))
-    public func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
+    public func applied(to input: Tensor<Float>) -> Tensor<Float> {
         let (batchSize, timeSteps, features) = (input.shape[0], input.shape[1], input.shape[2])
-        let reshaped = input.reshaped(toShape: Tensor<Int32>([batchSize * timeSteps, features]))
-        let output = dense.applied(to: reshaped, in: context)
+        let reshaped = input.reshaped(to: [batchSize * timeSteps, features])
+        let output = dense.applied(to: reshaped)
         let outputFeatures = output.shape[1]
-        return output.reshaped(toShape: Tensor<Int32>([batchSize, timeSteps, outputFeatures]))
+        return output.reshaped(to: [batchSize, timeSteps, outputFeatures])
     }
 }
 
@@ -31,8 +31,8 @@ struct FeedForward: Layer {
     }
 
     @differentiable(wrt: (self, input))
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        return input.sequenced(in: context, through: dense1, dropout, dense2)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        return input.sequenced(through: dense1, dropout, dense2)
     }
 }
 
@@ -80,8 +80,8 @@ func causallyMasked(_ dotProducts: Tensor<Float>, enable: Bool = false) -> Tenso
     let ones = Tensor<Float>(ones: [1, queryTimeSteps, keyTimeSteps])
     let mask = Raw.matrixBandPart(
         ones,
-        numLower: Tensor<Int32>(-1),
-        numUpper: Tensor<Int32>(queryTimeSteps - keyTimeSteps))
+        numLower: Tensor(Int32(-1)),
+        numUpper: Tensor(Int32(queryTimeSteps - keyTimeSteps)))
     return dotProducts * mask - 1e10 * (1 - mask)
 }
 
@@ -101,45 +101,41 @@ struct Attention: Layer {
         self.causal = causal
     }
     @differentiable(wrt: (self, input))
-    func applied(to input: AttentionInput, in context: Context)
+    func applied(to input: AttentionInput)
         -> Tensor<Float> {
         var dotProducts = batchedMatmul(input.query, input.key, adjointRight: true)
         dotProducts = causallyMasked(dotProducts, enable: causal) / scale
-        return batchedMatmul(dropout.applied(to: softmax(dotProducts), in: context), input.value)
+        return batchedMatmul(dropout.applied(to: softmax(dotProducts)), input.value)
     }
-    func applied(to input: AttentionInput, state: inout AttentionContext, in context: Context)
+    func applied(to input: AttentionInput, state: inout AttentionContext)
         -> Tensor<Float> {
         state = AttentionContext(
             key: state.key.concatenated(with: input.key, alongAxis: 1),
             value: state.value.concatenated(with: input.value, alongAxis: 1))
         var dotProducts = batchedMatmul(input.query, state.key, adjointRight: true)
         dotProducts = causallyMasked(dotProducts, enable: causal) / scale
-        return batchedMatmul(dropout.applied(to: softmax(dotProducts), in: context), state.value)
+        return batchedMatmul(dropout.applied(to: softmax(dotProducts)), state.value)
     }
 }
 
 @differentiable(wrt: input)
-func splitHeads(_ input: Tensor<Float>, headCount: Int32) -> Tensor<Float> {
+func splitHeads(_ input: Tensor<Float>, headCount: Int) -> Tensor<Float> {
     let (batchSize, timeSteps, features) = (input.shape[0], input.shape[1], input.shape[2])
     let featuresPerHead = features / headCount
-    let splitLastDim = input.reshaped(toShape: Tensor<Int32>(
-        [batchSize, timeSteps, headCount, featuresPerHead]))
+    let splitLastDim = input.reshaped(to: [batchSize, timeSteps, headCount, featuresPerHead])
     let movedToFront = splitLastDim.transposed(withPermutations: 0, 2, 1, 3)
-    return movedToFront.reshaped(toShape: Tensor<Int32>(
-        [batchSize * headCount, timeSteps, featuresPerHead]))
+    return movedToFront.reshaped(to: [batchSize * headCount, timeSteps, featuresPerHead])
 }
 
 @differentiable(wrt: input)
-func joinHeads(_ input: Tensor<Float>, headCount: Int32) -> Tensor<Float> {
+func joinHeads(_ input: Tensor<Float>, headCount: Int) -> Tensor<Float> {
     let (generalizedBatch, timeSteps, featuresPerHead) = (
         input.shape[0], input.shape[1], input.shape[2])
     let batchSize = generalizedBatch / headCount
     let features = featuresPerHead * headCount
-    let splitFirstDim = input.reshaped(toShape: Tensor<Int32>(
-        [batchSize, headCount, timeSteps, featuresPerHead]))
+    let splitFirstDim = input.reshaped(to: [batchSize, headCount, timeSteps, featuresPerHead])
     let movedToBack = splitFirstDim.transposed(withPermutations: 0, 2, 1, 3)
-    return movedToBack.reshaped(
-        toShape: Tensor<Int32>([batchSize, timeSteps, features]))
+    return movedToBack.reshaped(to: [batchSize, timeSteps, features])
 }
 
 @differentiable(wrt: input, vjp: _vjpSplitQKV)
@@ -170,36 +166,35 @@ struct MultiHeadAttention: Layer {
     var attention: Attention
     var wqkv: TimeDistributed
     var wo: TimeDistributed
-    @noDerivative let headCount: Int32
+    @noDerivative let headCount: Int
     init(attention: Attention, size: Int, headCount: Int) {
         self.attention = attention
         wqkv = TimeDistributed(Dense<Float>(
             inputSize: size, outputSize: size * 3, activation: identity))
         wo = TimeDistributed(Dense<Float>(inputSize: size, outputSize: size, activation: identity))
-        self.headCount = Int32(headCount)
+        self.headCount = headCount
     }
     @differentiable(wrt: (self, input))
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        let qkvProjected = wqkv.applied(to: input, in: context)
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+        let qkvProjected = wqkv.applied(to: input)
         let qkvSplit = splitHeads(qkvProjected, headCount: headCount)
         let attentionInput = splitQKV(qkvSplit)
-        let outputs = attention.applied(to: attentionInput, in: context)
-        return wo.applied(to: joinHeads(outputs, headCount: headCount), in: context)
+        let outputs = attention.applied(to: attentionInput)
+        return wo.applied(to: joinHeads(outputs, headCount: headCount))
     }
     func applied(
         to input: Tensor<Float>,
-        state: inout AttentionContext,
-        in context: Context
+        state: inout AttentionContext
     ) -> Tensor<Float> {
-        let qkvProjected = wqkv.applied(to: input, in: context)
+        let qkvProjected = wqkv.applied(to: input)
         let qkvSplit = splitQKV(qkvProjected)
         let attentionInput = makeAttentionInput(
             query: splitHeads(qkvSplit.query, headCount: headCount),
             key: splitHeads(qkvSplit.key, headCount: headCount),
             value: splitHeads(qkvSplit.value, headCount: headCount)
         )
-        let outputs = attention.applied(to: attentionInput, state: &state, in: context)
-        return wo.applied(to: joinHeads(outputs, headCount: headCount), in: context)
+        let outputs = attention.applied(to: attentionInput, state: &state)
+        return wo.applied(to: joinHeads(outputs, headCount: headCount))
     }
 }
 
@@ -224,27 +219,23 @@ struct EncoderLayer: Layer {
     }
 
     @differentiable(wrt: (self, input))
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
+    func applied(to input: Tensor<Float>) -> Tensor<Float> {
         let attended = input + input.sequenced(
-            in: context,
             through: selfAttentionNorm, selfAttention, selfAttentionDropout)
         return attended + attended.sequenced(
-            in: context,
             through: feedForwardNorm, feedForward, feedForwardDropout)
     }
 
     func applied(
         to input: Tensor<Float>,
-        state: inout AttentionContext,
-        in context: Context
+        state: inout AttentionContext
     ) -> Tensor<Float> {
         var tmp = input
-        tmp = selfAttentionNorm.applied(to: tmp, in: context)
-        tmp = selfAttention.applied(to: tmp, state: &state, in: context)
-        tmp = selfAttentionDropout.applied(to: tmp, in: context)
+        tmp = selfAttentionNorm.applied(to: tmp)
+        tmp = selfAttention.applied(to: tmp, state: &state)
+        tmp = selfAttentionDropout.applied(to: tmp)
         let attended = tmp + input
         return attended + attended.sequenced(
-            in: context,
             through: feedForwardNorm, feedForward, feedForwardDropout)
     }
 }
@@ -255,11 +246,11 @@ struct Embedding: Differentiable {
         self.weight = weight
     }
     init(vocabSize: Int, size: Int) {
-        self.weight = Tensor(randomUniform: [Int32(vocabSize), Int32(size)])
+        self.weight = Tensor(randomUniform: [vocabSize, size])
     }
 
     @differentiable(wrt: self)
-    func applied(to input: Tensor<Int32>, in context: Context) -> Tensor<Float> {
+    func applied(to input: Tensor<Int32>) -> Tensor<Float> {
         return weight.gathering(atIndices: input)
     }
 }
@@ -272,20 +263,19 @@ struct TransformerLM {
 
     func applied(
         to tokens: Tensor<Int32>,
-        states: inout [AttentionContext],
-        in context: Context
+        states: inout [AttentionContext]
     ) -> Tensor<Float> {
-        let positions = (0..<tokens.shape[1]).map {$0 + states[0].key.shape[1]}
+        let positions = (0..<tokens.shape[1]).map { Int32($0 + states[0].key.shape[1]) }
         let positionsTensor = Tensor<Int32>(shape: [1, tokens.shape[1]], scalars: positions)
-        var h = embedding.applied(to: tokens, in: context)
+        var h = embedding.applied(to: tokens)
         h = h + positionalEmbeddings.gathering(atIndices: positionsTensor)
         for i in 0..<layers.count {
-            h = layers[i].applied(to: h, state: &states[i], in: context)
+            h = layers[i].applied(to: h, state: &states[i])
         }
-        h = norm.applied(to: h, in: context)
+        h = norm.applied(to: h)
         let logits = TimeDistributed(
             Dense(weight: embedding.weight.transposed(), bias: Tensor(0.0), activation: identity))
-            .applied(to: h, in: context) // a somewhat hacky way to share weights
+            .applied(to: h) // a somewhat hacky way to share weights
         return logits
     }
 }

@@ -21,15 +21,15 @@ if CommandLine.arguments.count == 3 {
     print(seed, terminator: "")
     let pytok = encoder.encode(seed)
     let tokarr: [Int32] = Array<Int>(pytok)!.map { Int32($0) }
-    tokens = Tensor<Int32>(shape: [1, Int32(tokarr.count)], scalars: tokarr)
+    tokens = Tensor(shape: [1, tokarr.count], scalars: tokarr)
 }
 
 let empty = Tensor<Float>(
-    zeros: [Int32(config.headCount), 0, Int32(config.embeddingSize / config.headCount)])
+    zeros: [config.headCount, 0, config.embeddingSize / config.headCount])
 var states = (0..<config.layerCount).map { _ in AttentionContext(key: empty, value: empty) }
 
 for _ in 0..<100 {
-    let logits = model.applied(to: tokens, states: &states, in: Context(learningPhase: .inference))
+    let logits = model.applied(to: tokens, states: &states)
     let (batchSize, timeSteps, vocabSize) = (logits.shape[0], logits.shape[1], logits.shape[2])
     let lastLogit = logits.slice(
         lowerBounds: [0, timeSteps - 1, 0],

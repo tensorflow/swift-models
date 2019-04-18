@@ -80,7 +80,7 @@ public extension Tensor
             return Raw.unsortedSegmentSum(
                 data: values,
                 segmentIds: indices,
-                numSegments: Tensor<Int32>(wShape[Int32(0)]))
+                numSegments: Tensor<Int32>(Int32(wShape[0])))
         })
     }
 }
