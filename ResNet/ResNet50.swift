@@ -7,6 +7,9 @@ import TensorFlow
 // using shortcut layer to connect BasicBlock layers (aka Option (B))
 
 struct ConvBN: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var conv: Conv2D<Float>
     var norm: BatchNorm<Float>
 
@@ -20,12 +23,15 @@ struct ConvBN: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+    func call(_ input: Input) -> Output {
         return input.sequenced(through: conv, norm)
     }
 }
 
 struct ResidualBasicBlock: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var layer1: ConvBN
     var layer2: ConvBN
 
@@ -45,12 +51,15 @@ struct ResidualBasicBlock: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        return layer2.applied(to: relu(layer1.applied(to: input)))
+    func call(_ input: Input) -> Output {
+        return layer2(relu(layer1(input)))
     }
 }
 
 struct ResidualBasicBlockShortcut: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var layer1: ConvBN
     var layer2: ConvBN
     var shortcut: ConvBN
@@ -71,12 +80,15 @@ struct ResidualBasicBlockShortcut: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        return layer2.applied(to: relu(layer1.applied(to: input))) + shortcut.applied(to: input)
+    func call(_ input: Input) -> Output {
+        return layer2(relu(layer1(input))) + shortcut(input)
     }
 }
 
 struct ResidualConvBlock: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var layer1: ConvBN
     var layer2: ConvBN
     var layer3: ConvBN
@@ -101,13 +113,16 @@ struct ResidualConvBlock: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        let tmp = relu(layer2.applied(to: relu(layer1.applied(to: input))))
-        return relu(layer3.applied(to: tmp) + shortcut.applied(to: input))
+    func call(_ input: Input) -> Output {
+        let tmp = relu(layer2(relu(layer1(input))))
+        return relu(layer3(tmp) + shortcut(input))
     }
 }
 
 struct ResidualIdentityBlock: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var layer1: ConvBN
     var layer2: ConvBN
     var layer3: ConvBN
@@ -121,13 +136,16 @@ struct ResidualIdentityBlock: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        let tmp = relu(layer2.applied(to: relu(layer1.applied(to: input))))
-        return relu(layer3.applied(to: tmp) + input)
+    func call(_ input: Input) -> Output {
+        let tmp = relu(layer2(relu(layer1(input))))
+        return relu(layer3(tmp) + input)
     }
 }
 
 struct ResidualIdentityBlockStack: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var block1: ResidualIdentityBlock
     var block2: ResidualIdentityBlock
     var block3: ResidualIdentityBlock
@@ -143,12 +161,15 @@ struct ResidualIdentityBlockStack: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+    func call(_ input: Input) -> Output {
         return input.sequenced(through: block1, block2, block3, block4, block5)
     }
 }
 
 struct ResNet18: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var l1: ConvBN
     var maxPool: MaxPool2D<Float>
 
@@ -183,8 +204,8 @@ struct ResNet18: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        let inputLayer = maxPool.applied(to: relu(l1.applied(to: input)))
+    func call(_ input: Input) -> Output {
+        let inputLayer = maxPool(relu(l1(input)))
         let level2 = inputLayer.sequenced(through: l2a, l2b)
         let level3 = level2.sequenced(through: l3a, l3b)
         let level4 = level3.sequenced(through: l4a, l4b)
@@ -194,6 +215,9 @@ struct ResNet18: Layer {
 }
 
 struct ResNet34: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var l1: ConvBN
     var maxPool: MaxPool2D<Float>
 
@@ -236,8 +260,8 @@ struct ResNet34: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        let inputLayer = maxPool.applied(to: relu(l1.applied(to: input)))
+    func call(_ input: Input) -> Output {
+        let inputLayer = maxPool(relu(l1(input)))
         let level2 = inputLayer.sequenced(through: l2a, l2b, l2c)
         let level3 = level2.sequenced(through: l3a, l3b, l3c, l3d)
         let level4 = level3.sequenced(through: l4a, l4b, l4c, l4d, l4e, l4f)
@@ -247,6 +271,9 @@ struct ResNet34: Layer {
 }
 
 struct ResNet50: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var l1: ConvBN
     var maxPool: MaxPool2D<Float>
 
@@ -285,8 +312,8 @@ struct ResNet50: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        let inputLayer = maxPool.applied(to: relu(l1.applied(to: input)))
+    func call(_ input: Input) -> Output {
+        let inputLayer = maxPool(relu(l1(input)))
         let level2 = inputLayer.sequenced(through: l2a, l2b, l2c)
         let level3 = level2.sequenced(through: l3a, l3b, l3c, l3d)
         let level4 = level3.sequenced(through: l4a, l4b)
@@ -296,6 +323,9 @@ struct ResNet50: Layer {
 }
 
 struct ResNet101: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var l1: ConvBN
     var maxPool: MaxPool2D<Float>
 
@@ -339,8 +369,8 @@ struct ResNet101: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        let inputLayer = maxPool.applied(to: relu(l1.applied(to: input)))
+    func call(_ input: Input) -> Output {
+        let inputLayer = maxPool(relu(l1(input)))
         let level2 = inputLayer.sequenced(through: l2a, l2b, l2c)
         let level3 = level2.sequenced(through: l3a, l3b, l3c, l3d)
         let level4 = level3.sequenced(through: l4a, l4b, l4c, l4d, l4e, l4f)
@@ -350,6 +380,9 @@ struct ResNet101: Layer {
 }
 
 struct ResNet152: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var l1: ConvBN
     var maxPool: MaxPool2D<Float>
 
@@ -394,8 +427,8 @@ struct ResNet152: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        let inputLayer = maxPool.applied(to: relu(l1.applied(to: input)))
+    func call(_ input: Input) -> Output {
+        let inputLayer = maxPool(relu(l1(input)))
         let level2 = inputLayer.sequenced(through: l2a, l2b, l2c)
         let level3 = level2.sequenced(through: l3a, l3b, l3c, l3d)
         let level4 = level3.sequenced(through: l4a, l4b, l4c, l4d, l4e, l4f)

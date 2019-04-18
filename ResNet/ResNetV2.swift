@@ -8,6 +8,9 @@ import TensorFlow
 // https://github.com/KaimingHe/resnet-1k-layers/
 
 struct Conv2DBatchNorm: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var conv: Conv2D<Float>
     var norm: BatchNorm<Float>
 
@@ -21,12 +24,15 @@ struct Conv2DBatchNorm: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+    func call(_ input: Input) -> Output {
         return input.sequenced(through: conv, norm)
     }
 }
 
 struct BatchNormConv2D: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var norm: BatchNorm<Float>
     var conv: Conv2D<Float>
 
@@ -40,12 +46,15 @@ struct BatchNormConv2D: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        return conv.applied(to: relu(norm.applied(to: input)))
+    func call(_ input: Input) -> Output {
+        return conv(relu(norm(input)))
     }
 }
 
 struct PreActivatedResidualBasicBlock: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var layer1: BatchNormConv2D
     var layer2: BatchNormConv2D
 
@@ -65,12 +74,15 @@ struct PreActivatedResidualBasicBlock: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+    func call(_ input: Input) -> Output {
         return input.sequenced(through: layer1, layer2)
     }
 }
 
 struct PreActivatedResidualBasicBlockShortcut: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var layer1: BatchNormConv2D
     var layer2: BatchNormConv2D
     var shortcut: Conv2D<Float>
@@ -91,12 +103,15 @@ struct PreActivatedResidualBasicBlockShortcut: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        return input.sequenced(through: layer1, layer2) + shortcut.applied(to: input)
+    func call(_ input: Input) -> Output {
+        return input.sequenced(through: layer1, layer2) + shortcut(input)
     }
 }
 
 struct PreActivatedResNet18: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var l1: Conv2DBatchNorm
     var maxPool: MaxPool2D<Float>
 
@@ -133,18 +148,21 @@ struct PreActivatedResNet18: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+    func call(_ input: Input) -> Output {
         let inputLayer = input.sequenced(through: l1, maxPool)
         let level2 = inputLayer.sequenced(through: l2a, l2b)
         let level3 = level2.sequenced(through: l3a, l3b)
         let level4 = level3.sequenced(through: l4a, l4b)
         let level5 = level4.sequenced(through: l5a, l5b)
-        let finalNorm = relu(norm.applied(to: level5))
+        let finalNorm = relu(norm(level5))
         return finalNorm.sequenced(through: avgPool, flatten, classifier)
     }
 }
 
 struct PreActivatedResNet34: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var l1: Conv2DBatchNorm
     var maxPool: MaxPool2D<Float>
 
@@ -189,13 +207,14 @@ struct PreActivatedResNet34: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+    func call(_ input: Input) -> Output {
         let inputLayer = input.sequenced(through: l1, maxPool)
         let level2 = inputLayer.sequenced(through: l2a, l2b, l2c)
         let level3 = level2.sequenced(through: l3a, l3b, l3c, l3d)
         let level4 = level3.sequenced(through: l4a, l4b, l4c, l4d, l4e, l4f)
         let level5 = level4.sequenced(through: l5a, l5b, l5c)
-        let finalNorm = relu(norm.applied(to: level5))
+        let finalNorm = relu(norm(level5))
         return finalNorm.sequenced(through: avgPool, flatten, classifier)
     }
 }
+
