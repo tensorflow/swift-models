@@ -86,7 +86,7 @@ let (images, numericLabels) = readMNIST(imagesFile: "train-images-idx3-ubyte",
 let labels = Tensor<Float>(oneHotAtIndices: numericLabels, depth: 10)
 
 var classifier = Classifier()
-let optimizer = RMSProp(for:classifier)
+let optimizer = RMSProp(for: classifier)
 
 // The training loop.
 for epoch in 1...epochCount {
