@@ -28,10 +28,10 @@ for epoch in 1...80 {
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
     let shuffledDataset = trainingImageDataset.combinedDataset.shuffled(
-        sampleCount: Int64(totalTrainingImages), randomSeed: Int64(epoch))
+        sampleCount: totalTrainingImages, randomSeed: Int64(epoch))
     let batchSize: Int = 42
 
-    for batch in shuffledDataset.batched(Int64(batchSize)) {
+    for batch in shuffledDataset.batched(batchSize) {
         let (labels, images) = (batch.label, batch.data)
 
         var boxList: [Float] = []
@@ -71,7 +71,7 @@ for epoch in 1...80 {
     let totalGuessCount = totalValidationImages
     let testBatchSize = 50
 
-    for batch in validationImageDataset.combinedDataset.batched(Int64(testBatchSize)) {
+    for batch in validationImageDataset.combinedDataset.batched(testBatchSize) {
         let (labels, images) = (batch.label, batch.data)
 
         var boxList: [Float] = []
