@@ -83,7 +83,7 @@ extension MultiHeadAttention: InitializableFromPythonCheckpoint {
         wo = TimeDistributed(Dense<Float>(
             contentsOfPythonCheckpointFile: path,
             scope: scope + "/c_proj"))
-        headCount = Int32(12)
+        headCount = 12
     }
 }
 
