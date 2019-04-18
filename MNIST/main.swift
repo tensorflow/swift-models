@@ -53,8 +53,8 @@ func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>
 
 /// A classifier.
 struct Classifier: Layer {
-    public typealias Input = Tensor<Float>
-    public typealias Output = Tensor<Float>
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
 
     var conv1a = Conv2D<Float>(filterShape: (3, 3, 1, 32), activation: relu)
     var conv1b = Conv2D<Float>(filterShape: (3, 3, 32, 64), activation: relu)
@@ -67,7 +67,7 @@ struct Classifier: Layer {
     var layer1b = Dense<Float>(inputSize: 128, outputSize: 10, activation: softmax)
 
     @differentiable
-    public func call(_ input: Input) -> Output {
+    func call(_ input: Input) -> Output {
         let convolved = input.sequenced(through: conv1a, conv1b, pool1)
         return convolved.sequenced(through: dropout1a, flatten, layer1a, dropout1b, layer1b)
     }
