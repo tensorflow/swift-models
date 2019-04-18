@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Foundation
 import TensorFlow
-import Python
-
-let np = Python.import("numpy")
 
 /// Reads a file into an array of bytes.
-func readFile(_ filename: String) -> [UInt8] {
-    let d = Python.open(filename, "rb").read()
-    return Array(numpy: np.frombuffer(d, dtype: np.uint8))!
+func readFile(_ pathname: String) -> [UInt8] {
+    let url = URL(fileURLWithPath: pathname)
+    let data = try! Data(contentsOf: url, options: [])
+    return [UInt8](data)
 }
 
 /// Reads MNIST images and labels from specified file paths.
