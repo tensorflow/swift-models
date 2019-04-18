@@ -5,7 +5,7 @@ PythonLibrary.useVersion(3)
 let batchSize = 100
 
 let cifarDataset = loadCIFAR10()
-let testBatches = cifarDataset.test.batched(Int64(batchSize))
+let testBatches = cifarDataset.test.batched(batchSize)
 
 // ResNet18, ResNet34, ResNet50, ResNet101, ResNet152
 // PreActivatedResNet18, PreActivatedResNet34
@@ -23,7 +23,7 @@ for epoch in 1...10 {
     var trainingBatchCount = 0
     let trainingShuffled = cifarDataset.training.shuffled(
         sampleCount: 50000, randomSeed: Int64(epoch))
-    for batch in trainingShuffled.batched(Int64(batchSize)) {
+    for batch in trainingShuffled.batched(batchSize) {
         let (labels, images) = (batch.label, batch.data)
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
             let logits = model.applied(to: images)
@@ -36,7 +36,7 @@ for epoch in 1...10 {
     var testLossSum: Float = 0
     var testBatchCount = 0
     var correctGuessCount = 0
-    var totalGuessCount: Int32 = 0
+    var totalGuessCount = 0
     for batch in testBatches {
         let (labels, images) = (batch.label, batch.data)
         let logits = model.inferring(from: images)
@@ -46,7 +46,7 @@ for epoch in 1...10 {
         let correctPredictions = logits.argmax(squeezingAxis: 1) .== labels
         correctGuessCount = correctGuessCount +
             Int(Tensor<Int32>(correctPredictions).sum().scalarized())
-        totalGuessCount = totalGuessCount + Int32(batchSize)
+        totalGuessCount = totalGuessCount + batchSize
     }
 
     let accuracy = Float(correctGuessCount) / Float(totalGuessCount)

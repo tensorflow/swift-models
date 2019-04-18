@@ -91,7 +91,7 @@ func filteringBatch(
 
         let observationTensor = Tensor<Float>(episode.steps.map { $0.observation })
         let actionTensor = Tensor<Int32>(episode.steps.map { $0.action })
-        let oneHotLabels = Tensor<Float>(oneHotAtIndices: actionTensor, depth: Int32(actionCount))
+        let oneHotLabels = Tensor<Float>(oneHotAtIndices: actionTensor, depth: actionCount)
 
         // print("observations tensor has shape \(observationTensor.shapeTensor)")
         // print("actions tensor has shape \(actionTensor.shapeTensor)")

@@ -40,8 +40,8 @@ func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>
     print("Reading data.")
     let images = readFile(imagesFile).dropFirst(16).map { Float($0) }
     let labels = readFile(labelsFile).dropFirst(8).map { Int32($0) }
-    let rowCount = Int32(labels.count)
-    let imageHeight: Int32 = 28, imageWidth: Int32 = 28
+    let rowCount = labels.count
+    let imageHeight = 28, imageWidth = 28
 
     print("Constructing data tensors.")
     return (
@@ -74,8 +74,8 @@ let epochCount = 12
 let batchSize = 100
 
 func minibatch<Scalar>(in x: Tensor<Scalar>, at index: Int) -> Tensor<Scalar> {
-    let start = Int32(index * batchSize)
-    return x[start..<start+Int32(batchSize)]
+    let start = index * batchSize
+    return x[start..<start+batchSize]
 }
 
 let (images, numericLabels) = readMNIST(imagesFile: "train-images-idx3-ubyte",
