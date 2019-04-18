@@ -12,9 +12,9 @@ let testBatches = cifarDataset.test.batched(batchSize)
 var model = KerasModel()
 
 // optimizer used in the PyTorch code
-// let optimizer = SGD(for: model, learningRate: 0.001, momentum: 0.9, scalarType: Float.self)
+// let optimizer = SGD(for: model, learningRate: 0.001, momentum: 0.9)
 // optimizer used in the Keras code
-let optimizer = RMSProp(for: model, learningRate: 0.0001, decay: 1e-6, scalarType: Float.self)
+let optimizer = RMSProp(for: model, learningRate: 0.0001, decay: 1e-6)
 
 print("Starting training...")
 Context.local.learningPhase = .training
@@ -27,7 +27,7 @@ for epoch in 1...100 {
     for batch in trainingShuffled.batched(batchSize) {
         let (labels, images) = (batch.label, batch.data)
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
-            let logits = model.applied(to: images)
+            let logits = model(images)
             return softmaxCrossEntropy(logits: logits, labels: labels)
         }
         trainingLossSum += loss.scalarized()
@@ -41,7 +41,7 @@ for epoch in 1...100 {
     var totalGuessCount = 0
     for batch in testBatches {
         let (labels, images) = (batch.label, batch.data)
-        let logits = model.inferring(from: images)
+        let logits = model(images)
         testLossSum += softmaxCrossEntropy(logits: logits, labels: labels).scalarized()
         testBatchCount += 1
 

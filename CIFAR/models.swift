@@ -1,7 +1,10 @@
 import TensorFlow
 
 // Ported from pytorch.org/tutorials/beginner/blitz/cifar10_tutorial.html
-public struct PyTorchModel: Layer {
+struct PyTorchModel: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var conv1 = Conv2D<Float>(filterShape: (5, 5, 3, 6), activation: relu)
     var pool1 = MaxPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
     var conv2 = Conv2D<Float>(filterShape: (5, 5, 6, 16), activation: relu)
@@ -12,14 +15,17 @@ public struct PyTorchModel: Layer {
     var dense3 = Dense<Float>(inputSize: 84, outputSize: 10, activation: identity)
 
     @differentiable
-    public func applied(to input: Tensor<Float>) -> Tensor<Float> {
+    func call(_ input: Input) -> Output {
         let convolved = input.sequenced(through: conv1, pool1, conv2, pool2)
         return convolved.sequenced(through: flatten, dense1, dense2, dense3)
     }
 }
 
 // Ported from github.com/keras-team/keras/blob/master/examples/cifar10_cnn.py
-public struct KerasModel: Layer {
+struct KerasModel: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var conv1a = Conv2D<Float>(filterShape: (3, 3, 3, 32), padding: .same, activation: relu)
     var conv1b = Conv2D<Float>(filterShape: (3, 3, 32, 32), activation: relu)
     var pool1 = MaxPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
@@ -33,8 +39,8 @@ public struct KerasModel: Layer {
     var dropout3 = Dropout<Float>(probability: 0.5)
     var dense2 = Dense<Float>(inputSize: 512, outputSize: 10, activation: identity)
 
-    @differentiable(wrt: (self, input))
-    public func applied(to input: Tensor<Float>) -> Tensor<Float> {
+    @differentiable
+    func call(_ input: Input) -> Output {
         let conv1 = input.sequenced(through: conv1a, conv1b, pool1, dropout1)
         let conv2 = conv1.sequenced(through: conv2a, conv2b, pool2, dropout2)
         return conv2.sequenced(through: flatten, dense1, dropout3, dense2)
