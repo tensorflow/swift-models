@@ -44,13 +44,16 @@ protocol Agent: AnyObject {
 }
 
 struct Model: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var layer1 = Dense<Float>(inputSize: 3, outputSize: 50, activation: sigmoid,
                               generator: &rng)
     var layer2 = Dense<Float>(inputSize: 50, outputSize: 3, activation: sigmoid,
                               generator: &rng)
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+    func call(_ input: Input) -> Output {
         return input.sequenced(through: layer1, layer2)
     }
 }
@@ -59,11 +62,11 @@ class CatchAgent: Agent {
     typealias Action = CatchAction
 
     var model: Model = Model()
-    let optimizer: Adam<Model, Float>
+    let optimizer: Adam<Model>
     var previousReward: Reward
 
     init(initialReward: Reward, learningRate: Float) {
-        optimizer = Adam(learningRate: learningRate)
+        optimizer = Adam(for: model, learningRate: learningRate)
         previousReward = initialReward
     }
 }
