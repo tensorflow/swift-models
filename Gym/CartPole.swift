@@ -37,6 +37,9 @@ fileprivate extension Optional {
 
 /// A simple two layer dense net.
 struct Net: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var l1, l2: Dense<Float>
 
     init(observationSize: Int, hiddenSize: Int, actionCount: Int) {
@@ -48,7 +51,7 @@ struct Net: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+    func call(_ input: Input) -> Output {
         return input.sequenced(through: l1, l2)
     }
 }
@@ -132,7 +135,7 @@ func nextBatch(
         while true {
             let observationPython = Tensor<Double>(numpy: observationNumpy).unwrapped()
             let actionProbabilities =
-              softmax(net.applied(to: Tensor(observationPython).reshaped(to: [1, 4])))
+              softmax(net(Tensor(observationPython).reshaped(to: [1, 4])))
             let actionProbabilitiesPython = actionProbabilities[0].makeNumpyArray()
             let len = Python.len(actionProbabilitiesPython)
             assert(actionCount == Int(Python.len(actionProbabilitiesPython)))
@@ -169,7 +172,7 @@ let actionCount = Int(env.action_space.n).unwrapped()
 var net = Net(observationSize: Int(observationSize), hiddenSize: hiddenSize, actionCount: actionCount)
 // SGD optimizer reaches convergence with ~125 mini batches, while Adam uses ~25.
 // let optimizer = SGD<Net, Float>(learningRate: 0.1, momentum: 0.9)
-let optimizer = Adam<Net, Float>(learningRate: 0.01)
+let optimizer = Adam(for: net, learningRate: 0.01)
 var batchIndex = 0
 Context.local.learningPhase = .training
 while true {
@@ -181,7 +184,7 @@ while true {
       episodes: episodes, actionCount: actionCount)
 
     let gradients = gradient(at: net) { model -> Tensor<Float> in
-        let logits = model.applied(to: input)
+        let logits = model(input)
         let loss = softmaxCrossEntropy(logits: logits, probabilities: target)
         print("loss is \(loss)")
         return loss
