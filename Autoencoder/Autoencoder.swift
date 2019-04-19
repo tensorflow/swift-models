@@ -34,7 +34,7 @@ func plot(image: [Float], name: String) {
     // Create figure
     let ax = plt.gca()
     let array = np.array([image])
-    let pixels = array.reshape([28, 28])
+    let pixels = array.reshape([imageHeight, imageWidth])
     if !FileManager.default.fileExists(atPath: outputFolder) {
         try! FileManager.default.createDirectory(atPath: outputFolder, withIntermediateDirectories: false,
             attributes: nil)
