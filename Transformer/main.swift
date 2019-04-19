@@ -24,12 +24,11 @@ if CommandLine.arguments.count == 3 {
     tokens = Tensor(shape: [1, tokarr.count], scalars: tokarr)
 }
 
-let empty = Tensor<Float>(
-    zeros: [config.headCount, 0, config.embeddingSize / config.headCount])
+let empty = Tensor<Float>(zeros: [config.headCount, 0, config.embeddingSize / config.headCount])
 var states = (0..<config.layerCount).map { _ in AttentionContext(key: empty, value: empty) }
 
 for _ in 0..<100 {
-    let logits = model.applied(to: tokens, states: &states)
+    let logits = model.call(tokens, states: &states)
     let (batchSize, timeSteps, vocabSize) = (logits.shape[0], logits.shape[1], logits.shape[2])
     let lastLogit = logits.slice(
         lowerBounds: [0, timeSteps - 1, 0],
