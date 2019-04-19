@@ -37,7 +37,8 @@ func plot(image: [Float], name: String) {
     let pixels = array.reshape([imageHeight, imageWidth])
     if !FileManager.default.fileExists(atPath: outputFolder) {
         try! FileManager.default.createDirectory(atPath: outputFolder,
-        withIntermediateDirectories: false, attributes: nil)
+        withIntermediateDirectories: false,
+        attributes: nil)
     }
     ax.imshow(pixels, cmap: "gray")
     plt.savefig("\(outputFolder)\(name).png", dpi: 300)
