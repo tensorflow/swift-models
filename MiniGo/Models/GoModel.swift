@@ -175,15 +175,9 @@ public struct GoModel: Layer {
             outputSize: 1,
             activation: tanh)
     }
-
-    @differentiable
-    // This is just a placeholder to satisfy Layer's spec.
-    public func call(_ input: Tensor<Float>) -> Tensor<Float> {
-        return input
-    }
-    
+  
     @differentiable(wrt: (self, input), vjp: _vjpApplied)
-    public func applied(to input: Tensor<Float>) -> GoModelOutput {
+    public func call(_ input: Tensor<Float>) -> GoModelOutput {
         let batchSize = input.shape[0]
         var output = relu(initialConv(input))
 
@@ -214,7 +208,7 @@ public struct GoModel: Layer {
         -> (GoModel.CotangentVector, Tensor<Float>)) {
             // TODO(jekbradbury): add a real VJP
             // (we're only interested in inference for now and have control flow in our applied(to:) method)
-            return (applied(to: input), {
+            return (self(input), {
                 seed in (GoModel.CotangentVector.zero, Tensor<Float>(0))
             })
     }
@@ -222,7 +216,7 @@ public struct GoModel: Layer {
 
 extension GoModel: InferenceModel {
     public func prediction(input: Tensor<Float>) -> GoModelOutput {
-        return applied(to: input)
+        return self(input)
     }
 }
 
