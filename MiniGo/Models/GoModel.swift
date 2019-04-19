@@ -60,8 +60,8 @@ struct ConvBN: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        return norm.applied(to: conv.applied(to: input, in: context), in: context)
+    func call(_ input: Tensor<Float>) -> Tensor<Float> {
+        return norm(conv(input))
     }
 }
 
@@ -89,9 +89,9 @@ struct ResidualIdentityBlock: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>, in context: Context) -> Tensor<Float> {
-        var tmp = relu(layer1.applied(to: input, in: context))
-        tmp = layer2.applied(to: tmp, in: context)
+    func call(_ input: Tensor<Float>) -> Tensor<Float> {
+        var tmp = relu(layer1(input))
+        tmp = layer2(tmp)
         return relu(tmp + input)
     }
 }
@@ -175,45 +175,40 @@ public struct GoModel: Layer {
             outputSize: 1,
             activation: tanh)
     }
-
+  
     @differentiable(wrt: (self, input), vjp: _vjpApplied)
-    public func applied(to input: Tensor<Float>, in context: Context) -> GoModelOutput {
+    public func call(_ input: Tensor<Float>) -> GoModelOutput {
         let batchSize = input.shape[0]
-        var output = relu(initialConv.applied(to: input, in: context))
+        var output = relu(initialConv(input))
 
         for i in 0..<configuration.boardSize {
-            output = residualBlocks[i].applied(to: output, in: context)
+            output = residualBlocks[i](output)
         }
 
-        let policyConvOutput = relu(policyConv.applied(to: output, in: context))
-        let logits = policyDense.applied(
-            to: policyConvOutput.reshaped(toShape: Tensor<Int32>(
+        let policyConvOutput = relu(policyConv(output))
+        let logits = policyDense(policyConvOutput.reshaped(to:
                 [batchSize,
-                 Int32(configuration.policyConvWidth * configuration.boardSize * configuration.boardSize),
-                ])),
-            in: context)
+                 configuration.policyConvWidth * configuration.boardSize * configuration.boardSize
+                ]))
         let policyOutput = softmax(logits)
 
-        let valueConvOutput = relu(valueConv.applied(to: output, in: context))
-        let valueHidden = valueDense1.applied(
-            to: valueConvOutput.reshaped(toShape: Tensor<Int32>(
+        let valueConvOutput = relu(valueConv(output))
+        let valueHidden = valueDense1(valueConvOutput.reshaped(to:
                 [batchSize,
-                 Int32(configuration.valueConvWidth * configuration.boardSize * configuration.boardSize)
-                ])),
-            in: context)
-        let valueOutput = valueDense2.applied(to: valueHidden, in: context).reshaped(
-            toShape: Tensor<Int32>([batchSize]))
+                 configuration.valueConvWidth * configuration.boardSize * configuration.boardSize
+                ]))
+        let valueOutput = valueDense2(valueHidden).reshaped(to: [batchSize])
 
         return GoModelOutput(policy: policyOutput, value: valueOutput, logits: logits)
     }
 
     @usableFromInline
-    func _vjpApplied(to input: Tensor<Float>, in context: Context)
+    func _vjpApplied(to input: Tensor<Float>)
         -> (GoModelOutput, (GoModelOutput.CotangentVector)
         -> (GoModel.CotangentVector, Tensor<Float>)) {
             // TODO(jekbradbury): add a real VJP
             // (we're only interested in inference for now and have control flow in our applied(to:) method)
-            return (applied(to: input, in: context), {
+            return (self(input), {
                 seed in (GoModel.CotangentVector.zero, Tensor<Float>(0))
             })
     }
@@ -221,7 +216,7 @@ public struct GoModel: Layer {
 
 extension GoModel: InferenceModel {
     public func prediction(input: Tensor<Float>) -> GoModelOutput {
-        return applied(to: input, in: Context(learningPhase: .inference))
+        return self(input)
     }
 }
 

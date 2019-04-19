@@ -25,14 +25,14 @@ public class MCTSModelBasedPredictor: MCTSPredictor {
     // `ShapedArray` requires `Int` for shape. So, we have to pick one here. Consider the fact we will
     // use `Tensor` anyway in future but might change another implementation to replace `ShapedArray`,
     // `Int32` is chosen here.
-    private let boardSize: Int32
+    private let boardSize: Int
     private var model: InferenceModel
 
     public init(boardSize: Int, model: InferenceModel) {
         guard boardSize == 19 else {
             fatalError("GoModel only supports boardSize=19 for now.")
         }
-        self.boardSize = Int32(boardSize)
+        self.boardSize = boardSize
         self.model = model
     }
 
@@ -123,7 +123,7 @@ extension BoardState {
         // Rotate our inputs to this order by transposing and reshape to a single-element batch.
         return featureTensor.transposed(
             withPermutations: 1, 2, 0
-            ).reshaped(to: [1, Int32(boardSize), Int32(boardSize), 17])
+            ).reshaped(to: [1, boardSize, boardSize, 17])
     }
 }
 
