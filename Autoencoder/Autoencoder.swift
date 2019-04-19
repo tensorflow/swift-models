@@ -36,8 +36,8 @@ func plot(image: [Float], name: String) {
     let array = np.array([image])
     let pixels = array.reshape([imageHeight, imageWidth])
     if !FileManager.default.fileExists(atPath: outputFolder) {
-        try! FileManager.default.createDirectory(atPath: outputFolder, withIntermediateDirectories: false,
-            attributes: nil)
+        try! FileManager.default.createDirectory(atPath: outputFolder,
+        withIntermediateDirectories: false, attributes: nil)
     }
     ax.imshow(pixels, cmap: "gray")
     plt.savefig("\(outputFolder)\(name).png", dpi: 300)
@@ -80,7 +80,8 @@ struct Autoencoder: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
-    var encoder1 = Dense<Float>(inputSize: imageHeight * imageWidth, outputSize: 128, activation: relu)
+    var encoder1 = Dense<Float>(inputSize: imageHeight * imageWidth, outputSize: 128,
+        activation: relu)
     var encoder2 = Dense<Float>(inputSize: 128, outputSize: 64, activation: relu)
     var encoder3 = Dense<Float>(inputSize: 64, outputSize: 12, activation: relu)
     var encoder4 = Dense<Float>(inputSize: 12, outputSize: 3, activation: relu)
@@ -88,7 +89,8 @@ struct Autoencoder: Layer {
     var decoder1 = Dense<Float>(inputSize: 3, outputSize: 12, activation: relu)
     var decoder2 = Dense<Float>(inputSize: 12, outputSize: 64, activation: relu)
     var decoder3 = Dense<Float>(inputSize: 64, outputSize: 128, activation: relu)
-    var decoder4 = Dense<Float>(inputSize: 128, outputSize: imageHeight * imageWidth, activation: tanh)
+    var decoder4 = Dense<Float>(inputSize: 128, outputSize: imageHeight * imageWidth,
+        activation: tanh)
 
     @differentiable
     func call(_ input: Input) -> Output {
