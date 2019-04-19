@@ -7,6 +7,9 @@ import TensorFlow
 // https://github.com/szagoruyko/wide-residual-networks
 
 struct BatchNormConv2DBlock: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var norm1: BatchNorm<Float>
     var conv1: Conv2D<Float>
     var norm2: BatchNorm<Float>
@@ -24,13 +27,16 @@ struct BatchNormConv2DBlock: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        let firstLayer = conv1.applied(to: relu(norm1.applied(to: input)))
-        return conv2.applied(to: relu(norm2.applied(to: firstLayer)))
+    func call(_ input: Input) -> Output {
+        let firstLayer = conv1(relu(norm1(input)))
+        return conv2(relu(norm2(firstLayer)))
     }
 }
 
 struct WideResnet16FirstBasicBlock: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var block1: BatchNormConv2DBlock
     var block2: BatchNormConv2DBlock
     var shortcut: Conv2D<Float>
@@ -55,12 +61,15 @@ struct WideResnet16FirstBasicBlock: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        return input.sequenced(through: block1, block2) + shortcut.applied(to: input)
+    func call(_ input: Input) -> Output {
+        return input.sequenced(through: block1, block2) + shortcut(input)
     }
 }
 
 struct WideResnet16BasicBlock: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var block1: BatchNormConv2DBlock
     var block2: BatchNormConv2DBlock
     var shortcut: Conv2D<Float>
@@ -85,12 +94,15 @@ struct WideResnet16BasicBlock: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        return input.sequenced(through: block1, block2) + shortcut.applied(to: input)
+    func call(_ input: Input) -> Output {
+        return input.sequenced(through: block1, block2) + shortcut(input)
     }
 }
 
 struct WideResNet16: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var l1: Conv2D<Float>
 
     var l2 = WideResnet16FirstBasicBlock(featureCounts: (16, 16), widenFactor: 4,
@@ -111,14 +123,17 @@ struct WideResNet16: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+    func call(_ input: Input) -> Output {
         let inputLayer = input.sequenced(through: l1, l2, l3, l4)
-        let finalNorm = relu(norm.applied(to: inputLayer))
+        let finalNorm = relu(norm(inputLayer))
         return finalNorm.sequenced(through: avgPool, flatten, classifier)
     }
 }
 
 struct WideResnet28FirstBasicBlock: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var block1: BatchNormConv2DBlock
     var block2: BatchNormConv2DBlock
     var block3: BatchNormConv2DBlock
@@ -152,13 +167,16 @@ struct WideResnet28FirstBasicBlock: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+    func call(_ input: Input) -> Output {
         let blockLayer = input.sequenced(through: block1, block2, block3, block4)
-        return blockLayer + shortcut.applied(to: input)
+        return blockLayer + shortcut(input)
     }
 }
 
 struct WideResnet28BasicBlock: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var block1: BatchNormConv2DBlock
     var block2: BatchNormConv2DBlock
     var block3: BatchNormConv2DBlock
@@ -193,12 +211,15 @@ struct WideResnet28BasicBlock: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
-        return input.sequenced(through: block1, block2) + shortcut.applied(to: input)
+    func call(_ input: Input) -> Output {
+        return input.sequenced(through: block1, block2) + shortcut(input)
     }
 }
 
 struct WideResNet28: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var l1: Conv2D<Float>
 
     var l2 = WideResnet28FirstBasicBlock(featureCounts: (16, 16), widenFactor: 10,
@@ -219,9 +240,10 @@ struct WideResNet28: Layer {
     }
 
     @differentiable
-    func applied(to input: Tensor<Float>) -> Tensor<Float> {
+    func call(_ input: Input) -> Output {
         let inputLayer = input.sequenced(through: l1, l2, l3, l4)
-        let finalNorm = relu(norm.applied(to: inputLayer))
+        let finalNorm = relu(norm(inputLayer))
         return finalNorm.sequenced(through: avgPool, flatten, classifier)
     }
 }
+
