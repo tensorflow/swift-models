@@ -1,6 +1,9 @@
 import TensorFlow
 
 struct BasicCNNModel: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
     var conv1a = Conv2D<Float>(filterShape: (3, 3, 3, 32), padding: .same, activation: relu)
     var conv1b = Conv2D<Float>(filterShape: (3, 3, 32, 32), activation: relu)
     var pool1 = MaxPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
@@ -23,7 +26,7 @@ struct BasicCNNModel: Layer {
     var classifier = Dense<Float>(inputSize: 512, outputSize: 10, activation: identity)
 
     @differentiable(wrt: (self, input))
-    public func applied(to input: Tensor<Float>) -> Tensor<Float> {
+    func call(_ input: Input) -> Output {
         let layer1 = input.sequenced(through: conv1a, conv1b, pool1, dropout1)
         let layer2 = layer1.sequenced(through: conv2a, conv2b, pool2, dropout2)
         let layer3 = layer2.sequenced(through: conv3a, conv3b, pool3, dropout3)

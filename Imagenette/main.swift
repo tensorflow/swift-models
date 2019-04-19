@@ -18,8 +18,7 @@ let totalTrainingImages = trainingImageDataset.imageData.shape[0]
 let totalValidationImages = validationImageDataset.imageData.shape[0]
 
 var model = BasicCNNModel()
-let optimizer = SGD(for: model, learningRate: 0.001, momentum: 0.9, nesterov: true,
-    scalarType: Float.self)
+let optimizer = SGD(for: model, learningRate: 0.001, momentum: 0.9, nesterov: true)
 
 print("Starting training...")
 for epoch in 1...80 {
@@ -57,7 +56,7 @@ for epoch in 1...80 {
             cropSize:Tensor<Int32>([Int32(internalImageSize), Int32(internalImageSize)]))
 
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
-            let logits = model.applied(to: randomlyCroppedImages)
+            let logits = model(randomlyCroppedImages)
             return softmaxCrossEntropy(logits: logits, labels: labels)
         }
         trainingLossSum += loss.scalarized()
