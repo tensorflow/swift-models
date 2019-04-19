@@ -12,8 +12,8 @@ let testBatches = cifarDataset.test.batched(batchSize)
 var model = ResNet50(imageSize: 32, classCount: 10) // Use the network sized for CIFAR-10
 
 // the classic ImageNet optimizer setting diverges on CIFAR-10
-// let optimizer = SGD(for: model, learningRate: 0.1, momentum: 0.9, scalarType: Float.self)
-let optimizer = SGD(for: model, learningRate: 0.001, scalarType: Float.self)
+// let optimizer = SGD(for: model, learningRate: 0.1, momentum: 0.9)
+let optimizer = SGD(for: model, learningRate: 0.001)
 
 print("Starting training...")
 Context.local.learningPhase = .training
@@ -26,7 +26,7 @@ for epoch in 1...10 {
     for batch in trainingShuffled.batched(batchSize) {
         let (labels, images) = (batch.label, batch.data)
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
-            let logits = model.applied(to: images)
+            let logits = model(images)
             return softmaxCrossEntropy(logits: logits, labels: labels)
         }
         trainingLossSum += loss.scalarized()
@@ -39,7 +39,7 @@ for epoch in 1...10 {
     var totalGuessCount = 0
     for batch in testBatches {
         let (labels, images) = (batch.label, batch.data)
-        let logits = model.inferring(from: images)
+        let logits = model(images)
         testLossSum += softmaxCrossEntropy(logits: logits, labels: labels).scalarized()
         testBatchCount += 1
 
