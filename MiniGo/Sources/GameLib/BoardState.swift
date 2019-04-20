@@ -346,7 +346,7 @@ extension Board {
             }
 
             // Fills the territory with black (or white) if the borders are all in black (or white).
-            for color: Color in [.black, .white] {
+            for color in Color.allCases {
                 if borders.allSatisfy({ scoreBoard.color(at: $0) == color }) {
                     territory.forEach {
                         scoreBoard.placeStone(at: $0, withColor: color)
