@@ -28,7 +28,7 @@ let empty = Tensor<Float>(zeros: [config.headCount, 0, config.embeddingSize / co
 var states = (0..<config.layerCount).map { _ in AttentionContext(key: empty, value: empty) }
 
 for _ in 0..<100 {
-    let logits = model.call(tokens, states: &states)
+    let logits = model(tokens, states: &states)
     let (batchSize, timeSteps, vocabSize) = (logits.shape[0], logits.shape[1], logits.shape[2])
     let lastLogit = logits.slice(
         lowerBounds: [0, timeSteps - 1, 0],

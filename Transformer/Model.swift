@@ -194,7 +194,7 @@ struct MultiHeadAttention: Layer {
             key: splitHeads(qkvSplit.key, headCount: headCount),
             value: splitHeads(qkvSplit.value, headCount: headCount)
         )
-        let outputs = attention.call(attentionInput, state: &state)
+        let outputs = attention(attentionInput, state: &state)
         return wo(joinHeads(outputs, headCount: headCount))
     }
 }
@@ -230,7 +230,7 @@ struct EncoderLayer: Layer {
     func call(_ input: Tensor<Float>, state: inout AttentionContext) -> Tensor<Float> {
         var tmp = input
         tmp = selfAttentionNorm(tmp)
-        tmp = selfAttention.call(tmp, state: &state)
+        tmp = selfAttention(tmp, state: &state)
         tmp = selfAttentionDropout(tmp)
         let attended = tmp + input
         return attended + attended.sequenced(
@@ -267,7 +267,7 @@ struct TransformerLM {
         var h = embedding(tokens)
         h = h + positionalEmbeddings.gathering(atIndices: positionsTensor)
         for i in 0..<layers.count {
-            h = layers[i].call(h, state: &states[i])
+            h = layers[i](h, state: &states[i])
         }
         h = norm(h)
         let tmp = TimeDistributed(
