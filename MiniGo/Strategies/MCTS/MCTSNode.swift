@@ -159,12 +159,11 @@ extension MCTSNode {
         var candidateIndexes = [0]
         var highestValue = scoringFunction(elements[0])
 
-        for index in 1..<elements.count {
+        for index in elements.indices.dropFirst() {
             let v = scoringFunction(elements[index])
             if v > highestValue {
                 highestValue = v
-                candidateIndexes.removeAll()
-                candidateIndexes.append(index)
+                candidateIndexes = [index]
             } else if abs(v - highestValue) < .ulpOfOne {
                 precondition(!candidateIndexes.isEmpty)
                 candidateIndexes.append(index)
