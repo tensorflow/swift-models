@@ -16,7 +16,7 @@ func gelu<Scalar: TensorFlowFloatingPoint>(_ x: Tensor<Scalar>) -> Tensor<Scalar
     vjp: _vjpBatchedMatmul
     where Scalar : Differentiable & FloatingPoint
 )
-public func batchedMatmul<Scalar : Numeric>(
+func batchedMatmul<Scalar : Numeric>(
     _ left: Tensor<Scalar>,
     _ right: Tensor<Scalar>,
     adjointLeft: Bool = false,
@@ -58,8 +58,7 @@ func _vjpBatchedMatmul<Scalar : Differentiable & FloatingPoint>(
     })
 }
 
-public extension Tensor
-    where Scalar: TensorFlowFloatingPoint {
+extension Tensor where Scalar: TensorFlowFloatingPoint {
     /// Gathers slices of self at the specified indices along the first axis. The result has the
     /// same size in the first axis as the scalar count of the index tensor, and the same
     /// size in subsequent axes as self.
