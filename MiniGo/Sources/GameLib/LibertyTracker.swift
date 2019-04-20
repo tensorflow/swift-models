@@ -150,7 +150,7 @@ extension LibertyTracker {
             fatalErrorForGroupsInvariance(groupID: newGroupID)
         }
 
-        guard newGroup.liberties.count > 0 else {
+        guard !newGroup.liberties.isEmpty else {
             throw IllegalMove.suicide
         }
 
@@ -298,5 +298,3 @@ extension LibertyTracker {
         }
     }
 }
-
-

@@ -155,7 +155,7 @@ extension MCTSNode {
         _ elements: [T],
         withScoringFunction scoringFunction: (T) -> Float
     ) -> T {
-        precondition(elements.count > 0)
+        precondition(!elements.isEmpty)
         var candidateIndexes = [0]
         var highestValue = scoringFunction(elements[0])
 
@@ -181,7 +181,7 @@ extension MCTSNode {
 
     /// Samples an element according to the PMF.
     private func sampleFromPMF<T>(_ elements: [T], with pmfFunction: (T) -> Float) -> T {
-        precondition(elements.count > 0)
+        precondition(!elements.isEmpty)
         var cdf: [Float] = []
         var currentSum: Float = 0.0
         for element in elements {
