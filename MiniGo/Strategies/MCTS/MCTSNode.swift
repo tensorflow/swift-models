@@ -191,9 +191,9 @@ extension MCTSNode {
         let sample = Int.random(in: 0..<sampleSpace)
         let threshold = Float(sample) / Float(sampleSpace) * currentSum
 
-        for (i, element) in elements.enumerated() where threshold < cdf[i] {
-            return element
+        if let index = cdf.firstIndex(where: { threshold < $0 }) {
+            return elements[index]
         }
-        return elements[elements.count - 1]
+        return elements.last!
     }
 }

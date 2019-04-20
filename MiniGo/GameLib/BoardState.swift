@@ -225,23 +225,8 @@ extension Board {
         libertyTracker: LibertyTracker,
         nextPlayerColor: Color
     ) -> [Position] {
-        var legalMoves = Array<Position>()
-        for x in 0..<self.size {
-            for y in 0..<self.size {
-                let position = Position(x: x, y: y)
-                guard .legal == positionStatus(
-                    at: position,
-                    ko: ko,
-                    libertyTracker: libertyTracker,
-                    nextPlayerColor: nextPlayerColor
-                    ) else {
-                        continue
-                }
-
-                legalMoves.append(position)
-            }
-        }
-        return legalMoves
+        return allPositions
+            .filter { positionStatus(at: $0, ko: ko, libertyTracker: libertyTracker, nextPlayerColor: nextPlayerColor) == .legal }
     }
 
     /// Checks whether a move is legal. If isLegal is false, reason will be set.
@@ -251,9 +236,8 @@ extension Board {
         libertyTracker: LibertyTracker,
         nextPlayerColor: Color
     ) -> PositionStatus {
-        guard self.color(at: position) == nil else { return .illegal(reason: .occupied) }
+        guard color(at: position) == nil else { return .illegal(reason: .occupied) }
         guard position != ko else { return .illegal(reason: .ko) }
-
         guard !isSuicidal(
             at: position,
             libertyTracker: libertyTracker,
@@ -325,15 +309,7 @@ extension Board {
         var scoreBoard = self
 
         // First pass: Finds all empty positions on board.
-        var emptyPositions = Set<Position>()
-        for x in 0..<size {
-            for y in 0..<size {
-                let position = Position(x: x, y: y)
-                if scoreBoard.color(at: position) == nil {
-                    emptyPositions.insert(position)
-                }
-            }
-        }
+        var emptyPositions = Set(allPositions.filter { scoreBoard.color(at: $0) == nil })
 
         // Second pass: Calculates the territory and borders for each empty position, if there is any.
         // If territory is surrounded by the stones in same color, fills that color in territory.
@@ -361,13 +337,12 @@ extension Board {
         // Third pass: Counts stones now for scoring.
         var blackStoneCount = 0
         var whiteStoneCount = 0
-        for x in 0..<size {
-            for y in 0..<size {
-                guard let color = scoreBoard.color(at: Position(x: x, y: y))  else {
-                    // This board position does not belong to either player. Could be seki or dame.
-                    // See https://en.wikipedia.org/wiki/Go_(game)#Seki_(mutual_life).
-                    continue
-                }
+        allPositions
+            .lazy
+            // Positions having no color does not belong to either player. Could be seki or dame.
+            // See https://en.wikipedia.org/wiki/Go_(game)#Seki_(mutual_life).
+            .compactMap { scoreBoard.color(at: $0) }
+            .forEach { color in
                 switch color {
                 case .black:
                     blackStoneCount += 1
@@ -375,7 +350,6 @@ extension Board {
                     whiteStoneCount += 1
                 }
             }
-        }
         return Float(blackStoneCount - whiteStoneCount) - komi
     }
 

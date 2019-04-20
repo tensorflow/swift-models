@@ -158,16 +158,7 @@ extension LibertyTracker {
     }
 
     private func checkLibertyGroupsInvariance() -> Bool {
-        var groupIDsInGroupIndex = Set<Int>()
-        let size = gameConfiguration.size
-        for x in 0..<size {
-            for y in 0..<size {
-                guard let groupID = groupIndex[x][y] else {
-                    continue
-                }
-                groupIDsInGroupIndex.insert(groupID)
-            }
-        }
+        let groupIDsInGroupIndex = Set(groupIndex.flatMap { $0 }.compactMap { $0 })
         return Set(groups.keys) == groupIDsInGroupIndex
     }
 

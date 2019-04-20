@@ -24,9 +24,19 @@ struct Board: Hashable {
     private var stones: ShapedArray<Color?>
     let size: Int
 
+    // Caches array of all possible `Position`'s on a `Board`.
+    var allPositions: [Position]
+
     init(size: Int) {
         self.stones = ShapedArray<Color?>(repeating: nil, shape: [size, size])
         self.size = size
+        self.allPositions = [Position]()
+        allPositions.reserveCapacity(size*size)
+        for x in 0..<size {
+            for y in 0..<size {
+                allPositions.append(Position(x: x, y: y))
+            }
+        }
     }
 
     func color(at position: Position) -> Color? {

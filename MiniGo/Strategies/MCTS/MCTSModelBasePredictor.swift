@@ -145,24 +145,11 @@ extension Board {
     ///     binaryFeaturePlanes(state: C, activePlayerColor: .white)
     ///     binaryFeaturePlanes(state: D, activePlayerColor: .white)
     fileprivate func binaryFeaturePlanes(activePlayerColor: Color) -> ShapedArraySlice<Float> {
-        let boardSize = self.size
-
-        let opponentColor: Color = activePlayerColor == .black ? .white : .black
-
-        var result = ShapedArraySlice<Float>(repeating: 0.0, shape: [2, boardSize, boardSize])
-        for x in 0..<boardSize {
-            for y in 0..<boardSize {
-                guard let stoneColor = color(at: Position(x: x, y: y)) else {
-                    continue
-                }
-
-                if stoneColor == activePlayerColor {
-                    result[0][x][y] = ShapedArraySlice(1.0)
-                } else {
-                    assert(stoneColor == opponentColor)
-                    result[1][x][y] = ShapedArraySlice(1.0)
-                }
-            }
+        var result = ShapedArraySlice<Float>(repeating: 0.0, shape: [2, size, size])
+        allPositions.forEach { position in
+            guard let color = color(at: position) else { return }
+            let index = color == activePlayerColor ? 0 : 1
+            result[index][position.x][position.y] = ShapedArraySlice(1.0)
         }
         return result
     }
