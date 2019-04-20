@@ -155,33 +155,29 @@ extension MCTSNode {
         _ elements: [T],
         withScoringFunction scoringFunction: (T) -> Float
     ) -> T {
-        precondition(elements.count > 0)
+        precondition(!elements.isEmpty)
         var candidateIndexes = [0]
         var highestValue = scoringFunction(elements[0])
 
-        for index in 1..<elements.count {
+        for index in elements.indices.dropFirst() {
             let v = scoringFunction(elements[index])
             if v > highestValue {
                 highestValue = v
-                candidateIndexes.removeAll()
-                candidateIndexes.append(index)
+                candidateIndexes = [index]
             } else if abs(v - highestValue) < .ulpOfOne {
-                precondition(candidateIndexes.count > 0)
+                precondition(!candidateIndexes.isEmpty)
                 candidateIndexes.append(index)
             }
         }
 
-        let candidateCount = candidateIndexes.count
-        assert(candidateCount > 0)
-
         // Breaks the tie randomly.
-        let candidateIndex = candidateIndexes[Int.random(in: 0..<candidateCount)]
-        return elements[candidateIndex]
+        assert(!elements.isEmpty)
+        return elements.randomElement()!
     }
 
     /// Samples an element according to the PMF.
     private func sampleFromPMF<T>(_ elements: [T], with pmfFunction: (T) -> Float) -> T {
-        precondition(elements.count > 0)
+        precondition(!elements.isEmpty)
         var cdf: [Float] = []
         var currentSum: Float = 0.0
         for element in elements {
