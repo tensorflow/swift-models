@@ -27,9 +27,10 @@ To get a toolchain, you can:
 
 Currently, inference uses a pre-trained checkpoint. To download it, please
 install [`gsutil`](https://cloud.google.com/storage/docs/gsutil_install) and run
-the following:
+the following in the parent directory:
 
 ```sh
+cd swift-models
 mkdir -p MiniGoCheckpoint
 gsutil cp 'gs://minigo-pub/v15-19x19/models/000939-heron.*' MiniGoCheckpoint/
 ```
