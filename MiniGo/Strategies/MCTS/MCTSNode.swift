@@ -170,12 +170,9 @@ extension MCTSNode {
             }
         }
 
-        let candidateCount = candidateIndexes.count
-        assert(candidateCount > 0)
-
         // Breaks the tie randomly.
-        let candidateIndex = candidateIndexes[Int.random(in: 0..<candidateCount)]
-        return elements[candidateIndex]
+        assert(!elements.isEmpty)
+        return elements.randomElement()!
     }
 
     /// Samples an element according to the PMF.
