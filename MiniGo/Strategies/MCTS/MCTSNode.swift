@@ -171,8 +171,8 @@ extension MCTSNode {
         }
 
         // Breaks the tie randomly.
-        assert(!elements.isEmpty)
-        return elements.randomElement()!
+        assert(!candidateIndexes.isEmpty)
+        return elements[candidateIndexes.randomElement()!]
     }
 
     /// Samples an element according to the PMF.
