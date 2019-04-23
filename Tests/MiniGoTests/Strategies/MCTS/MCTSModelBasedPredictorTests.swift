@@ -10,7 +10,7 @@ final class MCTSModelBasedPredictorTests: XCTestCase {
             return GoModelOutput(
                 policy: Tensor<Float>(rangeFrom: 0, to: 19 * 19 + 1, stride:1),
                 value: Tensor<Float>(shape: [1], scalars: [0.9]),
-                logits: Tensor<Float>(randomUniform: [1, Int32(19 * 19 + 1)]))  // Not used.
+                logits: Tensor<Float>(randomUniform: [1, 19 * 19 + 1]))  // Not used.
         }
     }
 
