@@ -1,7 +1,7 @@
 # ResNet-50
 
-This directory contains a ResNet-50 image classification model for either ImageNet-size images
-(224x224) or CIFAR-size images (32x32), and an example that trains this model on the CIFAR-10
+This directory contains different ResNet image classification models for either ImageNet-size images
+(224x224) or CIFAR-size images (32x32), and an example that trains a ResNet-50 model on the CIFAR-10
 dataset.
 
 ## Setup

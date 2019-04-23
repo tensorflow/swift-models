@@ -1,18 +1,18 @@
 # Simple Autoencoder
 
+### Epoch 1
 <p align="center">
-<img src="images/autoencoder-5.png">
+<img src="images/epoch-1-input.png" height="270" width="360">
+<img src="images/epoch-1-output.png" height="270" width="360">
 </p>
 
+### Epoch 10
 <p align="center">
-<img src="images/input-0.png" height="270" width="360">
-<img src="images/output-5.png" height="270" width="360">
+<img src="images/epoch-10-input.png" height="270" width="360">
+<img src="images/epoch-10-output.png" height="270" width="360">
 </p>
 
-This directory builds a simple autoencoder model.
-
-**Note:** This model is a work in progress and training doesn't quite work.
-Specific areas for improvement are listed at the top of `Autoencoder.swift`.
+This directory builds a simple 1-dimensional autoencoder model.
 
 ## Setup
 
