@@ -21,9 +21,10 @@ public func playOneGame(gameConfiguration: GameConfiguration, participants: [Pol
         participants[0].participantName !=  participants[1].participantName,
         "Participants' names should not be same.")
 
-    // TODO(xiejw): Choose a random participant to play black.
-    let blackPlayer = participants[0]
-    let whitePlayer = participants[1]
+    // Choose a random participant to play black.
+    let shuffled = participants.shuffled()
+    let blackPlayer = shuffled.first! // precondition makes safe force unwrap
+    let whitePlayer = shuffled.last!  // -"-
 
     var previousMove: Move?
     var consecutivePassCount = 0
