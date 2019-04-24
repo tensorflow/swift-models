@@ -226,7 +226,13 @@ extension Board {
         nextPlayerColor: Color
     ) -> [Position] {
         return allPositions
-            .filter { positionStatus(at: $0, ko: ko, libertyTracker: libertyTracker, nextPlayerColor: nextPlayerColor) == .legal }
+            .filter {
+                positionStatus(
+                  at: $0,
+                  ko: ko,
+                  libertyTracker: libertyTracker,
+                  nextPlayerColor: nextPlayerColor) == .legal
+            }
     }
 
     /// Checks whether a move is legal. If isLegal is false, reason will be set.
