@@ -18,6 +18,8 @@ enum Color: Int {
     case white = -1
 }
 
+extension Color: CaseIterable {}
+
 extension Color: CustomStringConvertible {
     var description: String {
         switch self {
