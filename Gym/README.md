@@ -24,6 +24,6 @@ pip install gym
 To build and run the models, run:
 
 ```bash
-swift run CartPole
-swift run FrozenLake
+swift run Gym-CartPole
+swift run Gym-FrozenLake
 ```
