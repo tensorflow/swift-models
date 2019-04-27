@@ -22,7 +22,7 @@ swift build -Xlinker -ltensorflow
 
 ### Test
 
-```
+```bash
 swift test -Xlinker -ltensorflow
 ```
 
