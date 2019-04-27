@@ -16,10 +16,9 @@ struct Conv2DBatchNorm: Layer {
 
     init(
         filterShape: (Int, Int, Int, Int),
-        strides: (Int, Int) = (1, 1),
-        padding: Padding = .valid
+        strides: (Int, Int) = (1, 1)
     ) {
-        self.conv = Conv2D(filterShape: filterShape, strides: strides, padding: padding)
+        self.conv = Conv2D(filterShape: filterShape, strides: strides, padding: .same)
         self.norm = BatchNorm(featureCount: filterShape.3)
     }
 
@@ -44,15 +43,12 @@ struct BasicBlock20: Layer {
     ) {
         self.layer1 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
-            strides: strides,
-            padding: .same)
+            strides: strides)
         self.layer2 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
         self.shortcut = Conv2DBatchNorm(
             filterShape: (1, 1, featureCounts.0, featureCounts.3),
-            strides: strides,
-            padding: .same)
+            strides: strides)
     }
 
     @differentiable
@@ -67,7 +63,7 @@ struct ResNet20: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
-    var inputLayer = Conv2DBatchNorm(filterShape: (3, 3, 3, 16), padding: .same)
+    var inputLayer = Conv2DBatchNorm(filterShape: (3, 3, 3, 16))
 
     var basicBlock1 = BasicBlock20(featureCounts:(16, 16, 16, 16), strides: (1,1))
     var basicBlock2 = BasicBlock20(featureCounts:(16, 32, 32, 32))
@@ -102,21 +98,16 @@ struct BasicBlock32: Layer {
     ) {
         self.layer1 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
-            strides: strides,
-            padding: .same)
+            strides: strides)
         self.layer2 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
         self.layer3 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
         self.layer4 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
         self.shortcut = Conv2DBatchNorm(
             filterShape: (1, 1, featureCounts.0, featureCounts.3),
-            strides: strides,
-            padding: .same)
+            strides: strides)
     }
 
     @differentiable
@@ -133,7 +124,7 @@ struct ResNet32: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
-    var inputLayer = Conv2DBatchNorm(filterShape: (3, 3, 3, 16), padding: .same)
+    var inputLayer = Conv2DBatchNorm(filterShape: (3, 3, 3, 16))
 
     var basicBlock1 = BasicBlock32(featureCounts:(16, 16, 16, 16), strides: (1,1))
     var basicBlock2 = BasicBlock32(featureCounts:(16, 32, 32, 32))
@@ -170,27 +161,20 @@ struct BasicBlock44: Layer {
     ) {
         self.layer1 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
-            strides: strides,
-            padding: .same)
+            strides: strides)
         self.layer2 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
         self.layer3 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
         self.layer4 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
         self.layer5 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
         self.layer6 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
         self.shortcut = Conv2DBatchNorm(
             filterShape: (1, 1, featureCounts.0, featureCounts.3),
-            strides: strides,
-            padding: .same)
+            strides: strides)
     }
 
     @differentiable
@@ -209,7 +193,7 @@ struct ResNet44: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
-    var inputLayer = Conv2DBatchNorm(filterShape: (3, 3, 3, 16), padding: .same)
+    var inputLayer = Conv2DBatchNorm(filterShape: (3, 3, 3, 16))
 
     var basicBlock1 = BasicBlock44(featureCounts:(16, 16, 16, 16), strides: (1,1))
     var basicBlock2 = BasicBlock44(featureCounts:(16, 32, 32, 32))
@@ -248,33 +232,24 @@ struct BasicBlock56: Layer {
     ) {
         self.layer1 = Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
-            strides: strides,
-            padding: .same)
+            strides: strides)
         self.layer2 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
         self.layer3 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
         self.layer4 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
         self.layer5 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
         self.layer6 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
         self.layer7 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
         self.layer8 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
         self.shortcut = Conv2DBatchNorm(
             filterShape: (1, 1, featureCounts.0, featureCounts.3),
-            strides: strides,
-            padding: .same)
+            strides: strides)
     }
 
     @differentiable
@@ -295,7 +270,7 @@ struct ResNet56: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
-    var inputLayer = Conv2DBatchNorm(filterShape: (3, 3, 3, 16), padding: .same)
+    var inputLayer = Conv2DBatchNorm(filterShape: (3, 3, 3, 16))
 
     var basicBlock1 = BasicBlock56(featureCounts:(16, 16, 16, 16), strides: (1,1))
     var basicBlock2 = BasicBlock56(featureCounts:(16, 32, 32, 32))
