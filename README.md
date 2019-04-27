@@ -10,28 +10,6 @@ As new packages are released, `master` is pushed to `stable`.
 For general information about Swift for TensorFlow development, please visit
 [tensorflow/swift](https://github.com/tensorflow/swift).
 
-
-## macOS Troubleshooting
-If you see `TensorFlow not found` when building samples from command line or 
-```shell
-<unknown>:0: error: cannot load underlying module for 'Darwin'
-<unknown>:0: note: did you forget to set an SDK using -sdk or SDKROOT?
-<unknown>:0: note: use "xcrun swiftc" to select the default macOS SDK installed with Xcode
-  ```
-make sure you've added the correct version of `swift` to your path.
-eg. 
-```shell
-which swift
-/usr/bin/swift # This is the wrong path!
-```
-The swift binary should be referencing the most updated toolchain bin path eg. 
-```shell
-export PATH="/Library/Developer/Toolchains/swift-latest/usr/bin/:$PATH"
-which swift
-/Library/Developer/Toolchains/swift-latest/usr/bin/swift
-```
-
-
 ## Bugs
 
 Please report model-related bugs and feature requests using GitHub issues in
@@ -61,4 +39,3 @@ race, religion, or sexual identity and orientation.
 The Swift for TensorFlow community is guided by our [Code of
 Conduct](CODE_OF_CONDUCT.md), which we encourage everybody to read before
 participating.
-
