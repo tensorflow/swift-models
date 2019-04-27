@@ -12,30 +12,16 @@ let package = Package(
         .executable(name: "MiniGo", targets: ["MiniGo", "MiniGoMain"]),
     ],
     targets: [
-        .target(
-            name: "MNIST",
-            dependencies: [],
-            path: "MNIST"),
-        .target(
-            name: "CIFAR",
-            dependencies: [],
-            path: "CIFAR"),
-        .target(
-            name: "ResNet",
-            dependencies: [],
-            path: "ResNet"),
-        .target(
-            name: "MiniGoMain",
-            dependencies: ["MiniGo"],
-            path: "MiniGo",
-            sources: ["main.swift"]),
-        .target(
-            name: "MiniGo",
-            dependencies: [],
-            path: "MiniGo",
-            exclude: ["main.swift"]),
-        .testTarget(
-            name: "MiniGoTests",
-            dependencies: ["MiniGo"]),
+        .target(name: "Autoencoder", path: "Autoencoder"),
+        .target(name: "CIFAR", path: "CIFAR"),
+        .target(name: "Catch", path: "Catch"),
+        .target(name: "Gym-FrozenLake", path: "Gym/FrozenLake"),
+        .target(name: "Gym-CartPole", path: "Gym/CartPole"),
+        .target(name: "MNIST", path: "MNIST"),
+        .target(name: "MiniGo", path: "MiniGo", exclude: ["main.swift"]),
+        .target(name: "MiniGoMain", dependencies: ["MiniGo"], path: "MiniGo", sources: ["main.swift"]),
+        .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
+        .target(name: "ResNet", path: "ResNet"),
+        .target(name: "Transformer", path: "Transformer"),
     ]
 )

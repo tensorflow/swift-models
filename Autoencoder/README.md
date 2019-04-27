@@ -23,7 +23,7 @@ installed. Make sure you've added the correct version of `swift` to your path.
 To train the model, run:
 
 ```
-swift -O Autoencoder.swift
+swift run Autoencoder
 ```
 If you using brew to install python2 and modules, change the path:
  - remove brew path '/usr/local/bin'

@@ -10,6 +10,22 @@ As new packages are released, `master` is pushed to `stable`.
 For general information about Swift for TensorFlow development, please visit
 [tensorflow/swift](https://github.com/tensorflow/swift).
 
+## Development
+
+Use Swift Package Manager to develop Swift for TensorFlow models.
+
+### Build
+
+```bash
+swift build -Xlinker -ltensorflow
+```
+
+### Test
+
+```bash
+swift test -Xlinker -ltensorflow
+```
+
 ## Bugs
 
 Please report model-related bugs and feature requests using GitHub issues in
