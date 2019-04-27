@@ -37,7 +37,7 @@ struct BasicBlock20: Layer {
     var shortcut: Conv2DBatchNorm
 
     init(
-        featureCounts: (Int, Int, Int, Int),
+        featureCounts: (Int, Int),
         kernelSize: Int = 3,
         strides: (Int, Int) = (2, 2)
     ) {
@@ -45,9 +45,9 @@ struct BasicBlock20: Layer {
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
             strides: strides)
         self.layer2 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
         self.shortcut = Conv2DBatchNorm(
-            filterShape: (1, 1, featureCounts.0, featureCounts.3),
+            filterShape: (1, 1, featureCounts.0, featureCounts.1),
             strides: strides)
     }
 
@@ -65,9 +65,9 @@ struct ResNet20: Layer {
 
     var inputLayer = Conv2DBatchNorm(filterShape: (3, 3, 3, 16))
 
-    var basicBlock1 = BasicBlock20(featureCounts:(16, 16, 16, 16), strides: (1,1))
-    var basicBlock2 = BasicBlock20(featureCounts:(16, 32, 32, 32))
-    var basicBlock3 = BasicBlock20(featureCounts:(32, 64, 64, 64))
+    var basicBlock1 = BasicBlock20(featureCounts:(16, 16), strides: (1,1))
+    var basicBlock2 = BasicBlock20(featureCounts:(16, 32))
+    var basicBlock3 = BasicBlock20(featureCounts:(32, 64))
 
     var averagePool = AvgPool2D<Float>(poolSize: (8, 8), strides: (8, 8))
     var flatten = Flatten<Float>()
@@ -92,7 +92,7 @@ struct BasicBlock32: Layer {
     var shortcut: Conv2DBatchNorm
 
     init(
-        featureCounts: (Int, Int, Int, Int),
+        featureCounts: (Int, Int),
         kernelSize: Int = 3,
         strides: (Int, Int) = (2, 2)
     ) {
@@ -100,13 +100,13 @@ struct BasicBlock32: Layer {
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
             strides: strides)
         self.layer2 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
         self.layer3 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
         self.layer4 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
         self.shortcut = Conv2DBatchNorm(
-            filterShape: (1, 1, featureCounts.0, featureCounts.3),
+            filterShape: (1, 1, featureCounts.0, featureCounts.1),
             strides: strides)
     }
 
@@ -126,9 +126,9 @@ struct ResNet32: Layer {
 
     var inputLayer = Conv2DBatchNorm(filterShape: (3, 3, 3, 16))
 
-    var basicBlock1 = BasicBlock32(featureCounts:(16, 16, 16, 16), strides: (1,1))
-    var basicBlock2 = BasicBlock32(featureCounts:(16, 32, 32, 32))
-    var basicBlock3 = BasicBlock32(featureCounts:(32, 64, 64, 64))
+    var basicBlock1 = BasicBlock32(featureCounts:(16, 16), strides: (1,1))
+    var basicBlock2 = BasicBlock32(featureCounts:(16, 32))
+    var basicBlock3 = BasicBlock32(featureCounts:(32, 64))
 
     var averagePool = AvgPool2D<Float>(poolSize: (8, 8), strides: (8, 8))
     var flatten = Flatten<Float>()
@@ -155,7 +155,7 @@ struct BasicBlock44: Layer {
     var shortcut: Conv2DBatchNorm
 
     init(
-        featureCounts: (Int, Int, Int, Int),
+        featureCounts: (Int, Int),
         kernelSize: Int = 3,
         strides: (Int, Int) = (2, 2)
     ) {
@@ -163,17 +163,17 @@ struct BasicBlock44: Layer {
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
             strides: strides)
         self.layer2 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
         self.layer3 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
         self.layer4 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
         self.layer5 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
         self.layer6 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
         self.shortcut = Conv2DBatchNorm(
-            filterShape: (1, 1, featureCounts.0, featureCounts.3),
+            filterShape: (1, 1, featureCounts.0, featureCounts.1),
             strides: strides)
     }
 
@@ -195,9 +195,9 @@ struct ResNet44: Layer {
 
     var inputLayer = Conv2DBatchNorm(filterShape: (3, 3, 3, 16))
 
-    var basicBlock1 = BasicBlock44(featureCounts:(16, 16, 16, 16), strides: (1,1))
-    var basicBlock2 = BasicBlock44(featureCounts:(16, 32, 32, 32))
-    var basicBlock3 = BasicBlock44(featureCounts:(32, 64, 64, 64))
+    var basicBlock1 = BasicBlock44(featureCounts:(16, 16), strides: (1,1))
+    var basicBlock2 = BasicBlock44(featureCounts:(16, 32))
+    var basicBlock3 = BasicBlock44(featureCounts:(32, 64))
 
     var averagePool = AvgPool2D<Float>(poolSize: (8, 8), strides: (8, 8))
     var flatten = Flatten<Float>()
@@ -226,7 +226,7 @@ struct BasicBlock56: Layer {
     var shortcut: Conv2DBatchNorm
 
     init(
-        featureCounts: (Int, Int, Int, Int),
+        featureCounts: (Int, Int),
         kernelSize: Int = 3,
         strides: (Int, Int) = (2, 2)
     ) {
@@ -234,21 +234,21 @@ struct BasicBlock56: Layer {
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
             strides: strides)
         self.layer2 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
         self.layer3 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
         self.layer4 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
         self.layer5 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
         self.layer6 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
         self.layer7 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
         self.layer8 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2))
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
         self.shortcut = Conv2DBatchNorm(
-            filterShape: (1, 1, featureCounts.0, featureCounts.3),
+            filterShape: (1, 1, featureCounts.0, featureCounts.1),
             strides: strides)
     }
 
@@ -272,9 +272,9 @@ struct ResNet56: Layer {
 
     var inputLayer = Conv2DBatchNorm(filterShape: (3, 3, 3, 16))
 
-    var basicBlock1 = BasicBlock56(featureCounts:(16, 16, 16, 16), strides: (1,1))
-    var basicBlock2 = BasicBlock56(featureCounts:(16, 32, 32, 32))
-    var basicBlock3 = BasicBlock56(featureCounts:(32, 64, 64, 64))
+    var basicBlock1 = BasicBlock56(featureCounts:(16, 16), strides: (1,1))
+    var basicBlock2 = BasicBlock56(featureCounts:(16, 32))
+    var basicBlock3 = BasicBlock56(featureCounts:(32, 64))
 
     var averagePool = AvgPool2D<Float>(poolSize: (8, 8), strides: (8, 8))
     var flatten = Flatten<Float>()
