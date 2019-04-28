@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Implements the same architecture as https://github.com/tensorflow/minigo/blob/master/dual_net.py
+
 import TensorFlow
-// implements the same architecture as https://github.com/tensorflow/minigo/blob/master/dual_net.py
 
 public struct ModelConfiguration {
     /// size of Go board (typically 9 or 19)
@@ -176,7 +177,7 @@ public struct GoModel: Layer {
             activation: tanh)
     }
   
-    @differentiable(wrt: (self, input), vjp: _vjpApplied)
+    @differentiable(wrt: (self, input), vjp: _vjpCall)
     public func call(_ input: Tensor<Float>) -> GoModelOutput {
         let batchSize = input.shape[0]
         var output = relu(initialConv(input))
@@ -203,19 +204,19 @@ public struct GoModel: Layer {
     }
 
     @usableFromInline
-    func _vjpApplied(to input: Tensor<Float>)
+    func _vjpCall(_ input: Tensor<Float>)
         -> (GoModelOutput, (GoModelOutput.CotangentVector)
         -> (GoModel.CotangentVector, Tensor<Float>)) {
-            // TODO(jekbradbury): add a real VJP
-            // (we're only interested in inference for now and have control flow in our applied(to:) method)
-            return (self(input), {
-                seed in (GoModel.CotangentVector.zero, Tensor<Float>(0))
-            })
+        // TODO(jekbradbury): add a real VJP
+        // (we're only interested in inference for now and have control flow in our `call(_:)` method)
+        return (self(input), {
+            seed in (GoModel.CotangentVector.zero, Tensor<Float>(0))
+        })
     }
 }
 
 extension GoModel: InferenceModel {
-    public func prediction(input: Tensor<Float>) -> GoModelOutput {
+    public func prediction(for input: Tensor<Float>) -> GoModelOutput {
         return self(input)
     }
 }

@@ -44,4 +44,3 @@ public struct MCTSPrediction {
 public protocol MCTSPredictor: class {
     func prediction(for boardState: BoardState) -> MCTSPrediction
 }
-

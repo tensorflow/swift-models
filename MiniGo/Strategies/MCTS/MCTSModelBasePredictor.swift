@@ -16,21 +16,17 @@ import TensorFlow
 
 public protocol InferenceModel {
     /// Predicts the model output based on input tensor.
-    func prediction(input: Tensor<Float>) -> GoModelOutput
+    func prediction(for input: Tensor<Float>) -> GoModelOutput
 }
 
 /// A ResNet-like model based `MCTSPredictor` predicting the next move and reward.
 public class MCTSModelBasedPredictor: MCTSPredictor {
-    // Maintainer Note: As of Feb 2019, `Tensor` shape related APIs require `Int32`, but
-    // `ShapedArray` requires `Int` for shape. So, we have to pick one here. Consider the fact we will
-    // use `Tensor` anyway in future but might change another implementation to replace `ShapedArray`,
-    // `Int32` is chosen here.
     private let boardSize: Int
     private var model: InferenceModel
 
     public init(boardSize: Int, model: InferenceModel) {
         guard boardSize == 19 else {
-            fatalError("GoModel only supports boardSize=19 for now.")
+            fatalError("`GoModel` currently only supports `boardSize == 19`.")
         }
         self.boardSize = boardSize
         self.model = model
@@ -38,7 +34,7 @@ public class MCTSModelBasedPredictor: MCTSPredictor {
 
     public func prediction(for boardState: BoardState) -> MCTSPrediction {
         let modelInput = boardState.featurePlanes()
-        let inference = model.prediction(input: modelInput)
+        let inference = model.prediction(for: modelInput)
 
         let policy = inference.policy.flattened()
         assert(policy.shape == [boardSize*boardSize + 1])
@@ -53,7 +49,7 @@ public class MCTSModelBasedPredictor: MCTSPredictor {
         var reward = inference.value.scalarized()
 
         // We occasionally see the model output falls out of the expected range, which should never
-        // happen given the final activation funciton is `tanh`.
+        // happen given the final activation function is `tanh(_:)`.
         //
         // To avoid crash, we log the case here and do value clipping.
         if reward > 1.0 {
@@ -76,13 +72,15 @@ extension BoardState {
     ///
     /// For reference, see the AlphaGo Zero paper, Section: Method -> Neural network architecture.
     fileprivate func featurePlanes() -> Tensor<Float> {
-        assert(gameConfiguration.maxHistoryCount <= 7, "Only support at most 8 board states in total.")
+        assert(gameConfiguration.maxHistoryCount <= 7,
+               "Only support at most 8 board states in total.")
 
         let boardSize = gameConfiguration.size
 
         var featurePlanes = ShapedArray<Float>(repeating: 0.0, shape: [17, boardSize, boardSize])
 
-        // The first 16 feature planes represent recent board states. Each board state needs two planes.
+        // The first 16 feature planes represent recent board states. Each board state needs two
+        // planes.
         //
         // First, sets the feature planes for the current board state.
         var featurePlanesForOldestBoard = self.board.binaryFeaturePlanes(
@@ -101,29 +99,28 @@ extension BoardState {
         // Finally, sets the remaining feature planes as the one for the last one.
         //
         // AlphaGo sets the remaining feature planes as all zeros (see "Method" -> "Neural network
-        // architecture" section). But MiniGo reference model repeats the oldest board. We followed the
-        // latter here.
+        // architecture" section). But MiniGo reference model repeats the oldest board. We followed
+        // the latter here.
         assert(nextIndex == (self.history.count + 1) * 2)
         while nextIndex < 16 {
             featurePlanes[nextIndex...(nextIndex+1)] = featurePlanesForOldestBoard
             nextIndex += 2
         }
 
-        // The final feature plane represents the color to play. 1.0 if black is to play or 0.0 if white
-        // is to play.
+        // The final feature plane represents the color to play. 1.0 if black is to play or 0.0 if
+        // white is to play.
         featurePlanes[16] = ShapedArraySlice<Float>(
             repeating: self.nextPlayerColor == .black ? 1.0 : 0.0,
             shape: [boardSize, boardSize])
 
         let featureTensor = Tensor(featurePlanes)
 
-        // The Go prediction network expects the input tensor to be in `[batch, boardSize, boardSize,
-        // featurePlanes]` order.
+        // The Go prediction network expects the input tensor to be in `[batch, boardSize,
+        // boardSize, featurePlanes]` order.
         //
         // Rotate our inputs to this order by transposing and reshape to a single-element batch.
-        return featureTensor.transposed(
-            withPermutations: 1, 2, 0
-            ).reshaped(to: [1, boardSize, boardSize, 17])
+        return featureTensor.transposed(withPermutations: 1, 2, 0)
+            .reshaped(to: [1, boardSize, boardSize, 17])
     }
 }
 
@@ -133,8 +130,8 @@ extension Board {
     /// The first plane has 1 on position where the stone's color matches `activePlayerColor`.
     /// The second plane has 1 on position where the stone's color matches opponent's color.
     ///
-    /// `activePlayerColor` is not same as `BoardState.nextPlayerColor`. The active player color (the
-    /// player to play) being filled depends on the point in history we are filling.
+    /// `activePlayerColor` is not same as `BoardState.nextPlayerColor`. The active player color
+    /// (the player to play) being filled depends on the point in history we are filling.
     ///
     /// Consider a board state A, white is playing and the state history is [A, B, C, D].
     ///
