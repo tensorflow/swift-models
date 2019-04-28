@@ -32,20 +32,20 @@ struct BasicBlock20: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
-    var layer1: Conv2DBatchNorm
-    var layer2: Conv2DBatchNorm
+    var blocks: [Conv2DBatchNorm]
     var shortcut: Conv2DBatchNorm
 
     init(
         featureCounts: (Int, Int),
         kernelSize: Int = 3,
-        strides: (Int, Int) = (2, 2)
+        strides: (Int, Int) = (2, 2),
+        numBlocks: Int = 3
     ) {
-        self.layer1 = Conv2DBatchNorm(
+        self.blocks = [Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
-            strides: strides)
-        self.layer2 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
+            strides: strides)]
+        for _ in 2..<numBlocks { self.blocks += [Conv2DBatchNorm(
+                filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))] }
         self.shortcut = Conv2DBatchNorm(
             filterShape: (1, 1, featureCounts.0, featureCounts.1),
             strides: strides)
@@ -53,8 +53,8 @@ struct BasicBlock20: Layer {
 
     @differentiable
     func call(_ input: Input) -> Output {
-        var tmp = relu(layer1(input))
-        tmp = relu(layer2(tmp))
+        var tmp = relu(self.blocks[0](input))
+        tmp = relu(self.blocks[1](tmp))
         return relu(tmp + shortcut(input))
     }
 }
@@ -85,26 +85,20 @@ struct BasicBlock32: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
-    var layer1: Conv2DBatchNorm
-    var layer2: Conv2DBatchNorm
-    var layer3: Conv2DBatchNorm
-    var layer4: Conv2DBatchNorm
+    var blocks: [Conv2DBatchNorm]
     var shortcut: Conv2DBatchNorm
 
     init(
         featureCounts: (Int, Int),
         kernelSize: Int = 3,
-        strides: (Int, Int) = (2, 2)
+        strides: (Int, Int) = (2, 2),
+        numBlocks: Int = 5
     ) {
-        self.layer1 = Conv2DBatchNorm(
+        self.blocks = [Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
-            strides: strides)
-        self.layer2 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
-        self.layer3 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
-        self.layer4 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
+            strides: strides)]
+        for _ in 2..<numBlocks { self.blocks += [Conv2DBatchNorm(
+                filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))] }
         self.shortcut = Conv2DBatchNorm(
             filterShape: (1, 1, featureCounts.0, featureCounts.1),
             strides: strides)
@@ -112,10 +106,10 @@ struct BasicBlock32: Layer {
 
     @differentiable
     func call(_ input: Input) -> Output {
-        var tmp = relu(layer1(input))
-        tmp = relu(layer2(tmp))
-        tmp = relu(layer3(tmp))
-        tmp = relu(layer4(tmp))
+        var tmp = relu(self.blocks[0](input))
+        tmp = relu(self.blocks[1](tmp))
+        tmp = relu(self.blocks[2](tmp))
+        tmp = relu(self.blocks[3](tmp))
         return relu(tmp + shortcut(input))
     }
 }
@@ -146,32 +140,20 @@ struct BasicBlock44: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
-    var layer1: Conv2DBatchNorm
-    var layer2: Conv2DBatchNorm
-    var layer3: Conv2DBatchNorm
-    var layer4: Conv2DBatchNorm
-    var layer5: Conv2DBatchNorm
-    var layer6: Conv2DBatchNorm
+    var blocks: [Conv2DBatchNorm]
     var shortcut: Conv2DBatchNorm
 
     init(
         featureCounts: (Int, Int),
         kernelSize: Int = 3,
-        strides: (Int, Int) = (2, 2)
+        strides: (Int, Int) = (2, 2),
+        numBlocks: Int = 7
     ) {
-        self.layer1 = Conv2DBatchNorm(
+        self.blocks = [Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
-            strides: strides)
-        self.layer2 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
-        self.layer3 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
-        self.layer4 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
-        self.layer5 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
-        self.layer6 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
+            strides: strides)]
+        for _ in 2..<numBlocks { self.blocks += [Conv2DBatchNorm(
+                filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))] }
         self.shortcut = Conv2DBatchNorm(
             filterShape: (1, 1, featureCounts.0, featureCounts.1),
             strides: strides)
@@ -179,12 +161,12 @@ struct BasicBlock44: Layer {
 
     @differentiable
     func call(_ input: Input) -> Output {
-        var tmp = relu(layer1(input))
-        tmp = relu(layer2(tmp))
-        tmp = relu(layer3(tmp))
-        tmp = relu(layer4(tmp))
-        tmp = relu(layer5(tmp))
-        tmp = relu(layer6(tmp))
+        var tmp = relu(self.blocks[0](input))
+        tmp = relu(self.blocks[1](tmp))
+        tmp = relu(self.blocks[2](tmp))
+        tmp = relu(self.blocks[3](tmp))
+        tmp = relu(self.blocks[4](tmp))
+        tmp = relu(self.blocks[5](tmp))
         return relu(tmp + shortcut(input))
     }
 }
@@ -215,38 +197,20 @@ struct BasicBlock56: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
-    var layer1: Conv2DBatchNorm
-    var layer2: Conv2DBatchNorm
-    var layer3: Conv2DBatchNorm
-    var layer4: Conv2DBatchNorm
-    var layer5: Conv2DBatchNorm
-    var layer6: Conv2DBatchNorm
-    var layer7: Conv2DBatchNorm
-    var layer8: Conv2DBatchNorm
+    var blocks: [Conv2DBatchNorm]
     var shortcut: Conv2DBatchNorm
 
     init(
         featureCounts: (Int, Int),
         kernelSize: Int = 3,
-        strides: (Int, Int) = (2, 2)
+        strides: (Int, Int) = (2, 2),
+        numBlocks: Int = 9
     ) {
-        self.layer1 = Conv2DBatchNorm(
+        self.blocks = [Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
-            strides: strides)
-        self.layer2 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
-        self.layer3 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
-        self.layer4 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
-        self.layer5 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
-        self.layer6 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
-        self.layer7 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
-        self.layer8 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))
+            strides: strides)]
+        for _ in 2..<numBlocks { self.blocks += [Conv2DBatchNorm(
+                filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))] }
         self.shortcut = Conv2DBatchNorm(
             filterShape: (1, 1, featureCounts.0, featureCounts.1),
             strides: strides)
@@ -254,14 +218,14 @@ struct BasicBlock56: Layer {
 
     @differentiable
     func call(_ input: Input) -> Output {
-        var tmp = relu(layer1(input))
-        tmp = relu(layer2(tmp))
-        tmp = relu(layer3(tmp))
-        tmp = relu(layer4(tmp))
-        tmp = relu(layer5(tmp))
-        tmp = relu(layer6(tmp))
-        tmp = relu(layer7(tmp))
-        tmp = relu(layer8(tmp))
+        var tmp = relu(self.blocks[0](input))
+        tmp = relu(self.blocks[1](tmp))
+        tmp = relu(self.blocks[2](tmp))
+        tmp = relu(self.blocks[3](tmp))
+        tmp = relu(self.blocks[4](tmp))
+        tmp = relu(self.blocks[5](tmp))
+        tmp = relu(self.blocks[6](tmp))
+        tmp = relu(self.blocks[7](tmp))
         return relu(tmp + shortcut(input))
     }
 }
