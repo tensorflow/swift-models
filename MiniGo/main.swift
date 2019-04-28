@@ -53,4 +53,3 @@ try playOneGame(
         MCTSPolicy(participantName: "white", predictor: predictor,
                    configuration: mctsConfiguration),
     ])
-

@@ -14,13 +14,17 @@
 
 /// Represents a position in a Go game.
 public struct Position: Hashable, Equatable {
-    var x: Int
-    var y: Int
+    public var x: Int
+    public var y: Int
+    
+    public init(x: Int, y: Int) {
+        self.x = x
+        self.y = y
+    }
 }
 
 /// Returns all valid neighbors for the given position on board.
 extension Position {
-
     func neighbors(boardSize size: Int) -> [Position] {
         let neighbors = [
             Position(x: x+1, y: y),
@@ -28,7 +32,6 @@ extension Position {
             Position(x: x, y: y+1),
             Position(x: x, y: y-1),
         ]
-
         return neighbors.filter { 0..<size ~= $0.x && 0..<size ~= $0.y }
     }
 }

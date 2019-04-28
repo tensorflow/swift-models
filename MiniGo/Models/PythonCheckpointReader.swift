@@ -22,8 +22,8 @@ public class PythonCheckpointReader {
         self.path = path
     }
 
-    // Currently returns Optional in order to support the case where the variable might not exist, but
-    // this is not implemented (see b/124126672)
+    // Currently returns an `Optional` in order to support the case where the variable might not
+    // exist, but this is not implemented (see b/124126672).
     func readTensor(layerName: String, weightName: String) -> Tensor<Float>? {
         let countSuffix = layerCounts[layerName] == nil ? "" : "_\(layerCounts[layerName]!)"
         let tensorName = layerName + countSuffix + "/" + weightName
@@ -102,14 +102,16 @@ extension BatchNorm: LoadableFromPythonCheckpoint where Scalar == Float {
         if let newRunningMean = reader.readTensor(
             layerName: "batch_normalization",
             weightName: "moving_mean") {
-            // do not check shapes, because Swift running mean/variance are initialized to scalar tensors
+            // Do not check shapes, because Swift running mean/variance are initialized to scalar
+            // tensors.
             runningMean.value = newRunningMean
         }
 
         if let newRunningVariance = reader.readTensor(
             layerName: "batch_normalization",
             weightName: "moving_variance") {
-            // do not check shapes, because Swift running mean/variance are initialized to scalar tensors
+            // Do not check shapes, because Swift running mean/variance are initialized to scalar
+            // tensors.
             runningVariance.value = newRunningVariance
         }
 

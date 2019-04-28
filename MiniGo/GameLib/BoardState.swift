@@ -276,8 +276,7 @@ extension Board {
 
         for neighbor in position.neighbors(boardSize: self.size) {
             guard let group = libertyTracker.group(at: neighbor) else {
-                // If the neighbor is not occupied, no liberty group, the position is
-                // OK.
+                // If the neighbor is not occupied, no liberty group, the position is OK.
                 return false
             }
             if group.color == nextPlayerColor {
@@ -288,14 +287,14 @@ extension Board {
             }
         }
 
-        // After removing the new postion from liberties, if there is no liberties
-        // left, this move is suicide.
+        // After removing the new postion from liberties, if there is no liberties left, this move
+        // is suicide.
         possibleLiberties.remove(position)
         return possibleLiberties.isEmpty
     }
 
-    /// Checks whether the position is a potential ko, i.e., whether the position is surrounded by all
-    /// sides belonging to the opponent.
+    /// Checks whether the position is a potential ko, i.e., whether the position is surrounded by
+    /// all sides belonging to the opponent.
     ///
     /// This is an approximated algorithm to find `ko`. See https://en.wikipedia.org/wiki/Ko_fight
     /// for details.
@@ -334,8 +333,9 @@ extension Board {
             }
         }
 
-        // Second pass: Calculates the territory and borders for each empty position, if there is any.
-        // If territory is surrounded by the stones in same color, fills that color in territory.
+        // Second pass: Calculates the territory and borders for each empty position, if there is
+        // any. If territory is surrounded by the stones in same color, fills that color in
+        // territory.
         while !emptyPositions.isEmpty {
             let emptyPosition = emptyPositions.removeFirst()
 
@@ -401,7 +401,8 @@ extension Board {
             for neighbor in currentPosition.neighbors(boardSize: self.size) {
                 if self.color(at: neighbor) == nil {
                     if !territory.contains(neighbor) {
-                        // We have not explored this (empty) position, so queue it up for processing.
+                        // We have not explored this (empty) position, so queue it up for
+                        // processing.
                         candidates.insert(neighbor)
                     }
                 } else {
@@ -411,12 +412,10 @@ extension Board {
             }
         } while !candidates.isEmpty
 
-        precondition(
-            territory.allSatisfy { self.color(at: $0) == nil },
-            "territory must be all empty (no stones).")
-        precondition(
-            borders.allSatisfy { self.color(at: $0) != nil },
-            "borders cannot have empty positions.")
+        precondition(territory.allSatisfy { self.color(at: $0) == nil },
+                     "territory must be all empty (no stones).")
+        precondition(borders.allSatisfy { self.color(at: $0) != nil },
+                     "borders cannot have empty positions.")
         return (territory, borders)
     }
 }

@@ -36,11 +36,10 @@ struct LibertyTracker {
     /// The game configuration.
     private let gameConfiguration: GameConfiguration
 
-    // Tracks the liberty groups. For a position (stone) having no group,
-    // groupIndex[stone] should be nil. Otherwise, the group ID should be
-    // groupIndex[stone] and its group is groups[groupIndex[stone]].
-    // The invariance check can be done via checkLibertyGroupsInvariance helper
-    // method.
+    // Tracks the liberty groups. For a position (stone) having no group, `groupIndex[stone]` should
+    // be `nil`. Otherwise, the group ID should be `groupIndex[stone]` and its group is
+    // `groups[groupIndex[stone]]`. The invariance check can be done via the
+    // `checkLibertyGroupsInvariance()` helper method.
     private var nextGroupIDToAssign = 0
     private var groupIndex: [[Int?]]
     private var groups: [Int: LibertyGroup] = [:]
@@ -64,7 +63,7 @@ struct LibertyTracker {
     }
 }
 
-/// Extend `LibertyTracker` to have a mutating method by placing a new stone.
+// Extend `LibertyTracker` to have a mutating method by placing a new stone.
 extension LibertyTracker {
     /// Adds a new stone to the board and returns all captured stones.
     mutating func addStone(at position: Position, withColor color: Color) throws -> Set<Position> {
@@ -80,7 +79,6 @@ extension LibertyTracker {
         var friendlyNeighboringGroupIDs = Set<Int>()
 
         for neighbor in position.neighbors(boardSize: gameConfiguration.size) {
-
             // First, handle the case neighbor has no group.
             guard let neighborGroupID = groupIndex(for: neighbor) else {
                 emptyNeighbors.insert(neighbor)
@@ -295,5 +293,3 @@ extension LibertyTracker {
         }
     }
 }
-
-
