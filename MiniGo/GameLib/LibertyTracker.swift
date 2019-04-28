@@ -258,16 +258,14 @@ extension LibertyTracker {
     ) {
         let size = gameConfiguration.size
         for capturedStone in capturedStones {
-            for neighbor in capturedStone.neighbors(boardSize: size) {
-                if let neighborGroupdID = groupIndex(for: neighbor) {
-                    guard let index = groups.index(forKey: neighborGroupdID) else {
-                        fatalErrorForGroupsInvariance(groupID: neighborGroupdID)
-                    }
-                    // This force unwrap is safe as we checked the key existence above. As
-                    // the value in the groups is struct. We need the force unwrap to do
-                    // mutation in place.
-                    groups.values[index].liberties.insert(capturedStone)
+            for neighborGroupID in capturedStone.neighbors(boardSize: size).compactMap(groupIndex) {
+                guard let index = groups.index(forKey: neighborGroupID) else {
+                    fatalErrorForGroupsInvariance(groupID: neighborGroupID)
                 }
+                // This force unwrap is safe as we checked the key existence above. As
+                // the value in the groups is struct. We need the force unwrap to do
+                // mutation in place.
+                groups.values[index].liberties.insert(capturedStone)
             }
         }
         assert(checkLibertyGroupsInvariance())
