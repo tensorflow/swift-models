@@ -6,7 +6,7 @@ import XCTest
 final class MCTSModelBasedPredictorTests: XCTestCase {
 
     struct MockModel: InferenceModel {
-        func prediction(input: Tensor<Float>) -> GoModelOutput {
+        func prediction(for: Tensor<Float>) -> GoModelOutput {
             return GoModelOutput(
                 policy: Tensor<Float>(rangeFrom: 0, to: 19 * 19 + 1, stride:1),
                 value: Tensor<Float>(shape: [1], scalars: [0.9]),
