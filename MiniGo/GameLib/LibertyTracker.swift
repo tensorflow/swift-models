@@ -260,9 +260,6 @@ extension LibertyTracker {
                 guard let index = groups.index(forKey: neighborGroupID) else {
                     fatalErrorForGroupsInvariance(groupID: neighborGroupID)
                 }
-                // This force unwrap is safe as we checked the key existence above. As
-                // the value in the groups is struct. We need the force unwrap to do
-                // mutation in place.
                 groups.values[index].liberties.insert(capturedStone)
             }
         }
@@ -277,7 +274,7 @@ extension LibertyTracker {
 
         print(message)
 
-        /// Prints the group index for the board.
+        // Prints the group index for the board.
         let size = gameConfiguration.size
         for x in 0..<size {
             for y in 0..<size {
