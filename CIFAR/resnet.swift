@@ -58,7 +58,7 @@ struct BasicBlock: Layer {
         let blockResult = blocks.reduce(input) { last, layer in
             relu(layer(last))
         }
-        return relu(tmp + shortcut(input))
+        return relu(blockResult + shortcut(input))
     }
 }
 
