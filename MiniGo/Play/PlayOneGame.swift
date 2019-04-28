@@ -23,8 +23,8 @@ public func playOneGame(gameConfiguration: GameConfiguration, participants: [Pol
 
     // Choose a random participant to play black.
     let shuffled = participants.shuffled()
-    let blackPlayer = shuffled.first! // precondition makes safe force unwrap
-    let whitePlayer = shuffled.last!  // -"-
+    let blackPlayer = shuffled[0]
+    let whitePlayer = shuffled[1]
 
     var previousMove: Move?
     var consecutivePassCount = 0
