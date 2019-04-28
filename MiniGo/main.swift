@@ -29,11 +29,8 @@ print("Loading checkpoint into GoModel. Might take a while.")
 let modelConfig = ModelConfiguration(boardSize: boardSize)
 var model = GoModel(configuration: modelConfig)
 
-guard FileManager.default.fileExists(
-    atPath: "./MiniGoCheckpoint/000939-heron.data-00000-of-00001"
-) else {
-    fatalError("Please download the MiniGo checkpoint according to the README.md.")
-}
+guard FileManager.default.fileExists(atPath: "./MiniGoCheckpoint/000939-heron.data-00000-of-00001")
+    else { fatalError("Please download the MiniGo checkpoint according to the README.md.") }
 let reader = PythonCheckpointReader(path: "./MiniGoCheckpoint/000939-heron")
 model.load(from: reader)
 
@@ -51,7 +48,9 @@ let mctsConfiguration = MCTSConfiguration(
 try playOneGame(
     gameConfiguration: gameConfiguration,
     participants: [
-        MCTSPolicy(participantName: "black", predictor: predictor, configuration: mctsConfiguration),
-        MCTSPolicy(participantName: "white", predictor: predictor, configuration: mctsConfiguration),
+        MCTSPolicy(participantName: "black", predictor: predictor,
+                   configuration: mctsConfiguration),
+        MCTSPolicy(participantName: "white", predictor: predictor,
+                   configuration: mctsConfiguration),
     ])
 

@@ -28,4 +28,3 @@ extension Color: CustomStringConvertible {
         }
     }
 }
-

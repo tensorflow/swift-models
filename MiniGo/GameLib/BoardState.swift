@@ -38,8 +38,9 @@ private enum PositionStatus: Equatable {
 /// `BoardState` checks whether a new placed stone is legal or not. If so,
 /// creates a new snapshot.
 public struct BoardState {
-
+    /// The game configuration.
     let gameConfiguration: GameConfiguration
+    /// The color of the next player.
     let nextPlayerColor: Color
 
     /// The position of potential `ko`. See `IllegalMove.ko` for details.
@@ -218,7 +219,6 @@ extension BoardState: Equatable {
 }
 
 extension Board {
-
     /// Calculates all legal moves on board.
     fileprivate func allLegalMoves(
         ko: Position?,
@@ -320,7 +320,6 @@ extension Board {
     /// `komi` is the points added to the score of the player with the white stones as compensation
     /// for playing second.
     fileprivate func scoreForBlackPlayer(komi: Float) -> Float {
-
         // Makes a copy as we will modify it over time.
         var scoreBoard = self
 

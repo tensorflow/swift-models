@@ -15,19 +15,19 @@
 /// Represents an (immutable) configuration of a Go game.
 public struct GameConfiguration {
     /// The board size of the game.
-    let size: Int
+    public let size: Int
 
     /// The points added to the score of the player with the white stones as compensation for playing
     /// second.
-    let komi: Float
+    public let komi: Float
 
     /// The maximum number of board states to track.
     ///
     /// This does not include the the current board.
-    let maxHistoryCount: Int
+    public let maxHistoryCount: Int
 
     /// If true, enables debugging information.
-    let isVerboseDebuggingEnabled: Bool
+    public let isVerboseDebuggingEnabled: Bool
 
     public init(
         size: Int,
@@ -41,4 +41,3 @@ public struct GameConfiguration {
         self.isVerboseDebuggingEnabled = isVerboseDebuggingEnabled
     }
 }
-

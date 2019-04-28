@@ -36,7 +36,7 @@ public class PythonCheckpointReader {
             dtypes$dtype: [Float.tensorFlowDataType]))
     }
 
-    /// Increment a per-layer counter for variable names in the checkpoint file.
+    /// Increments a per-layer counter for variable names in the checkpoint file.
     /// As the Python model code uses low-level TensorFlow APIs, variables are namespaced only by
     /// layer name and this per-layer counter (e.g., conv2d_5/bias).
     func increment(layerName: String) {
