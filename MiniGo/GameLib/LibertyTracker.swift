@@ -183,11 +183,9 @@ extension LibertyTracker {
 
     /// Assigns a new unique group ID.
     mutating private func assignNewGroupID() -> Int {
-        let newID = nextGroupIDToAssign
-        precondition(groups[newID] == nil)
-
-        nextGroupIDToAssign += 1
-        return newID
+        defer { nextGroupIDToAssign += 1 }
+        precondition(!groups.keys.contains(nextGroupIDToAssign))
+        return nextGroupIDToAssign
     }
 
     /// Creates a new group for the single stone with liberties.
