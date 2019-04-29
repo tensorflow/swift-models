@@ -55,10 +55,10 @@ struct BasicBlock: Layer {
 
     @differentiable
     func call(_ input: Input) -> Output {
-        let blockResult = blocks.reduce(input) { last, layer in
+        let blocksReduced = blocks.differentiableReduce(input) { last, layer in
             relu(layer(last))
         }
-        return relu(blockResult + shortcut(input))
+        return relu(blocksReduced + shortcut(input))
     }
 }
 
@@ -104,4 +104,42 @@ func ResNet44() -> ResNet {
 
 func ResNet56() -> ResNet {
     return ResNet(blockCount: 9)
+}
+
+// TODO: remove this when TF supports differentiableReduce, thanks @rxwei!
+public extension Array where Element: Differentiable {
+    func differentiableReduce<Result: Differentiable>(
+        _ initialResult: Result,
+        _ nextPartialResult: @differentiable (Result, Element) -> Result
+    ) -> Result {
+        return reduce(initialResult, nextPartialResult)
+    }
+
+    @usableFromInline
+    @differentiating(differentiableReduce, wrt: self)
+    internal func reduceDerivative<Result: Differentiable>(
+        _ initialResult: Result,
+        _ nextPartialResult: @differentiable (Result, Element) -> Result
+    ) -> (value: Result, pullback: (Result.CotangentVector) -> Array.CotangentVector) {
+        var pullbacks: [(Result.CotangentVector) -> (Result.CotangentVector, Element.CotangentVector)] = []
+        let count = self.count
+        pullbacks.reserveCapacity(count)
+        var result = initialResult
+        for element in self {
+            let (y, pb) = Swift.valueWithPullback(at: result, element, in: nextPartialResult)
+            result = y
+            pullbacks.append(pb)
+        }
+        return (value: result, pullback: { cotangent in
+            var resultCotangent = cotangent
+            var elementCotangents = CotangentVector([])
+            elementCotangents.base.reserveCapacity(count)
+            for pullback in pullbacks.reversed() {
+                let (newResultCotangent, elementCotangent) = pullback(resultCotangent)
+                resultCotangent = newResultCotangent
+                elementCotangents.base.append(elementCotangent)
+            }
+            return CotangentVector(elementCotangents.base.reversed())
+        })
+    }
 }
