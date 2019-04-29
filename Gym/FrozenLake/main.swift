@@ -18,9 +18,8 @@ import TensorFlow
 let np = Python.import("numpy")
 let gym = Python.import("gym")
 
-// Solves the FrozenLake RL problem via Q-learning. This model does not use a
-// neural net, and instead demonstrates Swift host-side numeric processing as
-// well as Python integration.
+// Solves the FrozenLake RL problem via Q-learning. This model does not use a neural net, and
+// instead demonstrates Swift host-side numeric processing as well as Python integration.
 
 let discountRate: Float = 0.9
 let learningRate: Float = 0.2
@@ -29,8 +28,8 @@ let testEpisodeCount = 20
 typealias State = Int
 typealias Action = Int
 
-// Force unwrapping with ! does not provide source location when unwrapping
-// nil, so we instead make a util function for debuggability.
+// Force unwrapping with `!` does not provide source location when unwrapping `nil`, so we instead
+// make a utility function for debuggability.
 fileprivate extension Optional {
     func unwrapped(file: StaticString = #file, line: UInt = #line) -> Wrapped {
         guard let unwrapped = self else {
@@ -40,8 +39,8 @@ fileprivate extension Optional {
     }
 }
 
-// This struct is defined so that `StateAction` can be a dictionary key
-// type. Swift tuples cannot conform to `Hashable`.
+// This struct is defined so that `StateAction` can be a dictionary key type. Swift tuples cannot
+// conform to `Hashable`.
 struct StateAction: Equatable, Hashable {
     let state: State
     let action: Action

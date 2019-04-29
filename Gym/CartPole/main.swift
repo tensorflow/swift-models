@@ -18,14 +18,14 @@ import TensorFlow
 let np = Python.import("numpy")
 let gym = Python.import("gym")
 
-/// Model parameters and hyper parameters.
+/// Model parameters and hyperparameters.
 let hiddenSize = 128
 let batchSize = 16
 /// Controls the amount of good/long episodes to retain for training.
 let percentile = 70
 
-// Force unwrapping with ! does not provide source location when unwrapping
-// nil, so we instead make a util function for debuggability.
+// Force unwrapping with `!` does not provide source location when unwrapping `nil`, so we instead
+// make a utility function for debuggability.
 fileprivate extension Optional {
     func unwrapped(file: StaticString = #file, line: UInt = #line) -> Wrapped {
         guard let unwrapped = self else {
@@ -43,11 +43,8 @@ struct Net: Layer {
     var l1, l2: Dense<Float>
 
     init(observationSize: Int, hiddenSize: Int, actionCount: Int) {
-        self.l1 = Dense<Float>(
-          inputSize: observationSize, outputSize: hiddenSize, activation: relu)
-
-        self.l2 = Dense<Float>(
-          inputSize: hiddenSize, outputSize: actionCount, activation: { $0 })
+        l1 = Dense<Float>(inputSize: observationSize, outputSize: hiddenSize, activation: relu)
+        l2 = Dense<Float>(inputSize: hiddenSize, outputSize: actionCount)
     }
 
     @differentiable
@@ -69,15 +66,11 @@ struct Episode {
     let reward: Float
 }
 
-/// Filter out bad/short episodes before we feed them as neural net training
-/// data.
+/// Filtering out bad/short episodes before we feed them as neural net training data.
 func filteringBatch(
   episodes: [Episode],
   actionCount: Int
-) -> (input: Tensor<Float>,
-      target: Tensor<Float>,
-      episodeCount: Int,
-      meanReward: Float) {
+) -> (input: Tensor<Float>, target: Tensor<Float>, episodeCount: Int, meanReward: Float) {
     let rewards = episodes.map { $0.reward }
     let rewardBound = Float(np.percentile(rewards, percentile))!
     print("rewardBound = \(rewardBound)")
@@ -174,7 +167,7 @@ var net = Net(observationSize: Int(observationSize), hiddenSize: hiddenSize, act
 // let optimizer = SGD<Net, Float>(learningRate: 0.1, momentum: 0.9)
 let optimizer = Adam(for: net, learningRate: 0.01)
 var batchIndex = 0
-Context.local.learningPhase = .training
+
 while true {
     print("Processing mini batch \(batchIndex)")
     batchIndex += 1
@@ -183,11 +176,13 @@ while true {
     let (input, target, episodeCount, meanReward) = filteringBatch(
       episodes: episodes, actionCount: actionCount)
 
-    let gradients = gradient(at: net) { model -> Tensor<Float> in
-        let logits = model(input)
-        let loss = softmaxCrossEntropy(logits: logits, probabilities: target)
-        print("loss is \(loss)")
-        return loss
+    let gradients = withLearningPhase(.training) {
+        net.gradient { net -> Tensor<Float> in
+            let logits = net(input)
+            let loss = softmaxCrossEntropy(logits: logits, probabilities: target)
+            print("loss is \(loss)")
+            return loss
+        }
     }
     optimizer.update(&net.allDifferentiableVariables, along: gradients)
 
