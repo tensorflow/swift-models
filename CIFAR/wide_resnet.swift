@@ -182,8 +182,7 @@ struct WideResnet28FirstBasicBlock: Layer {
 
     @differentiable
     func call(_ input: Input) -> Output {
-        let blockLayer = input.sequenced(through: block1, block2, block3, block4)
-        return blockLayer + shortcut(input)
+        return input.sequenced(through: block1, block2, block3, block4) + shortcut(input)
     }
 }
 
@@ -226,7 +225,7 @@ struct WideResnet28BasicBlock: Layer {
 
     @differentiable
     func call(_ input: Input) -> Output {
-        return input.sequenced(through: block1, block2) + shortcut(input)
+        return input.sequenced(through: block1, block2, block3, block4) + shortcut(input)
     }
 }
 
@@ -260,4 +259,3 @@ struct WideResNet28: Layer {
         return finalNorm.sequenced(through: avgPool, flatten, classifier)
     }
 }
-
