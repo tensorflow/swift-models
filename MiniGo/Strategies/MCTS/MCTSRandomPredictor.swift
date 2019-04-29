@@ -17,7 +17,7 @@ import TensorFlow
 /// A random `MCTSPredictor` predicting the next move and reward with random numbers.
 ///
 /// This is mainly for testing and debugging purposes.
-public class MCTSRandomPredictor: MCTSPredictor {
+public final class MCTSRandomPredictor: MCTSPredictor {
     private let boardSize: Int
 
     public init(boardSize: Int) {

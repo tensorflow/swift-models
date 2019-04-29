@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /// The Monte Carlo tree search (MCTS) algorithrm based policy.
-public class MCTSPolicy: Policy {
+public final class MCTSPolicy: Policy {
     public let participantName: String
 
     private let configuration: MCTSConfiguration

@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /// Tree node for the MCTS algorithm.
-class MCTSNode {
+final class MCTSNode {
     private let boardSize: Int
 
     /// Total visited count for this node during simulations.

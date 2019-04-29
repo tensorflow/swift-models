@@ -58,7 +58,7 @@ struct Model: Layer {
     }
 }
 
-class CatchAgent: Agent {
+final class CatchAgent: Agent {
     typealias Action = CatchAction
 
     var model: Model = Model()

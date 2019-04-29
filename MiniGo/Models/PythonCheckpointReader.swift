@@ -14,7 +14,7 @@
 
 import TensorFlow
 
-public class PythonCheckpointReader {
+public final class PythonCheckpointReader {
     private let path: String
     private var layerCounts: [String: Int] = [:]
 

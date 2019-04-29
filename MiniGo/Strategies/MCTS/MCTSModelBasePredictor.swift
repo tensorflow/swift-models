@@ -20,7 +20,7 @@ public protocol InferenceModel {
 }
 
 /// A ResNet-like model based `MCTSPredictor` predicting the next move and reward.
-public class MCTSModelBasedPredictor: MCTSPredictor {
+public final class MCTSModelBasedPredictor: MCTSPredictor {
     private let boardSize: Int
     private var model: InferenceModel
 

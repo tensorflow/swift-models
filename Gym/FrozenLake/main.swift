@@ -46,7 +46,7 @@ struct StateAction: Equatable, Hashable {
     let action: Action
 }
 
-class Agent {
+final class Agent {
     /// The number of actions.
     let actionCount: Int
     /// The current training environmental state that the agent is in.

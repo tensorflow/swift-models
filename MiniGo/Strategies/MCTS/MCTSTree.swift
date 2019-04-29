@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /// The MCTS tree used for one game playing.
-class MCTSTree {
+final class MCTSTree {
 
     private let gameConfiguration: GameConfiguration
     private let predictor: MCTSPredictor

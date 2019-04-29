@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /// A policy generating the next move randomly.
-public class RandomPolicy: Policy {
+public final class RandomPolicy: Policy {
 
     public let participantName: String
 

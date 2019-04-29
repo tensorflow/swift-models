@@ -13,7 +13,7 @@
 // limitations under the License.
 
 /// A policy asking the user to provide the next move.
-public class HumanPolicy: Policy {
+public final class HumanPolicy: Policy {
 
     public let participantName: String
 
