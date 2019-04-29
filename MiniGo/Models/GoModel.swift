@@ -111,30 +111,10 @@ public struct GoModelOutput: Differentiable {
     public let logits: Tensor<Float>
 }
 
-// This might be needed when we add training to work around an AD bug for memberwise initializers
-// @differentiable(wrt: (policy, value, logits), vjp: _vjpMakeGoModelOutput)
-// func makeGoModelOutput(
-//   policy: Tensor<Float>, value: Tensor<Float>, logits: Tensor<Float>)
-//   -> GoModelOutput {
-//   return GoModelOutput(policy: policy, value: value, logits: logits)
-// }
-// func _vjpMakeGoModelOutput(
-//   policy: Tensor<Float>, value: Tensor<Float>, logits: Tensor<Float>)
-//   -> (GoModelOutput, (GoModelOutput.CotangentVector)
-//   -> (Tensor<Float>, Tensor<Float>, Tensor<Float>)) {
-//   let result = GoModelOutput(policy: policy, value: value, logits: logits)
-//   return (result, { seed in (seed.policy, seed.value, seed.logits) })
-// }
-
 public struct GoModel: Layer {
     @noDerivative let configuration: ModelConfiguration
     var initialConv: ConvBN
-    // TODO(jekbradbury): support differentiation wrt residualBlocks
-    // [T] where T: Differentiable doesn't (shouldn't?) conform to Differentiable,
-    // so we will likely need a LayerArray<T> where T: Layer type. But this
-    // itself won't work until we have better generics support, and even then
-    // T can't be an existential Layer. So it's @noDerivative for now.
-    @noDerivative var residualBlocks: [ResidualIdentityBlock]
+    var residualBlocks: [ResidualIdentityBlock]
     var policyConv: ConvBN
     var policyDense: Dense<Float>
     var valueConv: ConvBN
