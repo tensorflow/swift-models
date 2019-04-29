@@ -15,6 +15,7 @@
 import Foundation
 import TensorFlow
 
+sdfds
 /// Reads a file into an array of bytes.
 func readFile(_ path: String) -> [UInt8] {
     let possibleFolders  = [".", "MNIST"]
