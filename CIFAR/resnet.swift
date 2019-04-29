@@ -116,11 +116,12 @@ public extension Array where Element: Differentiable {
     }
 
     @usableFromInline
-    @differentiating(differentiableReduce, wrt: self)
+    @differentiating(differentiableReduce(_:_:), wrt: (self, initialResult))
     internal func reduceDerivative<Result: Differentiable>(
         _ initialResult: Result,
         _ nextPartialResult: @differentiable (Result, Element) -> Result
-    ) -> (value: Result, pullback: (Result.CotangentVector) -> Array.CotangentVector) {
+    ) -> (value: Result,
+          pullback: (Result.CotangentVector) -> (Array.CotangentVector, Result.CotangentVector)) {
         var pullbacks: [(Result.CotangentVector) -> (Result.CotangentVector, Element.CotangentVector)] = []
         let count = self.count
         pullbacks.reserveCapacity(count)
@@ -139,7 +140,7 @@ public extension Array where Element: Differentiable {
                 resultCotangent = newResultCotangent
                 elementCotangents.base.append(elementCotangent)
             }
-            return CotangentVector(elementCotangents.base.reversed())
+            return (CotangentVector(elementCotangents.base.reversed()), resultCotangent)
         })
     }
 }
