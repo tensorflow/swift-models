@@ -33,14 +33,13 @@ struct LibertyGroup {
 /// placing a new stone, we make a copy, update it and then attach it to new
 /// board snapshot to track state.
 struct LibertyTracker {
-
+    /// The game configuration.
     private let gameConfiguration: GameConfiguration
 
-    // Tracks the liberty groups. For a position (stone) having no group,
-    // groupIndex[stone] should be nil. Otherwise, the group ID should be
-    // groupIndex[stone] and its group is groups[groupIndex[stone]].
-    // The invariance check can be done via checkLibertyGroupsInvariance helper
-    // method.
+    // Tracks the liberty groups. For a position (stone) having no group, `groupIndex[stone]` should
+    // be `nil`. Otherwise, the group ID should be `groupIndex[stone]` and its group is
+    // `groups[groupIndex[stone]]`. The invariance check can be done via the
+    // `checkLibertyGroupsInvariance()` helper method.
     private var nextGroupIDToAssign = 0
     private var groupIndex: [[Int?]]
     private var groups: [Int: LibertyGroup] = [:]
@@ -64,9 +63,8 @@ struct LibertyTracker {
     }
 }
 
-/// Extend `LibertyTracker` to have a mutating method by placing a new stone.
+// Extend `LibertyTracker` to have a mutating method by placing a new stone.
 extension LibertyTracker {
-
     /// Adds a new stone to the board and returns all captured stones.
     mutating func addStone(at position: Position, withColor color: Color) throws -> Set<Position> {
         precondition(groupIndex(for: position) == nil)
@@ -81,7 +79,6 @@ extension LibertyTracker {
         var friendlyNeighboringGroupIDs = Set<Int>()
 
         for neighbor in position.neighbors(boardSize: gameConfiguration.size) {
-
             // First, handle the case neighbor has no group.
             guard let neighborGroupID = groupIndex(for: neighbor) else {
                 emptyNeighbors.insert(neighbor)
@@ -184,11 +181,9 @@ extension LibertyTracker {
 
     /// Assigns a new unique group ID.
     mutating private func assignNewGroupID() -> Int {
-        let newID = nextGroupIDToAssign
-        precondition(groups[newID] == nil)
-
-        nextGroupIDToAssign += 1
-        return newID
+        defer { nextGroupIDToAssign += 1 }
+        precondition(!groups.keys.contains(nextGroupIDToAssign))
+        return nextGroupIDToAssign
     }
 
     /// Creates a new group for the single stone with liberties.
@@ -200,7 +195,7 @@ extension LibertyTracker {
         let newID = assignNewGroupID()
         let newGroup = LibertyGroup(id: newID, color: color, stones: [stone], liberties: liberties)
 
-        precondition(groups[newID] == nil)
+        precondition(!groups.keys.contains(newID))
         groups[newID] = newGroup
         groupIndex[stone.x][stone.y] = newID
         assert(checkLibertyGroupsInvariance())
@@ -243,7 +238,10 @@ extension LibertyTracker {
 
     /// Captures the whole group and returns all stones in it.
     mutating private func captureGroup(_ groupID: Int) -> Set<Position> {
-        let deadGroup = groups.removeValue(forKey: groupID)!
+        guard let index = groups.index(forKey: groupID) else {
+            fatalErrorForGroupsInvariance(groupID: groupID)
+        }
+        let deadGroup = groups.remove(at: index).value
         for stone in deadGroup.stones {
             groupIndex[stone.x][stone.y] = nil
         }
@@ -251,19 +249,16 @@ extension LibertyTracker {
     }
 
     /// Updates all neighboring groups' liberties.
-    mutating private func updateLibertiesAfterRemovingCapturedStones(_ capturedStones: Set<Position>) {
+    mutating private func updateLibertiesAfterRemovingCapturedStones(
+        _ capturedStones: Set<Position>
+    ) {
         let size = gameConfiguration.size
         for capturedStone in capturedStones {
-            for neighbor in capturedStone.neighbors(boardSize: size) {
-                if let neighborGroupdID = groupIndex(for: neighbor) {
-                    guard groups.keys.contains(neighborGroupdID) else {
-                        fatalErrorForGroupsInvariance(groupID:neighborGroupdID)
-                    }
-                    // This force unwrap is safe as we checked the key existence above. As
-                    // the value in the groups is struct. We need the force unwrap to do
-                    // mutation in place.
-                    groups[neighborGroupdID]!.liberties.insert(capturedStone)
+            for neighborGroupID in capturedStone.neighbors(boardSize: size).compactMap(groupIndex) {
+                guard let index = groups.index(forKey: neighborGroupID) else {
+                    fatalErrorForGroupsInvariance(groupID: neighborGroupID)
                 }
+                groups.values[index].liberties.insert(capturedStone)
             }
         }
         assert(checkLibertyGroupsInvariance())
@@ -277,7 +272,7 @@ extension LibertyTracker {
 
         print(message)
 
-        /// Prints the group index for the board.
+        // Prints the group index for the board.
         let size = gameConfiguration.size
         for x in 0..<size {
             for y in 0..<size {
@@ -298,5 +293,3 @@ extension LibertyTracker {
         }
     }
 }
-
-

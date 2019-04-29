@@ -46,7 +46,6 @@ struct Board: Hashable {
 }
 
 extension Board: CustomStringConvertible {
-
     var description: String {
         var output = ""
 
@@ -103,4 +102,3 @@ extension Board: CustomStringConvertible {
         return output
     }
 }
-

@@ -17,17 +17,17 @@
 import TensorFlow
 
 public struct ModelConfiguration {
-    /// size of Go board (typically 9 or 19)
-    let boardSize: Int
-    /// output feature count of conv layers in shared trunk
+    /// The size of the Go board (typically `9` or `19`).
+    public let boardSize: Int
+    /// The number of output features of conv layers in shared trunk.
     let convWidth: Int
-    /// output feature count of conv layer in policy head
+    /// The output feature count of conv layer in policy head.
     let policyConvWidth: Int
-    /// output feature count of conv layer in value head
+    /// The output feature count of conv layer in value head.
     let valueConvWidth: Int
-    /// output feature count of dense layer in value head
+    /// The output feature count of dense layer in value head.
     let valueDenseWidth: Int
-    /// number of layers (typically equal to boardSize)
+    /// The number of layers (typically equal to `boardSize`).
     let layerCount: Int
 
     public init(boardSize: Int) {
@@ -143,32 +143,32 @@ public struct GoModel: Layer {
 
     public init(configuration: ModelConfiguration) {
         self.configuration = configuration
+        
         initialConv = ConvBN(
             filterShape: (3, 3, 17, configuration.convWidth),
             padding: .same,
             bias: false)
-
         residualBlocks = (1...configuration.boardSize).map { _ in
             ResidualIdentityBlock(featureCounts: (configuration.convWidth, configuration.convWidth))
         }
-
         policyConv = ConvBN(
             filterShape: (1, 1, configuration.convWidth, configuration.policyConvWidth),
             padding: .same,
             bias: false,
             affine: false)
         policyDense = Dense<Float>(
-            inputSize: configuration.policyConvWidth * configuration.boardSize * configuration.boardSize,
+            inputSize: configuration.policyConvWidth * configuration.boardSize
+                * configuration.boardSize,
             outputSize: configuration.boardSize * configuration.boardSize + 1,
             activation: {$0})
-
         valueConv = ConvBN(
             filterShape: (1, 1, configuration.convWidth, configuration.valueConvWidth),
             padding: .same,
             bias: false,
             affine: false)
         valueDense1 = Dense<Float>(
-            inputSize: configuration.valueConvWidth * configuration.boardSize * configuration.boardSize,
+            inputSize: configuration.valueConvWidth * configuration.boardSize
+                * configuration.boardSize,
             outputSize: configuration.valueDenseWidth,
             activation: relu)
         valueDense2 = Dense<Float>(
@@ -188,16 +188,14 @@ public struct GoModel: Layer {
 
         let policyConvOutput = relu(policyConv(output))
         let logits = policyDense(policyConvOutput.reshaped(to:
-                [batchSize,
-                 configuration.policyConvWidth * configuration.boardSize * configuration.boardSize
-                ]))
+            [batchSize,
+             configuration.policyConvWidth * configuration.boardSize * configuration.boardSize]))
         let policyOutput = softmax(logits)
 
         let valueConvOutput = relu(valueConv(output))
         let valueHidden = valueDense1(valueConvOutput.reshaped(to:
-                [batchSize,
-                 configuration.valueConvWidth * configuration.boardSize * configuration.boardSize
-                ]))
+            [batchSize,
+             configuration.valueConvWidth * configuration.boardSize * configuration.boardSize]))
         let valueOutput = valueDense2(valueHidden).reshaped(to: [batchSize])
 
         return GoModelOutput(policy: policyOutput, value: valueOutput, logits: logits)
