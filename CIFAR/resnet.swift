@@ -30,10 +30,9 @@ struct Conv2DBatchNorm: Layer {
 
     init(
         filterShape: (Int, Int, Int, Int),
-        strides: (Int, Int) = (1, 1),
-        padding: Padding = .valid
+        strides: (Int, Int) = (1, 1)
     ) {
-        self.conv = Conv2D(filterShape: filterShape, strides: strides, padding: padding)
+        self.conv = Conv2D(filterShape: filterShape, strides: strides, padding: .same)
         self.norm = BatchNorm(featureCount: filterShape.3)
     }
 
@@ -43,49 +42,55 @@ struct Conv2DBatchNorm: Layer {
     }
 }
 
-struct BasicBlock20: Layer {
+struct BasicBlock: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
-    var layer1: Conv2DBatchNorm
-    var layer2: Conv2DBatchNorm
+    var blocks: [Conv2DBatchNorm]
     var shortcut: Conv2DBatchNorm
 
     init(
-        featureCounts: (Int, Int, Int, Int),
+        featureCounts: (Int, Int),
         kernelSize: Int = 3,
-        strides: (Int, Int) = (2, 2)
+        strides: (Int, Int) = (2, 2),
+        blockCount: Int = 3
     ) {
-        self.layer1 = Conv2DBatchNorm(
+        self.blocks = [Conv2DBatchNorm(
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
-            strides: strides,
-            padding: .same)
-        self.layer2 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
+            strides: strides)]
+        for _ in 2..<blockCount {
+            self.blocks += [Conv2DBatchNorm(
+                filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1))]
+        }
         self.shortcut = Conv2DBatchNorm(
-            filterShape: (1, 1, featureCounts.0, featureCounts.3),
-            strides: strides,
-            padding: .same)
+            filterShape: (1, 1, featureCounts.0, featureCounts.1),
+            strides: strides)
     }
 
     @differentiable
     func call(_ input: Input) -> Output {
-        var tmp = relu(layer1(input))
-        tmp = relu(layer2(tmp))
-        return relu(tmp + shortcut(input))
+        let blocksReduced = blocks.differentiableReduce(input) { last, layer in
+            relu(layer(last))
+        }
+        return relu(blocksReduced + shortcut(input))
     }
 }
 
-struct ResNet20: Layer {
+struct ResNet: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
-    var inputLayer = Conv2DBatchNorm(filterShape: (3, 3, 3, 16), padding: .same)
+    var inputLayer = Conv2DBatchNorm(filterShape: (3, 3, 3, 16))
 
-    var basicBlock1 = BasicBlock20(featureCounts:(16, 16, 16, 16), strides: (1,1))
-    var basicBlock2 = BasicBlock20(featureCounts:(16, 32, 32, 32))
-    var basicBlock3 = BasicBlock20(featureCounts:(32, 64, 64, 64))
+    var basicBlock1: BasicBlock
+    var basicBlock2: BasicBlock
+    var basicBlock3: BasicBlock
+
+    init(blockCount: Int = 3) {
+        basicBlock1 = BasicBlock(featureCounts:(16, 16), strides: (1, 1), blockCount: blockCount)
+        basicBlock2 = BasicBlock(featureCounts:(16, 32), blockCount: blockCount)
+        basicBlock3 = BasicBlock(featureCounts:(32, 64), blockCount: blockCount)
+    }
 
     var averagePool = AvgPool2D<Float>(poolSize: (8, 8), strides: (8, 8))
     var flatten = Flatten<Float>()
@@ -99,230 +104,55 @@ struct ResNet20: Layer {
     }
 }
 
-struct BasicBlock32: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
-
-    var layer1: Conv2DBatchNorm
-    var layer2: Conv2DBatchNorm
-    var layer3: Conv2DBatchNorm
-    var layer4: Conv2DBatchNorm
-    var shortcut: Conv2DBatchNorm
-
-    init(
-        featureCounts: (Int, Int, Int, Int),
-        kernelSize: Int = 3,
-        strides: (Int, Int) = (2, 2)
-    ) {
-        self.layer1 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
-            strides: strides,
-            padding: .same)
-        self.layer2 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
-        self.layer3 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
-        self.layer4 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
-        self.shortcut = Conv2DBatchNorm(
-            filterShape: (1, 1, featureCounts.0, featureCounts.3),
-            strides: strides,
-            padding: .same)
+extension ResNet {
+    enum Kind: Int {
+        case resnet20 = 3
+        case resnet32 = 5
+        case resnet44 = 7
+        case resnet56 = 9
+        case resnet110 = 18
     }
 
-    @differentiable
-    func call(_ input: Input) -> Output {
-        var tmp = relu(layer1(input))
-        tmp = relu(layer2(tmp))
-        tmp = relu(layer3(tmp))
-        tmp = relu(layer4(tmp))
-        return relu(tmp + shortcut(input))
+    init(kind: Kind) {
+        self.init(blockCount: kind.rawValue)
     }
 }
 
-struct ResNet32: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
-
-    var inputLayer = Conv2DBatchNorm(filterShape: (3, 3, 3, 16), padding: .same)
-
-    var basicBlock1 = BasicBlock32(featureCounts:(16, 16, 16, 16), strides: (1,1))
-    var basicBlock2 = BasicBlock32(featureCounts:(16, 32, 32, 32))
-    var basicBlock3 = BasicBlock32(featureCounts:(32, 64, 64, 64))
-
-    var averagePool = AvgPool2D<Float>(poolSize: (8, 8), strides: (8, 8))
-    var flatten = Flatten<Float>()
-    var classifier = Dense<Float>(inputSize: 64, outputSize: 10, activation: softmax)
-
-    @differentiable
-    func call(_ input: Input) -> Output {
-        let tmp = relu(inputLayer(input))
-        let convolved = tmp.sequenced(through: basicBlock1, basicBlock2, basicBlock3)
-        return convolved.sequenced(through: averagePool, flatten, classifier)
-    }
-}
-
-struct BasicBlock44: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
-
-    var layer1: Conv2DBatchNorm
-    var layer2: Conv2DBatchNorm
-    var layer3: Conv2DBatchNorm
-    var layer4: Conv2DBatchNorm
-    var layer5: Conv2DBatchNorm
-    var layer6: Conv2DBatchNorm
-    var shortcut: Conv2DBatchNorm
-
-    init(
-        featureCounts: (Int, Int, Int, Int),
-        kernelSize: Int = 3,
-        strides: (Int, Int) = (2, 2)
-    ) {
-        self.layer1 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
-            strides: strides,
-            padding: .same)
-        self.layer2 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
-        self.layer3 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
-        self.layer4 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
-        self.layer5 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
-        self.layer6 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
-        self.shortcut = Conv2DBatchNorm(
-            filterShape: (1, 1, featureCounts.0, featureCounts.3),
-            strides: strides,
-            padding: .same)
+// TODO: remove this when TF supports differentiableReduce, thanks @rxwei!
+public extension Array where Element: Differentiable {
+    func differentiableReduce<Result: Differentiable>(
+        _ initialResult: Result,
+        _ nextPartialResult: @differentiable (Result, Element) -> Result
+    ) -> Result {
+        return reduce(initialResult, nextPartialResult)
     }
 
-    @differentiable
-    func call(_ input: Input) -> Output {
-        var tmp = relu(layer1(input))
-        tmp = relu(layer2(tmp))
-        tmp = relu(layer3(tmp))
-        tmp = relu(layer4(tmp))
-        tmp = relu(layer5(tmp))
-        tmp = relu(layer6(tmp))
-        return relu(tmp + shortcut(input))
-    }
-}
-
-struct ResNet44: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
-
-    var inputLayer = Conv2DBatchNorm(filterShape: (3, 3, 3, 16), padding: .same)
-
-    var basicBlock1 = BasicBlock44(featureCounts:(16, 16, 16, 16), strides: (1,1))
-    var basicBlock2 = BasicBlock44(featureCounts:(16, 32, 32, 32))
-    var basicBlock3 = BasicBlock44(featureCounts:(32, 64, 64, 64))
-
-    var averagePool = AvgPool2D<Float>(poolSize: (8, 8), strides: (8, 8))
-    var flatten = Flatten<Float>()
-    var classifier = Dense<Float>(inputSize: 64, outputSize: 10, activation: softmax)
-
-    @differentiable
-    func call(_ input: Input) -> Output {
-        let tmp = relu(inputLayer(input))
-        let convolved = tmp.sequenced(through: basicBlock1, basicBlock2, basicBlock3)
-        return convolved.sequenced(through: averagePool, flatten, classifier)
-    }
-}
-
-struct BasicBlock56: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
-
-    var layer1: Conv2DBatchNorm
-    var layer2: Conv2DBatchNorm
-    var layer3: Conv2DBatchNorm
-    var layer4: Conv2DBatchNorm
-    var layer5: Conv2DBatchNorm
-    var layer6: Conv2DBatchNorm
-    var layer7: Conv2DBatchNorm
-    var layer8: Conv2DBatchNorm
-    var shortcut: Conv2DBatchNorm
-
-    init(
-        featureCounts: (Int, Int, Int, Int),
-        kernelSize: Int = 3,
-        strides: (Int, Int) = (2, 2)
-    ) {
-        self.layer1 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
-            strides: strides,
-            padding: .same)
-        self.layer2 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
-        self.layer3 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
-        self.layer4 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
-        self.layer5 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
-        self.layer6 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
-        self.layer7 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
-        self.layer8 = Conv2DBatchNorm(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            padding: .same)
-        self.shortcut = Conv2DBatchNorm(
-            filterShape: (1, 1, featureCounts.0, featureCounts.3),
-            strides: strides,
-            padding: .same)
-    }
-
-    @differentiable
-    func call(_ input: Input) -> Output {
-        var tmp = relu(layer1(input))
-        tmp = relu(layer2(tmp))
-        tmp = relu(layer3(tmp))
-        tmp = relu(layer4(tmp))
-        tmp = relu(layer5(tmp))
-        tmp = relu(layer6(tmp))
-        tmp = relu(layer7(tmp))
-        tmp = relu(layer8(tmp))
-        return relu(tmp + shortcut(input))
-    }
-}
-
-struct ResNet56: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
-
-    var inputLayer = Conv2DBatchNorm(filterShape: (3, 3, 3, 16), padding: .same)
-
-    var basicBlock1 = BasicBlock56(featureCounts:(16, 16, 16, 16), strides: (1,1))
-    var basicBlock2 = BasicBlock56(featureCounts:(16, 32, 32, 32))
-    var basicBlock3 = BasicBlock56(featureCounts:(32, 64, 64, 64))
-
-    var averagePool = AvgPool2D<Float>(poolSize: (8, 8), strides: (8, 8))
-    var flatten = Flatten<Float>()
-    var classifier = Dense<Float>(inputSize: 64, outputSize: 10, activation: softmax)
-
-    @differentiable
-    func call(_ input: Input) -> Output {
-        let tmp = relu(inputLayer(input))
-        let convolved = tmp.sequenced(through: basicBlock1, basicBlock2, basicBlock3)
-        return convolved.sequenced(through: averagePool, flatten, classifier)
+    @usableFromInline
+    @differentiating(differentiableReduce(_:_:), wrt: (self, initialResult))
+    internal func reduceDerivative<Result: Differentiable>(
+        _ initialResult: Result,
+        _ nextPartialResult: @differentiable (Result, Element) -> Result
+    ) -> (value: Result,
+          pullback: (Result.CotangentVector) -> (Array.CotangentVector, Result.CotangentVector)) {
+        var pullbacks: [(Result.CotangentVector) -> (Result.CotangentVector, Element.CotangentVector)] = []
+        let count = self.count
+        pullbacks.reserveCapacity(count)
+        var result = initialResult
+        for element in self {
+            let (y, pb) = Swift.valueWithPullback(at: result, element, in: nextPartialResult)
+            result = y
+            pullbacks.append(pb)
+        }
+        return (value: result, pullback: { cotangent in
+            var resultCotangent = cotangent
+            var elementCotangents = CotangentVector([])
+            elementCotangents.base.reserveCapacity(count)
+            for pullback in pullbacks.reversed() {
+                let (newResultCotangent, elementCotangent) = pullback(resultCotangent)
+                resultCotangent = newResultCotangent
+                elementCotangents.base.append(elementCotangent)
+            }
+            return (CotangentVector(elementCotangents.base.reversed()), resultCotangent)
+        })
     }
 }

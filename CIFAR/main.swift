@@ -21,13 +21,7 @@ let batchSize = 100
 let cifarDataset = loadCIFAR10()
 let testBatches = cifarDataset.test.batched(batchSize)
 
-// ResNet20, ResNet32, ResNet44, ResNet56, WideResNet16, WideResNet28
-//var model = PyTorchModel()
 var model = KerasModel()
-
-// optimizer used in the PyTorch code
-// let optimizer = SGD(for: model, learningRate: 0.001, momentum: 0.9)
-// optimizer used in the Keras code
 let optimizer = RMSProp(for: model, learningRate: 0.0001, decay: 1e-6)
 
 print("Starting training...")
