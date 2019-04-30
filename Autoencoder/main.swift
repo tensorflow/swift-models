@@ -47,7 +47,7 @@ func plot(image: [Float], name: String) {
 
 /// Reads a file into an array of bytes.
 func readFile(_ filename: String) -> [UInt8] {
-    let possibleFolders = [".", "Resources"]
+    let possibleFolders = [".", "Resources", "Autoencoder/Resources"]
     for folder in possibleFolders {
         let parent = URL(fileURLWithPath: folder)
         let filePath = parent.appendingPathComponent(filename).path

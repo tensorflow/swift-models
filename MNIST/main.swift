@@ -15,19 +15,31 @@
 import Foundation
 import TensorFlow
 
+struct FileNotFound: Error {
+    let filename: String
+}
+
 /// Reads a file into an array of bytes.
-func readFile(_ path: String) -> [UInt8] {
-    let url = URL(fileURLWithPath: path)
-    let data = try! Data(contentsOf: url, options: [])
-    return [UInt8](data)
+func readFile(_ path: String) throws -> [UInt8] {
+    let possibleFolders  = [".", "MNIST"]
+    for folder in possibleFolders {
+        let parent = URL(fileURLWithPath: folder)
+        let filePath = parent.appendingPathComponent(path)
+        guard FileManager.default.fileExists(atPath: filePath.path) else {
+            continue
+        }
+        let data = try Data(contentsOf: filePath, options: [])
+        return [UInt8](data)
+    }
+    throw FileNotFound(filename: path)
 }
 
 /// Reads MNIST images and labels from specified file paths.
 func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>,
                                                            labels: Tensor<Int32>) {
     print("Reading data.")
-    let images = readFile(imagesFile).dropFirst(16).map(Float.init)
-    let labels = readFile(labelsFile).dropFirst(8).map(Int32.init)
+    let images = try! readFile(imagesFile).dropFirst(16).map(Float.init)
+    let labels = try! readFile(labelsFile).dropFirst(8).map(Int32.init)
     let rowCount = labels.count
     let imageHeight = 28, imageWidth = 28
 
@@ -75,6 +87,8 @@ let labels = Tensor<Float>(oneHotAtIndices: numericLabels, depth: 10)
 
 var classifier = Classifier()
 let optimizer = RMSProp(for: classifier)
+
+print("Beginning training...")
 
 // The training loop.
 for epoch in 1...epochCount {
