@@ -106,11 +106,11 @@ struct ResNet: Layer {
 
 extension ResNet {
     enum Kind: Int {
-        case resnet20 = 3
-        case resnet32 = 5
-        case resnet44 = 7
-        case resnet56 = 9
-        case resnet110 = 18
+        case resNet20 = 3
+        case resNet32 = 5
+        case resNet44 = 7
+        case resNet56 = 9
+        case resNet110 = 18
     }
 
     init(kind: Kind) {
