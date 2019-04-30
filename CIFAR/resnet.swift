@@ -90,20 +90,18 @@ struct ResNet: Layer {
     }
 }
 
-func ResNet20() -> ResNet {
-    return ResNet(blockCount: 3)
-}
+extension ResNet {
+    enum Kind: Int {
+        case resnet20 = 3
+        case resnet32 = 5
+        case resnet44 = 7
+        case resnet56 = 9
+        case resnet110 = 18
+    }
 
-func ResNet32() -> ResNet {
-    return ResNet(blockCount: 5)
-}
-
-func ResNet44() -> ResNet {
-    return ResNet(blockCount: 7)
-}
-
-func ResNet56() -> ResNet {
-    return ResNet(blockCount: 9)
+    init(kind: Kind) {
+        self.init(blockCount: kind.rawValue)
+    }
 }
 
 // TODO: remove this when TF supports differentiableReduce, thanks @rxwei!
