@@ -10,6 +10,7 @@ let package = Package(
         .executable(name: "CIFAR", targets: ["CIFAR"]),
         .executable(name: "ResNet", targets: ["ResNet"]),
         .executable(name: "MiniGo", targets: ["MiniGo", "MiniGoMain"]),
+        .library(name: "MiniGoLib", targets: ["MiniGo", "MiniGoMain"]),
     ],
     targets: [
         .target(name: "Autoencoder", path: "Autoencoder"),
