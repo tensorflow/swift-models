@@ -47,93 +47,82 @@ struct BatchNormConv2DBlock: Layer {
     }
 }
 
-struct WideResnet16FirstBasicBlock: Layer {
+struct WideResnetBasicBlock: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
-    var block1: BatchNormConv2DBlock
-    var block2: BatchNormConv2DBlock
+    var blocks: [BatchNormConv2DBlock]
     var shortcut: Conv2D<Float>
 
     init(
         featureCounts: (Int, Int), 
-        kernelSize: Int = 3, 
-        widenFactor: Int = 1, 
+        kernelSize: Int = 3,
+        depthFactor: Int = 2,
+        widenFactor: Int = 1,
         initialStride: (Int, Int) = (2, 2)
     ) {
-        self.block1 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize,
-                featureCounts.0, featureCounts.1 * widenFactor),
-            strides: initialStride)
-        self.block2 = BatchNormConv2DBlock(
+        if initialStride == (1, 1) {
+            self.blocks = [BatchNormConv2DBlock(
+                filterShape: (kernelSize, kernelSize,
+                    featureCounts.0, featureCounts.1 * widenFactor),
+                strides: initialStride)]
+            self.shortcut = Conv2D(
+                filterShape: (1, 1, featureCounts.0, featureCounts.1 * widenFactor),
+                strides: initialStride)
+        } else {
+            self.blocks = [BatchNormConv2DBlock(
+                filterShape: (kernelSize, kernelSize,
+                    featureCounts.0 * widenFactor, featureCounts.1 * widenFactor),
+                strides: initialStride)]
+            self.shortcut = Conv2D(
+                filterShape: (1, 1, featureCounts.0 * widenFactor, featureCounts.1 * widenFactor),
+                strides: initialStride)
+        }
+        for _ in 1..<depthFactor {
+            self.blocks += [BatchNormConv2DBlock(
             filterShape: (kernelSize, kernelSize,
                 featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
-            strides: (1, 1))
-        self.shortcut = Conv2D(
-            filterShape: (1, 1, featureCounts.0, featureCounts.1 * widenFactor),
-            strides: initialStride)
+            strides: (1, 1))]
+        }
     }
 
     @differentiable
     func call(_ input: Input) -> Output {
-        return input.sequenced(through: block1, block2) + shortcut(input)
+        let blocksReduced = blocks.differentiableReduce(input) { last, layer in
+            relu(layer(last))
+        }
+        return relu(blocksReduced + shortcut(input))
     }
 }
 
-struct WideResnet16BasicBlock: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
-
-    var block1: BatchNormConv2DBlock
-    var block2: BatchNormConv2DBlock
-    var shortcut: Conv2D<Float>
-
-    init(
-        featureCounts: (Int, Int), 
-        kernelSize: Int = 3, 
-        widenFactor: Int = 1, 
-        initialStride: (Int, Int) = (2, 2)
-    ) {
-        self.block1 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize,
-                featureCounts.0 * widenFactor, featureCounts.1 * widenFactor),
-            strides: initialStride)
-        self.block2 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize,
-                featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
-            strides: (1, 1))
-        self.shortcut = Conv2D(
-            filterShape: (1, 1, featureCounts.0 * widenFactor, featureCounts.1 * widenFactor),
-            strides: initialStride)
-    }
-
-    @differentiable
-    func call(_ input: Input) -> Output {
-        return input.sequenced(through: block1, block2) + shortcut(input)
-    }
-}
-
-struct WideResNet16: Layer {
+struct WideResNet: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
     var l1: Conv2D<Float>
 
-    var l2 = WideResnet16FirstBasicBlock(featureCounts: (16, 16), widenFactor: 4,
-        initialStride: (1, 1))
-    var l3 = WideResnet16BasicBlock(featureCounts: (16, 32), widenFactor: 4)
-    var l4 = WideResnet16BasicBlock(featureCounts: (32, 64), widenFactor: 4)
+    var l2: WideResnetBasicBlock
+    var l3: WideResnetBasicBlock
+    var l4: WideResnetBasicBlock
  
     var norm: BatchNorm<Float>
     var avgPool: AvgPool2D<Float>
     var flatten = Flatten<Float>()
     var classifier: Dense<Float>
 
-    init() {
+    init(depthFactor: Int = 2, widenFactor: Int = 8) {
         self.l1 = Conv2D(filterShape: (3, 3, 3, 16), strides: (1, 1), padding: .same)
-        self.norm = BatchNorm(featureCount: 64 * 4)
+
+        l2 = WideResnetBasicBlock(featureCounts: (16, 16), depthFactor: depthFactor,
+            widenFactor: widenFactor, initialStride: (1, 1))
+        l3 = WideResnetBasicBlock(featureCounts: (16, 32), depthFactor: depthFactor,
+            widenFactor: widenFactor)
+        l4 = WideResnetBasicBlock(featureCounts: (32, 64), depthFactor: depthFactor,
+            widenFactor: widenFactor)
+        
+        self.norm = BatchNorm(featureCount: 64 * widenFactor)
         self.avgPool = AvgPool2D(poolSize: (8, 8), strides: (8, 8))
-        self.classifier = Dense(inputSize: 64 * 4, outputSize: 10)
+        self.classifier = Dense(inputSize: 64 * widenFactor, outputSize: 10)
     }
 
     @differentiable
@@ -144,118 +133,84 @@ struct WideResNet16: Layer {
     }
 }
 
-struct WideResnet28FirstBasicBlock: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
-
-    var block1: BatchNormConv2DBlock
-    var block2: BatchNormConv2DBlock
-    var block3: BatchNormConv2DBlock
-    var block4: BatchNormConv2DBlock
-    var shortcut: Conv2D<Float>
-
-    init(
-        featureCounts: (Int, Int), 
-        kernelSize: Int = 3, 
-        widenFactor: Int = 1, 
-        initialStride: (Int, Int) = (2, 2)
-    ) {
-        self.block1 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1 * widenFactor),
-            strides: initialStride)
-        self.block2 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize,
-                featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
-            strides: (1, 1))
-        self.block3 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize,
-                featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
-            strides: (1, 1))
-        self.block4 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize,
-                featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
-            strides: (1, 1))
-        self.shortcut = Conv2D(
-            filterShape: (1, 1, featureCounts.0, featureCounts.1 * widenFactor),
-            strides: initialStride)
+extension WideResNet {
+    enum Kind {
+        case wideresnet16
+        case wideresnet16k8
+        case wideresnet16k10
+        case wideresnet22
+        case wideresnet22k8
+        case wideresnet22k10
+        case wideresnet28
+        case wideresnet28k10
+        case wideresnet28k12
+        case wideresnet40k1
+        case wideresnet40k2
+        case wideresnet40k4
+        case wideresnet40k8
     }
 
-    @differentiable
-    func call(_ input: Input) -> Output {
-        return input.sequenced(through: block1, block2, block3, block4) + shortcut(input)
-    }
-}
-
-struct WideResnet28BasicBlock: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
-
-    var block1: BatchNormConv2DBlock
-    var block2: BatchNormConv2DBlock
-    var block3: BatchNormConv2DBlock
-    var block4: BatchNormConv2DBlock
-    var shortcut: Conv2D<Float>
-
-    init(
-        featureCounts: (Int, Int), 
-        kernelSize: Int = 3, 
-        widenFactor: Int = 1, 
-        initialStride: (Int, Int) = (2, 2)
-    ) {
-        self.block1 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize,
-                featureCounts.0 * widenFactor, featureCounts.1 * widenFactor),
-            strides: initialStride)
-        self.block2 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize,
-                featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
-            strides: (1, 1))
-        self.block3 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize,
-                featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
-            strides: (1, 1))
-        self.block4 = BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize,
-                featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
-            strides: (1, 1))
-        self.shortcut = Conv2D(
-            filterShape: (1, 1, featureCounts.0 * widenFactor, featureCounts.1 * widenFactor),
-            strides: initialStride)
-    }
-
-    @differentiable
-    func call(_ input: Input) -> Output {
-        return input.sequenced(through: block1, block2, block3, block4) + shortcut(input)
+    init(kind: Kind) {
+        switch kind {
+        case .wideresnet16, .wideresnet16k8:
+            self.init(depthFactor: 2, widenFactor: 8)
+        case .wideresnet16k10:
+            self.init(depthFactor: 2, widenFactor: 10)
+        case .wideresnet22, .wideresnet22k8:
+            self.init(depthFactor: 3, widenFactor: 8)
+        case .wideresnet22k10:
+            self.init(depthFactor: 3, widenFactor: 10)
+        case .wideresnet28, .wideresnet28k10:
+            self.init(depthFactor: 4, widenFactor: 10)
+        case .wideresnet28k12:
+            self.init(depthFactor: 4, widenFactor: 12)
+        case .wideresnet40k1:
+            self.init(depthFactor: 6, widenFactor: 1)
+        case .wideresnet40k2:
+            self.init(depthFactor: 6, widenFactor: 2)
+        case .wideresnet40k4:
+            self.init(depthFactor: 6, widenFactor: 4)
+        case .wideresnet40k8:
+            self.init(depthFactor: 6, widenFactor: 8)
+        }
     }
 }
 
-struct WideResNet28: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
-
-    var l1: Conv2D<Float>
-
-    var l2 = WideResnet28FirstBasicBlock(featureCounts: (16, 16), widenFactor: 10,
-        initialStride: (1, 1))
-    var l3 = WideResnet28BasicBlock(featureCounts: (16, 32), widenFactor: 10)
-    var l4 = WideResnet28BasicBlock(featureCounts: (32, 64), widenFactor: 10)
- 
-    var norm: BatchNorm<Float>
-    var avgPool: AvgPool2D<Float>
-    var flatten = Flatten<Float>()
-    var classifier: Dense<Float>
-
-    init() {
-        self.l1 = Conv2D(filterShape: (3, 3, 3, 16), strides: (1, 1), padding: .same)
-        self.norm = BatchNorm(featureCount: 64 * 10)
-        self.avgPool = AvgPool2D(poolSize: (8, 8), strides: (8, 8))
-        self.classifier = Dense(inputSize: 64 * 10, outputSize: 10)
+// TODO: remove this when TF supports differentiableReduce, thanks @rxwei!
+public extension Array where Element: Differentiable {
+    func differentiableReduce<Result: Differentiable>(
+        _ initialResult: Result,
+        _ nextPartialResult: @differentiable (Result, Element) -> Result
+    ) -> Result {
+        return reduce(initialResult, nextPartialResult)
     }
 
-    @differentiable
-    func call(_ input: Input) -> Output {
-        let inputLayer = input.sequenced(through: l1, l2, l3, l4)
-        let finalNorm = relu(norm(inputLayer))
-        return finalNorm.sequenced(through: avgPool, flatten, classifier)
+    @usableFromInline
+    @differentiating(differentiableReduce(_:_:), wrt: (self, initialResult))
+    internal func reduceDerivative<Result: Differentiable>(
+        _ initialResult: Result,
+        _ nextPartialResult: @differentiable (Result, Element) -> Result
+    ) -> (value: Result,
+          pullback: (Result.CotangentVector) -> (Array.CotangentVector, Result.CotangentVector)) {
+        var pullbacks: [(Result.CotangentVector) -> (Result.CotangentVector, Element.CotangentVector)] = []
+        let count = self.count
+        pullbacks.reserveCapacity(count)
+        var result = initialResult
+        for element in self {
+            let (y, pb) = Swift.valueWithPullback(at: result, element, in: nextPartialResult)
+            result = y
+            pullbacks.append(pb)
+        }
+        return (value: result, pullback: { cotangent in
+            var resultCotangent = cotangent
+            var elementCotangents = CotangentVector([])
+            elementCotangents.base.reserveCapacity(count)
+            for pullback in pullbacks.reversed() {
+                let (newResultCotangent, elementCotangent) = pullback(resultCotangent)
+                resultCotangent = newResultCotangent
+                elementCotangents.base.append(elementCotangent)
+            }
+            return (CotangentVector(elementCotangents.base.reversed()), resultCotangent)
+        })
     }
 }
