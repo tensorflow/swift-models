@@ -47,7 +47,7 @@ struct BatchNormConv2DBlock: Layer {
     }
 }
 
-struct WideResnetBasicBlock: Layer {
+struct WideResNetBasicBlock: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
@@ -101,9 +101,9 @@ struct WideResNet: Layer {
 
     var l1: Conv2D<Float>
 
-    var l2: WideResnetBasicBlock
-    var l3: WideResnetBasicBlock
-    var l4: WideResnetBasicBlock
+    var l2: WideResNetBasicBlock
+    var l3: WideResNetBasicBlock
+    var l4: WideResNetBasicBlock
  
     var norm: BatchNorm<Float>
     var avgPool: AvgPool2D<Float>
@@ -113,11 +113,11 @@ struct WideResNet: Layer {
     init(depthFactor: Int = 2, widenFactor: Int = 8) {
         self.l1 = Conv2D(filterShape: (3, 3, 3, 16), strides: (1, 1), padding: .same)
 
-        l2 = WideResnetBasicBlock(featureCounts: (16, 16), depthFactor: depthFactor,
+        l2 = WideResNetBasicBlock(featureCounts: (16, 16), depthFactor: depthFactor,
             widenFactor: widenFactor, initialStride: (1, 1))
-        l3 = WideResnetBasicBlock(featureCounts: (16, 32), depthFactor: depthFactor,
+        l3 = WideResNetBasicBlock(featureCounts: (16, 32), depthFactor: depthFactor,
             widenFactor: widenFactor)
-        l4 = WideResnetBasicBlock(featureCounts: (32, 64), depthFactor: depthFactor,
+        l4 = WideResNetBasicBlock(featureCounts: (32, 64), depthFactor: depthFactor,
             widenFactor: widenFactor)
         
         self.norm = BatchNorm(featureCount: 64 * widenFactor)
@@ -135,42 +135,42 @@ struct WideResNet: Layer {
 
 extension WideResNet {
     enum Kind {
-        case wideresnet16
-        case wideresnet16k8
-        case wideresnet16k10
-        case wideresnet22
-        case wideresnet22k8
-        case wideresnet22k10
-        case wideresnet28
-        case wideresnet28k10
-        case wideresnet28k12
-        case wideresnet40k1
-        case wideresnet40k2
-        case wideresnet40k4
-        case wideresnet40k8
+        case wideResNet16
+        case wideResNet16k8
+        case wideResNet16k10
+        case wideResNet22
+        case wideResNet22k8
+        case wideResNet22k10
+        case wideResNet28
+        case wideResNet28k10
+        case wideResNet28k12
+        case wideResNet40k1
+        case wideResNet40k2
+        case wideResNet40k4
+        case wideResNet40k8
     }
 
     init(kind: Kind) {
         switch kind {
-        case .wideresnet16, .wideresnet16k8:
+        case .wideResNet16, .wideResNet16k8:
             self.init(depthFactor: 2, widenFactor: 8)
-        case .wideresnet16k10:
+        case .wideResNet16k10:
             self.init(depthFactor: 2, widenFactor: 10)
-        case .wideresnet22, .wideresnet22k8:
+        case .wideResNet22, .wideResNet22k8:
             self.init(depthFactor: 3, widenFactor: 8)
-        case .wideresnet22k10:
+        case .wideResNet22k10:
             self.init(depthFactor: 3, widenFactor: 10)
-        case .wideresnet28, .wideresnet28k10:
+        case .wideResNet28, .wideResNet28k10:
             self.init(depthFactor: 4, widenFactor: 10)
-        case .wideresnet28k12:
+        case .wideResNet28k12:
             self.init(depthFactor: 4, widenFactor: 12)
-        case .wideresnet40k1:
+        case .wideResNet40k1:
             self.init(depthFactor: 6, widenFactor: 1)
-        case .wideresnet40k2:
+        case .wideResNet40k2:
             self.init(depthFactor: 6, widenFactor: 2)
-        case .wideresnet40k4:
+        case .wideResNet40k4:
             self.init(depthFactor: 6, widenFactor: 4)
-        case .wideresnet40k8:
+        case .wideResNet40k8:
             self.init(depthFactor: 6, widenFactor: 8)
         }
     }
