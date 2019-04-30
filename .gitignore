@@ -3,3 +3,4 @@
 
 .build
 *.xcodeproj
+.DS_Store
