@@ -14,6 +14,7 @@
 
 // TODO: Remove this when it's moved to the standard library.
 extension Array where Element: Differentiable {
+    @differentiable(wrt: (self, initialResult), vjp: reduceDerivative)
     func differentiableReduce<Result: Differentiable>(
         _ initialResult: Result,
         _ nextPartialResult: @differentiable (Result, Element) -> Result
@@ -21,12 +22,10 @@ extension Array where Element: Differentiable {
         return reduce(initialResult, nextPartialResult)
     }
     
-    @differentiating(differentiableReduce(_:_:), wrt: (self, initialResult))
     func reduceDerivative<Result: Differentiable>(
         _ initialResult: Result,
         _ nextPartialResult: @differentiable (Result, Element) -> Result
-    ) -> (value: Result,
-          pullback: (Result.CotangentVector) -> (Array.CotangentVector, Result.CotangentVector)) {
+    ) -> (Result, (Result.CotangentVector) -> (Array.CotangentVector, Result.CotangentVector)) {
         var pullbacks: [(Result.CotangentVector)
             -> (Result.CotangentVector, Element.CotangentVector)] = []
         let count = self.count
