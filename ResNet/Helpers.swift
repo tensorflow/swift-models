@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Foundation
-
 // TODO: Remove this when it's moved to the standard library.
 extension Array where Element: Differentiable {
     func differentiableReduce<Result: Differentiable>(
