@@ -15,12 +15,8 @@
 import Foundation
 import TensorFlow
 
-struct FileNotFound: Error {
-    let filename: String
-}
-
 /// Reads a file into an array of bytes.
-func readFile(_ path: String) throws -> [UInt8] {
+func readFile(_ path: String) -> [UInt8] {
     let possibleFolders  = [".", "MNIST"]
     for folder in possibleFolders {
         let parent = URL(fileURLWithPath: folder)
@@ -28,18 +24,18 @@ func readFile(_ path: String) throws -> [UInt8] {
         guard FileManager.default.fileExists(atPath: filePath.path) else {
             continue
         }
-        let data = try Data(contentsOf: filePath, options: [])
+        let data = try! Data(contentsOf: filePath, options: [])
         return [UInt8](data)
     }
-    throw FileNotFound(filename: path)
+    fatalError("Filename not found: \(path)")
 }
 
 /// Reads MNIST images and labels from specified file paths.
 func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>,
                                                            labels: Tensor<Int32>) {
     print("Reading data.")
-    let images = try! readFile(imagesFile).dropFirst(16).map(Float.init)
-    let labels = try! readFile(labelsFile).dropFirst(8).map(Int32.init)
+    let images = readFile(imagesFile).dropFirst(16).map(Float.init)
+    let labels = readFile(labelsFile).dropFirst(8).map(Int32.init)
     let rowCount = labels.count
     let imageHeight = 28, imageWidth = 28
 
