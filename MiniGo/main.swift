@@ -30,7 +30,10 @@ let modelConfig = ModelConfiguration(boardSize: boardSize)
 var model = GoModel(configuration: modelConfig)
 
 guard FileManager.default.fileExists(atPath: "./MiniGoCheckpoint/000939-heron.data-00000-of-00001")
-    else { fatalError("Please download the MiniGo checkpoint according to the README.md.") }
+else {
+    print("Please download the MiniGo checkpoint according to the README.md.")
+    exit(-1)
+}
 let reader = PythonCheckpointReader(path: "./MiniGoCheckpoint/000939-heron")
 model.load(from: reader)
 
