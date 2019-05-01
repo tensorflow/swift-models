@@ -3,4 +3,6 @@
 
 .build
 *.xcodeproj
+*.png
 .DS_Store
+cifar-10-batches-py/
