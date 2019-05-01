@@ -57,8 +57,8 @@ func readFile(_ filename: String) -> [UInt8] {
         let d = Python.open(filePath, "rb").read()
         return Array(numpy: np.frombuffer(d, dtype: np.uint8))!
     }
-    fatalError(
-        "Failed to find file with name \(filename) in the following folders: \(possibleFolders).")
+    print("Failed to find file with name \(filename) in the following folders: \(possibleFolders).")
+    exit(-1)
 }
 
 /// Reads MNIST images and labels from specified file paths.
