@@ -28,7 +28,7 @@ func readFile(_ path: String) -> [UInt8] {
         return [UInt8](data)
     }
     print("File not found: \(path)")
-    exit(-1);
+    exit(-1)
 }
 
 /// Reads MNIST images and labels from specified file paths.
