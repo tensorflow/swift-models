@@ -27,13 +27,13 @@ public class PythonCheckpointReader {
     func readTensor(layerName: String, weightName: String) -> Tensor<Float>? {
         let countSuffix = layerCounts[layerName] == nil ? "" : "_\(layerCounts[layerName]!)"
         let tensorName = layerName + countSuffix + "/" + weightName
-        // TODO(jekbradbury): support variadic dtype attrs in RawOpsGenerated
-        return Tensor<Float>(handle: #tfop(
-            "RestoreV2",
-            StringTensor(path),
-            StringTensor([tensorName]),
-            StringTensor([""]),
-            dtypes$dtype: [Float.tensorFlowDataType]))
+        let tensors = Raw.restoreV2(
+            prefix: StringTensor(path),
+            tensorNames: StringTensor([tensorName]),
+            shapeAndSlices: StringTensor([""]),
+            dtypes: [Float.tensorFlowDataType] // remove for next toolchain
+        )
+        return tensors[0] as? Tensor<Float>
     }
 
     /// Increments a per-layer counter for variable names in the checkpoint file.
@@ -116,5 +116,52 @@ extension BatchNorm: LoadableFromPythonCheckpoint where Scalar == Float {
         }
 
         reader.increment(layerName: "batch_normalization")
+    }
+}
+
+extension ConvBN: LoadableFromPythonCheckpoint {
+    mutating func load(from reader: PythonCheckpointReader) {
+        conv.load(from: reader)
+        norm.load(from: reader)
+    }
+}
+
+extension ResidualBlock: LoadableFromPythonCheckpoint {
+    mutating func load(from reader: PythonCheckpointReader) {
+        layer1.load(from: reader)
+        layer2.load(from: reader)
+    }
+}
+
+extension GoModel: LoadableFromPythonCheckpoint {
+    public mutating func load(from reader: PythonCheckpointReader) {
+        initialConv.load(from: reader)
+        for i in 0..<residualBlocks.count {
+            residualBlocks[i].load(from: reader)
+        }
+
+        // Special-case the two batchnorms that lack affine weights.
+        policyHead.conv.conv.load(from: reader)
+        policyHead.conv.norm.runningMean.value = reader.readTensor(
+            layerName: "batch_normalization",
+            weightName: "moving_mean")!
+        policyHead.conv.norm.runningVariance.value = reader.readTensor(
+            layerName: "batch_normalization",
+            weightName: "moving_variance")!
+        reader.increment(layerName: "batch_normalization")
+
+        policyHead.dense[0].load(from: reader)
+
+        valueHead.conv.conv.load(from: reader)
+        valueHead.conv.norm.runningMean.value = reader.readTensor(
+            layerName: "batch_normalization",
+            weightName: "moving_mean")!
+        valueHead.conv.norm.runningVariance.value = reader.readTensor(
+            layerName: "batch_normalization",
+            weightName: "moving_variance")!
+        reader.increment(layerName: "batch_normalization")
+
+        valueHead.dense[0].load(from: reader)
+        valueHead.dense[1].load(from: reader)
     }
 }

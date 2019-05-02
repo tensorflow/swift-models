@@ -40,71 +40,112 @@ public struct ModelConfiguration {
     }
 }
 
+extension Array: Layer where Element: Layer, Element.Input == Element.Output {
+    public typealias Input = Element.Input
+    public typealias Output = Element.Output
+
+    @differentiable(vjp: _gradCall)
+    public func call(_ input: Input) -> Output {
+        var activation = input
+        for layer in self {
+            activation = layer(activation)
+        }
+        return activation
+    }
+
+    public func _gradCall(_ input: Input)
+        -> (Output, (Output.CotangentVector) -> (Array.CotangentVector, Input.CotangentVector))
+    {
+        var activation = input
+        var pullbacks: [(Input.CotangentVector) -> (Element.CotangentVector, Input.CotangentVector)] = []
+        for layer in self {
+            let (newActivation, newPullback) = layer.valueWithPullback(at: activation) { $0($1) }
+            activation = newActivation
+            pullbacks.append(newPullback)
+        }
+        func pullback(_ v: Input.CotangentVector) -> (Array.CotangentVector, Input.CotangentVector) {
+            var activationGradient = v
+            var layerGradients: [Element.CotangentVector] = []
+            for pullback in pullbacks.reversed() {
+                let (newLayerGradient, newActivationGradient) = pullback(activationGradient)
+                activationGradient = newActivationGradient
+                layerGradients.append(newLayerGradient)
+            }
+            return (Array.CotangentVector(layerGradients.reversed()), activationGradient)
+        }
+        return (activation, pullback)
+    }
+}
+
 struct ConvBN: Layer {
     var conv: Conv2D<Float>
     var norm: BatchNorm<Float>
 
     init(
-        filterShape: (Int, Int, Int, Int),
-        strides: (Int, Int) = (1, 1),
-        padding: Padding,
-        bias: Bool = true,
+        _ kernelSize: Int,
+        from inputFeatures: Int,
+        to outputFeatures: Int,
+        stride: Int = 1,
+        padding: Padding = .same,
+        bias: Bool = false,
         affine: Bool = true
     ) {
-        // TODO(jekbradbury): thread through bias and affine boolean arguments
-        // (behavior is correct for inference but this should be changed for training)
-        self.conv = Conv2D(filterShape: filterShape, strides: strides, padding: padding)
+        self.conv = Conv2D(
+            filterShape: (kernelSize, kernelSize, inputFeatures, outputFeatures),
+            strides: (stride, stride),
+            padding: padding)
         self.norm = BatchNorm(
-            featureCount: filterShape.3,
-            momentum: Tensor<Float>(0.95),
-            epsilon: Tensor<Float>(1e-5))
+            featureCount: outputFeatures,
+            momentum: Tensor(0.95),
+            epsilon: Tensor(1e-5))
     }
 
     @differentiable
-    func call(_ input: Tensor<Float>) -> Tensor<Float> {
+    public func call(_ input: Tensor<Float>) -> Tensor<Float> {
         return norm(conv(input))
     }
 }
 
-extension ConvBN: LoadableFromPythonCheckpoint {
-    mutating func load(from reader: PythonCheckpointReader) {
-        conv.load(from: reader)
-        norm.load(from: reader)
-    }
-}
-
-struct ResidualIdentityBlock: Layer {
+struct ResidualBlock: Layer {
     var layer1: ConvBN
     var layer2: ConvBN
 
-    public init(featureCounts: (Int, Int), kernelSize: Int = 3) {
-        self.layer1 = ConvBN(
-            filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
-            padding: .same,
-            bias: false)
-
-        self.layer2 = ConvBN(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1),
-            padding: .same,
-            bias: false)
+    public init(_ kernelSize: Int = 3, from inputFeatures: Int, to outputFeatures: Int) {
+        self.layer1 = ConvBN(kernelSize, from: inputFeatures, to: outputFeatures)
+        self.layer2 = ConvBN(kernelSize, from: outputFeatures, to: outputFeatures)
     }
 
     @differentiable
-    func call(_ input: Tensor<Float>) -> Tensor<Float> {
-        var tmp = relu(layer1(input))
-        tmp = layer2(tmp)
-        return relu(tmp + input)
+    public func call(_ input: Tensor<Float>) -> Tensor<Float> {
+        return relu(layer2(relu(layer1(input))) + input)
     }
 }
 
-extension ResidualIdentityBlock: LoadableFromPythonCheckpoint {
-    mutating func load(from reader: PythonCheckpointReader) {
-        layer1.load(from: reader)
-        layer2.load(from: reader)
+public struct MLP: Layer {
+    var conv: ConvBN
+    var flatten: Flatten<Float> = Flatten()
+    var dense: [Dense<Float>]
+
+    public init(
+        _ featureCounts: [Int],
+        activation: @escaping @differentiable (Input) -> Output = identity
+    ) {
+        conv = ConvBN(1, from: featureCounts[0], to: featureCounts[1])
+        dense = [Dense(inputSize: featureCounts[1], outputSize: featureCounts[2], activation: tanh)]
+        if featureCounts.count == 2 {
+            dense.append(Dense(
+                inputSize: featureCounts[2],
+                outputSize: featureCounts[3],
+                activation: activation))
+        }
+    }
+
+    @differentiable
+    public func call(_ input: Tensor<Float>) -> Tensor<Float> {
+        return dense(flatten(relu(conv(input))))
     }
 }
 
-// This is needed because we can't conform tuples to protocols
 public struct GoModelOutput: Differentiable {
     public let policy: Tensor<Float>
     public let value: Tensor<Float>
@@ -112,81 +153,39 @@ public struct GoModelOutput: Differentiable {
 }
 
 public struct GoModel: Layer {
-    @noDerivative let configuration: ModelConfiguration
     var initialConv: ConvBN
-    var residualBlocks: [ResidualIdentityBlock]
-    var policyConv: ConvBN
-    var policyDense: Dense<Float>
-    var valueConv: ConvBN
-    var valueDense1: Dense<Float>
-    var valueDense2: Dense<Float>
+    var residualBlocks: [ResidualBlock]
+    var policyHead: MLP
+    var valueHead: MLP
 
     public init(configuration: ModelConfiguration) {
-        self.configuration = configuration
-        
-        initialConv = ConvBN(
-            filterShape: (3, 3, 17, configuration.convWidth),
-            padding: .same,
-            bias: false)
-        residualBlocks = (1...configuration.boardSize).map { _ in
-            ResidualIdentityBlock(featureCounts: (configuration.convWidth, configuration.convWidth))
+        let cfg = configuration
+        initialConv = ConvBN(3, from: 17, to: cfg.convWidth)
+        residualBlocks = (0..<cfg.boardSize).map { _ in
+            ResidualBlock(from: cfg.convWidth, to: cfg.convWidth)
         }
-        policyConv = ConvBN(
-            filterShape: (1, 1, configuration.convWidth, configuration.policyConvWidth),
-            padding: .same,
-            bias: false,
-            affine: false)
-        policyDense = Dense<Float>(
-            inputSize: configuration.policyConvWidth * configuration.boardSize
-                * configuration.boardSize,
-            outputSize: configuration.boardSize * configuration.boardSize + 1,
-            activation: {$0})
-        valueConv = ConvBN(
-            filterShape: (1, 1, configuration.convWidth, configuration.valueConvWidth),
-            padding: .same,
-            bias: false,
-            affine: false)
-        valueDense1 = Dense<Float>(
-            inputSize: configuration.valueConvWidth * configuration.boardSize
-                * configuration.boardSize,
-            outputSize: configuration.valueDenseWidth,
-            activation: relu)
-        valueDense2 = Dense<Float>(
-            inputSize: configuration.valueDenseWidth,
-            outputSize: 1,
+        policyHead = MLP(
+            [cfg.convWidth, cfg.policyConvWidth, cfg.boardSize * cfg.boardSize + 1])
+        valueHead = MLP(
+            [cfg.convWidth, cfg.valueConvWidth, cfg.valueDenseWidth, 1],
             activation: tanh)
     }
-  
-    @differentiable(wrt: (self, input), vjp: _vjpCall)
+
+    @differentiable
     public func call(_ input: Tensor<Float>) -> GoModelOutput {
-        let batchSize = input.shape[0]
-        var output = relu(initialConv(input))
+        let shared = residualBlocks(relu(initialConv(input)))
 
-        for i in 0..<configuration.boardSize {
-            output = residualBlocks[i](output)
-        }
-
-        let policyConvOutput = relu(policyConv(output))
-        let logits = policyDense(policyConvOutput.reshaped(to:
-            [batchSize,
-             configuration.policyConvWidth * configuration.boardSize * configuration.boardSize]))
+        let logits = policyHead(shared)
         let policyOutput = softmax(logits)
-
-        let valueConvOutput = relu(valueConv(output))
-        let valueHidden = valueDense1(valueConvOutput.reshaped(to:
-            [batchSize,
-             configuration.valueConvWidth * configuration.boardSize * configuration.boardSize]))
-        let valueOutput = valueDense2(valueHidden).reshaped(to: [batchSize])
+        let valueOutput = valueHead(shared)
 
         return GoModelOutput(policy: policyOutput, value: valueOutput, logits: logits)
     }
 
-    @usableFromInline
+    @differentiating(call)
     func _vjpCall(_ input: Tensor<Float>)
-        -> (GoModelOutput, (GoModelOutput.CotangentVector)
+        -> (value: GoModelOutput, pullback: (GoModelOutput.CotangentVector)
         -> (GoModel.CotangentVector, Tensor<Float>)) {
-        // TODO(jekbradbury): add a real VJP
-        // (we're only interested in inference for now and have control flow in our `call(_:)` method)
         return (self(input), {
             seed in (GoModel.CotangentVector.zero, Tensor<Float>(0))
         })
@@ -196,38 +195,5 @@ public struct GoModel: Layer {
 extension GoModel: InferenceModel {
     public func prediction(for input: Tensor<Float>) -> GoModelOutput {
         return self(input)
-    }
-}
-
-extension GoModel: LoadableFromPythonCheckpoint {
-    public mutating func load(from reader: PythonCheckpointReader) {
-        initialConv.load(from: reader)
-        for i in 0..<configuration.boardSize {
-            residualBlocks[i].load(from: reader)
-        }
-
-        // Special-case the two batchnorms that lack affine weights.
-        policyConv.conv.load(from: reader)
-        policyConv.norm.runningMean.value = reader.readTensor(
-            layerName: "batch_normalization",
-            weightName: "moving_mean")!
-        policyConv.norm.runningVariance.value = reader.readTensor(
-            layerName: "batch_normalization",
-            weightName: "moving_variance")!
-        reader.increment(layerName: "batch_normalization")
-
-        policyDense.load(from: reader)
-
-        valueConv.conv.load(from: reader)
-        valueConv.norm.runningMean.value = reader.readTensor(
-            layerName: "batch_normalization",
-            weightName: "moving_mean")!
-        valueConv.norm.runningVariance.value = reader.readTensor(
-            layerName: "batch_normalization",
-            weightName: "moving_variance")!
-        reader.increment(layerName: "batch_normalization")
-
-        valueDense1.load(from: reader)
-        valueDense2.load(from: reader)
     }
 }
