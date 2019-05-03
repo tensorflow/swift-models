@@ -84,7 +84,7 @@ struct ResidualBlock: Layer {
     }
 }
 
-public struct MLP: Layer {
+public struct ConvMLP: Layer {
     var conv: ConvBatchNorm
     var flatten: Flatten<Float> = Flatten()
     var dense: [Dense<Float>]
@@ -118,24 +118,20 @@ public struct GoModelOutput: Differentiable {
 public struct GoModel: Layer {
     var initialConv: ConvBatchNorm
     var residualBlocks: [ResidualBlock]
-    var policyHead: MLP
-    var valueHead: MLP
+    var policyHead: ConvMLP
+    var valueHead: ConvMLP
 
     public init(configuration: ModelConfiguration) {
         let cfg = configuration
-        let pointCount = cfg.boardSize * cfg.boardSize
+        let points = cfg.boardSize * cfg.boardSize
         initialConv = ConvBatchNorm(3, from: 17, to: cfg.convWidth)
         residualBlocks = (0..<cfg.boardSize).map { _ in
             ResidualBlock(from: cfg.convWidth, to: cfg.convWidth)
         }
-        policyHead = MLP(
-            [cfg.convWidth, cfg.policyConvWidth, cfg.policyConvWidth * pointCount, pointCount + 1])
-        valueHead = MLP([
-            cfg.convWidth,
-            cfg.valueConvWidth,
-            cfg.valueConvWidth * pointCount,
-            cfg.valueDenseWidth,
-            1],
+        policyHead = ConvMLP(
+            [cfg.convWidth, cfg.policyConvWidth, cfg.policyConvWidth * points, points + 1])
+        valueHead = ConvMLP(
+            [cfg.convWidth, cfg.valueConvWidth, cfg.valueConvWidth * points, cfg.valueDenseWidth, 1],
             activation: tanh)
     }
 
