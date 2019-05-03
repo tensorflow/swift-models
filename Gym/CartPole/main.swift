@@ -142,6 +142,8 @@ while true {
     print("Processing mini batch \(batchIndex)")
     batchIndex += 1
 
+    env.render()
+
     let episodes = nextBatch(env: env, net: net, batchSize: batchSize, actionCount: actionCount)
     let (input, target, episodeCount, meanReward) = filteringBatch(
       episodes: episodes, actionCount: actionCount)

@@ -119,7 +119,7 @@ extension BatchNorm: LoadableFromPythonCheckpoint where Scalar == Float {
     }
 }
 
-extension ConvBN: LoadableFromPythonCheckpoint {
+extension ConvBatchNorm: LoadableFromPythonCheckpoint {
     mutating func load(from reader: PythonCheckpointReader) {
         conv.load(from: reader)
         norm.load(from: reader)
