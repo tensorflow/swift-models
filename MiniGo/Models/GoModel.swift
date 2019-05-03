@@ -40,43 +40,6 @@ public struct ModelConfiguration {
     }
 }
 
-extension Array: Layer where Element: Layer, Element.Input == Element.Output {
-    public typealias Input = Element.Input
-    public typealias Output = Element.Output
-
-    @differentiable(vjp: _gradCall)
-    public func call(_ input: Input) -> Output {
-        var activation = input
-        for layer in self {
-            activation = layer(activation)
-        }
-        return activation
-    }
-
-    public func _gradCall(_ input: Input)
-        -> (Output, (Output.CotangentVector) -> (Array.CotangentVector, Input.CotangentVector))
-    {
-        var activation = input
-        var pullbacks: [(Input.CotangentVector) -> (Element.CotangentVector, Input.CotangentVector)] = []
-        for layer in self {
-            let (newActivation, newPullback) = layer.valueWithPullback(at: activation) { $0($1) }
-            activation = newActivation
-            pullbacks.append(newPullback)
-        }
-        func pullback(_ v: Input.CotangentVector) -> (Array.CotangentVector, Input.CotangentVector) {
-            var activationGradient = v
-            var layerGradients: [Element.CotangentVector] = []
-            for pullback in pullbacks.reversed() {
-                let (newLayerGradient, newActivationGradient) = pullback(activationGradient)
-                activationGradient = newActivationGradient
-                layerGradients.append(newLayerGradient)
-            }
-            return (Array.CotangentVector(layerGradients.reversed()), activationGradient)
-        }
-        return (activation, pullback)
-    }
-}
-
 struct ConvBN: Layer {
     var conv: Conv2D<Float>
     var norm: BatchNorm<Float>
@@ -127,15 +90,15 @@ public struct MLP: Layer {
     var dense: [Dense<Float>]
 
     public init(
-        _ featureCounts: [Int],
+        _ features: [Int],
         activation: @escaping @differentiable (Input) -> Output = identity
     ) {
-        conv = ConvBN(1, from: featureCounts[0], to: featureCounts[1])
-        dense = [Dense(inputSize: featureCounts[1], outputSize: featureCounts[2], activation: tanh)]
-        if featureCounts.count == 2 {
+        conv = ConvBN(1, from: features[0], to: features[1])
+        dense = [Dense(inputSize: features[1], outputSize: features[2], activation: tanh)]
+        if features.count == 2 {
             dense.append(Dense(
-                inputSize: featureCounts[2],
-                outputSize: featureCounts[3],
+                inputSize: features[2],
+                outputSize: features[3],
                 activation: activation))
         }
     }
@@ -180,15 +143,6 @@ public struct GoModel: Layer {
         let valueOutput = valueHead(shared)
 
         return GoModelOutput(policy: policyOutput, value: valueOutput, logits: logits)
-    }
-
-    @differentiating(call)
-    func _vjpCall(_ input: Tensor<Float>)
-        -> (value: GoModelOutput, pullback: (GoModelOutput.CotangentVector)
-        -> (GoModel.CotangentVector, Tensor<Float>)) {
-        return (self(input), {
-            seed in (GoModel.CotangentVector.zero, Tensor<Float>(0))
-        })
     }
 }
 
