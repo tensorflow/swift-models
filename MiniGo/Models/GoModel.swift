@@ -40,7 +40,7 @@ public struct ModelConfiguration {
     }
 }
 
-struct ConvBN: Layer {
+struct ConvBatchNorm: Layer {
     var conv: Conv2D<Float>
     var norm: BatchNorm<Float>
 
@@ -70,12 +70,12 @@ struct ConvBN: Layer {
 }
 
 struct ResidualBlock: Layer {
-    var layer1: ConvBN
-    var layer2: ConvBN
+    var layer1: ConvBatchNorm
+    var layer2: ConvBatchNorm
 
     public init(_ kernelSize: Int = 3, from inputFeatures: Int, to outputFeatures: Int) {
-        self.layer1 = ConvBN(kernelSize, from: inputFeatures, to: outputFeatures)
-        self.layer2 = ConvBN(kernelSize, from: outputFeatures, to: outputFeatures)
+        self.layer1 = ConvBatchNorm(kernelSize, from: inputFeatures, to: outputFeatures)
+        self.layer2 = ConvBatchNorm(kernelSize, from: outputFeatures, to: outputFeatures)
     }
 
     @differentiable
@@ -85,7 +85,7 @@ struct ResidualBlock: Layer {
 }
 
 public struct MLP: Layer {
-    var conv: ConvBN
+    var conv: ConvBatchNorm
     var flatten: Flatten<Float> = Flatten()
     var dense: [Dense<Float>]
 
@@ -93,7 +93,7 @@ public struct MLP: Layer {
         _ features: [Int],
         activation: @escaping @differentiable (Input) -> Output = identity
     ) {
-        conv = ConvBN(1, from: features[0], to: features[1])
+        conv = ConvBatchNorm(1, from: features[0], to: features[1])
         dense = [Dense(inputSize: features[1], outputSize: features[2], activation: tanh)]
         if features.count == 2 {
             dense.append(Dense(
@@ -116,14 +116,14 @@ public struct GoModelOutput: Differentiable {
 }
 
 public struct GoModel: Layer {
-    var initialConv: ConvBN
+    var initialConv: ConvBatchNorm
     var residualBlocks: [ResidualBlock]
     var policyHead: MLP
     var valueHead: MLP
 
     public init(configuration: ModelConfiguration) {
         let cfg = configuration
-        initialConv = ConvBN(3, from: 17, to: cfg.convWidth)
+        initialConv = ConvBatchNorm(3, from: 17, to: cfg.convWidth)
         residualBlocks = (0..<cfg.boardSize).map { _ in
             ResidualBlock(from: cfg.convWidth, to: cfg.convWidth)
         }

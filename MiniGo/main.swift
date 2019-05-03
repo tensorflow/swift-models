@@ -26,8 +26,8 @@ let gameConfiguration = GameConfiguration(
 
 // Creates the GoModel and loads the checkpoint.
 print("Loading checkpoint into GoModel. Might take a while.")
-let modelConfig = ModelConfiguration(boardSize: boardSize)
-var model = GoModel(configuration: modelConfig)
+let modelConfiguration = ModelConfiguration(boardSize: boardSize)
+var model = GoModel(configuration: modelConfiguration)
 
 guard FileManager.default.fileExists(atPath: "./MiniGoCheckpoint/000939-heron.data-00000-of-00001")
 else {
