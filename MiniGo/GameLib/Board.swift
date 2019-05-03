@@ -95,7 +95,7 @@ extension Board: CustomStringConvertible {
                     output.append(" ")  // Empty position.
                     continue
                 }
-                output.append(color == .black ? "⚫" : "⚪")
+                output.append(color == .black ? "🔵" : "⚪")
             }
             output.append("\n")
         }
