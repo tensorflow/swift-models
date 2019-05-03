@@ -94,11 +94,11 @@ public struct MLP: Layer {
         activation: @escaping @differentiable (Input) -> Output = identity
     ) {
         conv = ConvBatchNorm(1, from: features[0], to: features[1])
-        dense = [Dense(inputSize: features[1], outputSize: features[2], activation: tanh)]
-        if features.count == 2 {
+        dense = [Dense(inputSize: features[2], outputSize: features[3], activation: tanh)]
+        if features.count == 5 {
             dense.append(Dense(
-                inputSize: features[2],
-                outputSize: features[3],
+                inputSize: features[3],
+                outputSize: features[4],
                 activation: activation))
         }
     }
@@ -123,13 +123,19 @@ public struct GoModel: Layer {
 
     public init(configuration: ModelConfiguration) {
         let cfg = configuration
+        let pointCount = cfg.boardSize * cfg.boardSize
         initialConv = ConvBatchNorm(3, from: 17, to: cfg.convWidth)
         residualBlocks = (0..<cfg.boardSize).map { _ in
             ResidualBlock(from: cfg.convWidth, to: cfg.convWidth)
         }
-        policyHead = MLP([cfg.convWidth, cfg.policyConvWidth, cfg.boardSize * cfg.boardSize + 1])
-        valueHead = MLP(
-            [cfg.convWidth, cfg.valueConvWidth, cfg.valueDenseWidth, 1],
+        policyHead = MLP(
+            [cfg.convWidth, cfg.policyConvWidth, cfg.policyConvWidth * pointCount, pointCount + 1])
+        valueHead = MLP([
+            cfg.convWidth,
+            cfg.valueConvWidth,
+            cfg.valueConvWidth * pointCount,
+            cfg.valueDenseWidth,
+            1],
             activation: tanh)
     }
 

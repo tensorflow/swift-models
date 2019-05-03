@@ -92,10 +92,10 @@ extension Board: CustomStringConvertible {
             for y in 0..<size {
                 output.append(gapBetweenStones)
                 guard let color = self.color(at: Position(x: x, y: y)) else {
-                    output.append(".")  // Empty position.
+                    output.append(" ")  // Empty position.
                     continue
                 }
-                output.append(color == .black ? "X" : "O")
+                output.append(color == .black ? "⚫" : "⚪")
             }
             output.append("\n")
         }
