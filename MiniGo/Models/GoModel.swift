@@ -127,8 +127,7 @@ public struct GoModel: Layer {
         residualBlocks = (0..<cfg.boardSize).map { _ in
             ResidualBlock(from: cfg.convWidth, to: cfg.convWidth)
         }
-        policyHead = MLP(
-            [cfg.convWidth, cfg.policyConvWidth, cfg.boardSize * cfg.boardSize + 1])
+        policyHead = MLP([cfg.convWidth, cfg.policyConvWidth, cfg.boardSize * cfg.boardSize + 1])
         valueHead = MLP(
             [cfg.convWidth, cfg.valueConvWidth, cfg.valueDenseWidth, 1],
             activation: tanh)
