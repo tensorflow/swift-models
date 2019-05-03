@@ -23,7 +23,7 @@ extension Color: CaseIterable {}
 extension Color: CustomStringConvertible {
     var description: String {
         switch self {
-        case .black: return "⚫"
+        case .black: return "🔵"
         case .white: return "⚪"
         }
     }
