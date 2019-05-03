@@ -24,17 +24,6 @@ let batchSize = 16
 /// Controls the amount of good/long episodes to retain for training.
 let percentile = 70
 
-// Force unwrapping with `!` does not provide source location when unwrapping `nil`, so we instead
-// make a utility function for debuggability.
-fileprivate extension Optional {
-    func unwrapped(file: StaticString = #file, line: UInt = #line) -> Wrapped {
-        guard let unwrapped = self else {
-            fatalError("Value is nil", file: file, line: line)
-        }
-        return unwrapped
-    }
-}
-
 /// A simple two layer dense net.
 struct Net: Layer {
     typealias Input = Tensor<Float>
@@ -89,10 +78,6 @@ func filteringBatch(
         let actionTensor = Tensor<Int32>(episode.steps.map { $0.action })
         let oneHotLabels = Tensor<Float>(oneHotAtIndices: actionTensor, depth: actionCount)
 
-        // print("observations tensor has shape \(observationTensor.shapeTensor)")
-        // print("actions tensor has shape \(actionTensor.shapeTensor)")
-        // print("onehot actions tensor has shape \(oneHotLabels.shapeTensor)")
-
         if retainedEpisodeCount == 0 {
             input = observationTensor
             target = oneHotLabels
@@ -100,8 +85,6 @@ func filteringBatch(
             input = input.concatenated(with: observationTensor)
             target = target.concatenated(with: oneHotLabels)
         }
-        // print("input tensor has shape \(input.shapeTensor)")
-        // print("target tensor has shape \(target.shapeTensor)")
 
         totalReward += episode.reward
         retainedEpisodeCount += 1
@@ -110,12 +93,7 @@ func filteringBatch(
     return (input, target, retainedEpisodeCount, totalReward / Float(retainedEpisodeCount))
 }
 
-func nextBatch(
-  env: PythonObject,
-  net: Net,
-  batchSize: Int,
-  actionCount: Int
-) -> [Episode] {
+func nextBatch(env: PythonObject, net: Net, batchSize: Int, actionCount: Int) -> [Episode] {
     var observationNumpy = env.reset()
 
     var episodes: [Episode] = []
@@ -126,25 +104,20 @@ func nextBatch(
         var episodeReward: Float = 0.0
 
         while true {
-            let observationPython = Tensor<Double>(numpy: observationNumpy).unwrapped()
-            let actionProbabilities =
-              softmax(net(Tensor(observationPython).reshaped(to: [1, 4])))
+            let observationPython = Tensor<Double>(numpy: observationNumpy)!
+            let actionProbabilities = softmax(net(Tensor(observationPython).reshaped(to: [1, 4])))
             let actionProbabilitiesPython = actionProbabilities[0].makeNumpyArray()
             let len = Python.len(actionProbabilitiesPython)
-            assert(actionCount == Int(Python.len(actionProbabilitiesPython)))
 
             let actionPython = np.random.choice(len, p: actionProbabilitiesPython)
             let (nextObservation, reward, isDone, _) = env.step(actionPython).tuple4
-            // print(nextObservation)
-            // print(reward)
 
             steps.append(Episode.Step(observation: Tensor<Float>(observationPython),
-                                      action: Int32(actionPython).unwrapped()))
+                                      action: Int32(actionPython)!))
 
-            episodeReward += Float(reward).unwrapped()
+            episodeReward += Float(reward)!
 
             if isDone == true {
-                // print("Finishing an episode with \(observations.count) steps and total reward \(episodeReward)")
                 episodes.append(Episode(steps: steps, reward: episodeReward))
                 observationNumpy = env.reset()
                 break
@@ -158,13 +131,10 @@ func nextBatch(
 }
 
 let env = gym.make("CartPole-v0")
-let observationSize = Int(env.observation_space.shape[0]).unwrapped()
-let actionCount = Int(env.action_space.n).unwrapped()
-// print(actionCount)
+let observationSize = Int(env.observation_space.shape[0])!
+let actionCount = Int(env.action_space.n)!
 
 var net = Net(observationSize: Int(observationSize), hiddenSize: hiddenSize, actionCount: actionCount)
-// SGD optimizer reaches convergence with ~125 mini batches, while Adam uses ~25.
-// let optimizer = SGD<Net, Float>(learningRate: 0.1, momentum: 0.9)
 let optimizer = Adam(for: net, learningRate: 0.01)
 var batchIndex = 0
 
