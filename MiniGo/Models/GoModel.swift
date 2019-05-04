@@ -94,12 +94,12 @@ public struct ConvMLP: Layer {
         activation: @escaping @differentiable (Input) -> Output = identity
     ) {
         conv = ConvBatchNorm(1, from: features[0], to: features[1])
-        dense = [Dense(inputSize: features[2], outputSize: features[3], activation: tanh)]
-        if features.count == 5 {
-            dense.append(Dense(
-                inputSize: features[3],
-                outputSize: features[4],
-                activation: activation))
+        if features.count == 4 {
+            dense = [Dense(inputSize: features[2], outputSize: features[3], activation: activation)]
+        } else {
+            dense = [
+                Dense(inputSize: features[2], outputSize: features[3], activation: tanh),
+                Dense(inputSize: features[3], outputSize: features[4], activation: activation)]
         }
     }
 
