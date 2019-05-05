@@ -46,20 +46,8 @@ public class MCTSModelBasedPredictor: MCTSPredictor {
             pass: policy[policy.scalarCount - 1].scalarized())
 
         assert(inference.value.shape == [1])
-        var reward = inference.value.scalarized()
+        let reward = inference.value.scalarized()
 
-        // We occasionally see the model output falls out of the expected range, which should never
-        // happen given the final activation function is `tanh(_:)`.
-        //
-        // To avoid crash, we log the case here and do value clipping.
-        if reward > 1.0 {
-            print("Reward is out of range: value \(reward). \n \(boardState)")
-            reward = 1.0
-        }
-        if reward < -1.0 {
-            print("Reward is out of range: value \(reward). \n \(boardState)")
-            reward = -1.0
-        }
         return MCTSPrediction(rewardForNextPlayer: reward, distribution: distribution)
     }
 }
