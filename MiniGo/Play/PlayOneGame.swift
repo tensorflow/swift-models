@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Foundation
+import Python
+
 /// Plays one game with participants. The game ends with two passes.
 public func playOneGame(gameConfiguration: GameConfiguration, participants: [Policy]) throws {
     var boardState = BoardState(gameConfiguration: gameConfiguration)
@@ -28,6 +31,10 @@ public func playOneGame(gameConfiguration: GameConfiguration, participants: [Pol
 
     // Loops until we get a winner or tie.
     while true {
+        if ProcessInfo.processInfo.environment.keys.contains("DATALAB_SETTINGS_OVERRIDES") {
+            let ipython = Python.import("IPython")
+            ipython.display.clear_output()
+        }
         print(boardState)
 
         if gameConfiguration.isVerboseDebuggingEnabled {
