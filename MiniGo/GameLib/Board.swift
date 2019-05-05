@@ -49,26 +49,7 @@ extension Board: CustomStringConvertible {
     var description: String {
         var output = ""
 
-        output.append("\nx/y")
-
-        for y in 0..<size {
-            // As we cannot use Foundation, String(format:) method is not avaiable to use.
-            if y < 9 {
-                output.append(" \(y+1)")
-            } else {
-                output.append("\(y+1)")
-            }
-        }
-        output.append("\n")
-
         for x in 0..<size {
-            // Prints row index.
-            if x < 9 {
-                output.append("  \(x+1)")  // Two leading spaces.
-            } else {
-                output.append(" \(x+1)")  // One leading space.
-            }
-
             // Prints the color of stone at each position.
             for y in 0..<size {
                 guard let color = self.color(at: Position(x: x, y: y)) else {
