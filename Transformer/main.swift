@@ -23,7 +23,7 @@ let encoder = Python.import("encoder").get_encoder(modelName)
 
 let checkpoint = "models/\(modelName)/model.ckpt"
 let configFile = "models/\(modelName)/hparams.json"
-let configData = try Data.init(contentsOf: URL(fileURLWithPath: configFile))
+let configData = try Data(contentsOf: URL(fileURLWithPath: configFile))
 let config = try JSONDecoder().decode(Config.self, from: configData)
 let model = TransformerLM(
     contentsOfPythonCheckpointFile: checkpoint, config: config, scope: "model")
