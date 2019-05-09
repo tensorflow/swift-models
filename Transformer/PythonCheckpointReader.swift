@@ -14,7 +14,7 @@
 
 import TensorFlow
 
-struct Config : Codable {
+struct Config: Codable {
     let vocabSize: Int
     let contextSize: Int
     let embeddingSize: Int
