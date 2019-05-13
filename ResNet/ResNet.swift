@@ -20,7 +20,7 @@ import TensorFlow
 // https://arxiv.org/abs/1512.03385
 // using shortcut layer to connect BasicBlock layers (aka Option (B))
 
-enum InputType {
+enum InputKind {
     case cifar
     case imagenet
 }
@@ -224,18 +224,18 @@ struct ResNetBasic: Layer {
     var flatten = Flatten<Float>()
     var classifier: Dense<Float>
 
-    init(input: InputType, layerBlockCounts: (Int, Int, Int, Int)) {
+    init(input: InputKind, layerBlockCounts: (Int, Int, Int, Int)) {
         switch input {
-            case .imagenet:
-                l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
-                maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
-                avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
-                classifier = Dense(inputSize: 512, outputSize: 1000)
-            case .cifar:
-                l1 = ConvBN(filterShape: (3, 3, 3, 64), padding: .same)
-                maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1)) // no-op
-                avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
-                classifier = Dense(inputSize: 512, outputSize: 10)
+        case .imagenet:
+            l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
+            maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
+            avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
+            classifier = Dense(inputSize: 512, outputSize: 1000)
+        case .cifar:
+            l1 = ConvBN(filterShape: (3, 3, 3, 64), padding: .same)
+            maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1)) // no-op
+            avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
+            classifier = Dense(inputSize: 512, outputSize: 10)
         }
 
         l2b = ResidualBasicBlockStack(featureCounts: (64, 64, 64, 64),
@@ -265,7 +265,7 @@ extension ResNetBasic {
         case resNet34
     }
 
-    init(kind: Kind, type: InputType) {
+    init(kind: Kind, type: InputKind) {
         switch kind {
         case .resNet18:
             self.init(input: type, layerBlockCounts: (2, 2, 2, 2))
@@ -298,18 +298,18 @@ struct ResNet: Layer {
     var flatten = Flatten<Float>()
     var classifier: Dense<Float>
 
-    init(input: InputType, layerBlockCounts: (Int, Int, Int, Int)) {
+    init(input: InputKind, layerBlockCounts: (Int, Int, Int, Int)) {
         switch input {
-            case .imagenet:
-                l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
-                maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
-                avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
-                classifier = Dense(inputSize: 2048, outputSize: 1000)
-            case .cifar:
-                l1 = ConvBN(filterShape: (3, 3, 3, 64), padding: .same)
-                maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1)) // no-op
-                avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
-                classifier = Dense(inputSize: 2048, outputSize: 10)
+        case .imagenet:
+            l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
+            maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
+            avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
+            classifier = Dense(inputSize: 2048, outputSize: 1000)
+        case .cifar:
+            l1 = ConvBN(filterShape: (3, 3, 3, 64), padding: .same)
+            maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1)) // no-op
+            avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
+            classifier = Dense(inputSize: 2048, outputSize: 10)
         }
 
         l2b = ResidualIdentityBlockStack(featureCounts: (256, 64, 64, 256),
@@ -340,7 +340,7 @@ extension ResNet {
         case resNet152
     }
 
-    init(kind: Kind, type: InputType) {
+    init(kind: Kind, type: InputKind) {
         switch kind {
         case .resNet50:
             self.init(input: type, layerBlockCounts: (3, 4, 6, 3))
