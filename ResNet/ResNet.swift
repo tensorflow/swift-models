@@ -20,7 +20,7 @@ import TensorFlow
 // https://arxiv.org/abs/1512.03385
 // using shortcut layer to connect BasicBlock layers (aka Option (B))
 
-enum InputKind {
+enum DataKind {
     case cifar
     case imagenet
 }
@@ -224,8 +224,8 @@ struct ResNetBasic: Layer {
     var flatten = Flatten<Float>()
     var classifier: Dense<Float>
 
-    init(input: InputKind, layerBlockCounts: (Int, Int, Int, Int)) {
-        switch input {
+    init(dataKind: DataKind, layerBlockCounts: (Int, Int, Int, Int)) {
+        switch dataKind {
         case .imagenet:
             l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
             maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
@@ -265,12 +265,12 @@ extension ResNetBasic {
         case resNet34
     }
 
-    init(kind: Kind, type: InputKind) {
-        switch kind {
+    init(inputKind: Kind, data: DataKind) {
+        switch inputKind {
         case .resNet18:
-            self.init(input: type, layerBlockCounts: (2, 2, 2, 2))
+            self.init(dataKind: data, layerBlockCounts: (2, 2, 2, 2))
         case .resNet34:
-            self.init(input: type, layerBlockCounts: (3, 4, 6, 3))
+            self.init(dataKind: data, layerBlockCounts: (3, 4, 6, 3))
         }
     }
 }
@@ -298,8 +298,8 @@ struct ResNet: Layer {
     var flatten = Flatten<Float>()
     var classifier: Dense<Float>
 
-    init(input: InputKind, layerBlockCounts: (Int, Int, Int, Int)) {
-        switch input {
+    init(dataKind: DataKind, layerBlockCounts: (Int, Int, Int, Int)) {
+        switch dataKind {
         case .imagenet:
             l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
             maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
@@ -340,14 +340,14 @@ extension ResNet {
         case resNet152
     }
 
-    init(kind: Kind, type: InputKind) {
-        switch kind {
+    init(inputKind: Kind, data: DataKind) {
+        switch inputKind {
         case .resNet50:
-            self.init(input: type, layerBlockCounts: (3, 4, 6, 3))
+            self.init(dataKind: data, layerBlockCounts: (3, 4, 6, 3))
         case .resNet101:
-            self.init(input: type, layerBlockCounts: (3, 4, 23, 3))
+            self.init(dataKind: data, layerBlockCounts: (3, 4, 23, 3))
         case .resNet152:
-            self.init(input: type, layerBlockCounts: (3, 8, 36, 3))
+            self.init(dataKind: data, layerBlockCounts: (3, 8, 36, 3))
         }
     }
 }
