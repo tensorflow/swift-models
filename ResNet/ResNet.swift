@@ -265,12 +265,12 @@ extension ResNetBasic {
         case resNet34
     }
 
-    init(inputKind: Kind, data: DataKind) {
+    init(inputKind: Kind, dataKind: DataKind) {
         switch inputKind {
         case .resNet18:
-            self.init(dataKind: data, layerBlockCounts: (2, 2, 2, 2))
+            self.init(dataKind: dataKind, layerBlockCounts: (2, 2, 2, 2))
         case .resNet34:
-            self.init(dataKind: data, layerBlockCounts: (3, 4, 6, 3))
+            self.init(dataKind: dataKind, layerBlockCounts: (3, 4, 6, 3))
         }
     }
 }
@@ -340,14 +340,14 @@ extension ResNet {
         case resNet152
     }
 
-    init(inputKind: Kind, data: DataKind) {
+    init(inputKind: Kind, dataKind: DataKind) {
         switch inputKind {
         case .resNet50:
-            self.init(dataKind: data, layerBlockCounts: (3, 4, 6, 3))
+            self.init(dataKind: dataKind, layerBlockCounts: (3, 4, 6, 3))
         case .resNet101:
-            self.init(dataKind: data, layerBlockCounts: (3, 4, 23, 3))
+            self.init(dataKind: dataKind, layerBlockCounts: (3, 4, 23, 3))
         case .resNet152:
-            self.init(dataKind: data, layerBlockCounts: (3, 8, 36, 3))
+            self.init(dataKind: dataKind, layerBlockCounts: (3, 8, 36, 3))
         }
     }
 }
