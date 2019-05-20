@@ -281,7 +281,8 @@ struct TransformerLM {
         var h = embedding(tokens)
         h = h + positionalEmbeddings.gathering(atIndices: positionsTensor)
         for i in 0..<layers.count {
-            h = layers[i](h, state: &states[i])
+            // Remove the .call when TF-516 is fixed.
+            h = layers[i].call(h, state: &states[i])
         }
         h = norm(h)
         let tmp = TimeDistributed(
