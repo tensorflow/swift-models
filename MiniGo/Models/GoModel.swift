@@ -183,12 +183,12 @@ public struct GoModel: Layer {
 
     @usableFromInline
     func _vjpCall(_ input: Tensor<Float>)
-        -> (GoModelOutput, (GoModelOutput.CotangentVector)
-        -> (GoModel.CotangentVector, Tensor<Float>)) {
+        -> (GoModelOutput, (GoModelOutput.TangentVector)
+        -> (GoModel.TangentVector, Tensor<Float>)) {
         // TODO(jekbradbury): add a real VJP
         // (we're only interested in inference for now and have control flow in our `call(_:)` method)
         return (self(input), {
-            seed in (GoModel.CotangentVector.zero, Tensor<Float>(0))
+            seed in (GoModel.TangentVector.zero, Tensor<Float>(0))
         })
     }
 }

@@ -25,9 +25,9 @@ extension Array where Element: Differentiable {
     func reduceDerivative<Result: Differentiable>(
         _ initialResult: Result,
         _ nextPartialResult: @differentiable (Result, Element) -> Result
-    ) -> (Result, (Result.CotangentVector) -> (Array.CotangentVector, Result.CotangentVector)) {
-        var pullbacks: [(Result.CotangentVector)
-            -> (Result.CotangentVector, Element.CotangentVector)] = []
+    ) -> (Result, (Result.TangentVector) -> (Array.TangentVector, Result.TangentVector)) {
+        var pullbacks: [(Result.TangentVector)
+            -> (Result.TangentVector, Element.TangentVector)] = []
         let count = self.count
         pullbacks.reserveCapacity(count)
         var result = initialResult
@@ -38,14 +38,14 @@ extension Array where Element: Differentiable {
         }
         return (value: result, pullback: { cotangent in
             var resultCotangent = cotangent
-            var elementCotangents = CotangentVector([])
+            var elementCotangents = TangentVector([])
             elementCotangents.base.reserveCapacity(count)
             for pullback in pullbacks.reversed() {
                 let (newResultCotangent, elementCotangent) = pullback(resultCotangent)
                 resultCotangent = newResultCotangent
                 elementCotangents.base.append(elementCotangent)
             }
-            return (CotangentVector(elementCotangents.base.reversed()), resultCotangent)
+            return (TangentVector(elementCotangents.base.reversed()), resultCotangent)
         })
     }
 }
