@@ -36,12 +36,9 @@ func readTensor<Scalar: TensorFlowScalar>(
     scalarType: Scalar.Type
 ) -> Tensor<Scalar> {
     // TODO(jekbradbury): support variadic dtype attrs in RawOpsGenerated
-    return Tensor(handle: #tfop(
-        "RestoreV2",
-        StringTensor(path),
-        StringTensor([name]),
-        StringTensor([""]),
-        dtypes$dtype: [Scalar.tensorFlowDataType]))
+    return Raw.restoreV2(prefix: StringTensor(path),
+                         tensorNames: StringTensor([name]),
+                         shapeAndSlices: StringTensor([""]))
 }
 
 protocol InitializableFromPythonCheckpoint {

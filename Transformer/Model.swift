@@ -63,7 +63,7 @@ func makeAttentionInput(query: Tensor<Float>, key: Tensor<Float>, value: Tensor<
 }
 
 func _vjpMakeAttentionInput(query: Tensor<Float>, key: Tensor<Float>, value: Tensor<Float>)
-    -> (AttentionInput, (AttentionInput.CotangentVector) -> (Tensor<Float>, Tensor<Float>, Tensor<Float>)) {
+    -> (AttentionInput, (AttentionInput.TangentVector) -> (Tensor<Float>, Tensor<Float>, Tensor<Float>)) {
     let result = AttentionInput(query: query, key: key, value: value)
     return (result, { seed in (seed.query, seed.key, seed.value) })
 }
@@ -80,7 +80,7 @@ func makeAttentionContext(key: Tensor<Float>, value: Tensor<Float>)
 }
 
 func _vjpMakeAttentionContext(key: Tensor<Float>, value: Tensor<Float>)
-    -> (AttentionContext, (AttentionContext.CotangentVector) -> (Tensor<Float>, Tensor<Float>)) {
+    -> (AttentionContext, (AttentionContext.TangentVector) -> (Tensor<Float>, Tensor<Float>)) {
     let result = AttentionContext(key: key, value: value)
     return (result, { seed in (seed.key, seed.value) })
 }
@@ -170,7 +170,7 @@ func splitQKV(_ input: Tensor<Float>) -> AttentionInput {
 }
 
 func _vjpSplitQKV(_ input: Tensor<Float>)
-    -> (AttentionInput, (AttentionInput.CotangentVector) -> Tensor<Float>) {
+    -> (AttentionInput, (AttentionInput.TangentVector) -> Tensor<Float>) {
     let value = splitQKV(input)
     return (value, { seed in
         return Raw.concatV2([seed.query, seed.key, seed.value], axis: Tensor<Int32>(2))
@@ -281,7 +281,8 @@ struct TransformerLM {
         var h = embedding(tokens)
         h = h + positionalEmbeddings.gathering(atIndices: positionsTensor)
         for i in 0..<layers.count {
-            h = layers[i](h, state: &states[i])
+            // Remove the .call when TF-516 is fixed.
+            h = layers[i].call(h, state: &states[i])
         }
         h = norm(h)
         let tmp = TimeDistributed(

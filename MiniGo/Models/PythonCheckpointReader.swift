@@ -28,12 +28,9 @@ public class PythonCheckpointReader {
         let countSuffix = layerCounts[layerName] == nil ? "" : "_\(layerCounts[layerName]!)"
         let tensorName = layerName + countSuffix + "/" + weightName
         // TODO(jekbradbury): support variadic dtype attrs in RawOpsGenerated
-        return Tensor<Float>(handle: #tfop(
-            "RestoreV2",
-            StringTensor(path),
-            StringTensor([tensorName]),
-            StringTensor([""]),
-            dtypes$dtype: [Float.tensorFlowDataType]))
+        return Raw.restoreV2(prefix: StringTensor(path),
+                             tensorNames: StringTensor([tensorName]),
+                             shapeAndSlices: StringTensor([""]))
     }
 
     /// Increments a per-layer counter for variable names in the checkpoint file.
