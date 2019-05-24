@@ -40,7 +40,7 @@ gsutil cp 'gs://minigo-pub/v15-19x19/models/000939-heron.*' MiniGoCheckpoint/
 ```sh
 # Run inference (self-plays).
 cd swift-models
-swift run -Xlinker -ltensorflow -c release MiniGo
+swift run -Xlinker -ltensorflow -c release MiniGoDemo
 ```
 
 [Swift for TensorFlow]: https://www.tensorflow.org/swift
