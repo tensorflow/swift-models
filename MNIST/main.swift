@@ -83,7 +83,7 @@ let (trainImages, trainNumericLabels) = readMNIST(imagesFile: "train-images-idx3
 let trainLabels = Tensor<Float>(oneHotAtIndices: trainNumericLabels, depth: 10)
 
 let (testImages, testNumericLabels) = readMNIST(imagesFile: "t10k-images-idx3-ubyte",
-                                        labelsFile: "t10k-labels-idx1-ubyte")
+                                      labelsFile: "t10k-labels-idx1-ubyte")
 let testLabels = Tensor<Float>(oneHotAtIndices: testNumericLabels, depth: 10)
 
 var classifier = Classifier()
@@ -92,7 +92,7 @@ let optimizer = Adam(for: classifier)
 
 print("Beginning training...")
 
-struct Stats {
+struct Statistics {
     var correctGuessCount: Int = 0
     var totalGuessCount: Int = 0
     var totalLoss: Float = 0
@@ -100,8 +100,8 @@ struct Stats {
 
 // The training loop.
 for epoch in 1...epochCount {
-    var trainStats = Stats()
-    var testStats = Stats()
+    var trainStats = Statistics()
+    var testStats = Statistics()
     Context.local.learningPhase = .training
     for i in 0 ..< Int(trainLabels.shape[0]) / batchSize {
         let x = minibatch(in: trainImages, at: i)
@@ -110,7 +110,8 @@ for epoch in 1...epochCount {
         let 𝛁model = classifier.gradient { classifier -> Tensor<Float> in
             let ŷ = classifier(x)
             let correctPredictions = ŷ.argmax(squeezingAxis: 1) .== y
-            trainStats.correctGuessCount += Int(Tensor<Int32>(correctPredictions).sum().scalarized())
+            trainStats.correctGuessCount += Int(
+              Tensor<Int32>(correctPredictions).sum().scalarized())
             trainStats.totalGuessCount += batchSize
             let loss = softmaxCrossEntropy(logits: ŷ, labels: y)
             trainStats.totalLoss += loss.scalarized()
@@ -138,8 +139,10 @@ for epoch in 1...epochCount {
     print("""
           [Epoch \(epoch)] \
           Training Loss: \(trainStats.totalLoss), \
-          Training Accuracy: \(trainStats.correctGuessCount)/\(trainStats.totalGuessCount) (\(trainAccuracy)), \
+          Training Accuracy: \(trainStats.correctGuessCount)/\(trainStats.totalGuessCount) \ 
+          (\(trainAccuracy)), \
           Test Loss: \(testStats.totalLoss), \
-          Test Accuracy: \(testStats.correctGuessCount)/\(testStats.totalGuessCount) (\(testAccuracy))
+          Test Accuracy: \(testStats.correctGuessCount)/\(testStats.totalGuessCount) \
+          (\(testAccuracy))
           """)
 }
