@@ -79,7 +79,7 @@ func minibatch<Scalar>(in x: Tensor<Scalar>, at index: Int) -> Tensor<Scalar> {
 }
 
 let (trainImages, trainNumericLabels) = readMNIST(imagesFile: "train-images-idx3-ubyte",
-                                        labelsFile: "train-labels-idx1-ubyte")
+                                                  labelsFile: "train-labels-idx1-ubyte")
 let trainLabels = Tensor<Float>(oneHotAtIndices: trainNumericLabels, depth: 10)
 
 let (testImages, testNumericLabels) = readMNIST(imagesFile: "t10k-images-idx3-ubyte",
