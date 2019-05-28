@@ -70,21 +70,21 @@ struct Classifier: Layer {
     }
 }
 
-let epochCount: Int = 12
-let batchSize: Int = 128
+let epochCount = 12
+let batchSize = 128
 
 func minibatch<Scalar>(in x: Tensor<Scalar>, at index: Int) -> Tensor<Scalar> {
     let start = index * batchSize
     return x[start..<start+batchSize]
 }
 
-let (train_images, train_numericLabels) = readMNIST(imagesFile: "train-images-idx3-ubyte",
+let (trainImages, trainNumericLabels) = readMNIST(imagesFile: "train-images-idx3-ubyte",
                                         labelsFile: "train-labels-idx1-ubyte")
-let train_labels = Tensor<Float>(oneHotAtIndices: train_numericLabels, depth: 10)
+let trainLabels = Tensor<Float>(oneHotAtIndices: trainNumericLabels, depth: 10)
 
-let (test_images, test_numericLabels) = readMNIST(imagesFile: "t10k-images-idx3-ubyte",
+let (testImages, testNumericLabels) = readMNIST(imagesFile: "t10k-images-idx3-ubyte",
                                         labelsFile: "t10k-labels-idx1-ubyte")
-let test_labels = Tensor<Float>(oneHotAtIndices: test_numericLabels, depth: 10)
+let testLabels = Tensor<Float>(oneHotAtIndices: testNumericLabels, depth: 10)
 
 var classifier = Classifier()
 
@@ -92,7 +92,7 @@ let optimizer = Adam(for: classifier)
 
 print("Beginning training...")
 
-struct stats {
+struct Stats {
     var correctGuessCount: Int = 0
     var totalGuessCount: Int = 0
     var totalLoss: Float = 0
@@ -100,20 +100,20 @@ struct stats {
 
 // The training loop.
 for epoch in 1...epochCount {
-    var train_stats = stats()
-    var test_stats = stats()
+    var trainStats = Stats()
+    var testStats = Stats()
     Context.local.learningPhase = .training
-    for i in 0 ..< Int(train_labels.shape[0]) / batchSize {
-        let x = minibatch(in: train_images, at: i)
-        let y = minibatch(in: train_numericLabels, at: i)
+    for i in 0 ..< Int(trainLabels.shape[0]) / batchSize {
+        let x = minibatch(in: trainImages, at: i)
+        let y = minibatch(in: trainNumericLabels, at: i)
         // Compute the gradient with respect to the model.
         let 𝛁model = classifier.gradient { classifier -> Tensor<Float> in
             let ŷ = classifier(x)
             let correctPredictions = ŷ.argmax(squeezingAxis: 1) .== y
-            train_stats.correctGuessCount += Int(Tensor<Int32>(correctPredictions).sum().scalarized())
-            train_stats.totalGuessCount += batchSize
+            trainStats.correctGuessCount += Int(Tensor<Int32>(correctPredictions).sum().scalarized())
+            trainStats.totalGuessCount += batchSize
             let loss = softmaxCrossEntropy(logits: ŷ, labels: y)
-            train_stats.totalLoss += loss.scalarized()
+            trainStats.totalLoss += loss.scalarized()
             return loss
         }
         // Update the model's differentiable variables along the gradient vector.
@@ -121,25 +121,25 @@ for epoch in 1...epochCount {
     }
 
     Context.local.learningPhase = .inference
-    for i in 0 ..< Int(test_labels.shape[0]) / batchSize {
-        let x = minibatch(in: test_images, at: i)
-        let y = minibatch(in: test_numericLabels, at: i)
+    for i in 0 ..< Int(testLabels.shape[0]) / batchSize {
+        let x = minibatch(in: testImages, at: i)
+        let y = minibatch(in: testNumericLabels, at: i)
         // Compute loss on test set
         let ŷ = classifier(x)
         let correctPredictions = ŷ.argmax(squeezingAxis: 1) .== y
-        test_stats.correctGuessCount += Int(Tensor<Int32>(correctPredictions).sum().scalarized())
-        test_stats.totalGuessCount += batchSize
+        testStats.correctGuessCount += Int(Tensor<Int32>(correctPredictions).sum().scalarized())
+        testStats.totalGuessCount += batchSize
         let loss = softmaxCrossEntropy(logits: ŷ, labels: y)
-        test_stats.totalLoss += loss.scalarized()
+        testStats.totalLoss += loss.scalarized()
     }
 
-    let train_accuracy = Float(train_stats.correctGuessCount) / Float(train_stats.totalGuessCount)
-    let test_accuracy = Float(test_stats.correctGuessCount) / Float(test_stats.totalGuessCount)
+    let trainAccuracy = Float(trainStats.correctGuessCount) / Float(trainStats.totalGuessCount)
+    let testAccuracy = Float(testStats.correctGuessCount) / Float(testStats.totalGuessCount)
     print("""
           [Epoch \(epoch)] \
-          Training Loss: \(train_stats.totalLoss), \
-          Training Accuracy: \(train_stats.correctGuessCount)/\(train_stats.totalGuessCount) (\(train_accuracy)), \
-          Test Loss: \(test_stats.totalLoss), \
-          Test Accuracy: \(test_stats.correctGuessCount)/\(test_stats.totalGuessCount) (\(test_accuracy))
+          Training Loss: \(trainStats.totalLoss), \
+          Training Accuracy: \(trainStats.correctGuessCount)/\(trainStats.totalGuessCount) (\(trainAccuracy)), \
+          Test Loss: \(testStats.totalLoss), \
+          Test Accuracy: \(testStats.correctGuessCount)/\(testStats.totalGuessCount) (\(testAccuracy))
           """)
 }
