@@ -83,7 +83,7 @@ let (trainImages, trainNumericLabels) = readMNIST(imagesFile: "train-images-idx3
 let trainLabels = Tensor<Float>(oneHotAtIndices: trainNumericLabels, depth: 10)
 
 let (testImages, testNumericLabels) = readMNIST(imagesFile: "t10k-images-idx3-ubyte",
-                                      labelsFile: "t10k-labels-idx1-ubyte")
+                                                labelsFile: "t10k-labels-idx1-ubyte")
 let testLabels = Tensor<Float>(oneHotAtIndices: testNumericLabels, depth: 10)
 
 var classifier = Classifier()
