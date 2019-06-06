@@ -37,7 +37,7 @@ struct Conv2DBatchNorm: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         return input.sequenced(through: conv, norm)
     }
 }
@@ -68,7 +68,7 @@ struct BasicBlock: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         let blocksReduced = blocks.differentiableReduce(input) { last, layer in
             relu(layer(last))
         }
@@ -97,7 +97,7 @@ struct ResNet: Layer {
     var classifier = Dense<Float>(inputSize: 64, outputSize: 10, activation: softmax)
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         let tmp = relu(inputLayer(input))
         let convolved = tmp.sequenced(through: basicBlock1, basicBlock2, basicBlock3)
         return convolved.sequenced(through: averagePool, flatten, classifier)

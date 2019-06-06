@@ -61,7 +61,7 @@ struct ConvBN: Layer {
     }
 
     @differentiable
-    func call(_ input: Tensor<Float>) -> Tensor<Float> {
+    func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         return norm(conv(input))
     }
 }
@@ -90,7 +90,7 @@ struct ResidualIdentityBlock: Layer {
     }
 
     @differentiable
-    func call(_ input: Tensor<Float>) -> Tensor<Float> {
+    func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         var tmp = relu(layer1(input))
         tmp = layer2(tmp)
         return relu(tmp + input)
@@ -158,7 +158,7 @@ public struct GoModel: Layer {
     }
   
     @differentiable(wrt: (self, input), vjp: _vjpCall)
-    public func call(_ input: Tensor<Float>) -> GoModelOutput {
+    public func callAsFunction(_ input: Tensor<Float>) -> GoModelOutput {
         let batchSize = input.shape[0]
         var output = relu(initialConv(input))
 

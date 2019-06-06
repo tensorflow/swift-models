@@ -29,7 +29,7 @@ struct PyTorchModel: Layer {
     var dense3 = Dense<Float>(inputSize: 84, outputSize: 10, activation: identity)
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         let convolved = input.sequenced(through: conv1, pool1, conv2, pool2)
         return convolved.sequenced(through: flatten, dense1, dense2, dense3)
     }
@@ -54,7 +54,7 @@ struct KerasModel: Layer {
     var dense2 = Dense<Float>(inputSize: 512, outputSize: 10, activation: identity)
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         let conv1 = input.sequenced(through: conv1a, conv1b, pool1, dropout1)
         let conv2 = conv1.sequenced(through: conv2a, conv2b, pool2, dropout2)
         return conv2.sequenced(through: flatten, dense1, dropout3, dense2)

@@ -48,7 +48,7 @@ struct Net: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         return input.sequenced(through: l1, l2)
     }
 }
