@@ -51,9 +51,7 @@ struct Example: TensorGroup {
         data = Tensor<Float>(handle: TensorHandle<Float>(handle: _handles[dataIndex]))
     }
 
-    //public var _tensorHandles: [_AnyTensorHandle] { [label.handle.handle, data.handle.handle] }    
-    // error: 'handle' is inaccessible due to 'internal' protection level
-    public var _tensorHandles: [_AnyTensorHandle] { [] }    
+    public var _tensorHandles: [_AnyTensorHandle] { [label.handle.handle, data.handle.handle] }
 }
 
 // Each CIFAR data file is provided as a Python pickle of NumPy arrays
