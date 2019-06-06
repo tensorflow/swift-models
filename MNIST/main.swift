@@ -64,7 +64,7 @@ struct Classifier: Layer {
     var layer1b = Dense<Float>(inputSize: 128, outputSize: 10, activation: softmax)
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         let convolved = input.sequenced(through: conv1a, conv1b, pool1)
         return convolved.sequenced(through: dropout1a, flatten, layer1a, dropout1b, layer1b)
     }
