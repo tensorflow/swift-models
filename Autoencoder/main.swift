@@ -94,7 +94,7 @@ struct Autoencoder: Layer {
         activation: tanh)
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         let encoder = input.sequenced(through: encoder1, encoder2, encoder3, encoder4)
         return encoder.sequenced(through: decoder1, decoder2, decoder3, decoder4)
     }
