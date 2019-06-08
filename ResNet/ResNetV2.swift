@@ -38,7 +38,7 @@ struct Conv2DBatchNorm: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         return input.sequenced(through: conv, norm)
     }
 }
@@ -60,7 +60,7 @@ struct BatchNormConv2D: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         return conv(relu(norm(input)))
     }
 }
@@ -88,7 +88,7 @@ struct PreActivatedResidualBasicBlock: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         return input.sequenced(through: layer1, layer2)
     }
 }
@@ -117,7 +117,7 @@ struct PreActivatedResidualBasicBlockShortcut: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         return input.sequenced(through: layer1, layer2) + shortcut(input)
     }
 }
@@ -162,7 +162,7 @@ struct PreActivatedResNet18: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         let inputLayer = input.sequenced(through: l1, maxPool)
         let level2 = inputLayer.sequenced(through: l2a, l2b)
         let level3 = level2.sequenced(through: l3a, l3b)
@@ -221,7 +221,7 @@ struct PreActivatedResNet34: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         let inputLayer = input.sequenced(through: l1, maxPool)
         let level2 = inputLayer.sequenced(through: l2a, l2b, l2c)
         let level3 = level2.sequenced(through: l3a, l3b, l3c, l3d)

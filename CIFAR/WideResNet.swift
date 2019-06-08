@@ -41,7 +41,7 @@ struct BatchNormConv2DBlock: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         let firstLayer = conv1(relu(norm1(input)))
         return conv2(relu(norm2(firstLayer)))
     }
@@ -87,7 +87,7 @@ struct WideResNetBasicBlock: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         let blocksReduced = blocks.differentiableReduce(input) { last, layer in
             relu(layer(last))
         }
@@ -126,7 +126,7 @@ struct WideResNet: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         let inputLayer = input.sequenced(through: l1, l2, l3, l4)
         let finalNorm = relu(norm(inputLayer))
         return finalNorm.sequenced(through: avgPool, flatten, classifier)

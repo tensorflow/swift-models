@@ -37,7 +37,7 @@ struct ConvBN: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         return input.sequenced(through: conv, norm)
     }
 }
@@ -65,7 +65,7 @@ struct ResidualBasicBlock: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         return layer2(relu(layer1(input)))
     }
 }
@@ -94,7 +94,7 @@ struct ResidualBasicBlockShortcut: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         return layer2(relu(layer1(input))) + shortcut(input)
     }
 }
@@ -127,7 +127,7 @@ struct ResidualConvBlock: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         let tmp = relu(layer2(relu(layer1(input))))
         return relu(layer3(tmp) + shortcut(input))
     }
@@ -150,7 +150,7 @@ struct ResidualIdentityBlock: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         let tmp = relu(layer2(relu(layer1(input))))
         return relu(layer3(tmp) + input)
     }
@@ -175,7 +175,7 @@ struct ResidualIdentityBlockStack: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         return input.sequenced(through: block1, block2, block3, block4, block5)
     }
 }
@@ -218,7 +218,7 @@ struct ResNet18: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         let inputLayer = maxPool(relu(l1(input)))
         let level2 = inputLayer.sequenced(through: l2a, l2b)
         let level3 = level2.sequenced(through: l3a, l3b)
@@ -274,7 +274,7 @@ struct ResNet34: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         let inputLayer = maxPool(relu(l1(input)))
         let level2 = inputLayer.sequenced(through: l2a, l2b, l2c)
         let level3 = level2.sequenced(through: l3a, l3b, l3c, l3d)
@@ -326,7 +326,7 @@ struct ResNet50: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         let inputLayer = maxPool(relu(l1(input)))
         let level2 = inputLayer.sequenced(through: l2a, l2b, l2c)
         let level3 = level2.sequenced(through: l3a, l3b, l3c, l3d)
@@ -383,7 +383,7 @@ struct ResNet101: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         let inputLayer = maxPool(relu(l1(input)))
         let level2 = inputLayer.sequenced(through: l2a, l2b, l2c)
         let level3 = level2.sequenced(through: l3a, l3b, l3c, l3d)
@@ -441,7 +441,7 @@ struct ResNet152: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         let inputLayer = maxPool(relu(l1(input)))
         let level2 = inputLayer.sequenced(through: l2a, l2b, l2c)
         let level3 = level2.sequenced(through: l3a, l3b, l3c, l3d)

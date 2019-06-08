@@ -72,29 +72,3 @@ func _vjpBatchedMatmul<Scalar : Differentiable & FloatingPoint>(
         }
     })
 }
-
-extension Tensor where Scalar: TensorFlowFloatingPoint {
-    /// Gathers slices of self at the specified indices along the first axis. The result has the
-    /// same size in the first axis as the scalar count of the index tensor, and the same
-    /// size in subsequent axes as self.
-    @differentiable(wrt: self, vjp: _vjpGathering)
-    func gathering(atIndices indices: Tensor<Int32>) -> Tensor {
-        return Raw.gather(params: self, indices: indices)
-    }
-
-    func _vjpGathering(atIndices indices: Tensor<Int32>) -> (Tensor, (Tensor) -> Tensor) {
-        let value = gathering(atIndices: indices)
-        return (value, { [wShape = shape] seed in
-            var valuesShape = wShape
-            valuesShape[0] = indices.scalarCount
-            let values = seed.reshaped(to: valuesShape)
-            let indices = indices.reshaped(to: [indices.scalarCount])
-            // TODO provide an option for sparse embedding gradients (e.g. equivalent of Python
-            // IndexedSlices)
-            return Raw.unsortedSegmentSum(
-                data: values,
-                segmentIds: indices,
-                numSegments: Tensor<Int32>(Int32(wShape[0])))
-        })
-    }
-}
