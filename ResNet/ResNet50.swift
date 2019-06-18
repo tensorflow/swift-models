@@ -20,6 +20,11 @@ import TensorFlow
 // https://arxiv.org/abs/1512.03385
 // using shortcut layer to connect BasicBlock layers (aka Option (B))
 
+enum DataKind {
+    case cifar
+    case imagenet
+}
+
 struct ConvBN: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
@@ -39,6 +44,35 @@ struct ConvBN: Layer {
     @differentiable
     func callAsFunction(_ input: Input) -> Output {
         return input.sequenced(through: conv, norm)
+    }
+}
+
+struct ResidualBasicBlockShortcut: Layer {
+    typealias Input = Tensor<Float>
+    typealias Output = Tensor<Float>
+
+    var layer1: ConvBN
+    var layer2: ConvBN
+    var shortcut: ConvBN
+
+    init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3) {
+        self.layer1 = ConvBN(
+            filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
+            strides: (2, 2),
+            padding: .same)
+        self.layer2 = ConvBN(
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
+            strides: (1, 1),
+            padding: .same)
+        self.shortcut = ConvBN(
+            filterShape: (1, 1, featureCounts.0, featureCounts.3),
+            strides: (2, 2),
+            padding: .same)
+    }
+
+    @differentiable
+    func callAsFunction(_ input: Input) -> Output {
+        return layer2(relu(layer1(input))) + shortcut(input)
     }
 }
 
@@ -70,32 +104,23 @@ struct ResidualBasicBlock: Layer {
     }
 }
 
-struct ResidualBasicBlockShortcut: Layer {
+struct ResidualBasicBlockStack: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
-    var layer1: ConvBN
-    var layer2: ConvBN
-    var shortcut: ConvBN
-
-    init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3) {
-        self.layer1 = ConvBN(
-            filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
-            strides: (2, 2),
-            padding: .same)
-        self.layer2 = ConvBN(
-            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
-            strides: (1, 1),
-            padding: .same)
-        self.shortcut = ConvBN(
-            filterShape: (1, 1, featureCounts.0, featureCounts.3),
-            strides: (2, 2),
-            padding: .same)
+    var blocks: [ResidualBasicBlock] = []
+    init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3, blockCount: Int) {
+        for _ in 1..<blockCount {
+            blocks += [ResidualBasicBlock(featureCounts: featureCounts, kernelSize: kernelSize)]
+        }
     }
 
     @differentiable
     func callAsFunction(_ input: Input) -> Output {
-        return layer2(relu(layer1(input))) + shortcut(input)
+        let blocksReduced = blocks.differentiableReduce(input) { last, layer in
+            layer(last)
+        }
+        return blocksReduced
     }
 }
 
@@ -160,27 +185,23 @@ struct ResidualIdentityBlockStack: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
-    var block1: ResidualIdentityBlock
-    var block2: ResidualIdentityBlock
-    var block3: ResidualIdentityBlock
-    var block4: ResidualIdentityBlock
-    var block5: ResidualIdentityBlock
-
-    init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3) {
-        self.block1 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
-        self.block2 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
-        self.block3 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
-        self.block4 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
-        self.block5 = ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)
+    var blocks: [ResidualIdentityBlock] = []
+    init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3, blockCount: Int) {
+        for _ in 1..<blockCount {
+            blocks += [ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)]
+        }
     }
 
     @differentiable
     func callAsFunction(_ input: Input) -> Output {
-        return input.sequenced(through: block1, block2, block3, block4, block5)
+        let blocksReduced = blocks.differentiableReduce(input) { last, layer in
+            layer(last)
+        }
+        return blocksReduced
     }
 }
 
-struct ResNet18: Layer {
+struct ResNetBasic: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
@@ -188,33 +209,43 @@ struct ResNet18: Layer {
     var maxPool: MaxPool2D<Float>
 
     var l2a = ResidualBasicBlock(featureCounts: (64, 64, 64, 64))
-    var l2b = ResidualBasicBlock(featureCounts: (64, 64, 64, 64))
+    var l2b: ResidualBasicBlockStack
 
     var l3a = ResidualBasicBlockShortcut(featureCounts: (64, 128, 128, 128))
-    var l3b = ResidualBasicBlock(featureCounts: (128, 128, 128, 128))
+    var l3b: ResidualBasicBlockStack
 
     var l4a = ResidualBasicBlockShortcut(featureCounts: (128, 256, 256, 256))
-    var l4b = ResidualBasicBlock(featureCounts: (256, 256, 256, 256))
+    var l4b: ResidualBasicBlockStack
 
     var l5a = ResidualBasicBlockShortcut(featureCounts: (256, 512, 512, 512))
-    var l5b = ResidualBasicBlock(featureCounts: (512, 512, 512, 512))
- 
+    var l5b: ResidualBasicBlockStack
+
     var avgPool: AvgPool2D<Float>
     var flatten = Flatten<Float>()
     var classifier: Dense<Float>
 
-    init(imageSize: Int, classCount: Int) {
-        // default to the ImageNet case where imageSize == 224
-        // Swift requires that all properties get initialized outside control flow
-        l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
-        maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
-        avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
-        if imageSize == 32 {
+    init(dataKind: DataKind, layerBlockCounts: (Int, Int, Int, Int)) {
+        switch dataKind {
+        case .imagenet:
+            l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
+            maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
+            avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
+            classifier = Dense(inputSize: 512, outputSize: 1000)
+        case .cifar:
             l1 = ConvBN(filterShape: (3, 3, 3, 64), padding: .same)
             maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1)) // no-op
             avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
+            classifier = Dense(inputSize: 512, outputSize: 10)
         }
-        classifier = Dense(inputSize: 512, outputSize: classCount)
+
+        l2b = ResidualBasicBlockStack(featureCounts: (64, 64, 64, 64),
+            blockCount: layerBlockCounts.0)
+        l3b = ResidualBasicBlockStack(featureCounts: (128, 128, 128, 128),
+            blockCount: layerBlockCounts.1)
+        l4b = ResidualBasicBlockStack(featureCounts: (256, 256, 256, 256),
+            blockCount: layerBlockCounts.2)
+        l5b = ResidualBasicBlockStack(featureCounts: (512, 512, 512, 512),
+            blockCount: layerBlockCounts.3)
     }
 
     @differentiable
@@ -228,63 +259,23 @@ struct ResNet18: Layer {
     }
 }
 
-struct ResNet34: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
-
-    var l1: ConvBN
-    var maxPool: MaxPool2D<Float>
-
-    var l2a = ResidualBasicBlock(featureCounts: (64, 64, 64, 64))
-    var l2b = ResidualBasicBlock(featureCounts: (64, 64, 64, 64))
-    var l2c = ResidualBasicBlock(featureCounts: (64, 64, 64, 64))
-
-    var l3a = ResidualBasicBlockShortcut(featureCounts: (64, 128, 128, 128))
-    var l3b = ResidualBasicBlock(featureCounts: (128, 128, 128, 128))
-    var l3c = ResidualBasicBlock(featureCounts: (128, 128, 128, 128))
-    var l3d = ResidualBasicBlock(featureCounts: (128, 128, 128, 128))
-
-    var l4a = ResidualBasicBlockShortcut(featureCounts: (128, 256, 256, 256))
-    var l4b = ResidualBasicBlock(featureCounts: (256, 256, 256, 256))
-    var l4c = ResidualBasicBlock(featureCounts: (256, 256, 256, 256))
-    var l4d = ResidualBasicBlock(featureCounts: (256, 256, 256, 256))
-    var l4e = ResidualBasicBlock(featureCounts: (256, 256, 256, 256))
-    var l4f = ResidualBasicBlock(featureCounts: (256, 256, 256, 256))
-
-    var l5a = ResidualBasicBlockShortcut(featureCounts: (256, 512, 512, 512))
-    var l5b = ResidualBasicBlock(featureCounts: (512, 512, 512, 512))
-    var l5c = ResidualBasicBlock(featureCounts: (512, 512, 512, 512))
-
-    var avgPool: AvgPool2D<Float>
-    var flatten = Flatten<Float>()
-    var classifier: Dense<Float>
-
-    init(imageSize: Int, classCount: Int) {
-        // default to the ImageNet case where imageSize == 224
-        // Swift requires that all properties get initialized outside control flow
-        l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
-        maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
-        avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
-        if imageSize == 32 {
-            l1 = ConvBN(filterShape: (3, 3, 3, 64), padding: .same)
-            maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1)) // no-op
-            avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
-        }
-        classifier = Dense(inputSize: 512, outputSize: classCount)
+extension ResNetBasic {
+    enum Kind {
+        case resNet18
+        case resNet34
     }
 
-    @differentiable
-    func callAsFunction(_ input: Input) -> Output {
-        let inputLayer = maxPool(relu(l1(input)))
-        let level2 = inputLayer.sequenced(through: l2a, l2b, l2c)
-        let level3 = level2.sequenced(through: l3a, l3b, l3c, l3d)
-        let level4 = level3.sequenced(through: l4a, l4b, l4c, l4d, l4e, l4f)
-        let level5 = level4.sequenced(through: l5a, l5b, l5c)
-        return level5.sequenced(through: avgPool, flatten, classifier)
+    init(inputKind: Kind, dataKind: DataKind) {
+        switch inputKind {
+        case .resNet18:
+            self.init(dataKind: dataKind, layerBlockCounts: (2, 2, 2, 2))
+        case .resNet34:
+            self.init(dataKind: dataKind, layerBlockCounts: (3, 4, 6, 3))
+        }
     }
 }
 
-struct ResNet50: Layer {
+struct ResNet: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
@@ -292,161 +283,71 @@ struct ResNet50: Layer {
     var maxPool: MaxPool2D<Float>
 
     var l2a = ResidualConvBlock(featureCounts: (64, 64, 64, 256), strides: (1, 1))
-    var l2b = ResidualIdentityBlock(featureCounts: (256, 64, 64, 256))
-    var l2c = ResidualIdentityBlock(featureCounts: (256, 64, 64, 256))
+    var l2b: ResidualIdentityBlockStack
 
     var l3a = ResidualConvBlock(featureCounts: (256, 128, 128, 512))
-    var l3b = ResidualIdentityBlock(featureCounts: (512, 128, 128, 512))
-    var l3c = ResidualIdentityBlock(featureCounts: (512, 128, 128, 512))
-    var l3d = ResidualIdentityBlock(featureCounts: (512, 128, 128, 512))
+    var l3b: ResidualIdentityBlockStack
 
     var l4a = ResidualConvBlock(featureCounts: (512, 256, 256, 1024))
-    var l4b = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
+    var l4b: ResidualIdentityBlockStack
 
     var l5a = ResidualConvBlock(featureCounts: (1024, 512, 512, 2048))
-    var l5b = ResidualIdentityBlock(featureCounts: (2048, 512, 512, 2048))
-    var l5c = ResidualIdentityBlock(featureCounts: (2048, 512, 512, 2048))
+    var l5b: ResidualIdentityBlockStack
 
     var avgPool: AvgPool2D<Float>
     var flatten = Flatten<Float>()
     var classifier: Dense<Float>
 
-    init(imageSize: Int, classCount: Int) {
-        // default to the ImageNet case where imageSize == 224
-        // Swift requires that all properties get initialized outside control flow
-        l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
-        maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
-        avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
-        if imageSize == 32 {
+    init(dataKind: DataKind, layerBlockCounts: (Int, Int, Int, Int)) {
+        switch dataKind {
+        case .imagenet:
+            l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
+            maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
+            avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
+            classifier = Dense(inputSize: 2048, outputSize: 1000)
+        case .cifar:
             l1 = ConvBN(filterShape: (3, 3, 3, 64), padding: .same)
             maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1)) // no-op
             avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
+            classifier = Dense(inputSize: 2048, outputSize: 10)
         }
-        classifier = Dense(inputSize: 2048, outputSize: classCount)
+
+        l2b = ResidualIdentityBlockStack(featureCounts: (256, 64, 64, 256),
+            blockCount: layerBlockCounts.0)
+        l3b = ResidualIdentityBlockStack(featureCounts: (512, 128, 128, 512),
+            blockCount: layerBlockCounts.1)
+        l4b = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024),
+            blockCount: layerBlockCounts.2)
+        l5b = ResidualIdentityBlockStack(featureCounts: (2048, 512, 512, 2048),
+            blockCount: layerBlockCounts.3)
     }
 
     @differentiable
     func callAsFunction(_ input: Input) -> Output {
         let inputLayer = maxPool(relu(l1(input)))
-        let level2 = inputLayer.sequenced(through: l2a, l2b, l2c)
-        let level3 = level2.sequenced(through: l3a, l3b, l3c, l3d)
+        let level2 = inputLayer.sequenced(through: l2a, l2b)
+        let level3 = level2.sequenced(through: l3a, l3b)
         let level4 = level3.sequenced(through: l4a, l4b)
-        let level5 = level4.sequenced(through: l5a, l5b, l5c)
+        let level5 = level4.sequenced(through: l5a, l5b)
         return level5.sequenced(through: avgPool, flatten, classifier)
     }
 }
 
-struct ResNet101: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
+extension ResNet {
+    enum Kind {
+        case resNet50
+        case resNet101
+        case resNet152
+    }
 
-    var l1: ConvBN
-    var maxPool: MaxPool2D<Float>
-
-    var l2a = ResidualConvBlock(featureCounts: (64, 64, 64, 256), strides: (1, 1))
-    var l2b = ResidualIdentityBlock(featureCounts: (256, 64, 64, 256))
-    var l2c = ResidualIdentityBlock(featureCounts: (256, 64, 64, 256))
-
-    var l3a = ResidualConvBlock(featureCounts: (256, 128, 128, 512))
-    var l3b = ResidualIdentityBlock(featureCounts: (512, 128, 128, 512))
-    var l3c = ResidualIdentityBlock(featureCounts: (512, 128, 128, 512))
-    var l3d = ResidualIdentityBlock(featureCounts: (512, 128, 128, 512))
-
-    var l4a = ResidualConvBlock(featureCounts: (512, 256, 256, 1024))
-    var l4b = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
-    var l4c = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
-    var l4d = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
-    var l4e = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
-    var l4f = ResidualIdentityBlock(featureCounts: (1024, 256, 256, 1024))
-    var l4g = ResidualIdentityBlock(featureCounts: (1024, 256, 256, 1024))
-
-    var l5a = ResidualConvBlock(featureCounts: (1024, 512, 512, 2048))
-    var l5b = ResidualIdentityBlock(featureCounts: (2048, 512, 512, 2048))
-    var l5c = ResidualIdentityBlock(featureCounts: (2048, 512, 512, 2048))
-
-    var avgPool: AvgPool2D<Float>
-    var flatten = Flatten<Float>()
-    var classifier: Dense<Float>
-
-    init(imageSize: Int, classCount: Int) {
-        // default to the ImageNet case where imageSize == 224
-        // Swift requires that all properties get initialized outside control flow
-        l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
-        maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
-        avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
-        if imageSize == 32 {
-            l1 = ConvBN(filterShape: (3, 3, 3, 64), padding: .same)
-            maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1)) // no-op
-            avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
+    init(inputKind: Kind, dataKind: DataKind) {
+        switch inputKind {
+        case .resNet50:
+            self.init(dataKind: dataKind, layerBlockCounts: (3, 4, 6, 3))
+        case .resNet101:
+            self.init(dataKind: dataKind, layerBlockCounts: (3, 4, 23, 3))
+        case .resNet152:
+            self.init(dataKind: dataKind, layerBlockCounts: (3, 8, 36, 3))
         }
-        classifier = Dense(inputSize: 2048, outputSize: classCount)
-    }
-
-    @differentiable
-    func callAsFunction(_ input: Input) -> Output {
-        let inputLayer = maxPool(relu(l1(input)))
-        let level2 = inputLayer.sequenced(through: l2a, l2b, l2c)
-        let level3 = level2.sequenced(through: l3a, l3b, l3c, l3d)
-        let level4 = level3.sequenced(through: l4a, l4b, l4c, l4d, l4e, l4f)
-        let level5 = level4.sequenced(through: l4g, l5a, l5b, l5c) // l4g is here
-        return level5.sequenced(through: avgPool, flatten, classifier)
-    }
-}
-
-struct ResNet152: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
-
-    var l1: ConvBN
-    var maxPool: MaxPool2D<Float>
-
-    var l2a = ResidualConvBlock(featureCounts: (64, 64, 64, 256), strides: (1, 1))
-    var l2b = ResidualIdentityBlock(featureCounts: (256, 64, 64, 256))
-    var l2c = ResidualIdentityBlock(featureCounts: (256, 64, 64, 256))
-
-    var l3a = ResidualConvBlock(featureCounts: (256, 128, 128, 512))
-    var l3b = ResidualIdentityBlockStack(featureCounts: (512, 128, 128, 512))
-    var l3c = ResidualIdentityBlock(featureCounts: (512, 128, 128, 512))
-    var l3d = ResidualIdentityBlock(featureCounts: (512, 128, 128, 512))
-
-    var l4a = ResidualConvBlock(featureCounts: (512, 256, 256, 1024))
-    var l4b = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
-    var l4c = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
-    var l4d = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
-    var l4e = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
-    var l4f = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
-    var l4g = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
-    var l4h = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024))
-
-    var l5a = ResidualConvBlock(featureCounts: (1024, 512, 512, 2048))
-    var l5b = ResidualIdentityBlock(featureCounts: (2048, 512, 512, 2048))
-    var l5c = ResidualIdentityBlock(featureCounts: (2048, 512, 512, 2048))
-
-    var avgPool: AvgPool2D<Float>
-    var flatten = Flatten<Float>()
-    var classifier: Dense<Float>
-
-    init(imageSize: Int, classCount: Int) {
-        // default to the ImageNet case where imageSize == 224
-        // Swift requires that all properties get initialized outside control flow
-        l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
-        maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
-        avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
-        if imageSize == 32 {
-            l1 = ConvBN(filterShape: (3, 3, 3, 64), padding: .same)
-            maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1)) // no-op
-            avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
-        }
-        classifier = Dense(inputSize: 2048, outputSize: classCount)
-    }
-
-    @differentiable
-    func callAsFunction(_ input: Input) -> Output {
-        let inputLayer = maxPool(relu(l1(input)))
-        let level2 = inputLayer.sequenced(through: l2a, l2b, l2c)
-        let level3 = level2.sequenced(through: l3a, l3b, l3c, l3d)
-        let level4 = level3.sequenced(through: l4a, l4b, l4c, l4d, l4e, l4f)
-        let level5 = level4.sequenced(through: l4g, l4h, l5a, l5b, l5c)  // l4g, l4h are here
-        return level5.sequenced(through: avgPool, flatten, classifier)
     }
 }
