@@ -29,7 +29,7 @@ func gelu<Scalar: TensorFlowFloatingPoint>(_ x: Tensor<Scalar>) -> Tensor<Scalar
 @differentiable(
     wrt: (left, right),
     vjp: _vjpBatchedMatmul
-    where Scalar : Differentiable & FloatingPoint
+    where Scalar : Differentiable & TensorFlowFloatingPoint
 )
 func batchedMatmul<Scalar : Numeric>(
     _ left: Tensor<Scalar>,
@@ -41,7 +41,7 @@ func batchedMatmul<Scalar : Numeric>(
 }
 
 @usableFromInline
-func _vjpBatchedMatmul<Scalar : Differentiable & FloatingPoint>(
+func _vjpBatchedMatmul<Scalar : Differentiable & TensorFlowFloatingPoint>(
     _ left: Tensor<Scalar>,
     _ right: Tensor<Scalar>,
     adjointLeft: Bool,
