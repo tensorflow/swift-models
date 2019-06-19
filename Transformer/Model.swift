@@ -51,9 +51,9 @@ struct FeedForward: Layer {
 }
 
 struct AttentionInput: Differentiable {
-    let query: Tensor<Float>
-    let key: Tensor<Float>
-    let value: Tensor<Float>
+    var query: Tensor<Float>
+    var key: Tensor<Float>
+    var value: Tensor<Float>
 }
 
 @differentiable(wrt: (query, key, value), vjp: _vjpMakeAttentionInput)
@@ -69,8 +69,8 @@ func _vjpMakeAttentionInput(query: Tensor<Float>, key: Tensor<Float>, value: Ten
 }
 
 struct AttentionContext: Differentiable {
-    let key: Tensor<Float>
-    let value: Tensor<Float>
+    var key: Tensor<Float>
+    var value: Tensor<Float>
 }
 
 @differentiable(wrt: (key, value), vjp: _vjpMakeAttentionContext)
