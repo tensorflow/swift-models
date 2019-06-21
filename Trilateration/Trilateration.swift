@@ -8,8 +8,8 @@ struct Coordinate: Differentiable {
     func euclideanDistance(to other: Coordinate) -> Tensor<Float> {
         let squaredDiffX = (x - other.x).squared()
         let squaredDiffY = (y - other.y).squared()
-        let sumSquaredDiff = squaredErrorX + squaredErrorY
-        return sqrt(sumSquaredError)
+        let sumSquaredDiff = squaredDiffX + squaredDiffY
+        return sqrt(sumSquaredDiff)
     }
 }
 
