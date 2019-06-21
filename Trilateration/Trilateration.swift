@@ -31,15 +31,18 @@ struct TrilaterationReferences: Differentiable {
         }
     }
     
-    var ref1: ReferenceCoordinate
-    var ref2: ReferenceCoordinate
-    var ref3: ReferenceCoordinate
+    var reference1: ReferenceCoordinate
+    var reference2: ReferenceCoordinate
+    var reference3: ReferenceCoordinate
     
     @differentiable
     func error(for guess: Coordinate) -> Tensor<Float> {
-        let error1 = (ref1.expectedDistance - guess.euclideanDistance(to: ref1.location)).squared()
-        let error2 = (ref2.expectedDistance - guess.euclideanDistance(to: ref2.location)).squared()
-        let error3 = (ref3.expectedDistance - guess.euclideanDistance(to: ref3.location)).squared()
+        let distance1 = guess.euclideanDistance(to: reference1.location)
+        let distance2 = guess.euclideanDistance(to: reference2.location)
+        let distance3 = guess.euclideanDistance(to: reference3.location)
+        let error1 = (reference1.expectedDistance - distance1).squared()
+        let error2 = (reference2.expectedDistance - distance2).squared()
+        let error3 = (reference3.expectedDistance - distance3).squared()
         return error1 + error2 + error3
     }
 }
@@ -63,7 +66,7 @@ var guess = Coordinate(x: 1, y: 1)
 
 for _ in 1...100 {
     let grad = guess.gradient { guess -> Tensor<Float> in
-        return references.error(for: guess)
+        references.error(for: guess)
     }
     guess.x += grad.x * -0.1
     guess.y += grad.y * -0.1
