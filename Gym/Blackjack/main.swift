@@ -44,17 +44,17 @@ class Solver {
     var alpha: Float = 0.5
     let gamma: Float = 0.2
 
-    let numberOfPlayerStates = 32 // 21 + 10 + 1 offset
-    let numberOfDealerVisibleStates = 11 // 10 + 1 offset
-    let numberOfAceStates = 2 // useable / not bool
-    let numberOfPlayerActions = 2 // hit / stay
+    let numPlayerStates = 32 // 21 + 10 + 1 offset
+    let numDealerVisibleStates = 11 // 10 + 1 offset
+    let numAceStates = 2 // useable / not bool
+    let numPlayerActions = 2 // hit / stay
 
     init() {
         Q = Array(repeating: Array(repeating: Array(repeating: Array(repeating: 0.0,
-                                                                     count: numberOfPlayerActions),
-                                                    count: numberOfAceStates),
-                                   count: numberOfDealerVisibleStates),
-                  count: numberOfPlayerStates)
+                                                                     count: numPlayerActions),
+                                                    count: numAceStates),
+                                   count: numDealerVisibleStates),
+                  count: numPlayerStates)
     }
 
     func updateQLearningStrategy(prior: BlackjackState,
@@ -72,8 +72,9 @@ class Solver {
     }
 
     func qLearningStrategy(observation: BlackjackState, iteration: Int) -> Strategy {
-        let hitReward = Q[observation.playerSum][observation.dealerCard][observation.useableAce][0]
-        let stayReward = Q[observation.playerSum][observation.dealerCard][observation.useableAce][1]
+        let qLookup = Q[observation.playerSum][observation.dealerCard][observation.useableAce]
+        let stayReward = qLookup[0]
+        let hitReward = qLookup[1]
 
         if iteration < Int.random(in: 1...learningPhase) {
             return randomStrategy()
@@ -85,7 +86,7 @@ class Solver {
         if hitReward == stayReward {
             return randomStrategy()
         } else {
-            return hitReward < stayReward
+            return hitReward > stayReward
         }
     }
 
