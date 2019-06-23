@@ -18,8 +18,8 @@ import TensorFlow
 let gym = Python.import("gym")
 let environment = gym.make("Blackjack-v0")
 
-let totalIterations = 10000
-let learningPhase = totalIterations * 5 / 100
+let iterationCount = 10000
+let learningPhase = iterationCount * 5 / 100
 
 typealias Strategy = Bool
 
@@ -152,7 +152,7 @@ let learner = Solver()
 for solver in SolverType.allCases {
     var totalReward = 0
 
-    for i in 1...totalIterations {
+    for i in 1...iterationCount {
         var isDone = false
         environment.reset()
 
@@ -178,5 +178,5 @@ for solver in SolverType.allCases {
             }
         }
     }
-    print("Solver: \(solver), Total reward: \(totalReward) / \(totalIterations) trials")
+    print("Solver: \(solver), Total reward: \(totalReward) / \(iterationCount) trials")
 }
