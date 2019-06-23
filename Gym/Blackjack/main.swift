@@ -34,7 +34,7 @@ class BlackjackState {
 }
 
 enum SolverType: CaseIterable {
-    case random, markov, qlearning, thorpe
+    case random, markov, qlearning, normal
 }
 
 class Solver {
@@ -103,7 +103,7 @@ class Solver {
         }
     }
 
-    func getThorpeStrategyLookup(playerSum: Int) -> String {
+    func getNormalStrategyLookup(playerSum: Int) -> String {
         // see figure 11: https://ieeexplore.ieee.org/document/1299399/
         switch playerSum {
         case 10: return "HHHHHSSHHH"
@@ -122,11 +122,11 @@ class Solver {
         }
     }
 
-    func getThorpeStrategy(observation: BlackjackState) -> Bool {
+    func getNormalStrategy(observation: BlackjackState) -> Bool {
         if observation.playerSum == 0 {
             return true
         }
-        let lookupString = getThorpeStrategyLookup(playerSum: observation.playerSum)
+        let lookupString = getNormalStrategyLookup(playerSum: observation.playerSum)
         return Array(lookupString)[observation.dealerCard - 1] == "H"
     }
 
@@ -138,8 +138,8 @@ class Solver {
             return getMarkovStrategy(observation: observation)
         case .qlearning:
             return getQLearningStrategy(observation: observation, iteration: iteration)
-        case .thorpe:
-            return getThorpeStrategy(observation: observation)
+        case .normal:
+            return getNormalStrategy(observation: observation)
         }
     }
 }
