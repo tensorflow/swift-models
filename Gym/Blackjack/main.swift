@@ -21,6 +21,8 @@ let environment = gym.make("Blackjack-v0")
 let totalIterations = 10000
 let learningPhase = totalIterations * 5 / 100
 
+typealias Strategy = Bool
+
 class BlackjackState {
     var playerSum: Int = 0
     var dealerCard: Int = 0
@@ -69,7 +71,7 @@ class Solver {
         Q[prior.playerSum][prior.dealerCard][prior.useableAce][action] += priorQ + postQ
     }
 
-    func qLearningStrategy(observation: BlackjackState, iteration: Int) -> Bool {
+    func qLearningStrategy(observation: BlackjackState, iteration: Int) -> Strategy {
         let hitReward = Q[observation.playerSum][observation.dealerCard][observation.useableAce][0]
         let stayReward = Q[observation.playerSum][observation.dealerCard][observation.useableAce][1]
 
@@ -87,11 +89,11 @@ class Solver {
         }
     }
 
-    func randomStrategy() -> Bool {
-        return Bool.random()
+    func randomStrategy() -> Strategy {
+        return Strategy.random()
     }
 
-    func markovStrategy(observation: BlackjackState) -> Bool {
+    func markovStrategy(observation: BlackjackState) -> Strategy {
         // hit @ 80% probability unless over 18, in which case do the reverse
         let flip = Float.random(in: 0..<1)
         let threshHold: Float = 0.8
@@ -122,7 +124,7 @@ class Solver {
         }
     }
 
-    func normalStrategy(observation: BlackjackState) -> Bool {
+    func normalStrategy(observation: BlackjackState) -> Strategy {
         if observation.playerSum == 0 {
             return true
         }
@@ -130,7 +132,7 @@ class Solver {
         return Array(lookupString)[observation.dealerCard - 1] == "H"
     }
 
-    func strategy(observation: BlackjackState, solver: SolverType, iteration: Int) -> Bool {
+    func strategy(observation: BlackjackState, solver: SolverType, iteration: Int) -> Strategy {
         switch solver {
         case .random:
             return randomStrategy()
