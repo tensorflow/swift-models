@@ -44,17 +44,17 @@ class Solver {
     var alpha: Float = 0.5
     let gamma: Float = 0.2
 
-    let numPlayerStates = 32 // 21 + 10 + 1 offset
-    let numDealerVisibleStates = 11 // 10 + 1 offset
-    let numAceStates = 2 // useable / not bool
-    let numPlayerActions = 2 // hit / stay
+    let playerStateCount = 32 // 21 + 10 + 1 offset
+    let dealerVisibleStateCount = 11 // 10 + 1 offset
+    let aceStateCount = 2 // useable / not bool
+    let playerActionCount = 2 // hit / stay
 
     init() {
         Q = Array(repeating: Array(repeating: Array(repeating: Array(repeating: 0.0,
-                                                                     count: numPlayerActions),
-                                                    count: numAceStates),
-                                   count: numDealerVisibleStates),
-                  count: numPlayerStates)
+                                                                     count: playerActionCount),
+                                                    count: aceStateCount),
+                                   count: dealerVisibleStateCount),
+                  count: playerStateCount)
     }
 
     func updateQLearningStrategy(prior: BlackjackState,
