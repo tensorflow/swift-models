@@ -69,41 +69,41 @@ class Solver {
         Q[prior.playerSum][prior.dealerCard][prior.useableAce][action] += priorQ + postQ
     }
 
-    func getQLearningStrategy(observation: BlackjackState, iteration: Int) -> Bool {
+    func qLearningStrategy(observation: BlackjackState, iteration: Int) -> Bool {
         let hitReward = Q[observation.playerSum][observation.dealerCard][observation.useableAce][0]
         let stayReward = Q[observation.playerSum][observation.dealerCard][observation.useableAce][1]
 
-        if (iteration < Int.random(in: 1...learningPhase)) {
-            return getRandomStrategy()
+        if iteration < Int.random(in: 1...learningPhase) {
+            return randomStrategy()
         } else {
             // quit learning after initial phase
-            if (iteration > learningPhase) { alpha = 0.0 }
+            if iteration > learningPhase { alpha = 0.0 }
         }
 
         if hitReward == stayReward {
-            return getRandomStrategy()
+            return randomStrategy()
         } else {
             return hitReward < stayReward
         }
     }
 
-    func getRandomStrategy() -> Bool {
+    func randomStrategy() -> Bool {
         return Bool.random()
     }
 
-    func getMarkovStrategy(observation: BlackjackState) -> Bool {
+    func markovStrategy(observation: BlackjackState) -> Bool {
         // hit @ 80% probability unless over 18, in which case do the reverse
         let flip = Float.random(in: 0..<1)
         let threshHold: Float = 0.8
 
-        if (observation.playerSum < 18) {
+        if observation.playerSum < 18 {
             return flip < threshHold
         } else {
             return flip > threshHold
         }
     }
 
-    func getNormalStrategyLookup(playerSum: Int) -> String {
+    func normalStrategyLookup(playerSum: Int) -> String {
         // see figure 11: https://ieeexplore.ieee.org/document/1299399/
         switch playerSum {
         case 10: return "HHHHHSSHHH"
@@ -122,24 +122,24 @@ class Solver {
         }
     }
 
-    func getNormalStrategy(observation: BlackjackState) -> Bool {
+    func normalStrategy(observation: BlackjackState) -> Bool {
         if observation.playerSum == 0 {
             return true
         }
-        let lookupString = getNormalStrategyLookup(playerSum: observation.playerSum)
+        let lookupString = normalStrategyLookup(playerSum: observation.playerSum)
         return Array(lookupString)[observation.dealerCard - 1] == "H"
     }
 
-    func getStrategy(observation: BlackjackState, solver: SolverType, iteration: Int) -> Bool {
+    func strategy(observation: BlackjackState, solver: SolverType, iteration: Int) -> Bool {
         switch solver {
         case .random:
-            return getRandomStrategy()
+            return randomStrategy()
         case .markov:
-            return getMarkovStrategy(observation: observation)
+            return markovStrategy(observation: observation)
         case .qlearning:
-            return getQLearningStrategy(observation: observation, iteration: iteration)
+            return qLearningStrategy(observation: observation, iteration: iteration)
         case .normal:
-            return getNormalStrategy(observation: observation)
+            return normalStrategy(observation: observation)
         }
     }
 }
@@ -154,19 +154,18 @@ for solver in SolverType.allCases {
         environment.reset()
 
         while !isDone {
-
             let priorState = BlackjackState(pythonState: environment._get_obs())
-            let action: Int = learner.getStrategy(observation: priorState,
-                                                  solver: solver,
-                                                  iteration: i) ? 1 : 0
+            let action: Int = learner.strategy(observation: priorState,
+                                               solver: solver,
+                                               iteration: i) ? 1 : 0
 
             let (pythonPostState, reward, done, _) = environment.step(action).tuple4
-            let postState = BlackjackState(pythonState: pythonPostState)
 
             if solver == .qlearning {
+                let postState = BlackjackState(pythonState: pythonPostState)
                 learner.updateQLearningStrategy(prior: priorState,
                                                 action: action,
-                                                reward: Int(reward)!,
+                                                reward: Int(reward) ?? 0,
                                                 post: postState)
             }
 
