@@ -18,6 +18,7 @@ let package = Package(
         .target(name: "Catch", path: "Catch"),
         .target(name: "Gym-FrozenLake", path: "Gym/FrozenLake"),
         .target(name: "Gym-CartPole", path: "Gym/CartPole"),
+        .target(name: "Gym-Blackjack", path: "Gym/Blackjack"),
         .target(name: "MNIST", path: "MNIST"),
         .target(name: "MiniGo", path: "MiniGo", exclude: ["main.swift"]),
         .target(name: "MiniGoDemo", dependencies: ["MiniGo"], path: "MiniGo",
