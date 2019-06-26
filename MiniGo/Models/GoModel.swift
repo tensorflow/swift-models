@@ -106,9 +106,9 @@ extension ResidualIdentityBlock: LoadableFromPythonCheckpoint {
 
 // This is needed because we can't conform tuples to protocols
 public struct GoModelOutput: Differentiable {
-    public let policy: Tensor<Float>
-    public let value: Tensor<Float>
-    public let logits: Tensor<Float>
+    public var policy: Tensor<Float>
+    public var value: Tensor<Float>
+    public var logits: Tensor<Float>
 }
 
 public struct GoModel: Layer {
