@@ -3,7 +3,7 @@
 FROM nvidia/cuda:9.2-cudnn7-devel-ubuntu18.04
 
 # Allows the caller to specify the toolchain to use.
-ARG swift_tf_url=https://storage.googleapis.com/s4tf-kokoro-artifact-testing/latest/swift-tensorflow-DEVELOPMENT-ubuntu18.04.tar.gz
+ARG swift_tf_url=https://storage.googleapis.com/swift-tensorflow-artifacts/nightlies/swift-tensorflow-DEVELOPMENT-ubuntu18.04.tar.gz
 
 # Install Swift deps.
 ENV DEBIAN_FRONTEND=noninteractive
