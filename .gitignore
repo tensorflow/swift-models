@@ -5,4 +5,5 @@
 *.xcodeproj
 *.png
 .DS_Store
+.swiftpm
 cifar-10-batches-py/
