@@ -13,8 +13,6 @@
 // limitations under the License.
 
 import TensorFlow
-import Python
-PythonLibrary.useVersion(3)
 
 let batchSize = 100
 
