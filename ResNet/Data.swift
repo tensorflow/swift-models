@@ -36,7 +36,8 @@ func downloadCIFAR10IfNotPresent(to directory: String = ".") {
                     string: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz")!)
             try downloadedFile.write(to: URL(fileURLWithPath: archivePath))
         } catch {
-            fatalError("Could not download CIFAR dataset, error: \(error)")
+            print("Could not download CIFAR dataset, error: \(error)")
+            exit(-1)
         }
     }
 
@@ -48,18 +49,14 @@ func downloadCIFAR10IfNotPresent(to directory: String = ".") {
         let tarLocation = "/bin/tar"
     #endif
 
-    if #available(macOS 10.13, *) {
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: tarLocation)
-        task.arguments = ["xzf", archivePath]
-        do {
-            try task.run()
-            task.waitUntilExit()
-        } catch {
-            print("CIFAR extraction failed with error: \(error)")
-        }
-    } else {
-        fatalError("Process() is missing from this platform")
+    let task = Process()
+    task.executableURL = URL(fileURLWithPath: tarLocation)
+    task.arguments = ["xzf", archivePath]
+    do {
+        try task.run()
+        task.waitUntilExit()
+    } catch {
+        print("CIFAR extraction failed with error: \(error)")
     }
 
     do {
@@ -108,11 +105,13 @@ func loadCIFARFile(named name: String, in directory: String = ".") -> Example {
 
     let imageCount = 10000
     guard let fileContents = try? Data(contentsOf: URL(fileURLWithPath: path)) else {
-        fatalError("Could not read dataset file: \(name)")
+        print("Could not read dataset file: \(name)")
+        exit(-1)
     }
     guard fileContents.count == 30_730_000 else {
-        fatalError(
+        print(
             "Dataset file \(name) should have 30730000 bytes, instead had \(fileContents.count)")
+        exit(-1)
     }
 
     var bytes: [UInt8] = []
