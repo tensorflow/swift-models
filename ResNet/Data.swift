@@ -13,59 +13,63 @@
 // limitations under the License.
 
 import Foundation
-import FoundationNetworking
 import TensorFlow
+
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
 
 func downloadCIFAR10IfNotPresent(to directory: String = ".") {
     let downloadPath = "\(directory)/cifar-10-batches-bin"
     let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
 
-    if !directoryExists {
-        print("Downloading CIFAR dataset...")
-        let archivePath = "\(directory)/cifar-10-binary.tar.gz"
-        let archiveExists = FileManager.default.fileExists(atPath: archivePath)
-        if !archiveExists {
-            print("Archive missing, downloading...")
-            do {
-                let downloadedFile = try Data(
-                    contentsOf: URL(
-                        string: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz")!)
-                try downloadedFile.write(to: URL(fileURLWithPath: archivePath))
-            } catch {
-                fatalError("Could not download CIFAR dataset, error: \(error)")
-            }
-        }
+    guard !directoryExists else { return }
 
-        print("Archive downloaded, processing...")
-
-        #if os(macOS)
-            let tarLocation = "/usr/bin/tar"
-        #else
-            let tarLocation = "/bin/tar"
-        #endif
-
-        if #available(macOS 10.13, *) {
-            let task = Process()
-            task.executableURL = URL(fileURLWithPath: tarLocation)
-            task.arguments = ["xzf", archivePath]
-            do {
-                try task.run()
-                task.waitUntilExit()
-            } catch {
-                print("CIFAR extraction failed with error: \(error)")
-            }
-        } else {
-            fatalError("Process() is missing from this platform")
-        }
-
+    print("Downloading CIFAR dataset...")
+    let archivePath = "\(directory)/cifar-10-binary.tar.gz"
+    let archiveExists = FileManager.default.fileExists(atPath: archivePath)
+    if !archiveExists {
+        print("Archive missing, downloading...")
         do {
-            try FileManager.default.removeItem(atPath: archivePath)
+            let downloadedFile = try Data(
+                contentsOf: URL(
+                    string: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz")!)
+            try downloadedFile.write(to: URL(fileURLWithPath: archivePath))
         } catch {
-            fatalError("Could not remove archive, error: \(error)")
+            fatalError("Could not download CIFAR dataset, error: \(error)")
         }
-
-        print("Unarchiving completed")
     }
+
+    print("Archive downloaded, processing...")
+
+    #if os(macOS)
+        let tarLocation = "/usr/bin/tar"
+    #else
+        let tarLocation = "/bin/tar"
+    #endif
+
+    if #available(macOS 10.13, *) {
+        let task = Process()
+        task.executableURL = URL(fileURLWithPath: tarLocation)
+        task.arguments = ["xzf", archivePath]
+        do {
+            try task.run()
+            task.waitUntilExit()
+        } catch {
+            print("CIFAR extraction failed with error: \(error)")
+        }
+    } else {
+        fatalError("Process() is missing from this platform")
+    }
+
+    do {
+        try FileManager.default.removeItem(atPath: archivePath)
+    } catch {
+        print("Could not remove archive, error: \(error)")
+        exit(-1)
+    }
+
+    print("Unarchiving completed")
 }
 
 extension Tensor where Scalar: _TensorFlowDataTypeCompatible {
