@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import Foundation
+import FoundationNetworking
 import TensorFlow
 
 func downloadCIFAR10IfNotPresent(to directory: String = ".") {
