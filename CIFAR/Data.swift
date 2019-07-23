@@ -121,16 +121,14 @@ func loadCIFARFile(named name: String, in directory: String = ".") -> Example {
     for imageIndex in 0..<imageCount {
         let baseAddress = imageIndex * imageByteSize
         labels.append(Int64(fileContents[baseAddress]))
-
         bytes.append(contentsOf: fileContents[(baseAddress + 1)..<(baseAddress + 3073)])
     }
 
     let labelTensor = Tensor<Int64>(shape: [imageCount], scalars: labels)
     let images = Tensor<UInt8>(shape: [imageCount, 3, 32, 32], scalars: bytes)
 
-    // transpose from the provided N(CHW) to TF default NHWC
-    let imageTensor = Tensor<Float>(
-        images.transposed(withPermutations: [0, 2, 3, 1]))
+    // Transpose from the CIFAR-provided N(CHW) to TF's default NHWC.
+    let imageTensor = Tensor<Float>(images.transposed(withPermutations: [0, 2, 3, 1]))
 
     let mean = Tensor<Float>([0.485, 0.456, 0.406])
     let std = Tensor<Float>([0.229, 0.224, 0.225])
