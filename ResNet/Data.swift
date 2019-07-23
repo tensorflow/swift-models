@@ -69,12 +69,6 @@ func downloadCIFAR10IfNotPresent(to directory: String = ".") {
     print("Unarchiving completed")
 }
 
-extension Tensor where Scalar: _TensorFlowDataTypeCompatible {
-    public var _tfeTensorHandle: _AnyTensorHandle {
-        TFETensorHandle(_owning: handle._cTensorHandle)
-    }
-}
-
 struct Example: TensorGroup {
     var label: Tensor<Int32>
     var data: Tensor<Float>
@@ -92,10 +86,6 @@ struct Example: TensorGroup {
         let dataIndex = _handles.index(labelIndex, offsetBy: 1)
         label = Tensor<Int32>(handle: TensorHandle<Int32>(handle: _handles[labelIndex]))
         data = Tensor<Float>(handle: TensorHandle<Float>(handle: _handles[dataIndex]))
-    }
-
-    public var _tensorHandles: [_AnyTensorHandle] {
-        [label._tfeTensorHandle, data._tfeTensorHandle]
     }
 }
 
