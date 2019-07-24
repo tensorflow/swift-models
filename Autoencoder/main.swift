@@ -91,7 +91,7 @@ struct Autoencoder: Layer {
     var decoder2 = Dense<Float>(inputSize: 12, outputSize: 64, activation: relu)
     var decoder3 = Dense<Float>(inputSize: 64, outputSize: 128, activation: relu)
     var decoder4 = Dense<Float>(inputSize: 128, outputSize: imageHeight * imageWidth,
-        activation: tanh)
+        activation: sigmoid)
 
     @differentiable
     func callAsFunction(_ input: Input) -> Output {
