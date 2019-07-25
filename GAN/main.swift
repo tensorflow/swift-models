@@ -186,33 +186,29 @@ for epoch in 1...epochCount {
         // Alternative update
         
         // Update Generator
-        do {
-            let vec = sampleVector(size: batchSize)
-            
-            let 𝛁generator = generator.gradient { generator -> Tensor<Float> in
-                let fakeImages = generator(vec)
-                let fakeLogits = discriminator(fakeImages)
-                let loss = generatorLossFunc(fakeLogits: fakeLogits)
-                return loss
-            }
-            optG.update(&generator.allDifferentiableVariables, along: 𝛁generator)
+        let vec1 = sampleVector(size: batchSize)
+        
+        let 𝛁generator = generator.gradient { generator -> Tensor<Float> in
+            let fakeImages = generator(vec1)
+            let fakeLogits = discriminator(fakeImages)
+            let loss = generatorLossFunc(fakeLogits: fakeLogits)
+            return loss
         }
+        optG.update(&generator.allDifferentiableVariables, along: 𝛁generator)
         
         // Update Discriminator
-        do {
-            let realImages = minibatch(in: images, at: i)
-            let vec = sampleVector(size: batchSize)
-            let fakeImages = generator(vec)
-            
-            let 𝛁discriminator = discriminator.gradient { discriminator -> Tensor<Float> in
-                let realLogits = discriminator(realImages)
-                let fakeLogits = discriminator(fakeImages)
-                let loss = discriminatorLossFunc(realLogits: realLogits, fakeLogits: fakeLogits)
-                return loss
-            }
-            
-            optD.update(&discriminator.allDifferentiableVariables, along: 𝛁discriminator)
+        let realImages = minibatch(in: images, at: i)
+        let vec2 = sampleVector(size: batchSize)
+        let fakeImages = generator(vec2)
+        
+        let 𝛁discriminator = discriminator.gradient { discriminator -> Tensor<Float> in
+            let realLogits = discriminator(realImages)
+            let fakeLogits = discriminator(fakeImages)
+            let loss = discriminatorLossFunc(realLogits: realLogits, fakeLogits: fakeLogits)
+            return loss
         }
+        
+        optD.update(&discriminator.allDifferentiableVariables, along: 𝛁discriminator)
     }
     
     // Inference phase
