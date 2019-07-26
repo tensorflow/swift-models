@@ -119,15 +119,15 @@ struct Discriminator: Layer {
 @differentiable
 func generatorLoss(fakeLogits: Tensor<Float>) -> Tensor<Float> {
     sigmoidCrossEntropy(logits: fakeLogits,
-                        labels: Tensor(ones: [fakeLogits.shape[0], 1]))
+                        labels: Tensor(ones: fakeLogits.shape))
 }
 
 @differentiable
 func discriminatorLoss(realLogits: Tensor<Float>, fakeLogits: Tensor<Float>) -> Tensor<Float> {
     let realLoss = sigmoidCrossEntropy(logits: realLogits,
-                                       labels: Tensor(ones: [realLogits.shape[0], 1]))
+                                       labels: Tensor(ones: realLogits.shape))
     let fakeLoss = sigmoidCrossEntropy(logits: fakeLogits,
-                                       labels: Tensor(zeros: [fakeLogits.shape[0], 1]))
+                                       labels: Tensor(zeros: fakeLogits.shape))
     return realLoss + fakeLoss
 }
 
