@@ -16,12 +16,12 @@ import Foundation
 import TensorFlow
 import Python
 
-// Import Python modules
+// Import Python modules.
 let matplotlib = Python.import("matplotlib")
 let np = Python.import("numpy")
 let plt = Python.import("matplotlib.pyplot")
 
-// Turn off using display on server / linux
+// Turn off using display on server / Linux.
 matplotlib.use("Agg")
 
 // Some globals
@@ -33,7 +33,7 @@ let imageSize = imageHeight * imageWidth
 let latentSize = 64
 
 func plot(image: Tensor<Float>, name: String) {
-    // Create figure
+    // Create figure.
     let ax = plt.gca()
     let array = np.array([image.scalars])
     let pixels = array.reshape(image.shape)
@@ -90,7 +90,6 @@ struct Generator: Layer {
         let x1 = batchnorm1(dense1(input))
         let x2 = batchnorm2(dense2(x1))
         let x3 = batchnorm3(dense3(x2))
-        
         return dense4(x3)
     }
 }
@@ -110,13 +109,13 @@ struct Discriminator: Layer {
 // Loss functions
 
 @differentiable
-func generatorLossFunc(fakeLogits: Tensor<Float>) -> Tensor<Float> {
+func generatorLoss(fakeLogits: Tensor<Float>) -> Tensor<Float> {
     sigmoidCrossEntropy(logits: fakeLogits,
                         labels: Tensor(ones: [fakeLogits.shape[0], 1]))
 }
 
 @differentiable
-func discriminatorLossFunc(realLogits: Tensor<Float>, fakeLogits: Tensor<Float>) -> Tensor<Float> {
+func discriminatorLoss(realLogits: Tensor<Float>, fakeLogits: Tensor<Float>) -> Tensor<Float> {
     let realLoss = sigmoidCrossEntropy(logits: realLogits,
                                        labels: Tensor(ones: [realLogits.shape[0], 1]))
     let fakeLoss = sigmoidCrossEntropy(logits: fakeLogits,
@@ -164,24 +163,24 @@ func plotTestImage(_ testImage: Tensor<Float>, name: String) {
 
 print("Start training...")
 
-// Training loop
+// Start training loop.
 for epoch in 1...epochCount {
-    // Training phase
+    // Start training phase.
     Context.local.learningPhase = .training
     for i in 0 ..< Int(images.shape[0]) / batchSize {
         // Perform alternative update.
-        // Update Generator
+        // Update generator.
         let vec1 = sampleVector(size: batchSize)
         
         let 𝛁generator = generator.gradient { generator -> Tensor<Float> in
             let fakeImages = generator(vec1)
             let fakeLogits = discriminator(fakeImages)
-            let loss = generatorLossFunc(fakeLogits: fakeLogits)
+            let loss = generatorLoss(fakeLogits: fakeLogits)
             return loss
         }
         optG.update(&generator.allDifferentiableVariables, along: 𝛁generator)
         
-        // Update Discriminator
+        // Update discriminator.
         let realImages = minibatch(in: images, at: i)
         let vec2 = sampleVector(size: batchSize)
         let fakeImages = generator(vec2)
@@ -189,13 +188,13 @@ for epoch in 1...epochCount {
         let 𝛁discriminator = discriminator.gradient { discriminator -> Tensor<Float> in
             let realLogits = discriminator(realImages)
             let fakeLogits = discriminator(fakeImages)
-            let loss = discriminatorLossFunc(realLogits: realLogits, fakeLogits: fakeLogits)
+            let loss = discriminatorLoss(realLogits: realLogits, fakeLogits: fakeLogits)
             return loss
         }
         optD.update(&discriminator.allDifferentiableVariables, along: 𝛁discriminator)
     }
     
-    // Inference phase
+    // Start inference phase.
     Context.local.learningPhase = .inference
     let testImage: Tensor<Float> = generator(testVector)
     plotTestImage(testImage, name: "epoch-\(epoch)-output")
