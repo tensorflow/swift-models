@@ -126,7 +126,7 @@ func discriminatorLossFunc(realLogits: Tensor<Float>, fakeLogits: Tensor<Float>)
 
 /// Returns a sample vector.
 func sampleVector(size: Int) -> Tensor<Float> {
-    Tensor<Float>(randomNormal: [size, latentDim])
+    Tensor<Float>(randomNormal: [size, latentSize])
 }
 
 // MNIST data logic
