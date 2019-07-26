@@ -24,7 +24,6 @@ let plt = Python.import("matplotlib.pyplot")
 // Turn off using display on server / Linux.
 matplotlib.use("Agg")
 
-// Some globals
 let epochCount = 10
 let batchSize = 32
 let outputFolder = "./output/"
@@ -32,15 +31,16 @@ let imageHeight = 28, imageWidth = 28
 let imageSize = imageHeight * imageWidth
 let latentSize = 64
 
-func plot(image: Tensor<Float>, name: String) {
+func plotImage(_ image: Tensor<Float>, name: String) {
     // Create figure.
     let ax = plt.gca()
     let array = np.array([image.scalars])
     let pixels = array.reshape(image.shape)
     if !FileManager.default.fileExists(atPath: outputFolder) {
-        try! FileManager.default.createDirectory(atPath: outputFolder,
-                            withIntermediateDirectories: false,
-                                             attributes: nil)
+        try! FileManager.default.createDirectory(
+            atPath: outputFolder,
+            withIntermediateDirectories: false,
+            attributes: nil)
     }
     ax.imshow(pixels, cmap: "gray")
     plt.savefig("\(outputFolder)\(name).png", dpi: 300)
@@ -76,18 +76,18 @@ func readMNIST(imagesFile: String) -> Tensor<Float> {
 // Models
 
 struct Generator: Layer {
-    var dense1 = Dense<Float>(inputSize: latentSize, outputSize: latentSize*2,
+    var dense1 = Dense<Float>(inputSize: latentSize, outputSize: latentSize * 2,
                               activation: { leakyRelu($0) })
-    var dense2 = Dense<Float>(inputSize: latentSize*2, outputSize: latentSize*4,
+    var dense2 = Dense<Float>(inputSize: latentSize * 2, outputSize: latentSize * 4,
                               activation: { leakyRelu($0) })
-    var dense3 = Dense<Float>(inputSize: latentSize*4, outputSize: latentSize*8,
+    var dense3 = Dense<Float>(inputSize: latentSize * 4, outputSize: latentSize * 8,
                               activation: { leakyRelu($0) })
-    var dense4 = Dense<Float>(inputSize: latentSize*8, outputSize: imageSize,
+    var dense4 = Dense<Float>(inputSize: latentSize * 8, outputSize: imageSize,
                               activation: tanh)
     
-    var batchnorm1 = BatchNorm<Float>(featureCount: latentSize*2)
-    var batchnorm2 = BatchNorm<Float>(featureCount: latentSize*4)
-    var batchnorm3 = BatchNorm<Float>(featureCount: latentSize*8)
+    var batchnorm1 = BatchNorm<Float>(featureCount: latentSize * 2)
+    var batchnorm2 = BatchNorm<Float>(featureCount: latentSize * 4)
+    var batchnorm3 = BatchNorm<Float>(featureCount: latentSize * 8)
     
     @differentiable
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
@@ -99,7 +99,8 @@ struct Generator: Layer {
 }
 
 struct Discriminator: Layer {
-    var dense1 = Dense<Float>(inputSize: imageSize, outputSize: 256, activation: { leakyRelu($0) })
+    var dense1 = Dense<Float>(inputSize: imageSize, outputSize: 256,
+                              activation: { leakyRelu($0) })
     var dense2 = Dense<Float>(inputSize: 256, outputSize: 64,
                               activation: { leakyRelu($0) })
     var dense3 = Dense<Float>(inputSize: 64, outputSize: 16,
@@ -136,6 +137,7 @@ func sampleVector(size: Int) -> Tensor<Float> {
 }
 
 // MNIST data logic
+
 func minibatch<Scalar>(in x: Tensor<Scalar>, at index: Int) -> Tensor<Scalar> {
     let start = index * batchSize
     return x[start..<start+batchSize]
@@ -151,23 +153,19 @@ let optD = Adam(for: discriminator, learningRate: 2e-4, beta1: 0.5)
 
 // Noise vectors and plot function for testing
 let testImageGridSize = 4
-let testVector = sampleVector(size: testImageGridSize*testImageGridSize)
+let testVector = sampleVector(size: testImageGridSize * testImageGridSize)
 func plotTestImage(_ testImage: Tensor<Float>, name: String) {
-    var imageGrid = testImage.reshaped(to: [testImageGridSize, testImageGridSize,
+    var gridImage = testImage.reshaped(to: [testImageGridSize, testImageGridSize,
                                             imageHeight, imageWidth])
-    
     // Add padding.
-    imageGrid = imageGrid.padded(forSizes: [(0, 0), (0, 0), (1, 1), (1, 1)], with: 1)
-    
+    gridImage = gridImage.padded(forSizes: [(0, 0), (0, 0), (1, 1), (1, 1)], with: 1)
     // Transpose to create single image.
-    imageGrid = imageGrid.transposed(withPermutations: [0, 2, 1, 3])
-    imageGrid = imageGrid.reshaped(to: [(imageHeight+2)*testImageGridSize,
-                                        (imageWidth+2)*testImageGridSize])
-    
+    gridImage = gridImage.transposed(withPermutations: [0, 2, 1, 3])
+    gridImage = gridImage.reshaped(to: [(imageHeight + 2) * testImageGridSize,
+                                        (imageWidth + 2) * testImageGridSize])
     // Convert [-1, 1] range to [0, 1] range.
-    imageGrid = (imageGrid + 1) / 2
-    
-    plot(image: imageGrid, name: name)
+    gridImage = (gridImage + 1) / 2
+    plotImage(gridImage, name: name)
 }
 
 print("Start training...")
@@ -205,7 +203,7 @@ for epoch in 1...epochCount {
     
     // Start inference phase.
     Context.local.learningPhase = .inference
-    let testImage: Tensor<Float> = generator(testVector)
+    let testImage = generator(testVector)
     plotTestImage(testImage, name: "epoch-\(epoch)-output")
     
     let lossG = generatorLoss(fakeLogits: testImage)
