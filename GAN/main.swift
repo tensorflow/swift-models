@@ -156,7 +156,7 @@ func plotTestImage(_ testImage: Tensor<Float>, name: String) {
     var imageGrid = testImage.reshaped(to: [testImageGridSize, testImageGridSize,
                                             imageHeight, imageWidth])
     
-    // Add padding
+    // Add padding.
     imageGrid = imageGrid.padded(forSizes: [(0, 0), (0, 0), (1, 1), (1, 1)], with: 1)
     
     // Transpose to create single image.
@@ -164,7 +164,7 @@ func plotTestImage(_ testImage: Tensor<Float>, name: String) {
     imageGrid = imageGrid.reshaped(to: [(imageHeight+2)*testImageGridSize,
                                         (imageWidth+2)*testImageGridSize])
     
-    // [-1, 1] range to [0, 1] range
+    // Convert [-1, 1] range to [0, 1] range.
     imageGrid = (imageGrid + 1) / 2
     
     plot(image: imageGrid, name: name)
