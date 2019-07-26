@@ -199,6 +199,6 @@ for epoch in 1...epochCount {
     let testImage: Tensor<Float> = generator(testVector)
     plotTestImage(testImage, name: "epoch-\(epoch)-output")
     
-    let lossG = generatorLossFunc(fakeLogits: testImage)
+    let lossG = generatorLoss(fakeLogits: testImage)
     print("[Epoch: \(epoch)] Loss-G: \(lossG)")
 }
