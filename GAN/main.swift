@@ -74,6 +74,7 @@ func readMNIST(imagesFile: String) -> Tensor<Float> {
 }
 
 // Models
+
 struct Generator: Layer {
     var dense1 = Dense<Float>(inputSize: latentSize, outputSize: latentSize*2, activation: { leakyRelu($0) })
     var dense2 = Dense<Float>(inputSize: latentSize*2, outputSize: latentSize*4, activation: { leakyRelu($0) })
@@ -107,6 +108,7 @@ struct Discriminator: Layer {
 }
 
 // Loss functions
+
 @differentiable
 func generatorLossFunc(fakeLogits: Tensor<Float>) -> Tensor<Float> {
     sigmoidCrossEntropy(logits: fakeLogits,
@@ -122,7 +124,7 @@ func discriminatorLossFunc(realLogits: Tensor<Float>, fakeLogits: Tensor<Float>)
     return realLoss + fakeLoss
 }
 
-/// Sample noise vectors.
+/// Returns a sample vector.
 func sampleVector(size: Int) -> Tensor<Float> {
     Tensor<Float>(randomNormal: [size, latentDim])
 }
@@ -141,7 +143,7 @@ var discriminator = Discriminator()
 let optG = Adam(for: generator, learningRate: 2e-4, beta1: 0.5)
 let optD = Adam(for: discriminator, learningRate: 2e-4, beta1: 0.5)
 
-// noise for testing and plot function
+// Noise vectors and plot function for testing
 let testImageGridSize = 4
 let testVector = sampleVector(size: testImageGridSize*testImageGridSize)
 func plotTestImage(_ testImage: Tensor<Float>, name: String) {
@@ -167,8 +169,7 @@ for epoch in 1...epochCount {
     // Training phase
     Context.local.learningPhase = .training
     for i in 0 ..< Int(images.shape[0]) / batchSize {
-        // Alternative update
-        
+        // Perform alternative update.
         // Update Generator
         let vec1 = sampleVector(size: batchSize)
         
@@ -191,17 +192,14 @@ for epoch in 1...epochCount {
             let loss = discriminatorLossFunc(realLogits: realLogits, fakeLogits: fakeLogits)
             return loss
         }
-        
         optD.update(&discriminator.allDifferentiableVariables, along: 𝛁discriminator)
     }
     
     // Inference phase
     Context.local.learningPhase = .inference
     let testImage: Tensor<Float> = generator(testVector)
-    
     plotTestImage(testImage, name: "epoch-\(epoch)-output")
     
     let lossG = generatorLossFunc(fakeLogits: testImage)
-    
     print("[Epoch: \(epoch)] Loss-G: \(lossG)")
 }
