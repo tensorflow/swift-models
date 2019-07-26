@@ -76,10 +76,14 @@ func readMNIST(imagesFile: String) -> Tensor<Float> {
 // Models
 
 struct Generator: Layer {
-    var dense1 = Dense<Float>(inputSize: latentSize, outputSize: latentSize*2, activation: { leakyRelu($0) })
-    var dense2 = Dense<Float>(inputSize: latentSize*2, outputSize: latentSize*4, activation: { leakyRelu($0) })
-    var dense3 = Dense<Float>(inputSize: latentSize*4, outputSize: latentSize*8, activation: { leakyRelu($0) })
-    var dense4 = Dense<Float>(inputSize: latentSize*8, outputSize: imageSize, activation: tanh)
+    var dense1 = Dense<Float>(inputSize: latentSize, outputSize: latentSize*2,
+                              activation: { leakyRelu($0) })
+    var dense2 = Dense<Float>(inputSize: latentSize*2, outputSize: latentSize*4,
+                              activation: { leakyRelu($0) })
+    var dense3 = Dense<Float>(inputSize: latentSize*4, outputSize: latentSize*8,
+                              activation: { leakyRelu($0) })
+    var dense4 = Dense<Float>(inputSize: latentSize*8, outputSize: imageSize,
+                              activation: tanh)
     
     var batchnorm1 = BatchNorm<Float>(featureCount: latentSize*2)
     var batchnorm2 = BatchNorm<Float>(featureCount: latentSize*4)
@@ -96,9 +100,12 @@ struct Generator: Layer {
 
 struct Discriminator: Layer {
     var dense1 = Dense<Float>(inputSize: imageSize, outputSize: 256, activation: { leakyRelu($0) })
-    var dense2 = Dense<Float>(inputSize: 256, outputSize: 64, activation: { leakyRelu($0) })
-    var dense3 = Dense<Float>(inputSize: 64, outputSize: 16, activation: { leakyRelu($0) })
-    var dense4 = Dense<Float>(inputSize: 16, outputSize: 1, activation: identity)
+    var dense2 = Dense<Float>(inputSize: 256, outputSize: 64,
+                              activation: { leakyRelu($0) })
+    var dense3 = Dense<Float>(inputSize: 64, outputSize: 16,
+                              activation: { leakyRelu($0) })
+    var dense4 = Dense<Float>(inputSize: 16, outputSize: 1,
+                              activation: identity)
     
     @differentiable
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
@@ -146,14 +153,16 @@ let optD = Adam(for: discriminator, learningRate: 2e-4, beta1: 0.5)
 let testImageGridSize = 4
 let testVector = sampleVector(size: testImageGridSize*testImageGridSize)
 func plotTestImage(_ testImage: Tensor<Float>, name: String) {
-    var imageGrid = testImage.reshaped(to: [testImageGridSize, testImageGridSize, imageHeight, imageWidth])
+    var imageGrid = testImage.reshaped(to: [testImageGridSize, testImageGridSize,
+                                            imageHeight, imageWidth])
     
     // Add padding
     imageGrid = imageGrid.padded(forSizes: [(0, 0), (0, 0), (1, 1), (1, 1)], with: 1)
     
     // Transpose to create single image.
     imageGrid = imageGrid.transposed(withPermutations: [0, 2, 1, 3])
-    imageGrid = imageGrid.reshaped(to: [(imageHeight+2)*testImageGridSize, (imageWidth+2)*testImageGridSize])
+    imageGrid = imageGrid.reshaped(to: [(imageHeight+2)*testImageGridSize,
+                                        (imageWidth+2)*testImageGridSize])
     
     // [-1, 1] range to [0, 1] range
     imageGrid = (imageGrid + 1) / 2
