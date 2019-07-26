@@ -29,7 +29,7 @@ let epochCount = 10
 let batchSize = 32
 let outputFolder = "./output/"
 let imageHeight = 28, imageWidth = 28
-let imageSize = imageHeight*imageWidth
+let imageSize = imageHeight * imageWidth
 let latentSize = 64
 
 func plot(image: Tensor<Float>, name: String) {
