@@ -63,19 +63,14 @@ func readFile(_ filename: String) -> [UInt8] {
     exit(-1)
 }
 
-/// Reads MNIST images and labels from specified file paths.
-func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>,
-                                                           labels: Tensor<Int32>) {
+/// Reads MNIST images from specified file path.
+func readMNIST(imagesFile: String) -> Tensor<Float> {
     print("Reading data.")
     let images = readFile(imagesFile).dropFirst(16).map { Float($0) }
-    let labels = readFile(labelsFile).dropFirst(8).map { Int32($0) }
-    let rowCount = labels.count
+    let rowCount = images.count / imageDim
 
     print("Constructing data tensors.")
-    return (
-        images: Tensor(shape: [rowCount, imageHeight * imageWidth], scalars: images) / 255.0 * 2 - 1,
-        labels: Tensor(labels)
-    )
+    return Tensor(shape: [rowCount, imageHeight * imageWidth], scalars: images) / 255.0 * 2 - 1
 }
 
 // Models
@@ -138,9 +133,7 @@ func minibatch<Scalar>(in x: Tensor<Scalar>, at index: Int) -> Tensor<Scalar> {
     return x[start..<start+batchSize]
 }
 
-let (images, numericLabels) = readMNIST(imagesFile: "train-images-idx3-ubyte",
-                                        labelsFile: "train-labels-idx1-ubyte")
-let labels = Tensor<Float>(oneHotAtIndices: numericLabels, depth: 10)
+let images = readMNIST(imagesFile: "train-images-idx3-ubyte")
 
 var generator = Generator()
 var discriminator = Discriminator()
@@ -173,7 +166,7 @@ print("Start training...")
 for epoch in 1...epochCount {
     // Training phase
     Context.local.learningPhase = .training
-    for i in 0 ..< Int(labels.shape[0]) / batchSize {
+    for i in 0 ..< Int(images.shape[0]) / batchSize {
         // Alternative update
         
         // Update Generator
