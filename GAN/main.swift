@@ -131,7 +131,7 @@ func discriminatorLoss(realLogits: Tensor<Float>, fakeLogits: Tensor<Float>) -> 
     return realLoss + fakeLoss
 }
 
-/// Returns a sample vector.
+/// Returns `size` samples of noise vector.
 func sampleVector(size: Int) -> Tensor<Float> {
     Tensor<Float>(randomNormal: [size, latentSize])
 }
