@@ -78,18 +78,14 @@ func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>
     )
 }
 
-func lrelu(x: Tensor<Float>) -> Tensor<Float> {
-    leakyRelu(x)
-}
-
 // Models
 struct Generator: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
     
-    var dense1 = Dense<Float>(inputSize: latentDim, outputSize: latentDim*2, activation: lrelu)
-    var dense2 = Dense<Float>(inputSize: latentDim*2, outputSize: latentDim*4, activation: lrelu)
-    var dense3 = Dense<Float>(inputSize: latentDim*4, outputSize: latentDim*8, activation: lrelu)
+    var dense1 = Dense<Float>(inputSize: latentDim, outputSize: latentDim*2, activation: { leakyRelu($0) })
+    var dense2 = Dense<Float>(inputSize: latentDim*2, outputSize: latentDim*4, activation: { leakyRelu($0) })
+    var dense3 = Dense<Float>(inputSize: latentDim*4, outputSize: latentDim*8, activation: { leakyRelu($0) })
     var dense4 = Dense<Float>(inputSize: latentDim*8, outputSize: imageDim, activation: tanh)
     
     var batchnorm1 = BatchNorm<Float>(featureCount: latentDim*2)
@@ -110,9 +106,9 @@ struct Discriminator: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
     
-    var dense1 = Dense<Float>(inputSize: imageDim, outputSize: 256, activation: lrelu)
-    var dense2 = Dense<Float>(inputSize: 256, outputSize: 64, activation: lrelu)
-    var dense3 = Dense<Float>(inputSize: 64, outputSize: 16, activation: lrelu)
+    var dense1 = Dense<Float>(inputSize: imageDim, outputSize: 256, activation: { leakyRelu($0) })
+    var dense2 = Dense<Float>(inputSize: 256, outputSize: 64, activation: { leakyRelu($0) })
+    var dense3 = Dense<Float>(inputSize: 64, outputSize: 16, activation: { leakyRelu($0) })
     var dense4 = Dense<Float>(inputSize: 16, outputSize: 1, activation: identity)
     
     @differentiable
