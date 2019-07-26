@@ -68,7 +68,6 @@ func readMNIST(imagesFile: String) -> Tensor<Float> {
     print("Reading data.")
     let images = readFile(imagesFile).dropFirst(16).map { Float($0) }
     let rowCount = images.count / imageSize
-
     print("Constructing data tensors.")
     return Tensor(shape: [rowCount, imageHeight * imageWidth], scalars: images) / 255.0 * 2 - 1
 }
@@ -133,7 +132,7 @@ func discriminatorLoss(realLogits: Tensor<Float>, fakeLogits: Tensor<Float>) -> 
 
 /// Returns `size` samples of noise vector.
 func sampleVector(size: Int) -> Tensor<Float> {
-    Tensor<Float>(randomNormal: [size, latentSize])
+    Tensor(randomNormal: [size, latentSize])
 }
 
 // MNIST data logic
