@@ -29,8 +29,8 @@ let epochCount = 10
 let batchSize = 32
 let outputFolder = "./output/"
 let imageHeight = 28, imageWidth = 28
-let imageDim = imageHeight*imageWidth
-let latentDim = 64
+let imageSize = imageHeight*imageWidth
+let latentSize = 64
 
 func plot(image: Tensor<Float>, name: String) {
     // Create figure
@@ -67,7 +67,7 @@ func readFile(_ filename: String) -> [UInt8] {
 func readMNIST(imagesFile: String) -> Tensor<Float> {
     print("Reading data.")
     let images = readFile(imagesFile).dropFirst(16).map { Float($0) }
-    let rowCount = images.count / imageDim
+    let rowCount = images.count / imageSize
 
     print("Constructing data tensors.")
     return Tensor(shape: [rowCount, imageHeight * imageWidth], scalars: images) / 255.0 * 2 - 1
@@ -75,14 +75,14 @@ func readMNIST(imagesFile: String) -> Tensor<Float> {
 
 // Models
 struct Generator: Layer {
-    var dense1 = Dense<Float>(inputSize: latentDim, outputSize: latentDim*2, activation: { leakyRelu($0) })
-    var dense2 = Dense<Float>(inputSize: latentDim*2, outputSize: latentDim*4, activation: { leakyRelu($0) })
-    var dense3 = Dense<Float>(inputSize: latentDim*4, outputSize: latentDim*8, activation: { leakyRelu($0) })
-    var dense4 = Dense<Float>(inputSize: latentDim*8, outputSize: imageDim, activation: tanh)
+    var dense1 = Dense<Float>(inputSize: latentSize, outputSize: latentSize*2, activation: { leakyRelu($0) })
+    var dense2 = Dense<Float>(inputSize: latentSize*2, outputSize: latentSize*4, activation: { leakyRelu($0) })
+    var dense3 = Dense<Float>(inputSize: latentSize*4, outputSize: latentSize*8, activation: { leakyRelu($0) })
+    var dense4 = Dense<Float>(inputSize: latentSize*8, outputSize: imageSize, activation: tanh)
     
-    var batchnorm1 = BatchNorm<Float>(featureCount: latentDim*2)
-    var batchnorm2 = BatchNorm<Float>(featureCount: latentDim*4)
-    var batchnorm3 = BatchNorm<Float>(featureCount: latentDim*8)
+    var batchnorm1 = BatchNorm<Float>(featureCount: latentSize*2)
+    var batchnorm2 = BatchNorm<Float>(featureCount: latentSize*4)
+    var batchnorm3 = BatchNorm<Float>(featureCount: latentSize*8)
     
     @differentiable
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
@@ -95,7 +95,7 @@ struct Generator: Layer {
 }
 
 struct Discriminator: Layer {
-    var dense1 = Dense<Float>(inputSize: imageDim, outputSize: 256, activation: { leakyRelu($0) })
+    var dense1 = Dense<Float>(inputSize: imageSize, outputSize: 256, activation: { leakyRelu($0) })
     var dense2 = Dense<Float>(inputSize: 256, outputSize: 64, activation: { leakyRelu($0) })
     var dense3 = Dense<Float>(inputSize: 64, outputSize: 16, activation: { leakyRelu($0) })
     var dense4 = Dense<Float>(inputSize: 16, outputSize: 1, activation: identity)
