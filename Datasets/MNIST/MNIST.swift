@@ -26,17 +26,21 @@ public struct MNIST {
 
     let batchSize: Int
 
-    public init(batchSize: Int) {
+    public init(batchSize: Int, flatten: Bool = false, normalize: Bool = false) {
         self.batchSize = batchSize
         
         let (trainImages, trainLabels) = readMNIST(imagesFile: "train-images-idx3-ubyte",
-                                                   labelsFile: "train-labels-idx1-ubyte")
+                                                   labelsFile: "train-labels-idx1-ubyte",
+                                                   flatten: flatten,
+                                                   normalize: normalize)
         self.trainImages = trainImages
         self.trainLabels = trainLabels
         self.trainingSize = Int(trainLabels.shape[0])
 
         let (testImages, testLabels) = readMNIST(imagesFile: "t10k-images-idx3-ubyte",
-                                                 labelsFile: "t10k-labels-idx1-ubyte")
+                                                 labelsFile: "t10k-labels-idx1-ubyte",
+                                                 flatten: flatten,
+                                                 normalize: normalize)
         self.testImages = testImages
         self.testLabels = testLabels
         self.testSize = Int(testLabels.shape[0])
@@ -66,8 +70,8 @@ func readFile(_ path: String, possibleDirectories: [String]) -> [UInt8] {
 }
 
 /// Reads MNIST images and labels from specified file paths.
-func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>,
-                                                           labels: Tensor<Int32>) {
+func readMNIST(imagesFile: String, labelsFile: String, flatten: Bool, normalize: Bool) -> (images: Tensor<Float>,
+                                                                                           labels: Tensor<Int32>) {
     print("Reading data from files: \(imagesFile), \(labelsFile)")
     let images = readFile(imagesFile, possibleDirectories: [".", "./Datasets/MNIST"]).dropFirst(16).map(Float.init)
     let labels = readFile(labelsFile, possibleDirectories: [".", "./Datasets/MNIST"]).dropFirst(8).map(Int32.init)
@@ -75,10 +79,25 @@ func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>
     let imageHeight = 28, imageWidth = 28
 
     print("Constructing data tensors.")
-    return (
-        images: Tensor(shape: [rowCount, 1, imageHeight, imageWidth], scalars: images)
-            .transposed(withPermutations: [0, 2, 3, 1]) / 255, // NHWC
-        labels: Tensor(labels)
-    )
+                                                                            
+    if flatten {
+        if normalize {
+                return (
+                    images: Tensor(shape: [rowCount, imageHeight * imageWidth], scalars: images) / 255.0 * 2 - 1,
+                    labels: Tensor(labels)
+                )
+        } else {
+                return (
+                    images: Tensor(shape: [rowCount, imageHeight * imageWidth], scalars: images) / 255.0,
+                    labels: Tensor(labels)
+                )
+        }
+    } else {
+        return (
+            images: Tensor(shape: [rowCount, 1, imageHeight, imageWidth], scalars: images)
+                .transposed(withPermutations: [0, 2, 3, 1]) / 255, // NHWC
+            labels: Tensor(labels)
+        )
+    }
 }
 

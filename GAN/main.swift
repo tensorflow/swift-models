@@ -15,14 +15,16 @@
 import Foundation
 import TensorFlow
 import Python
+import Datasets
 
 // Import Python modules.
 let matplotlib = Python.import("matplotlib")
 let np = Python.import("numpy")
-let plt = Python.import("matplotlib.pyplot")
 
-// Turn off using display on server / Linux.
+// Use the AGG renderer for saving images to disk.
 matplotlib.use("Agg")
+
+let plt = Python.import("matplotlib.pyplot")
 
 let epochCount = 10
 let batchSize = 32
@@ -45,31 +47,6 @@ func plotImage(_ image: Tensor<Float>, name: String) {
     ax.imshow(pixels, cmap: "gray")
     plt.savefig("\(outputFolder)\(name).png", dpi: 300)
     plt.close()
-}
-
-/// Reads a file into an array of bytes.
-func readFile(_ filename: String) -> [UInt8] {
-    let possibleFolders = [".", "Resources", "GAN/Resources"]
-    for folder in possibleFolders {
-        let parent = URL(fileURLWithPath: folder)
-        let filePath = parent.appendingPathComponent(filename).path
-        guard FileManager.default.fileExists(atPath: filePath) else {
-            continue
-        }
-        let d = Python.open(filePath, "rb").read()
-        return Array(numpy: np.frombuffer(d, dtype: np.uint8))!
-    }
-    print("Failed to find file with name \(filename) in the following folders: \(possibleFolders).")
-    exit(-1)
-}
-
-/// Reads MNIST images from specified file path.
-func readMNIST(imagesFile: String) -> Tensor<Float> {
-    print("Reading data.")
-    let images = readFile(imagesFile).dropFirst(16).map { Float($0) }
-    let rowCount = images.count / imageSize
-    print("Constructing data tensors.")
-    return Tensor(shape: [rowCount, imageHeight * imageWidth], scalars: images) / 255.0 * 2 - 1
 }
 
 // Models
@@ -135,14 +112,7 @@ func sampleVector(size: Int) -> Tensor<Float> {
     Tensor(randomNormal: [size, latentSize])
 }
 
-// MNIST data logic
-
-func minibatch<Scalar>(in x: Tensor<Scalar>, at index: Int) -> Tensor<Scalar> {
-    let start = index * batchSize
-    return x[start..<start+batchSize]
-}
-
-let images = readMNIST(imagesFile: "train-images-idx3-ubyte")
+let dataset = MNIST(batchSize: batchSize, flatten: true, normalize: true)
 
 var generator = Generator()
 var discriminator = Discriminator()
@@ -173,7 +143,7 @@ print("Start training...")
 for epoch in 1...epochCount {
     // Start training phase.
     Context.local.learningPhase = .training
-    for i in 0 ..< Int(images.shape[0]) / batchSize {
+    for i in 0 ..< dataset.trainingSize / batchSize {
         // Perform alternative update.
         // Update generator.
         let vec1 = sampleVector(size: batchSize)
@@ -187,7 +157,7 @@ for epoch in 1...epochCount {
         optG.update(&generator.allDifferentiableVariables, along: 𝛁generator)
         
         // Update discriminator.
-        let realImages = minibatch(in: images, at: i)
+        let realImages = dataset.trainImages.minibatch(at: i, batchSize: batchSize)
         let vec2 = sampleVector(size: batchSize)
         let fakeImages = generator(vec2)
         

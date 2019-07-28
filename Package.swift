@@ -21,7 +21,7 @@ let package = Package(
     targets: [
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "Datasets", path: "Datasets"),
-        .target(name: "Autoencoder", path: "Autoencoder"),
+        .target(name: "Autoencoder", dependencies: ["Datasets"], path: "Autoencoder"),
         .target(name: "CIFAR", path: "CIFAR"),
         .target(name: "Catch", path: "Catch"),
         .target(name: "Gym-FrozenLake", path: "Gym/FrozenLake"),
@@ -35,6 +35,6 @@ let package = Package(
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
         .target(name: "ResNet", path: "ResNet"),
         .target(name: "Transformer", path: "Transformer"),
-        .target(name: "GAN", path: "GAN"),
+        .target(name: "GAN", dependencies: ["Datasets"], path: "GAN"),
     ]
 )
