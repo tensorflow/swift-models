@@ -13,7 +13,7 @@ installed. Make sure you've added the correct version of `swift` to your path.
 
 To train the model, run:
 
-```
+```sh
 cd swift-models
 swift run -c release LeNet-MNIST
 ```
