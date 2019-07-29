@@ -76,7 +76,7 @@ func readMNIST(imagesFile: String, labelsFile: String, flattening: Bool, normali
     images: Tensor<Float>,
     labels: Tensor<Int32>
 ) {
-    print("Reading data from files: \(imagesFile), \(labelsFile)")
+    print("Reading data from files: \(imagesFile), \(labelsFile).")
     let images = readFile(imagesFile, possibleDirectories: [".", "./Datasets/MNIST"]).dropFirst(16)
         .map(Float.init)
     let labels = readFile(labelsFile, possibleDirectories: [".", "./Datasets/MNIST"]).dropFirst(8)
