@@ -70,7 +70,7 @@ struct Autoencoder: Layer {
     }
 }
 
-let dataset = MNIST(batchSize: batchSize, flatten: true)
+let dataset = MNIST(batchSize: batchSize, flattening: true)
 var autoencoder = Autoencoder()
 let optimizer = RMSProp(for: autoencoder)
 
