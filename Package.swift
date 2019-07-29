@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "TensorFlowModels",
     platforms: [
-        .macOS(.v10_13)
+        .macOS(.v10_13),
     ],
     products: [
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
@@ -27,11 +27,13 @@ let package = Package(
         .target(name: "Gym-FrozenLake", path: "Gym/FrozenLake"),
         .target(name: "Gym-CartPole", path: "Gym/CartPole"),
         .target(name: "Gym-Blackjack", path: "Gym/Blackjack"),
-        .target(name: "LeNet-MNIST", dependencies: ["ImageClassificationModels", "Datasets"], 
-				path: "Examples/LeNet-MNIST"),
+        .target(
+            name: "LeNet-MNIST", dependencies: ["ImageClassificationModels", "Datasets"],
+            path: "Examples/LeNet-MNIST"),
         .target(name: "MiniGo", path: "MiniGo", exclude: ["main.swift"]),
-        .target(name: "MiniGoDemo", dependencies: ["MiniGo"], path: "MiniGo",
-                sources: ["main.swift"]),
+        .target(
+            name: "MiniGoDemo", dependencies: ["MiniGo"], path: "MiniGo",
+            sources: ["main.swift"]),
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
         .target(name: "ResNet", path: "ResNet"),
         .target(name: "Transformer", path: "Transformer"),

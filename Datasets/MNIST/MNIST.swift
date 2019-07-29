@@ -16,27 +16,27 @@ import Foundation
 import TensorFlow
 
 public struct MNIST {
-    public let trainImages: Tensor<Float>
-    public let trainLabels: Tensor<Int32>
+    public let trainingImages: Tensor<Float>
+    public let trainingLabels: Tensor<Int32>
     public let testImages: Tensor<Float>
     public let testLabels: Tensor<Int32>
 
     public let trainingSize: Int
     public let testSize: Int
 
-    let batchSize: Int
+    public let batchSize: Int
 
     public init(batchSize: Int, flattening: Bool = false, normalizing: Bool = false) {
         self.batchSize = batchSize
 
-        let (trainImages, trainLabels) = readMNIST(
+        let (trainingImages, trainingLabels) = readMNIST(
             imagesFile: "train-images-idx3-ubyte",
             labelsFile: "train-labels-idx1-ubyte",
             flattening: flattening,
             normalizing: normalizing)
-        self.trainImages = trainImages
-        self.trainLabels = trainLabels
-        self.trainingSize = Int(trainLabels.shape[0])
+        self.trainingImages = trainingImages
+        self.trainingLabels = trainingLabels
+        self.trainingSize = Int(trainingLabels.shape[0])
 
         let (testImages, testLabels) = readMNIST(
             imagesFile: "t10k-images-idx3-ubyte",

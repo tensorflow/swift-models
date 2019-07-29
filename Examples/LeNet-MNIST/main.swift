@@ -38,8 +38,8 @@ for epoch in 1...epochCount {
     var testStats = Statistics()
     Context.local.learningPhase = .training
     for i in 0 ..< dataset.trainingSize / batchSize {
-        let x = dataset.trainImages.minibatch(at: i, batchSize: batchSize)
-        let y = dataset.trainLabels.minibatch(at: i, batchSize: batchSize)
+        let x = dataset.trainingImages.minibatch(at: i, batchSize: batchSize)
+        let y = dataset.trainingLabels.minibatch(at: i, batchSize: batchSize)
         // Compute the gradient with respect to the model.
         let 𝛁model = classifier.gradient { classifier -> Tensor<Float> in
             let ŷ = classifier(x)

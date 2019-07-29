@@ -157,7 +157,7 @@ for epoch in 1...epochCount {
         optG.update(&generator.allDifferentiableVariables, along: 𝛁generator)
         
         // Update discriminator.
-        let realImages = dataset.trainImages.minibatch(at: i, batchSize: batchSize)
+        let realImages = dataset.trainingImages.minibatch(at: i, batchSize: batchSize)
         let vec2 = sampleVector(size: batchSize)
         let fakeImages = generator(vec2)
         

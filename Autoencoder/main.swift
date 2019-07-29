@@ -76,7 +76,7 @@ let optimizer = RMSProp(for: autoencoder)
 
 // Training loop
 for epoch in 1...epochCount {
-    let sampleImage = Tensor(shape: [1, imageHeight * imageWidth], scalars: dataset.trainImages[epoch].scalars)
+    let sampleImage = Tensor(shape: [1, imageHeight * imageWidth], scalars: dataset.trainingImages[epoch].scalars)
     let testImage = autoencoder(sampleImage)
 
     plot(image: sampleImage.scalars, name: "epoch-\(epoch)-input")
@@ -86,7 +86,7 @@ for epoch in 1...epochCount {
     print("[Epoch: \(epoch)] Loss: \(sampleLoss)")
 
     for i in 0 ..< dataset.trainingSize / batchSize {
-        let x = dataset.trainImages.minibatch(at: i, batchSize: batchSize)
+        let x = dataset.trainingImages.minibatch(at: i, batchSize: batchSize)
 
         let 𝛁model = autoencoder.gradient { autoencoder -> Tensor<Float> in
             let image = autoencoder(x)
