@@ -105,7 +105,7 @@ func _vjpCausallyMasked(_ dotProducts: Tensor<Float>, enable: Bool)
     return (causallyMasked(dotProducts), identity)
 }
 
-struct Attention: Layer {
+struct Attention: ParameterlessLayer {
     @noDerivative let dropout: Dropout<Float>
     @noDerivative let scale: Tensor<Float>
     @noDerivative let causal: Bool
