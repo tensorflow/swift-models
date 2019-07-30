@@ -15,16 +15,17 @@
 import Foundation
 import TensorFlow
 import Python
+import Datasets
 
 // Import Python modules
 let matplotlib = Python.import("matplotlib")
 let np = Python.import("numpy")
-let plt = Python.import("matplotlib.pyplot")
 
-// Turn off using display on server / linux
+// Use the AGG renderer for saving images to disk.
 matplotlib.use("Agg")
 
-// Some globals
+let plt = Python.import("matplotlib.pyplot")
+
 let epochCount = 10
 let batchSize = 100
 let outputFolder = "./output/"
@@ -45,37 +46,6 @@ func plot(image: [Float], name: String) {
     plt.close()
 }
 
-/// Reads a file into an array of bytes.
-func readFile(_ filename: String) -> [UInt8] {
-    let possibleFolders = [".", "Resources", "Autoencoder/Resources"]
-    for folder in possibleFolders {
-        let parent = URL(fileURLWithPath: folder)
-        let filePath = parent.appendingPathComponent(filename).path
-        guard FileManager.default.fileExists(atPath: filePath) else {
-            continue
-        }
-        let d = Python.open(filePath, "rb").read()
-        return Array(numpy: np.frombuffer(d, dtype: np.uint8))!
-    }
-    print("Failed to find file with name \(filename) in the following folders: \(possibleFolders).")
-    exit(-1)
-}
-
-/// Reads MNIST images and labels from specified file paths.
-func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>,
-                                                           labels: Tensor<Int32>) {
-    print("Reading data.")
-    let images = readFile(imagesFile).dropFirst(16).map { Float($0) }
-    let labels = readFile(labelsFile).dropFirst(8).map { Int32($0) }
-    let rowCount = labels.count
-
-    print("Constructing data tensors.")
-    return (
-        images: Tensor(shape: [rowCount, imageHeight * imageWidth], scalars: images) / 255.0,
-        labels: Tensor(labels)
-    )
-}
-
 /// An autoencoder.
 struct Autoencoder: Layer {
     typealias Input = Tensor<Float>
@@ -91,7 +61,7 @@ struct Autoencoder: Layer {
     var decoder2 = Dense<Float>(inputSize: 12, outputSize: 64, activation: relu)
     var decoder3 = Dense<Float>(inputSize: 64, outputSize: 128, activation: relu)
     var decoder4 = Dense<Float>(inputSize: 128, outputSize: imageHeight * imageWidth,
-        activation: sigmoid)
+        activation: tanh)
 
     @differentiable
     func callAsFunction(_ input: Input) -> Output {
@@ -100,22 +70,13 @@ struct Autoencoder: Layer {
     }
 }
 
-// MNIST data logic
-func minibatch<Scalar>(in x: Tensor<Scalar>, at index: Int) -> Tensor<Scalar> {
-    let start = index * batchSize
-    return x[start..<start+batchSize]
-}
-
-let (images, numericLabels) = readMNIST(imagesFile: "train-images-idx3-ubyte",
-                                        labelsFile: "train-labels-idx1-ubyte")
-let labels = Tensor<Float>(oneHotAtIndices: numericLabels, depth: 10)
-
+let dataset = MNIST(batchSize: batchSize, flattening: true)
 var autoencoder = Autoencoder()
 let optimizer = RMSProp(for: autoencoder)
 
 // Training loop
 for epoch in 1...epochCount {
-    let sampleImage = Tensor(shape: [1, imageHeight * imageWidth], scalars: images[epoch].scalars)
+    let sampleImage = Tensor(shape: [1, imageHeight * imageWidth], scalars: dataset.trainingImages[epoch].scalars)
     let testImage = autoencoder(sampleImage)
 
     plot(image: sampleImage.scalars, name: "epoch-\(epoch)-input")
@@ -124,8 +85,8 @@ for epoch in 1...epochCount {
     let sampleLoss = meanSquaredError(predicted: testImage, expected: sampleImage)
     print("[Epoch: \(epoch)] Loss: \(sampleLoss)")
 
-    for i in 0 ..< Int(labels.shape[0]) / batchSize {
-        let x = minibatch(in: images, at: i)
+    for i in 0 ..< dataset.trainingSize / batchSize {
+        let x = dataset.trainingImages.minibatch(at: i, batchSize: batchSize)
 
         let 𝛁model = autoencoder.gradient { autoencoder -> Tensor<Float> in
             let image = autoencoder(x)
