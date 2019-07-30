@@ -20,19 +20,16 @@ import TensorFlow
 // https://arxiv.org/abs/1512.03385
 // using shortcut layer to connect BasicBlock layers (aka Option (B))
 
-enum DataKind {
+public enum DataKind {
     case cifar
     case imagenet
 }
 
-struct ConvBN: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
+public struct ConvBN: Layer {
+    public var conv: Conv2D<Float>
+    public var norm: BatchNorm<Float>
 
-    var conv: Conv2D<Float>
-    var norm: BatchNorm<Float>
-
-    init(
+    public init(
         filterShape: (Int, Int, Int, Int),
         strides: (Int, Int) = (1, 1),
         padding: Padding = .valid
@@ -42,20 +39,17 @@ struct ConvBN: Layer {
     }
 
     @differentiable
-    func callAsFunction(_ input: Input) -> Output {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         return input.sequenced(through: conv, norm)
     }
 }
 
-struct ResidualBasicBlockShortcut: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
+public struct ResidualBasicBlockShortcut: Layer {
+    public var layer1: ConvBN
+    public var layer2: ConvBN
+    public var shortcut: ConvBN
 
-    var layer1: ConvBN
-    var layer2: ConvBN
-    var shortcut: ConvBN
-
-    init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3) {
+    public init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3) {
         self.layer1 = ConvBN(
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
             strides: (2, 2),
@@ -71,19 +65,16 @@ struct ResidualBasicBlockShortcut: Layer {
     }
 
     @differentiable
-    func callAsFunction(_ input: Input) -> Output {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         return layer2(relu(layer1(input))) + shortcut(input)
     }
 }
 
-struct ResidualBasicBlock: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
+public struct ResidualBasicBlock: Layer {
+    public var layer1: ConvBN
+    public var layer2: ConvBN
 
-    var layer1: ConvBN
-    var layer2: ConvBN
-
-    init(
+    public init(
         featureCounts: (Int, Int, Int, Int),
         kernelSize: Int = 3,
         strides: (Int, Int) = (1, 1)
@@ -99,24 +90,21 @@ struct ResidualBasicBlock: Layer {
     }
 
     @differentiable
-    func callAsFunction(_ input: Input) -> Output {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         return layer2(relu(layer1(input)))
     }
 }
 
-struct ResidualBasicBlockStack: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
-
-    var blocks: [ResidualBasicBlock] = []
-    init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3, blockCount: Int) {
+public struct ResidualBasicBlockStack: Layer {
+    public var blocks: [ResidualBasicBlock] = []
+    public init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3, blockCount: Int) {
         for _ in 1..<blockCount {
             blocks += [ResidualBasicBlock(featureCounts: featureCounts, kernelSize: kernelSize)]
         }
     }
 
     @differentiable
-    func callAsFunction(_ input: Input) -> Output {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let blocksReduced = blocks.differentiableReduce(input) { last, layer in
             layer(last)
         }
@@ -124,16 +112,13 @@ struct ResidualBasicBlockStack: Layer {
     }
 }
 
-struct ResidualConvBlock: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
+public struct ResidualConvBlock: Layer {
+    public var layer1: ConvBN
+    public var layer2: ConvBN
+    public var layer3: ConvBN
+    public var shortcut: ConvBN
 
-    var layer1: ConvBN
-    var layer2: ConvBN
-    var layer3: ConvBN
-    var shortcut: ConvBN
-
-    init(
+    public init(
         featureCounts: (Int, Int, Int, Int),
         kernelSize: Int = 3,
         strides: (Int, Int) = (2, 2)
@@ -152,21 +137,18 @@ struct ResidualConvBlock: Layer {
     }
 
     @differentiable
-    func callAsFunction(_ input: Input) -> Output {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let tmp = relu(layer2(relu(layer1(input))))
         return relu(layer3(tmp) + shortcut(input))
     }
 }
 
-struct ResidualIdentityBlock: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
+public struct ResidualIdentityBlock: Layer {
+    public var layer1: ConvBN
+    public var layer2: ConvBN
+    public var layer3: ConvBN
 
-    var layer1: ConvBN
-    var layer2: ConvBN
-    var layer3: ConvBN
-
-    init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3) {
+    public init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3) {
         self.layer1 = ConvBN(filterShape: (1, 1, featureCounts.0, featureCounts.1))
         self.layer2 = ConvBN(
             filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.2),
@@ -175,25 +157,22 @@ struct ResidualIdentityBlock: Layer {
     }
 
     @differentiable
-    func callAsFunction(_ input: Input) -> Output {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let tmp = relu(layer2(relu(layer1(input))))
         return relu(layer3(tmp) + input)
     }
 }
 
-struct ResidualIdentityBlockStack: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
-
-    var blocks: [ResidualIdentityBlock] = []
-    init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3, blockCount: Int) {
+public struct ResidualIdentityBlockStack: Layer {
+    public var blocks: [ResidualIdentityBlock] = []
+    public init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3, blockCount: Int) {
         for _ in 1..<blockCount {
             blocks += [ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)]
         }
     }
 
     @differentiable
-    func callAsFunction(_ input: Input) -> Output {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let blocksReduced = blocks.differentiableReduce(input) { last, layer in
             layer(last)
         }
@@ -201,30 +180,27 @@ struct ResidualIdentityBlockStack: Layer {
     }
 }
 
-struct ResNetBasic: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
+public struct ResNetBasic: Layer {
+    public var l1: ConvBN
+    public var maxPool: MaxPool2D<Float>
 
-    var l1: ConvBN
-    var maxPool: MaxPool2D<Float>
+    public var l2a = ResidualBasicBlock(featureCounts: (64, 64, 64, 64))
+    public var l2b: ResidualBasicBlockStack
 
-    var l2a = ResidualBasicBlock(featureCounts: (64, 64, 64, 64))
-    var l2b: ResidualBasicBlockStack
+    public var l3a = ResidualBasicBlockShortcut(featureCounts: (64, 128, 128, 128))
+    public var l3b: ResidualBasicBlockStack
 
-    var l3a = ResidualBasicBlockShortcut(featureCounts: (64, 128, 128, 128))
-    var l3b: ResidualBasicBlockStack
+    public var l4a = ResidualBasicBlockShortcut(featureCounts: (128, 256, 256, 256))
+    public var l4b: ResidualBasicBlockStack
 
-    var l4a = ResidualBasicBlockShortcut(featureCounts: (128, 256, 256, 256))
-    var l4b: ResidualBasicBlockStack
+    public var l5a = ResidualBasicBlockShortcut(featureCounts: (256, 512, 512, 512))
+    public var l5b: ResidualBasicBlockStack
 
-    var l5a = ResidualBasicBlockShortcut(featureCounts: (256, 512, 512, 512))
-    var l5b: ResidualBasicBlockStack
+    public var avgPool: AvgPool2D<Float>
+    public var flatten = Flatten<Float>()
+    public var classifier: Dense<Float>
 
-    var avgPool: AvgPool2D<Float>
-    var flatten = Flatten<Float>()
-    var classifier: Dense<Float>
-
-    init(dataKind: DataKind, layerBlockCounts: (Int, Int, Int, Int)) {
+    public init(dataKind: DataKind, layerBlockCounts: (Int, Int, Int, Int)) {
         switch dataKind {
         case .imagenet:
             l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
@@ -249,7 +225,7 @@ struct ResNetBasic: Layer {
     }
 
     @differentiable
-    func callAsFunction(_ input: Input) -> Output {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let inputLayer = maxPool(relu(l1(input)))
         let level2 = inputLayer.sequenced(through: l2a, l2b)
         let level3 = level2.sequenced(through: l3a, l3b)
@@ -259,7 +235,7 @@ struct ResNetBasic: Layer {
     }
 }
 
-extension ResNetBasic {
+public extension ResNetBasic {
     enum Kind {
         case resNet18
         case resNet34
@@ -275,30 +251,27 @@ extension ResNetBasic {
     }
 }
 
-struct ResNet: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
+public struct ResNet: Layer {
+    public var l1: ConvBN
+    public var maxPool: MaxPool2D<Float>
 
-    var l1: ConvBN
-    var maxPool: MaxPool2D<Float>
+    public var l2a = ResidualConvBlock(featureCounts: (64, 64, 64, 256), strides: (1, 1))
+    public var l2b: ResidualIdentityBlockStack
 
-    var l2a = ResidualConvBlock(featureCounts: (64, 64, 64, 256), strides: (1, 1))
-    var l2b: ResidualIdentityBlockStack
+    public var l3a = ResidualConvBlock(featureCounts: (256, 128, 128, 512))
+    public var l3b: ResidualIdentityBlockStack
 
-    var l3a = ResidualConvBlock(featureCounts: (256, 128, 128, 512))
-    var l3b: ResidualIdentityBlockStack
+    public var l4a = ResidualConvBlock(featureCounts: (512, 256, 256, 1024))
+    public var l4b: ResidualIdentityBlockStack
 
-    var l4a = ResidualConvBlock(featureCounts: (512, 256, 256, 1024))
-    var l4b: ResidualIdentityBlockStack
+    public var l5a = ResidualConvBlock(featureCounts: (1024, 512, 512, 2048))
+    public var l5b: ResidualIdentityBlockStack
 
-    var l5a = ResidualConvBlock(featureCounts: (1024, 512, 512, 2048))
-    var l5b: ResidualIdentityBlockStack
+    public var avgPool: AvgPool2D<Float>
+    public var flatten = Flatten<Float>()
+    public var classifier: Dense<Float>
 
-    var avgPool: AvgPool2D<Float>
-    var flatten = Flatten<Float>()
-    var classifier: Dense<Float>
-
-    init(dataKind: DataKind, layerBlockCounts: (Int, Int, Int, Int)) {
+    public init(dataKind: DataKind, layerBlockCounts: (Int, Int, Int, Int)) {
         switch dataKind {
         case .imagenet:
             l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
@@ -323,7 +296,7 @@ struct ResNet: Layer {
     }
 
     @differentiable
-    func callAsFunction(_ input: Input) -> Output {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let inputLayer = maxPool(relu(l1(input)))
         let level2 = inputLayer.sequenced(through: l2a, l2b)
         let level3 = level2.sequenced(through: l3a, l3b)
@@ -333,7 +306,7 @@ struct ResNet: Layer {
     }
 }
 
-extension ResNet {
+public extension ResNet {
     enum Kind {
         case resNet50
         case resNet101

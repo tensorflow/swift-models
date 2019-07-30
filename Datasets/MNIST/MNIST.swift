@@ -12,6 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Original source:
+// "The MNIST database of handwritten digits"
+// Yann LeCun, Corinna Cortes, and Christopher J.C. Burges
+// http://yann.lecun.com/exdb/mnist/
+
 import Foundation
 import TensorFlow
 
