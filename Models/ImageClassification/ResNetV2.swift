@@ -125,7 +125,7 @@ public struct PreActivatedResNet18: Layer {
 
     public var l5a = PreActivatedResidualBasicBlockShortcut(featureCounts: (256, 512, 512, 512))
     public var l5b = PreActivatedResidualBasicBlock(featureCounts: (512, 512, 512, 512))
- 
+
     public var norm: BatchNorm<Float>
     public var avgPool: AvgPool2D<Float>
     public var flatten = Flatten<Float>()
@@ -139,7 +139,7 @@ public struct PreActivatedResNet18: Layer {
         avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
         if imageSize == 32 {
             l1 = Conv2DBatchNorm(filterShape: (3, 3, 3, 64), padding: .same)
-            maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1)) // no-op
+            maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1))  // no-op
             avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
         }
         norm = BatchNorm(featureCount: 512)
@@ -181,7 +181,7 @@ public struct PreActivatedResNet34: Layer {
     public var l5a = PreActivatedResidualBasicBlockShortcut(featureCounts: (256, 512, 512, 512))
     public var l5b = PreActivatedResidualBasicBlock(featureCounts: (512, 512, 512, 512))
     public var l5c = PreActivatedResidualBasicBlock(featureCounts: (512, 512, 512, 512))
- 
+
     public var norm: BatchNorm<Float>
     public var avgPool: AvgPool2D<Float>
     public var flatten = Flatten<Float>()
@@ -195,7 +195,7 @@ public struct PreActivatedResNet34: Layer {
         avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
         if imageSize == 32 {
             l1 = Conv2DBatchNorm(filterShape: (3, 3, 3, 64), padding: .same)
-            maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1)) // no-op
+            maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1))  // no-op
             avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
         }
         norm = BatchNorm(featureCount: 512)

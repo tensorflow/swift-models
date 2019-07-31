@@ -97,6 +97,7 @@ public struct ResidualBasicBlock: Layer {
 
 public struct ResidualBasicBlockStack: Layer {
     public var blocks: [ResidualBasicBlock] = []
+
     public init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3, blockCount: Int) {
         for _ in 1..<blockCount {
             blocks += [ResidualBasicBlock(featureCounts: featureCounts, kernelSize: kernelSize)]
@@ -165,6 +166,7 @@ public struct ResidualIdentityBlock: Layer {
 
 public struct ResidualIdentityBlockStack: Layer {
     public var blocks: [ResidualIdentityBlock] = []
+
     public init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3, blockCount: Int) {
         for _ in 1..<blockCount {
             blocks += [ResidualIdentityBlock(featureCounts: featureCounts, kernelSize: kernelSize)]
@@ -209,18 +211,22 @@ public struct ResNetBasic: Layer {
             classifier = Dense(inputSize: 512, outputSize: 1000)
         case .cifar:
             l1 = ConvBN(filterShape: (3, 3, 3, 64), padding: .same)
-            maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1)) // no-op
+            maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1))  // no-op
             avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
             classifier = Dense(inputSize: 512, outputSize: 10)
         }
 
-        l2b = ResidualBasicBlockStack(featureCounts: (64, 64, 64, 64),
+        l2b = ResidualBasicBlockStack(
+            featureCounts: (64, 64, 64, 64),
             blockCount: layerBlockCounts.0)
-        l3b = ResidualBasicBlockStack(featureCounts: (128, 128, 128, 128),
+        l3b = ResidualBasicBlockStack(
+            featureCounts: (128, 128, 128, 128),
             blockCount: layerBlockCounts.1)
-        l4b = ResidualBasicBlockStack(featureCounts: (256, 256, 256, 256),
+        l4b = ResidualBasicBlockStack(
+            featureCounts: (256, 256, 256, 256),
             blockCount: layerBlockCounts.2)
-        l5b = ResidualBasicBlockStack(featureCounts: (512, 512, 512, 512),
+        l5b = ResidualBasicBlockStack(
+            featureCounts: (512, 512, 512, 512),
             blockCount: layerBlockCounts.3)
     }
 
@@ -235,13 +241,13 @@ public struct ResNetBasic: Layer {
     }
 }
 
-public extension ResNetBasic {
-    enum Kind {
+extension ResNetBasic {
+    public enum Kind {
         case resNet18
         case resNet34
     }
 
-    init(inputKind: Kind, dataKind: DataKind) {
+    public init(inputKind: Kind, dataKind: DataKind) {
         switch inputKind {
         case .resNet18:
             self.init(dataKind: dataKind, layerBlockCounts: (2, 2, 2, 2))
@@ -280,18 +286,22 @@ public struct ResNet: Layer {
             classifier = Dense(inputSize: 2048, outputSize: 1000)
         case .cifar:
             l1 = ConvBN(filterShape: (3, 3, 3, 64), padding: .same)
-            maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1)) // no-op
+            maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1))  // no-op
             avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
             classifier = Dense(inputSize: 2048, outputSize: 10)
         }
 
-        l2b = ResidualIdentityBlockStack(featureCounts: (256, 64, 64, 256),
+        l2b = ResidualIdentityBlockStack(
+            featureCounts: (256, 64, 64, 256),
             blockCount: layerBlockCounts.0)
-        l3b = ResidualIdentityBlockStack(featureCounts: (512, 128, 128, 512),
+        l3b = ResidualIdentityBlockStack(
+            featureCounts: (512, 128, 128, 512),
             blockCount: layerBlockCounts.1)
-        l4b = ResidualIdentityBlockStack(featureCounts: (1024, 256, 256, 1024),
+        l4b = ResidualIdentityBlockStack(
+            featureCounts: (1024, 256, 256, 1024),
             blockCount: layerBlockCounts.2)
-        l5b = ResidualIdentityBlockStack(featureCounts: (2048, 512, 512, 2048),
+        l5b = ResidualIdentityBlockStack(
+            featureCounts: (2048, 512, 512, 2048),
             blockCount: layerBlockCounts.3)
     }
 
@@ -306,14 +316,14 @@ public struct ResNet: Layer {
     }
 }
 
-public extension ResNet {
-    enum Kind {
+extension ResNet {
+    public enum Kind {
         case resNet50
         case resNet101
         case resNet152
     }
 
-    init(inputKind: Kind, dataKind: DataKind) {
+    public init(inputKind: Kind, dataKind: DataKind) {
         switch inputKind {
         case .resNet50:
             self.init(dataKind: dataKind, layerBlockCounts: (3, 4, 6, 3))

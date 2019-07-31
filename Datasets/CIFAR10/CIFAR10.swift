@@ -27,7 +27,7 @@ import TensorFlow
 public struct CIFAR10 {
     public let trainingDataset: Dataset<CIFARExample>
     public let testDataset: Dataset<CIFARExample>
-    
+
     public init() {
         self.trainingDataset = Dataset<CIFARExample>(elements: loadCIFARTrainingFiles())
         self.testDataset = Dataset<CIFARExample>(elements: loadCIFARTestFile())

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import TensorFlow
 import Datasets
+import TensorFlow
 
 let batchSize = 100
 
@@ -53,15 +53,17 @@ for epoch in 1...100 {
         testBatchCount += 1
 
         let correctPredictions = logits.argmax(squeezingAxis: 1) .== labels
-        correctGuessCount = correctGuessCount +
-            Int(Tensor<Int32>(correctPredictions).sum().scalarized())
+        correctGuessCount = correctGuessCount + Int(
+            Tensor<Int32>(correctPredictions).sum().scalarized())
         totalGuessCount = totalGuessCount + batchSize
     }
 
     let accuracy = Float(correctGuessCount) / Float(totalGuessCount)
-    print("""
+    print(
+        """
           [Epoch \(epoch)] \
           Accuracy: \(correctGuessCount)/\(totalGuessCount) (\(accuracy)) \
           Loss: \(testLossSum / Float(testBatchCount))
-          """)
+          """
+    )
 }

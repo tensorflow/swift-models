@@ -33,4 +33,3 @@ public struct CIFARExample: TensorGroup {
         data = Tensor<Float>(handle: TensorHandle<Float>(handle: _handles[dataIndex]))
     }
 }
-

@@ -49,34 +49,46 @@ public struct WideResNetBasicBlock: Layer {
     public var shortcut: Conv2D<Float>
 
     public init(
-        featureCounts: (Int, Int), 
+        featureCounts: (Int, Int),
         kernelSize: Int = 3,
         depthFactor: Int = 2,
         widenFactor: Int = 1,
         initialStride: (Int, Int) = (2, 2)
     ) {
         if initialStride == (1, 1) {
-            self.blocks = [BatchNormConv2DBlock(
-                filterShape: (kernelSize, kernelSize,
-                    featureCounts.0, featureCounts.1 * widenFactor),
-                strides: initialStride)]
+            self.blocks = [
+                BatchNormConv2DBlock(
+                    filterShape: (
+                        kernelSize, kernelSize,
+                        featureCounts.0, featureCounts.1 * widenFactor
+                    ),
+                    strides: initialStride)
+            ]
             self.shortcut = Conv2D(
                 filterShape: (1, 1, featureCounts.0, featureCounts.1 * widenFactor),
                 strides: initialStride)
         } else {
-            self.blocks = [BatchNormConv2DBlock(
-                filterShape: (kernelSize, kernelSize,
-                    featureCounts.0 * widenFactor, featureCounts.1 * widenFactor),
-                strides: initialStride)]
+            self.blocks = [
+                BatchNormConv2DBlock(
+                    filterShape: (
+                        kernelSize, kernelSize,
+                        featureCounts.0 * widenFactor, featureCounts.1 * widenFactor
+                    ),
+                    strides: initialStride)
+            ]
             self.shortcut = Conv2D(
                 filterShape: (1, 1, featureCounts.0 * widenFactor, featureCounts.1 * widenFactor),
                 strides: initialStride)
         }
         for _ in 1..<depthFactor {
-            self.blocks += [BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize,
-                featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
-            strides: (1, 1))]
+            self.blocks += [
+                BatchNormConv2DBlock(
+                    filterShape: (
+                        kernelSize, kernelSize,
+                        featureCounts.1 * widenFactor, featureCounts.1 * widenFactor
+                    ),
+                    strides: (1, 1))
+            ]
         }
     }
 
@@ -95,7 +107,7 @@ public struct WideResNet: Layer {
     public var l2: WideResNetBasicBlock
     public var l3: WideResNetBasicBlock
     public var l4: WideResNetBasicBlock
- 
+
     public var norm: BatchNorm<Float>
     public var avgPool: AvgPool2D<Float>
     public var flatten = Flatten<Float>()
@@ -104,13 +116,16 @@ public struct WideResNet: Layer {
     public init(depthFactor: Int = 2, widenFactor: Int = 8) {
         self.l1 = Conv2D(filterShape: (3, 3, 3, 16), strides: (1, 1), padding: .same)
 
-        l2 = WideResNetBasicBlock(featureCounts: (16, 16), depthFactor: depthFactor,
+        l2 = WideResNetBasicBlock(
+            featureCounts: (16, 16), depthFactor: depthFactor,
             widenFactor: widenFactor, initialStride: (1, 1))
-        l3 = WideResNetBasicBlock(featureCounts: (16, 32), depthFactor: depthFactor,
+        l3 = WideResNetBasicBlock(
+            featureCounts: (16, 32), depthFactor: depthFactor,
             widenFactor: widenFactor)
-        l4 = WideResNetBasicBlock(featureCounts: (32, 64), depthFactor: depthFactor,
+        l4 = WideResNetBasicBlock(
+            featureCounts: (32, 64), depthFactor: depthFactor,
             widenFactor: widenFactor)
-        
+
         self.norm = BatchNorm(featureCount: 64 * widenFactor)
         self.avgPool = AvgPool2D(poolSize: (8, 8), strides: (8, 8))
         self.classifier = Dense(inputSize: 64 * widenFactor, outputSize: 10)
@@ -124,8 +139,8 @@ public struct WideResNet: Layer {
     }
 }
 
-public extension WideResNet {
-    enum Kind {
+extension WideResNet {
+    public enum Kind {
         case wideResNet16
         case wideResNet16k8
         case wideResNet16k10
@@ -141,7 +156,7 @@ public extension WideResNet {
         case wideResNet40k8
     }
 
-    init(kind: Kind) {
+    public init(kind: Kind) {
         switch kind {
         case .wideResNet16, .wideResNet16k8:
             self.init(depthFactor: 2, widenFactor: 8)

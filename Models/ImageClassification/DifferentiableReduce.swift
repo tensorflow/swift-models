@@ -17,16 +17,17 @@ extension Array where Element: Differentiable {
     @differentiable(wrt: (self, initialResult), vjp: reduceDerivative)
     func differentiableReduce<Result: Differentiable>(
         _ initialResult: Result,
-        _ nextPartialResult: @differentiable (Result, Element) -> Result
+        _ nextPartialResult: @differentiable(Result, Element) -> Result
     ) -> Result {
         return reduce(initialResult, nextPartialResult)
     }
 
     func reduceDerivative<Result: Differentiable>(
         _ initialResult: Result,
-        _ nextPartialResult: @differentiable (Result, Element) -> Result
+        _ nextPartialResult: @differentiable(Result, Element) -> Result
     ) -> (Result, (Result.TangentVector) -> (Array.TangentVector, Result.TangentVector)) {
-        var pullbacks: [(Result.TangentVector)
+        var pullbacks:
+            [(Result.TangentVector)
             -> (Result.TangentVector, Element.TangentVector)] = []
         let count = self.count
         pullbacks.reserveCapacity(count)
@@ -36,16 +37,19 @@ extension Array where Element: Differentiable {
             result = y
             pullbacks.append(pb)
         }
-        return (value: result, pullback: { cotangent in
-            var resultCotangent = cotangent
-            var elementCotangents = TangentVector([])
-            elementCotangents.base.reserveCapacity(count)
-            for pullback in pullbacks.reversed() {
-                let (newResultCotangent, elementCotangent) = pullback(resultCotangent)
-                resultCotangent = newResultCotangent
-                elementCotangents.base.append(elementCotangent)
+        return (
+            value: result,
+            pullback: { cotangent in
+                var resultCotangent = cotangent
+                var elementCotangents = TangentVector([])
+                elementCotangents.base.reserveCapacity(count)
+                for pullback in pullbacks.reversed() {
+                    let (newResultCotangent, elementCotangent) = pullback(resultCotangent)
+                    resultCotangent = newResultCotangent
+                    elementCotangents.base.append(elementCotangent)
+                }
+                return (TangentVector(elementCotangents.base.reversed()), resultCotangent)
             }
-            return (TangentVector(elementCotangents.base.reversed()), resultCotangent)
-        })
+        )
     }
 }

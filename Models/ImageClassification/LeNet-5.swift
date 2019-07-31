@@ -33,7 +33,7 @@ public struct LeNet: Layer {
     public var fc3 = Dense<Float>(inputSize: 84, outputSize: 10, activation: softmax)
 
     public init() {}
-    
+
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let convolved = input.sequenced(through: conv1, pool1, conv2, pool2)
