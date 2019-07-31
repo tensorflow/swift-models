@@ -29,6 +29,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libxml2 \
         libblocksruntime-dev
 
+# Install Python libraries
+RUN pip3 install numpy matplotlib gym
+
 # Configure cuda
 RUN echo "/usr/local/cuda-9.2/targets/x86_64-linux/lib/stubs" > /etc/ld.so.conf.d/cuda-9.2-stubs.conf && \
     ldconfig
