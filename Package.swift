@@ -11,9 +11,9 @@ let package = Package(
     products: [
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
         .library(name: "Datasets", targets: ["Datasets"]),
+        .executable(name: "Custom-CIFAR10", targets: ["Custom-CIFAR10"]),
+        .executable(name: "ResNet-CIFAR10", targets: ["ResNet-CIFAR10"]),
         .executable(name: "LeNet-MNIST", targets: ["LeNet-MNIST"]),
-        .executable(name: "CIFAR", targets: ["CIFAR"]),
-        .executable(name: "ResNet", targets: ["ResNet"]),
         .executable(name: "MiniGoDemo", targets: ["MiniGoDemo"]),
         .library(name: "MiniGo", targets: ["MiniGo"]),
         .executable(name: "GAN", targets: ["GAN"]),
@@ -22,11 +22,16 @@ let package = Package(
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "Datasets", path: "Datasets"),
         .target(name: "Autoencoder", dependencies: ["Datasets"], path: "Autoencoder"),
-        .target(name: "CIFAR", path: "CIFAR"),
         .target(name: "Catch", path: "Catch"),
         .target(name: "Gym-FrozenLake", path: "Gym/FrozenLake"),
         .target(name: "Gym-CartPole", path: "Gym/CartPole"),
         .target(name: "Gym-Blackjack", path: "Gym/Blackjack"),
+        .target(
+            name: "Custom-CIFAR10", dependencies: ["Datasets"],
+            path: "Examples/Custom-CIFAR10"),
+        .target(
+            name: "ResNet-CIFAR10", dependencies: ["ImageClassificationModels", "Datasets"],
+            path: "Examples/ResNet-CIFAR10"),
         .target(
             name: "LeNet-MNIST", dependencies: ["ImageClassificationModels", "Datasets"],
             path: "Examples/LeNet-MNIST"),
@@ -35,7 +40,6 @@ let package = Package(
             name: "MiniGoDemo", dependencies: ["MiniGo"], path: "MiniGo",
             sources: ["main.swift"]),
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
-        .target(name: "ResNet", path: "ResNet"),
         .target(name: "Transformer", path: "Transformer"),
         .target(name: "GAN", dependencies: ["Datasets"], path: "GAN"),
     ]

@@ -12,12 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Original source:
+// "The CIFAR-10 dataset"
+// Alex Krizhevsky, Vinod Nair, and Geoffrey Hinton.
+// https://www.cs.toronto.edu/~kriz/cifar.html
+
 import Foundation
 import TensorFlow
 
 #if canImport(FoundationNetworking)
     import FoundationNetworking
 #endif
+
+public struct CIFAR10 {
+    public let trainingDataset: Dataset<CIFARExample>
+    public let testDataset: Dataset<CIFARExample>
+
+    public init() {
+        self.trainingDataset = Dataset<CIFARExample>(elements: loadCIFARTrainingFiles())
+        self.testDataset = Dataset<CIFARExample>(elements: loadCIFARTestFile())
+    }
+}
 
 func downloadCIFAR10IfNotPresent(to directory: String = ".") {
     let downloadPath = "\(directory)/cifar-10-batches-bin"
@@ -69,27 +84,7 @@ func downloadCIFAR10IfNotPresent(to directory: String = ".") {
     print("Unarchiving completed")
 }
 
-struct Example: TensorGroup {
-    var label: Tensor<Int32>
-    var data: Tensor<Float>
-
-    init(label: Tensor<Int32>, data: Tensor<Float>) {
-        self.label = label
-        self.data = data
-    }
-
-    public init<C: RandomAccessCollection>(
-        _handles: C
-    ) where C.Element: _AnyTensorHandle {
-        precondition(_handles.count == 2)
-        let labelIndex = _handles.startIndex
-        let dataIndex = _handles.index(labelIndex, offsetBy: 1)
-        label = Tensor<Int32>(handle: TensorHandle<Int32>(handle: _handles[labelIndex]))
-        data = Tensor<Float>(handle: TensorHandle<Float>(handle: _handles[dataIndex]))
-    }
-}
-
-func loadCIFARFile(named name: String, in directory: String = ".") -> Example {
+func loadCIFARFile(named name: String, in directory: String = ".") -> CIFARExample {
     downloadCIFAR10IfNotPresent(to: directory)
     let path = "\(directory)/cifar-10-batches-bin/\(name)"
 
@@ -124,25 +119,17 @@ func loadCIFARFile(named name: String, in directory: String = ".") -> Example {
     let std = Tensor<Float>([0.229, 0.224, 0.225])
     let imagesNormalized = ((imageTensor / 255.0) - mean) / std
 
-    return Example(label: Tensor<Int32>(labelTensor), data: imagesNormalized)
+    return CIFARExample(label: Tensor<Int32>(labelTensor), data: imagesNormalized)
 }
 
-func loadCIFARTrainingFiles() -> Example {
+func loadCIFARTrainingFiles() -> CIFARExample {
     let data = (1..<6).map { loadCIFARFile(named: "data_batch_\($0).bin") }
-    return Example(
+    return CIFARExample(
         label: Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.label }),
         data: Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.data })
     )
 }
 
-func loadCIFARTestFile() -> Example {
+func loadCIFARTestFile() -> CIFARExample {
     return loadCIFARFile(named: "test_batch.bin")
-}
-
-func loadCIFAR10() -> (
-    training: Dataset<Example>, test: Dataset<Example>
-) {
-    let trainingDataset = Dataset<Example>(elements: loadCIFARTrainingFiles())
-    let testDataset = Dataset<Example>(elements: loadCIFARTestFile())
-    return (training: trainingDataset, test: testDataset)
 }

@@ -20,16 +20,13 @@ import TensorFlow
 // https://arxiv.org/abs/1605.07146
 // https://github.com/szagoruyko/wide-residual-networks
 
-struct BatchNormConv2DBlock: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
+public struct BatchNormConv2DBlock: Layer {
+    public var norm1: BatchNorm<Float>
+    public var conv1: Conv2D<Float>
+    public var norm2: BatchNorm<Float>
+    public var conv2: Conv2D<Float>
 
-    var norm1: BatchNorm<Float>
-    var conv1: Conv2D<Float>
-    var norm2: BatchNorm<Float>
-    var conv2: Conv2D<Float>
-
-    init(
+    public init(
         filterShape: (Int, Int, Int, Int),
         strides: (Int, Int) = (1, 1),
         padding: Padding = .same
@@ -41,53 +38,62 @@ struct BatchNormConv2DBlock: Layer {
     }
 
     @differentiable
-    func callAsFunction(_ input: Input) -> Output {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let firstLayer = conv1(relu(norm1(input)))
         return conv2(relu(norm2(firstLayer)))
     }
 }
 
-struct WideResNetBasicBlock: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
+public struct WideResNetBasicBlock: Layer {
+    public var blocks: [BatchNormConv2DBlock]
+    public var shortcut: Conv2D<Float>
 
-    var blocks: [BatchNormConv2DBlock]
-    var shortcut: Conv2D<Float>
-
-    init(
-        featureCounts: (Int, Int), 
+    public init(
+        featureCounts: (Int, Int),
         kernelSize: Int = 3,
         depthFactor: Int = 2,
         widenFactor: Int = 1,
         initialStride: (Int, Int) = (2, 2)
     ) {
         if initialStride == (1, 1) {
-            self.blocks = [BatchNormConv2DBlock(
-                filterShape: (kernelSize, kernelSize,
-                    featureCounts.0, featureCounts.1 * widenFactor),
-                strides: initialStride)]
+            self.blocks = [
+                BatchNormConv2DBlock(
+                    filterShape: (
+                        kernelSize, kernelSize,
+                        featureCounts.0, featureCounts.1 * widenFactor
+                    ),
+                    strides: initialStride)
+            ]
             self.shortcut = Conv2D(
                 filterShape: (1, 1, featureCounts.0, featureCounts.1 * widenFactor),
                 strides: initialStride)
         } else {
-            self.blocks = [BatchNormConv2DBlock(
-                filterShape: (kernelSize, kernelSize,
-                    featureCounts.0 * widenFactor, featureCounts.1 * widenFactor),
-                strides: initialStride)]
+            self.blocks = [
+                BatchNormConv2DBlock(
+                    filterShape: (
+                        kernelSize, kernelSize,
+                        featureCounts.0 * widenFactor, featureCounts.1 * widenFactor
+                    ),
+                    strides: initialStride)
+            ]
             self.shortcut = Conv2D(
                 filterShape: (1, 1, featureCounts.0 * widenFactor, featureCounts.1 * widenFactor),
                 strides: initialStride)
         }
         for _ in 1..<depthFactor {
-            self.blocks += [BatchNormConv2DBlock(
-            filterShape: (kernelSize, kernelSize,
-                featureCounts.1 * widenFactor, featureCounts.1 * widenFactor),
-            strides: (1, 1))]
+            self.blocks += [
+                BatchNormConv2DBlock(
+                    filterShape: (
+                        kernelSize, kernelSize,
+                        featureCounts.1 * widenFactor, featureCounts.1 * widenFactor
+                    ),
+                    strides: (1, 1))
+            ]
         }
     }
 
     @differentiable
-    func callAsFunction(_ input: Input) -> Output {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let blocksReduced = blocks.differentiableReduce(input) { last, layer in
             relu(layer(last))
         }
@@ -95,38 +101,38 @@ struct WideResNetBasicBlock: Layer {
     }
 }
 
-struct WideResNet: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
+public struct WideResNet: Layer {
+    public var l1: Conv2D<Float>
 
-    var l1: Conv2D<Float>
+    public var l2: WideResNetBasicBlock
+    public var l3: WideResNetBasicBlock
+    public var l4: WideResNetBasicBlock
 
-    var l2: WideResNetBasicBlock
-    var l3: WideResNetBasicBlock
-    var l4: WideResNetBasicBlock
- 
-    var norm: BatchNorm<Float>
-    var avgPool: AvgPool2D<Float>
-    var flatten = Flatten<Float>()
-    var classifier: Dense<Float>
+    public var norm: BatchNorm<Float>
+    public var avgPool: AvgPool2D<Float>
+    public var flatten = Flatten<Float>()
+    public var classifier: Dense<Float>
 
-    init(depthFactor: Int = 2, widenFactor: Int = 8) {
+    public init(depthFactor: Int = 2, widenFactor: Int = 8) {
         self.l1 = Conv2D(filterShape: (3, 3, 3, 16), strides: (1, 1), padding: .same)
 
-        l2 = WideResNetBasicBlock(featureCounts: (16, 16), depthFactor: depthFactor,
+        l2 = WideResNetBasicBlock(
+            featureCounts: (16, 16), depthFactor: depthFactor,
             widenFactor: widenFactor, initialStride: (1, 1))
-        l3 = WideResNetBasicBlock(featureCounts: (16, 32), depthFactor: depthFactor,
+        l3 = WideResNetBasicBlock(
+            featureCounts: (16, 32), depthFactor: depthFactor,
             widenFactor: widenFactor)
-        l4 = WideResNetBasicBlock(featureCounts: (32, 64), depthFactor: depthFactor,
+        l4 = WideResNetBasicBlock(
+            featureCounts: (32, 64), depthFactor: depthFactor,
             widenFactor: widenFactor)
-        
+
         self.norm = BatchNorm(featureCount: 64 * widenFactor)
         self.avgPool = AvgPool2D(poolSize: (8, 8), strides: (8, 8))
         self.classifier = Dense(inputSize: 64 * widenFactor, outputSize: 10)
     }
 
     @differentiable
-    func callAsFunction(_ input: Input) -> Output {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let inputLayer = input.sequenced(through: l1, l2, l3, l4)
         let finalNorm = relu(norm(inputLayer))
         return finalNorm.sequenced(through: avgPool, flatten, classifier)
@@ -134,7 +140,7 @@ struct WideResNet: Layer {
 }
 
 extension WideResNet {
-    enum Kind {
+    public enum Kind {
         case wideResNet16
         case wideResNet16k8
         case wideResNet16k10
@@ -150,7 +156,7 @@ extension WideResNet {
         case wideResNet40k8
     }
 
-    init(kind: Kind) {
+    public init(kind: Kind) {
         switch kind {
         case .wideResNet16, .wideResNet16k8:
             self.init(depthFactor: 2, widenFactor: 8)
