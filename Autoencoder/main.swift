@@ -12,21 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Foundation
-import TensorFlow
 import Datasets
+import Foundation
 import ModelSupport
+import TensorFlow
 
 let epochCount = 10
 let batchSize = 100
-let imageHeight = 28, imageWidth = 28
+let imageHeight = 28
+let imageWidth = 28
 
 let outputFolder = "./output/"
 
 /// An autoencoder.
 struct Autoencoder: Layer {
-    var encoder1 = Dense<Float>(inputSize: imageHeight * imageWidth, outputSize: 128,
+    var encoder1 = Dense<Float>(
+        inputSize: imageHeight * imageWidth, outputSize: 128,
         activation: relu)
+
     var encoder2 = Dense<Float>(inputSize: 128, outputSize: 64, activation: relu)
     var encoder3 = Dense<Float>(inputSize: 64, outputSize: 12, activation: relu)
     var encoder4 = Dense<Float>(inputSize: 12, outputSize: 3, activation: relu)
@@ -34,7 +37,9 @@ struct Autoencoder: Layer {
     var decoder1 = Dense<Float>(inputSize: 3, outputSize: 12, activation: relu)
     var decoder2 = Dense<Float>(inputSize: 12, outputSize: 64, activation: relu)
     var decoder3 = Dense<Float>(inputSize: 64, outputSize: 128, activation: relu)
-    var decoder4 = Dense<Float>(inputSize: 128, outputSize: imageHeight * imageWidth,
+
+    var decoder4 = Dense<Float>(
+        inputSize: 128, outputSize: imageHeight * imageWidth,
         activation: tanh)
 
     @differentiable
@@ -50,11 +55,16 @@ let optimizer = RMSProp(for: autoencoder)
 
 // Training loop
 for epoch in 1...epochCount {
-    let sampleImage = Tensor(shape: [1, imageHeight * imageWidth], scalars: dataset.trainingImages[epoch].scalars)
+    let sampleImage = Tensor(
+        shape: [1, imageHeight * imageWidth], scalars: dataset.trainingImages[epoch].scalars)
     let testImage = autoencoder(sampleImage)
 
-    saveImage(tensor: sampleImage, size: (imageWidth, imageHeight), directory: outputFolder, name: "epoch-\(epoch)-input")
-    saveImage(tensor: testImage, size: (imageWidth, imageHeight), directory: outputFolder, name: "epoch-\(epoch)-output")
+    saveImage(
+        tensor: sampleImage, size: (imageWidth, imageHeight), directory: outputFolder,
+        name: "epoch-\(epoch)-input")
+    saveImage(
+        tensor: testImage, size: (imageWidth, imageHeight), directory: outputFolder,
+        name: "epoch-\(epoch)-output")
 
     let sampleLoss = meanSquaredError(predicted: testImage, expected: sampleImage)
     print("[Epoch: \(epoch)] Loss: \(sampleLoss)")
