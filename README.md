@@ -14,6 +14,12 @@ For general information about Swift for TensorFlow development, please visit
 
 Use Swift Package Manager to develop Swift for TensorFlow models.
 
+### Project
+
+```bash
+swift package generate-xcodeproj
+```
+
 ### Build
 
 ```bash
@@ -24,6 +30,14 @@ swift build -Xlinker -ltensorflow
 
 ```bash
 swift test -Xlinker -ltensorflow
+```
+
+### Run
+
+```bash
+export PATH=/Library/Developer/Toolchains/swift-tensorflow-RELEASE-0.3.1.xctoolchain/usr/bin:"${PATH}"
+export PYTHON_LIBRARY=/Applications/Anaconda/anaconda3/lib/libpython3.6m.dylib
+/Users/foc/Library/Developer/Xcode/DerivedData/TensorFlowModels-awigbdjuqhbrsxhexcflboknfndq/Build/Products/Debug/ResNet 
 ```
 
 ## Bugs
