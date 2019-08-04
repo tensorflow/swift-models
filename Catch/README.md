@@ -23,5 +23,5 @@ installed. Make sure you've added the correct version of `swift` to your path.
 To train the model, run:
 
 ```
-swift -O catch.swift
+swift -O main.swift
 ```

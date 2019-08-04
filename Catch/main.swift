@@ -53,7 +53,7 @@ struct Model: Layer {
                               generator: &rng)
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         return input.sequenced(through: layer1, layer2)
     }
 }
@@ -83,7 +83,7 @@ extension CatchAgent {
         let (ŷ, backprop) = model.appliedForBackpropagation(to: x)
         let maxIndex = ŷ.argmax().scalarized()
 
-        let 𝛁loss = -log(Tensor(ŷ.max())).broadcast(like: ŷ) * previousReward
+        let 𝛁loss = -log(Tensor<Float>(ŷ.max())).broadcasted(like: ŷ) * previousReward
         let (𝛁model, _) = backprop(𝛁loss)
         optimizer.update(&model.allDifferentiableVariables, along: 𝛁model)
 
