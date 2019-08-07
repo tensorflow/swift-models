@@ -99,7 +99,7 @@ public struct ResidualBasicBlockStack: Layer {
     public var blocks: [ResidualBasicBlock] = []
 
     public init(featureCounts: (Int, Int, Int, Int), kernelSize: Int = 3, blockCount: Int) {
-        for _ in 1...blockCount {
+        for _ in 0..<blockCount {
             blocks += [ResidualBasicBlock(featureCounts: featureCounts, kernelSize: kernelSize)]
         }
     }
