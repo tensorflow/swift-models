@@ -19,10 +19,6 @@ import TensorFlow
 // Sergey Zagoruyko, Nikos Komodakis
 // https://arxiv.org/abs/1605.07146
 // https://github.com/szagoruyko/wide-residual-networks
-enum ShortcutType {
-    case id
-    case expansion
-}
 
 public struct BatchNormConv2DBlock: Layer {
     public var norm1: BatchNorm<Float>
@@ -30,7 +26,7 @@ public struct BatchNormConv2DBlock: Layer {
     public var norm2: BatchNorm<Float>
     public var conv2: Conv2D<Float>
     public var shortcut: Conv2D<Float>
-    let shortcutType: ShortcutType
+    let isExpansion: Bool
     let dropout: Dropout<Float> = Dropout(probability: 0.3)
 
     public init(
@@ -51,11 +47,7 @@ public struct BatchNormConv2DBlock: Layer {
         self.shortcut = Conv2D(filterShape: (1, 1, featureCounts.0, featureCounts.1), 
                                strides: strides, 
                                padding: padding)
-        if featureCounts.1 != featureCounts.0 || strides != (1, 1) {
-            self.shortcutType = .expansion
-        } else {
-            self.shortcutType = .id
-        }
+        self.isExpansion = featureCounts.1 != featureCounts.0 || strides != (1, 1) 
     }
 
     @differentiable
@@ -64,11 +56,10 @@ public struct BatchNormConv2DBlock: Layer {
         var residual = conv1(preact1)
         let preact2: Tensor<Float>
         let shortcutResult: Tensor<Float>
-        switch shortcutType {
-        case .expansion: 
+        if isExpansion {
             shortcutResult = shortcut(preact1)
             preact2 = relu(norm2(residual))
-        case .id: 
+        } else { 
             shortcutResult = input
             preact2 = dropout(relu(norm2(residual)))
         }
@@ -86,21 +77,10 @@ public struct WideResNetBasicBlock: Layer {
         depthFactor: Int = 2,
         initialStride: (Int, Int) = (2, 2)
     ) {
-        self.blocks = [
-            BatchNormConv2DBlock(
-                featureCounts: featureCounts,
-                kernelSize: kernelSize,
-                strides: initialStride)
-        ]
-        
+        self.blocks = [BatchNormConv2DBlock(featureCounts: featureCounts, strides: initialStride)]    
         for _ in 1..<depthFactor {
-            self.blocks += [
-                BatchNormConv2DBlock(
-                    featureCounts: (featureCounts.1, featureCounts.1),
-                    kernelSize: kernelSize)
-            ]
-        }
-        
+            self.blocks += [BatchNormConv2DBlock(featureCounts: (featureCounts.1, featureCounts.1))]
+        }  
     }
 
     @differentiable
