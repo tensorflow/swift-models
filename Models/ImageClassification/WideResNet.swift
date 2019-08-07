@@ -60,7 +60,7 @@ public struct BatchNormConv2DBlock: Layer {
 
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        var preact1 = relu(norm1(input))
+        let preact1 = relu(norm1(input))
         let shortcutResult: Tensor<Float>
         switch shortcutType {
         case .expansion: 
@@ -68,7 +68,7 @@ public struct BatchNormConv2DBlock: Layer {
         case .id: 
             shortcutResult = input
         }
-        tmp = conv1(preact1)
+        var tmp = conv1(preact1)
         tmp = conv2(dropout(relu(norm2(tmp))))
         return tmp + shortcutResult
     }
