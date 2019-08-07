@@ -31,6 +31,7 @@ public struct BatchNormConv2DBlock: Layer {
     public var conv2: Conv2D<Float>
     public var shortcut: Conv2D<Float>
     let shortcutType: ShortcutType
+    let dropout: Dropout<Float> = Dropout(probability: 0.3)
 
     public init(
         featureCounts: (Int, Int),
@@ -68,8 +69,8 @@ public struct BatchNormConv2DBlock: Layer {
             shortcutResult = input
         }
         tmp = conv1(preact1)
-        tmp = conv2(relu(norm2(tmp)))
-        return relu(tmp + shortcutResult)
+        tmp = conv2(dropout(relu(norm2(tmp))))
+        return tmp + shortcutResult
     }
 }
 
