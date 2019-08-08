@@ -11,16 +11,19 @@ func printUsage() {
     print("    --output: Path to output image")
 }
 
+/// Startup parameters.
 struct Config {
     var weights: String? = "Demo/weights/candy.npz"
     var image: String? = nil
     var output: String? = "out.jpg"
 }
+
 var config = Config()
-parseArgs(into: &config, with: [
+parseArguments(into: &config, with: [
     "weights": \Config.weights, 
     "image": \Config.image, 
-    "output": \Config.output])
+    "output": \Config.output
+])
 
 guard let image = config.image, let output = config.output else {
     print("Error: No input image!")
@@ -28,14 +31,13 @@ guard let image = config.image, let output = config.output else {
     exit(1)
 }
 
-// load image
 guard let imageTensor = try? loadJpegAsTensor(from: image) else {
     print("Error: Failed to load image \(image). Check file exists and has JPEG format")
     printUsage()
     exit(1)
 }
 
-// init model
+// Init the model.
 var style = TransformerNet()
 do {
     try importWeights(&style, from: config.weights!)
@@ -45,6 +47,8 @@ do {
     exit(1)
 }
 
+// Apply the model to image.
 let out = style(imageTensor.expandingShape(at: 0))
+
 saveTensorAsJpeg(out.squeezingShape(at: 0), to: output)
 print("Written output to \(output)")

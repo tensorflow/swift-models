@@ -2,10 +2,10 @@ import Foundation
 import TensorFlow
 import FastStyleTransfer
 
-// Make model importable
 extension TransformerNet: ImportableLayer {}
 
-func parseArgs<T>(into obj: inout T, with params: [String: WritableKeyPath<T, String?>]) {
+/// Updates `obj` with values from command line arguments according to `params` map.
+func parseArguments<T>(into obj: inout T, with params: [String: WritableKeyPath<T, String?>]) {
     for arg in CommandLine.arguments.dropFirst() {
         if !arg.starts(with: "--") { continue }
         let parts = arg.split(separator: "=", maxSplits: 2)
@@ -17,15 +17,15 @@ func parseArgs<T>(into obj: inout T, with params: [String: WritableKeyPath<T, St
 }
 
 enum FileError: Error {
-    case file_not_found
+    case fileNotFound
 }
 
+/// Updates `model` with parameters from numpy archive file in `path`.
 func importWeights(_ model: inout TransformerNet, from path: String) throws {
     guard FileManager.default.fileExists(atPath: path) else {
-        throw FileError.file_not_found
+        throw FileError.fileNotFound
     }
-    // Map of model params to loaded params
-    // Names don't match exactly, and axes in filters need to be reversed
+    // Names don't match exactly, and axes in filters need to be reversed.
     let map = [
         "conv1.conv2d.filter": ("conv1.conv2d.weight", [3, 2, 1, 0]),
         "conv2.conv2d.filter": ("conv2.conv2d.weight", [3, 2, 1, 0]),
@@ -77,14 +77,16 @@ func importWeights(_ model: inout TransformerNet, from path: String) throws {
     model.unsafeImport(fromNumpyArchive: path, map: map)
 }
 
+/// Loads from `file` and returns JPEG image as HxWxC tensor of floats in (0..1) range.
 func loadJpegAsTensor(from file: String) throws -> Tensor<Float> {
     guard FileManager.default.fileExists(atPath: file) else {
-        throw FileError.file_not_found
+        throw FileError.fileNotFound
     }
     let imgData = Raw.readFile(filename: StringTensor(file))
     return Tensor<Float>(Raw.decodeJpeg(contents: imgData, channels: 3, dctMethod: "")) / 255
 }
 
+/// Clips & converts HxWxC `tensor` of floats to byte range and saves as JPEG.
 func saveTensorAsJpeg(_ tensor: Tensor<Float>, to file: String) {
     let clipped = Raw.clipByValue(t: tensor, clipValueMin: Tensor(0), clipValueMax: Tensor(255))
     let jpg = Raw.encodeJpeg(image: Tensor<UInt8>(clipped), format: .rgb, xmpMetadata: "")
