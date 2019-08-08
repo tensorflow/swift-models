@@ -85,7 +85,7 @@ extension CatchAgent {
 
         let 𝛁loss = -log(Tensor<Float>(ŷ.max())).broadcasted(like: ŷ) * previousReward
         let (𝛁model, _) = backprop(𝛁loss)
-        optimizer.update(&model.allDifferentiableVariables, along: 𝛁model)
+        optimizer.update(&model, along: 𝛁model)
 
         return CatchAction(rawValue: Int(maxIndex))!
     }

@@ -39,7 +39,7 @@ for epoch in 1...100 {
         }
         trainingLossSum += loss.scalarized()
         trainingBatchCount += 1
-        optimizer.update(&model.allDifferentiableVariables, along: gradients)
+        optimizer.update(&model, along: gradients)
     }
 
     var testLossSum: Float = 0

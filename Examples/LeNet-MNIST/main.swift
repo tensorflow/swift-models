@@ -52,7 +52,7 @@ for epoch in 1...epochCount {
             return loss
         }
         // Update the model's differentiable variables along the gradient vector.
-        optimizer.update(&classifier.allDifferentiableVariables, along: 𝛁model)
+        optimizer.update(&classifier, along: 𝛁model)
     }
 
     Context.local.learningPhase = .inference

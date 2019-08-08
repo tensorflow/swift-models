@@ -154,7 +154,7 @@ for epoch in 1...epochCount {
             let loss = generatorLoss(fakeLogits: fakeLogits)
             return loss
         }
-        optG.update(&generator.allDifferentiableVariables, along: 𝛁generator)
+        optG.update(&generator, along: 𝛁generator)
         
         // Update discriminator.
         let realImages = dataset.trainingImages.minibatch(at: i, batchSize: batchSize)
@@ -167,7 +167,7 @@ for epoch in 1...epochCount {
             let loss = discriminatorLoss(realLogits: realLogits, fakeLogits: fakeLogits)
             return loss
         }
-        optD.update(&discriminator.allDifferentiableVariables, along: 𝛁discriminator)
+        optD.update(&discriminator, along: 𝛁discriminator)
     }
     
     // Start inference phase.
