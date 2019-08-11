@@ -20,9 +20,9 @@ enum FileError: Error {
     case fileNotFound
 }
 
-/// Updates `model` with parameters from numpy archive file in `path`.
+/// Updates `model` with parameters from V2 checkpoint in `path`.
 func importWeights(_ model: inout TransformerNet, from path: String) throws {
-    guard FileManager.default.fileExists(atPath: path) else {
+    guard FileManager.default.fileExists(atPath: path + ".data-00000-of-00001") else {
         throw FileError.fileNotFound
     }
     // Names don't match exactly, and axes in filters need to be reversed.
@@ -74,7 +74,7 @@ func importWeights(_ model: inout TransformerNet, from path: String) throws {
         "in5.scale": ("in5.weight", nil),
         "in5.offset": ("in5.bias", nil),
     ]
-    model.unsafeImport(fromNumpyArchive: path, map: map)
+    model.unsafeImport(fromCheckpointPath: path, map: map)
 }
 
 /// Loads from `file` and returns JPEG image as HxWxC tensor of floats in (0..1) range.

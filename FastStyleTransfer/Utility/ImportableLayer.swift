@@ -1,6 +1,4 @@
 import TensorFlow
-import Python
-let np = Python.import("numpy")
 
 public protocol ImportableLayer: KeyPathIterable {}
 
@@ -46,13 +44,15 @@ public extension ImportableLayer {
     }
 
     /// Updates model parameters with values from `parameters`, according to `ImportMap`.
-    /// TODO add shapes check
-    mutating func unsafeImport<T>(parameters: [String: Tensor<T>], map: ImportMap) {
-        for (label, keyPath) in getRecursiveNamedKeyPaths(ofType: Tensor<T>.self) {
-            // let shape = self[keyPath: keyPath].shape
+    mutating func unsafeImport(parameters: [String: Tensor<Float>], map: ImportMap) {
+        for (label, keyPath) in getRecursiveNamedKeyPaths(ofType: Tensor<Float>.self) {
+            let shape = self[keyPath: keyPath].shape
             if let mapping = map[label], var weights = parameters[mapping.0] {
                 if let permutes = mapping.1 {
                     weights = weights.transposed(withPermutations: permutes)
+                }
+                if weights.shape != shape {
+                    fatalError("Shapes do not match for \(label): \(shape) vs. \(weights.shape)")
                 }
                 self[keyPath: keyPath] = weights
                 // print("imported \(mapping.0) \(shape) -> \(label) \(weights.shape)")
@@ -65,15 +65,16 @@ public extension ImportableLayer {
 }
 
 public extension ImportableLayer {
-    /// Updates model parameters with values from numpy archive, according to `ImportMap`.
-    mutating func unsafeImport(fromNumpyArchive file: String, map: ImportMap) {
-        let data = np.load(file)
-        var parameters = [String: Tensor<Float>]()
-        for label in data.files {
-            if let label = String(label) {
-                parameters[label] = Tensor<Float>(numpy: data[label])
-            }
-        }
+    /// Updates model parameters with values from V2 checkpoint, according to `ImportMap`.
+    mutating func unsafeImport(fromCheckpointPath path: String, map: ImportMap) {
+        let tensorNames = map.values.map { $0.0 }
+        let tensorValues = Raw.restoreV2(
+            prefix: StringTensor(path), 
+            tensorNames: StringTensor(tensorNames),
+            shapeAndSlices: StringTensor(Array(repeating: "", count: tensorNames.count)),
+            dtypes: Array(repeating: Float.tensorFlowDataType, count: tensorNames.count)
+        ).map { $0 as! Tensor<Float> }
+        let parameters = Dictionary(uniqueKeysWithValues: zip(tensorNames, tensorValues))
         unsafeImport(parameters: parameters, map: map)
     }
 }
