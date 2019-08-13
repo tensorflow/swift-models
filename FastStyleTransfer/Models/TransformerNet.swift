@@ -122,10 +122,7 @@ public struct ResidualBlock: Layer {
     /// - Returns: The output.
     @differentiable
     public func callAsFunction(_ input: Input) -> Output {
-        return input + input.sequenced(through:
-            conv1, in1, relu,
-            conv2, in2
-        )
+        return input + input.sequenced(through: conv1, in1, relu, conv2, in2)
     }
 }
 

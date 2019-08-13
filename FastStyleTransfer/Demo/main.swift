@@ -19,11 +19,14 @@ struct Config {
 }
 
 var config = Config()
-parseArguments(into: &config, with: [
-    "weights": \Config.weights, 
-    "image": \Config.image, 
-    "output": \Config.output
-])
+parseArguments(
+    into: &config,
+    with: [
+        "weights": \Config.weights,
+        "image": \Config.image,
+        "output": \Config.output
+    ]
+)
 
 guard let image = config.image, let output = config.output else {
     print("Error: No input image!")

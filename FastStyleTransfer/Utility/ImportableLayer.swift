@@ -36,7 +36,7 @@ public extension ImportableLayer {
 
     /// Returns map of all recursive properties name to keypath.
     func getRecursiveNamedKeyPaths<T>(
-            ofType valueType: T.Type
+        ofType valueType: T.Type
     ) -> [String: WritableKeyPath<Self, T>] {
         let labels = getRecursiveProperties(ofType: T.self)
         let keys = self.recursivelyAllWritableKeyPaths(to: T.self)
@@ -69,7 +69,7 @@ public extension ImportableLayer {
     mutating func unsafeImport(fromCheckpointPath path: String, map: ImportMap) {
         let tensorNames = map.values.map { $0.0 }
         let tensorValues = Raw.restoreV2(
-            prefix: StringTensor(path), 
+            prefix: StringTensor(path),
             tensorNames: StringTensor(tensorNames),
             shapeAndSlices: StringTensor(Array(repeating: "", count: tensorNames.count)),
             dtypes: Array(repeating: Float.tensorFlowDataType, count: tensorNames.count)
