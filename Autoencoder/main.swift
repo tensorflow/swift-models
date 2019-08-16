@@ -77,6 +77,6 @@ for epoch in 1...epochCount {
             return meanSquaredError(predicted: image, expected: x)
         }
 
-        optimizer.update(&autoencoder.allDifferentiableVariables, along: 𝛁model)
+        optimizer.update(&autoencoder, along: 𝛁model)
     }
 }

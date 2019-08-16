@@ -184,7 +184,7 @@ while true {
             return loss
         }
     }
-    optimizer.update(&net.allDifferentiableVariables, along: gradients)
+    optimizer.update(&net, along: gradients)
 
     print("It has episode count \(episodeCount) and mean reward \(meanReward)")
 
