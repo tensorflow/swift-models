@@ -14,7 +14,7 @@
 
 import Foundation
 
-public func createDirectoryIfMissing(path: String) throws {
+public func createDirectoryIfMissing(at path: String) throws {
     guard !FileManager.default.fileExists(atPath: path) else { return }
     try FileManager.default.createDirectory(
         atPath: path,

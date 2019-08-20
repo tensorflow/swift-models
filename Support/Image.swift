@@ -82,7 +82,7 @@ public struct Image {
 }
 
 public func saveImage(_ tensor: Tensor<Float>, size: (Int, Int), directory: String, name: String) throws {
-    try createDirectoryIfMissing(path: directory)
+    try createDirectoryIfMissing(at: directory)
     let reshapedTensor = tensor.reshaped(to: [size.0, size.1, 1])
     let image = Image(tensor: reshapedTensor)
     let outputURL = URL(fileURLWithPath:"\(directory)\(name).jpg")
