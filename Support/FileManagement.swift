@@ -14,11 +14,10 @@
 
 import Foundation
 
-public func createDirectoryIfMissing(path: String) {
-    if !FileManager.default.fileExists(atPath: path) {
-        try! FileManager.default.createDirectory(
-            atPath: path,
-            withIntermediateDirectories: false,
-            attributes: nil)
-    }
+public func createDirectoryIfMissing(path: String) throws {
+    guard !FileManager.default.fileExists(atPath: path) else { return }
+    try FileManager.default.createDirectory(
+        atPath: path,
+        withIntermediateDirectories: false,
+        attributes: nil)
 }

@@ -117,11 +117,11 @@ let optD = Adam(for: discriminator, learningRate: 2e-4, beta1: 0.5)
 let testImageGridSize = 4
 let testVector = sampleVector(size: testImageGridSize * testImageGridSize)
 
-func saveImageGrid(_ testImage: Tensor<Float>, name: String) {
+func saveImageGrid(_ testImage: Tensor<Float>, name: String) throws {
     var gridImage = testImage.reshaped(
         to: [
             testImageGridSize, testImageGridSize,
-            imageHeight, imageWidth
+            imageHeight, imageWidth,
         ])
     // Add padding.
     gridImage = gridImage.padded(forSizes: [(0, 0), (0, 0), (1, 1), (1, 1)], with: 1)
@@ -130,13 +130,13 @@ func saveImageGrid(_ testImage: Tensor<Float>, name: String) {
     gridImage = gridImage.reshaped(
         to: [
             (imageHeight + 2) * testImageGridSize,
-            (imageWidth + 2) * testImageGridSize
+            (imageWidth + 2) * testImageGridSize,
         ])
     // Convert [-1, 1] range to [0, 1] range.
     gridImage = (gridImage + 1) / 2
 
-    saveImage(
-        tensor: gridImage, size: (gridImage.shape[0], gridImage.shape[1]), directory: outputFolder,
+    try saveImage(
+        gridImage, size: (gridImage.shape[0], gridImage.shape[1]), directory: outputFolder,
         name: name)
 }
 
@@ -176,7 +176,12 @@ for epoch in 1...epochCount {
     // Start inference phase.
     Context.local.learningPhase = .inference
     let testImage = generator(testVector)
-    saveImageGrid(testImage, name: "epoch-\(epoch)-output")
+
+    do {
+        try saveImageGrid(testImage, name: "epoch-\(epoch)-output")
+    } catch {
+        print("Could not save image grid with error: \(error)")
+    }
 
     let lossG = generatorLoss(fakeLogits: testImage)
     print("[Epoch: \(epoch)] Loss-G: \(lossG)")

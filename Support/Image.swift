@@ -21,12 +21,12 @@ public struct Image {
         case rgb
     }
 
-    enum ImageTensorFormat {
+    enum ImageTensor {
         case float(data: Tensor<Float>)
         case uint8(data: Tensor<UInt8>)
     }
 
-    let imageData: ImageTensorFormat
+    let imageData: ImageTensor
 
     public init(tensor: Tensor<UInt8>) {
         self.imageData = .uint8(data: tensor)
@@ -48,7 +48,7 @@ public struct Image {
     }
 
     public func save(to url: URL, quality: Int64 = 95) {
-        // Currently only saving in grayscale 
+        // This currently only saves in grayscale.
         let outputImageData: Tensor<UInt8>
         switch self.imageData {
         case let .uint8(data): outputImageData = data
@@ -81,9 +81,8 @@ public struct Image {
     }
 }
 
-public func saveImage(tensor: Tensor<Float>, size: (Int, Int), directory: String, name: String) {
-    createDirectoryIfMissing(path: directory)
-    
+public func saveImage(_ tensor: Tensor<Float>, size: (Int, Int), directory: String, name: String) throws {
+    try createDirectoryIfMissing(path: directory)
     let reshapedTensor = tensor.reshaped(to: [size.0, size.1, 1])
     let image = Image(tensor: reshapedTensor)
     let outputURL = URL(fileURLWithPath:"\(directory)\(name).jpg")

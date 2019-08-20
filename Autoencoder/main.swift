@@ -59,12 +59,16 @@ for epoch in 1...epochCount {
         shape: [1, imageHeight * imageWidth], scalars: dataset.trainingImages[epoch].scalars)
     let testImage = autoencoder(sampleImage)
 
-    saveImage(
-        tensor: sampleImage, size: (imageWidth, imageHeight), directory: outputFolder,
-        name: "epoch-\(epoch)-input")
-    saveImage(
-        tensor: testImage, size: (imageWidth, imageHeight), directory: outputFolder,
-        name: "epoch-\(epoch)-output")
+    do {
+        try saveImage(
+            sampleImage, size: (imageWidth, imageHeight), directory: outputFolder,
+            name: "epoch-\(epoch)-input")
+        try saveImage(
+            testImage, size: (imageWidth, imageHeight), directory: outputFolder,
+            name: "epoch-\(epoch)-output")
+    } catch {
+        print("Could not save image with error: \(error)")
+    }
 
     let sampleLoss = meanSquaredError(predicted: testImage, expected: sampleImage)
     print("[Epoch: \(epoch)] Loss: \(sampleLoss)")
