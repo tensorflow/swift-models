@@ -17,7 +17,7 @@ import XCTest
 
 @testable import ImageClassificationModels
 
-final class ModelInferenceTests: XCTestCase {
+final class ImageClassificationInferenceTests: XCTestCase {
     override class func setUp() {
         Context.local.learningPhase = .inference
     }
@@ -147,7 +147,7 @@ final class ModelInferenceTests: XCTestCase {
     }
 }
 
-extension ModelInferenceTests {
+extension ImageClassificationInferenceTests {
     static var allTests = [
         ("testLeNet", testLeNet),
         ("testResNet", testResNet),
