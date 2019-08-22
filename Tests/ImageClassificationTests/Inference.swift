@@ -103,47 +103,47 @@ final class ImageClassificationInferenceTests: XCTestCase {
 
     func testWideResNet() {
         let input = Tensor<Float>(
-            randomNormal: TensorShape(1, 224, 224, 3), mean: Tensor<Float>(0.5),
+            randomNormal: TensorShape(1, 32, 32, 3), mean: Tensor<Float>(0.5),
             standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
         let wideResNet16 = WideResNet(kind: .wideResNet16)
         let wideResNet16Result = wideResNet16(input)
-        XCTAssertEqual(wideResNet16Result.shape, TensorShape(1, 1000))
+        XCTAssertEqual(wideResNet16Result.shape, TensorShape(1, 10))
 
         let wideResNet16k10 = WideResNet(kind: .wideResNet16k10)
         let wideResNet16k10Result = wideResNet16k10(input)
-        XCTAssertEqual(wideResNet16k10Result.shape, TensorShape(1, 1000))
+        XCTAssertEqual(wideResNet16k10Result.shape, TensorShape(1, 10))
 
         let wideResNet22 = WideResNet(kind: .wideResNet22)
         let wideResNet22Result = wideResNet22(input)
-        XCTAssertEqual(wideResNet22Result.shape, TensorShape(1, 1000))
+        XCTAssertEqual(wideResNet22Result.shape, TensorShape(1, 10))
 
         let wideResNet22k10 = WideResNet(kind: .wideResNet22k10)
         let wideResNet22k10Result = wideResNet22k10(input)
-        XCTAssertEqual(wideResNet22k10Result.shape, TensorShape(1, 1000))
+        XCTAssertEqual(wideResNet22k10Result.shape, TensorShape(1, 10))
 
         let wideResNet28 = WideResNet(kind: .wideResNet28)
         let wideResNet28Result = wideResNet28(input)
-        XCTAssertEqual(wideResNet28Result.shape, TensorShape(1, 1000))
+        XCTAssertEqual(wideResNet28Result.shape, TensorShape(1, 10))
 
         let wideResNet28k12 = WideResNet(kind: .wideResNet28k12)
         let wideResNet28k12Result = wideResNet28k12(input)
-        XCTAssertEqual(wideResNet28k12Result.shape, TensorShape(1, 1000))
+        XCTAssertEqual(wideResNet28k12Result.shape, TensorShape(1, 10))
 
         let wideResNet40k1 = WideResNet(kind: .wideResNet40k1)
         let wideResNet40k1Result = wideResNet40k1(input)
-        XCTAssertEqual(wideResNet40k1Result.shape, TensorShape(1, 1000))
+        XCTAssertEqual(wideResNet40k1Result.shape, TensorShape(1, 10))
 
         let wideResNet40k2 = WideResNet(kind: .wideResNet40k2)
         let wideResNet40k2Result = wideResNet40k2(input)
-        XCTAssertEqual(wideResNet40k2Result.shape, TensorShape(1, 1000))
+        XCTAssertEqual(wideResNet40k2Result.shape, TensorShape(1, 10))
 
         let wideResNet40k4 = WideResNet(kind: .wideResNet40k4)
         let wideResNet40k4Result = wideResNet40k4(input)
-        XCTAssertEqual(wideResNet40k4Result.shape, TensorShape(1, 1000))
+        XCTAssertEqual(wideResNet40k4Result.shape, TensorShape(1, 10))
 
         let wideResNet40k8 = WideResNet(kind: .wideResNet40k8)
         let wideResNet40k8Result = wideResNet40k8(input)
-        XCTAssertEqual(wideResNet40k8Result.shape, TensorShape(1, 1000))
+        XCTAssertEqual(wideResNet40k8Result.shape, TensorShape(1, 10))
     }
 }
 
