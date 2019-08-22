@@ -11,6 +11,7 @@ let package = Package(
     products: [
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
         .library(name: "Datasets", targets: ["Datasets"]),
+        .library(name: "ModelSupport", targets: ["ModelSupport"]),
         .executable(name: "Custom-CIFAR10", targets: ["Custom-CIFAR10"]),
         .executable(name: "ResNet-CIFAR10", targets: ["ResNet-CIFAR10"]),
         .executable(name: "LeNet-MNIST", targets: ["LeNet-MNIST"]),
@@ -23,7 +24,8 @@ let package = Package(
     targets: [
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "Datasets", path: "Datasets"),
-        .target(name: "Autoencoder", dependencies: ["Datasets"], path: "Autoencoder"),
+        .target(name: "ModelSupport", path: "Support"),
+        .target(name: "Autoencoder", dependencies: ["Datasets", "ModelSupport"], path: "Autoencoder"),
         .target(name: "Catch", path: "Catch"),
         .target(name: "Gym-FrozenLake", path: "Gym/FrozenLake"),
         .target(name: "Gym-CartPole", path: "Gym/CartPole"),
@@ -43,7 +45,7 @@ let package = Package(
             sources: ["main.swift"]),
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
         .target(name: "Transformer", path: "Transformer"),
-        .target(name: "GAN", dependencies: ["Datasets"], path: "GAN"),
+        .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
         .target(name: "FastStyleTransfer", path: "FastStyleTransfer", exclude: ["Demo"]),
         .target(name: "FastStyleTransferDemo", dependencies: ["FastStyleTransfer"], 
             path: "FastStyleTransfer/Demo"),
