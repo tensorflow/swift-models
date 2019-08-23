@@ -3,17 +3,17 @@ import TensorFlow
 import FastStyleTransfer
 
 func printUsage() {
-    let exec = CommandLine.arguments[0].lastPathComponent
+    let exec = URL(string: CommandLine.arguments[0])!.lastPathComponent
     print("Usage:")
     print("\(exec) --weights=<path> --image=<path> --output=<path>")
-    print("    --weights: Path to weights in numpy format")
+    print("    --weights: Path to weights in TF checkpoint V2 format")
     print("    --image: Path to image in JPEG format")
     print("    --output: Path to output image")
 }
 
 /// Startup parameters.
 struct Config {
-    var weights: String? = "Demo/weights/candy.npz"
+    var weights: String? = "FastStyleTransfer/Demo/weights/candy"
     var image: String? = nil
     var output: String? = "out.jpg"
 }
@@ -45,7 +45,7 @@ var style = TransformerNet()
 do {
     try importWeights(&style, from: config.weights!)
 } catch {
-    print("Error: Failed to load weights \(config.weights!). Check file exists and has NPZ format")
+    print("Error: Failed to load weights \(config.weights!). Check path exists and contains TF checkpoint")
     printUsage()
     exit(1)
 }
