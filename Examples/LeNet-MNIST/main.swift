@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import TensorFlow
-import ImageClassificationModels
 import Datasets
 
 let epochCount = 12
