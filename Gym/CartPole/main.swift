@@ -35,24 +35,6 @@ fileprivate extension Optional {
     }
 }
 
-/// A simple two layer dense net.
-struct Net: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
-
-    var l1, l2: Dense<Float>
-
-    init(observationSize: Int, hiddenSize: Int, actionCount: Int) {
-        l1 = Dense<Float>(inputSize: observationSize, outputSize: hiddenSize, activation: relu)
-        l2 = Dense<Float>(inputSize: hiddenSize, outputSize: actionCount)
-    }
-
-    @differentiable
-    func callAsFunction(_ input: Input) -> Output {
-        return input.sequenced(through: l1, l2)
-    }
-}
-
 /// An episode is a list of steps, where each step records the observation from
 /// env and the action taken. They will serve respectively as the input and
 /// target (label) of the neural net training.
@@ -162,7 +144,12 @@ let observationSize = Int(env.observation_space.shape[0]).unwrapped()
 let actionCount = Int(env.action_space.n).unwrapped()
 // print(actionCount)
 
-var net = Net(observationSize: Int(observationSize), hiddenSize: hiddenSize, actionCount: actionCount)
+/// A simple two layer dense net.
+var net = Sequential {
+    Dense<Float>(inputSize: observationSize, outputSize: hiddenSize, activation: relu)
+    Dense<Float>(inputSize: hiddenSize, outputSize: actionCount)
+}
+
 // SGD optimizer reaches convergence with ~125 mini batches, while Adam uses ~25.
 // let optimizer = SGD<Net, Float>(learningRate: 0.1, momentum: 0.9)
 let optimizer = Adam(for: net, learningRate: 0.01)
