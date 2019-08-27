@@ -51,7 +51,7 @@ class CatchAgent: Agent {
         Dense<Float>(inputSize: 50, outputSize: 3, activation: sigmoid, generator: &rng)
     }
 
-    let optimizer: Adam<Model>
+    let optimizer: Adam<model>
     var previousReward: Reward
 
     init(initialReward: Reward, learningRate: Float) {
