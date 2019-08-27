@@ -144,7 +144,7 @@ let observationSize = Int(env.observation_space.shape[0]).unwrapped()
 let actionCount = Int(env.action_space.n).unwrapped()
 // print(actionCount)
 
-/// A simple two layer dense net.
+/// A simple two-layer dense net.
 var net = Sequential {
     Dense<Float>(inputSize: observationSize, outputSize: hiddenSize, activation: relu)
     Dense<Float>(inputSize: hiddenSize, outputSize: actionCount)

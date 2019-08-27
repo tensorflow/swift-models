@@ -24,14 +24,14 @@ let imageWidth = 28
 
 let outputFolder = "./output/"
 let dataset = MNIST(batchSize: batchSize, flattening: true)
-//An Autoencoder.
-var autoencoder = Sequential{
-    //The Encoder.
+// An autoencoder.
+var autoencoder = Sequential {
+    // The encoder.
     Dense<Float>(inputSize: imageHeight * imageWidth, outputSize: 128, activation: relu)
     Dense<Float>(inputSize: 128, outputSize: 64, activation: relu)
     Dense<Float>(inputSize: 64, outputSize: 12, activation: relu)
     Dense<Float>(inputSize: 12, outputSize: 3, activation: relu)
-    //The Decoder.
+    // The decoder.
     Dense<Float>(inputSize: 3, outputSize: 12, activation: relu)
     Dense<Float>(inputSize: 12, outputSize: 64, activation: relu)
     Dense<Float>(inputSize: 64, outputSize: 128, activation: relu)
