@@ -61,12 +61,17 @@ struct Model: Layer {
 class CatchAgent: Agent {
     typealias Action = CatchAction
 
-    var model: Model = Model()
-    let optimizer: Adam<Model>
+    var model = Sequential {
+        Dense<Float>(inputSize: 3, outputSize: 50, activation: sigmoid, generator: &rng)
+        Dense<Float>(inputSize: 50, outputSize: 3, activation: sigmoid, generator: &rng)
+    }
+
+    var learningRate: Float
+    lazy var optimizer = Adam(for: self.model, learningRate: self.learningRate)
     var previousReward: Reward
 
     init(initialReward: Reward, learningRate: Float) {
-        optimizer = Adam(for: model, learningRate: learningRate)
+        self.learningRate = learningRate
         previousReward = initialReward
     }
 }
