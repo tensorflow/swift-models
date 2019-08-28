@@ -52,8 +52,9 @@ public struct Fire: Layer {
     }
 }
 
-public struct SqueezeNet: Layer {
-    public var conv1 = Conv2D<Float>(filterShape: (7, 7, 3, 96), strides: (2, 2), padding: .same)
+public struct SqueezeNetV1_0: Layer {
+    public var conv1 = Conv2D<Float>(filterShape: (7, 7, 3, 96), strides: (2, 2), padding: .same,
+                                     activation: relu)
     public var maxPool1 = MaxPool2D<Float>(poolSize: (3, 3), strides: (2, 2))
     public var fire2 = Fire(
         inputFilterCount: 96,
@@ -102,7 +103,7 @@ public struct SqueezeNet: Layer {
     public var dropout = Dropout<Float>(probability: 0.5)
 
     public init(classCount: Int) {
-        conv10 = Conv2D(filterShape: (1, 1, 512, classCount), strides: (1, 1))
+        conv10 = Conv2D(filterShape: (1, 1, 512, classCount), strides: (1, 1), activation: relu)
     }
 
     @differentiable
@@ -110,6 +111,70 @@ public struct SqueezeNet: Layer {
         let convolved1 = input.sequenced(through: conv1, maxPool1)
         let fired1 = convolved1.sequenced(through: fire2, fire3, fire4, maxPool4, fire5, fire6)
         let fired2 = fired1.sequenced(through: fire7, fire8, maxPool8, fire9)
+        let convolved2 = fired2.sequenced(through: dropout, conv10, avgPool10)
+        return convolved2
+    }
+}
+
+public struct SqueezeNetV1_1: Layer {
+    public var conv1 = Conv2D<Float>(filterShape: (3, 3, 3, 96), strides: (2, 2), padding: .same,
+                                     activation: relu)
+    public var maxPool1 = MaxPool2D<Float>(poolSize: (3, 3), strides: (2, 2))
+    public var fire2 = Fire(
+        inputFilterCount: 64,
+        squeezeFilterCount: 16,
+        expand1FilterCount: 64,
+        expand3FilterCount: 64)
+    public var fire3 = Fire(
+        inputFilterCount: 128,
+        squeezeFilterCount: 16,
+        expand1FilterCount: 64,
+        expand3FilterCount: 64)
+    public var maxPool3 = MaxPool2D<Float>(poolSize: (3, 3), strides: (2, 2))
+    public var fire4 = Fire(
+        inputFilterCount: 128,
+        squeezeFilterCount: 32,
+        expand1FilterCount: 128,
+        expand3FilterCount: 128)
+    public var fire5 = Fire(
+        inputFilterCount: 256,
+        squeezeFilterCount: 32,
+        expand1FilterCount: 128,
+        expand3FilterCount: 128)
+    public var maxPool5 = MaxPool2D<Float>(poolSize: (3, 3), strides: (2, 2))
+    public var fire6 = Fire(
+        inputFilterCount: 256,
+        squeezeFilterCount: 48,
+        expand1FilterCount: 192,
+        expand3FilterCount: 192)
+    public var fire7 = Fire(
+        inputFilterCount: 384,
+        squeezeFilterCount: 48,
+        expand1FilterCount: 192,
+        expand3FilterCount: 192)
+    public var fire8 = Fire(
+        inputFilterCount: 384,
+        squeezeFilterCount: 64,
+        expand1FilterCount: 256,
+        expand3FilterCount: 256)
+    public var fire9 = Fire(
+        inputFilterCount: 512,
+        squeezeFilterCount: 64,
+        expand1FilterCount: 256,
+        expand3FilterCount: 256)
+    public var conv10: Conv2D<Float>
+    public var avgPool10 = AvgPool2D<Float>(poolSize: (13, 13), strides: (1, 1))
+    public var dropout = Dropout<Float>(probability: 0.5)
+
+    public init(classCount: Int) {
+        conv10 = Conv2D(filterShape: (1, 1, 512, classCount), strides: (1, 1), activation: relu)
+    }
+
+    @differentiable
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
+        let convolved1 = input.sequenced(through: conv1, maxPool1)
+        let fired1 = convolved1.sequenced(through: fire2, fire3, maxPool3, fire4, fire5)
+        let fired2 = fired1.sequenced(through: maxPool5, fire6, fire7, fire8, fire9)
         let convolved2 = fired2.sequenced(through: dropout, conv10, avgPool10)
         return convolved2
     }
