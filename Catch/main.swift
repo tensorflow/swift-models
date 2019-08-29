@@ -47,8 +47,8 @@ class CatchAgent: Agent {
     typealias Action = CatchAction
 
     var model = Sequential {
-        Dense<Float>(inputSize: 3, outputSize: 50, activation: sigmoid, generator: &rng)
-        Dense<Float>(inputSize: 50, outputSize: 3, activation: sigmoid, generator: &rng)
+        Dense<Float>(inputSize: 3, outputSize: 50, activation: sigmoid)
+        Dense<Float>(inputSize: 50, outputSize: 3, activation: sigmoid)
     }
 
     var learningRate: Float
