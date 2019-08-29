@@ -20,8 +20,6 @@ import TensorFlow
 //   gradients). The algorithm should perform some tensor computation (not a
 //   purely table-based approach).
 
-var rng = PhiloxRandomNumberGenerator(seed: 0xdeadbeef)
-
 extension Sequence {
     /// Returns elements' descriptions joined by a separator.
     func description(joinedBy separator: String) -> String {
