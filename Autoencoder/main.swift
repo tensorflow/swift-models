@@ -23,34 +23,20 @@ let imageHeight = 28
 let imageWidth = 28
 
 let outputFolder = "./output/"
-
-/// An autoencoder.
-struct Autoencoder: Layer {
-    var encoder1 = Dense<Float>(
-        inputSize: imageHeight * imageWidth, outputSize: 128,
-        activation: relu)
-
-    var encoder2 = Dense<Float>(inputSize: 128, outputSize: 64, activation: relu)
-    var encoder3 = Dense<Float>(inputSize: 64, outputSize: 12, activation: relu)
-    var encoder4 = Dense<Float>(inputSize: 12, outputSize: 3, activation: relu)
-
-    var decoder1 = Dense<Float>(inputSize: 3, outputSize: 12, activation: relu)
-    var decoder2 = Dense<Float>(inputSize: 12, outputSize: 64, activation: relu)
-    var decoder3 = Dense<Float>(inputSize: 64, outputSize: 128, activation: relu)
-
-    var decoder4 = Dense<Float>(
-        inputSize: 128, outputSize: imageHeight * imageWidth,
-        activation: tanh)
-
-    @differentiable
-    func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        let encoder = input.sequenced(through: encoder1, encoder2, encoder3, encoder4)
-        return encoder.sequenced(through: decoder1, decoder2, decoder3, decoder4)
-    }
-}
-
 let dataset = MNIST(batchSize: batchSize, flattening: true)
-var autoencoder = Autoencoder()
+// An autoencoder.
+var autoencoder = Sequential {
+    // The encoder.
+    Dense<Float>(inputSize: imageHeight * imageWidth, outputSize: 128, activation: relu)
+    Dense<Float>(inputSize: 128, outputSize: 64, activation: relu)
+    Dense<Float>(inputSize: 64, outputSize: 12, activation: relu)
+    Dense<Float>(inputSize: 12, outputSize: 3, activation: relu)
+    // The decoder.
+    Dense<Float>(inputSize: 3, outputSize: 12, activation: relu)
+    Dense<Float>(inputSize: 12, outputSize: 64, activation: relu)
+    Dense<Float>(inputSize: 64, outputSize: 128, activation: relu)
+    Dense<Float>(inputSize: 128, outputSize: imageHeight * imageWidth, activation: tanh)
+}
 let optimizer = RMSProp(for: autoencoder)
 
 // Training loop
