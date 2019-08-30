@@ -53,8 +53,11 @@ public struct Fire: Layer {
 }
 
 public struct SqueezeNetV1_0: Layer {
-    public var conv1 = Conv2D<Float>(filterShape: (7, 7, 3, 96), strides: (2, 2), padding: .same,
-                                     activation: relu)
+    public var conv1 = Conv2D<Float>(
+        filterShape: (7, 7, 3, 96),
+        strides: (2, 2),
+        padding: .same,
+        activation: relu)
     public var maxPool1 = MaxPool2D<Float>(poolSize: (3, 3), strides: (2, 2))
     public var fire2 = Fire(
         inputFilterCount: 96,
@@ -118,8 +121,11 @@ public struct SqueezeNetV1_0: Layer {
 }
 
 public struct SqueezeNetV1_1: Layer {
-    public var conv1 = Conv2D<Float>(filterShape: (3, 3, 3, 64), strides: (2, 2), padding: .same,
-                                     activation: relu)
+    public var conv1 = Conv2D<Float>(
+        filterShape: (3, 3, 3, 64),
+        strides: (2, 2),
+        padding: .same,
+        activation: relu)
     public var maxPool1 = MaxPool2D<Float>(poolSize: (3, 3), strides: (2, 2))
     public var fire2 = Fire(
         inputFilterCount: 64,
