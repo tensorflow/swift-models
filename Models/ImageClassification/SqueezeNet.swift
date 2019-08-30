@@ -177,6 +177,7 @@ public struct SqueezeNetV1_1: Layer {
         let fired1 = convolved1.sequenced(through: fire2, fire3, maxPool3, fire4, fire5)
         let fired2 = fired1.sequenced(through: maxPool5, fire6, fire7, fire8, fire9)
         let convolved2 = fired2.sequenced(through: dropout, conv10, avgPool10)
+            .reshaped(to: [input.shape[0], conv10.filter.shape[3]])
         return convolved2
     }
 }

@@ -92,11 +92,20 @@ final class ImageClassificationInferenceTests: XCTestCase {
         XCTAssertEqual(resNet34ImageNetResult.shape, [1, 1000])
     }
 
-    func testSqueezeNet() {
+    func testSqueezeNetV1_0() {
         let input = Tensor<Float>(
             randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
             standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
-        let squeezeNet = SqueezeNet(classCount: 1000)
+        let squeezeNet = SqueezeNetV1_0(classCount: 1000)
+        let squeezeNetResult = squeezeNet(input)
+        XCTAssertEqual(squeezeNetResult.shape, [1, 1000])
+    }
+
+    func testSqueezeNetV1_1() {
+        let input = Tensor<Float>(
+            randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
+            standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
+        let squeezeNet = SqueezeNetV1_1(classCount: 1000)
         let squeezeNetResult = squeezeNet(input)
         XCTAssertEqual(squeezeNetResult.shape, [1, 1000])
     }
@@ -152,7 +161,8 @@ extension ImageClassificationInferenceTests {
         ("testLeNet", testLeNet),
         ("testResNet", testResNet),
         ("testResNetV2", testResNetV2),
-        ("testSqueezeNet", testSqueezeNet),
+        ("testSqueezeNetV1_0", testSqueezeNetV1_0),
+        ("testSqueezeNetV1_1", testSqueezeNetV1_1),
         ("testWideResNet", testWideResNet),
     ]
 }
