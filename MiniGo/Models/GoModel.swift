@@ -56,8 +56,7 @@ struct ConvBatchNorm: Layer {
         self.conv = Conv2D(
             filterShape: (kernelSize, kernelSize, inputFeatures, outputFeatures),
             strides: (stride, stride),
-            padding: padding,
-            filterInitializer: glorotUniform())
+            padding: padding)
         self.norm = BatchNorm(
             featureCount: outputFeatures,
             momentum: Tensor(0.95),

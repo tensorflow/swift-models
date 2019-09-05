@@ -1,6 +1,6 @@
 import TensorFlow
 
-extension Array: Module, Layer where Element: Layer, Element.Input == Element.Output {
+extension Array: Layer where Element: Layer, Element.Input == Element.Output {
     public typealias Input = Element.Input
     public typealias Output = Element.Output
 
