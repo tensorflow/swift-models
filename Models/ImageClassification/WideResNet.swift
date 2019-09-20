@@ -26,8 +26,8 @@ public struct BatchNormConv2DBlock: Layer {
     public var norm2: BatchNorm<Float>
     public var conv2: Conv2D<Float>
     public var shortcut: Conv2D<Float>
-    let isExpansion: Bool
-    let dropout: Dropout<Float> = Dropout(probability: 0.3)
+    @noDerivative let isExpansion: Bool
+    @noDerivative let dropout: Dropout<Float> = Dropout(probability: 0.3)
 
     public init(
         featureCounts: (Int, Int),
