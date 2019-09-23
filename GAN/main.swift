@@ -140,8 +140,10 @@ func saveImageGrid(_ testImage: Tensor<Float>, name: String) throws {
         name: name)
 }
 
+Context.local.randomSeed = (0, 0)
 print("Start training...")
 
+func main() {
 // Start training loop.
 for epoch in 1...epochCount {
     // Start training phase.
@@ -186,3 +188,16 @@ for epoch in 1...epochCount {
     let lossG = generatorLoss(fakeLogits: testImage)
     print("[Epoch: \(epoch)] Loss-G: \(lossG)")
 }
+}
+
+func time(_ body: () -> Void) {
+  let divisor: Float = 1_000_000_000
+  let start = Float(DispatchTime.now().uptimeNanoseconds) / divisor
+  print("Start: \(start)s")
+  body()
+  let end = Float(DispatchTime.now().uptimeNanoseconds) / divisor
+  print("End: \(end)s")
+  let elapsed = end - start
+  print("Elapsed: \(elapsed)s")
+}
+time(main)
