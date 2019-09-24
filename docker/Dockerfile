@@ -3,7 +3,7 @@
 FROM nvidia/cuda:9.2-cudnn7-devel-ubuntu18.04
 
 # Allows the caller to specify the toolchain to use.
-ARG swift_tf_url=https://storage.googleapis.com/s4tf-kokoro-artifact-testing/latest/swift-tensorflow-DEVELOPMENT-ubuntu18.04.tar.gz
+ARG swift_tf_url=https://storage.googleapis.com/swift-tensorflow-artifacts/nightlies/latest/swift-tensorflow-DEVELOPMENT-ubuntu18.04.tar.gz
 
 # Install Swift deps.
 ENV DEBIAN_FRONTEND=noninteractive
@@ -28,6 +28,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libncurses5-dev \
         libxml2 \
         libblocksruntime-dev
+
+# Install Python libraries
+RUN pip3 install numpy matplotlib gym
 
 # Configure cuda
 RUN echo "/usr/local/cuda-9.2/targets/x86_64-linux/lib/stubs" > /etc/ld.so.conf.d/cuda-9.2-stubs.conf && \

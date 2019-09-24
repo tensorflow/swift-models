@@ -23,7 +23,7 @@ struct TimeDistributed: Layer {
     }
 
     @differentiable(wrt: (self, input))
-    func call(_ input: Tensor<Float>) -> Tensor<Float> {
+    func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let (batchSize, timeSteps, features) = (input.shape[0], input.shape[1], input.shape[2])
         let reshaped = input.reshaped(to: [batchSize * timeSteps, features])
         let output = dense(reshaped)
@@ -45,15 +45,15 @@ struct FeedForward: Layer {
     }
 
     @differentiable(wrt: (self, input))
-    func call(_ input: Tensor<Float>) -> Tensor<Float> {
+    func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         return input.sequenced(through: dense1, dropout, dense2)
     }
 }
 
 struct AttentionInput: Differentiable {
-    let query: Tensor<Float>
-    let key: Tensor<Float>
-    let value: Tensor<Float>
+    var query: Tensor<Float>
+    var key: Tensor<Float>
+    var value: Tensor<Float>
 }
 
 @differentiable(wrt: (query, key, value), vjp: _vjpMakeAttentionInput)
@@ -63,14 +63,14 @@ func makeAttentionInput(query: Tensor<Float>, key: Tensor<Float>, value: Tensor<
 }
 
 func _vjpMakeAttentionInput(query: Tensor<Float>, key: Tensor<Float>, value: Tensor<Float>)
-    -> (AttentionInput, (AttentionInput.CotangentVector) -> (Tensor<Float>, Tensor<Float>, Tensor<Float>)) {
+    -> (AttentionInput, (AttentionInput.TangentVector) -> (Tensor<Float>, Tensor<Float>, Tensor<Float>)) {
     let result = AttentionInput(query: query, key: key, value: value)
     return (result, { seed in (seed.query, seed.key, seed.value) })
 }
 
 struct AttentionContext: Differentiable {
-    let key: Tensor<Float>
-    let value: Tensor<Float>
+    var key: Tensor<Float>
+    var value: Tensor<Float>
 }
 
 @differentiable(wrt: (key, value), vjp: _vjpMakeAttentionContext)
@@ -80,7 +80,7 @@ func makeAttentionContext(key: Tensor<Float>, value: Tensor<Float>)
 }
 
 func _vjpMakeAttentionContext(key: Tensor<Float>, value: Tensor<Float>)
-    -> (AttentionContext, (AttentionContext.CotangentVector) -> (Tensor<Float>, Tensor<Float>)) {
+    -> (AttentionContext, (AttentionContext.TangentVector) -> (Tensor<Float>, Tensor<Float>)) {
     let result = AttentionContext(key: key, value: value)
     return (result, { seed in (seed.key, seed.value) })
 }
@@ -105,7 +105,7 @@ func _vjpCausallyMasked(_ dotProducts: Tensor<Float>, enable: Bool)
     return (causallyMasked(dotProducts), identity)
 }
 
-struct Attention: Layer {
+struct Attention: ParameterlessLayer {
     @noDerivative let dropout: Dropout<Float>
     @noDerivative let scale: Tensor<Float>
     @noDerivative let causal: Bool
@@ -117,13 +117,13 @@ struct Attention: Layer {
     }
     
     @differentiable(wrt: (self, input))
-    func call(_ input: AttentionInput) -> Tensor<Float> {
+    func callAsFunction(_ input: AttentionInput) -> Tensor<Float> {
         var dotProducts = batchedMatmul(input.query, input.key, adjointRight: true)
         dotProducts = causallyMasked(dotProducts, enable: causal) / scale
         return batchedMatmul(dropout(softmax(dotProducts)), input.value)
     }
     
-    func call(_ input: AttentionInput, state: inout AttentionContext) -> Tensor<Float> {
+    func callAsFunction(_ input: AttentionInput, state: inout AttentionContext) -> Tensor<Float> {
         state = AttentionContext(
             key: state.key.concatenated(with: input.key, alongAxis: 1),
             value: state.value.concatenated(with: input.value, alongAxis: 1))
@@ -170,7 +170,7 @@ func splitQKV(_ input: Tensor<Float>) -> AttentionInput {
 }
 
 func _vjpSplitQKV(_ input: Tensor<Float>)
-    -> (AttentionInput, (AttentionInput.CotangentVector) -> Tensor<Float>) {
+    -> (AttentionInput, (AttentionInput.TangentVector) -> Tensor<Float>) {
     let value = splitQKV(input)
     return (value, { seed in
         return Raw.concatV2([seed.query, seed.key, seed.value], axis: Tensor<Int32>(2))
@@ -192,7 +192,7 @@ struct MultiHeadAttention: Layer {
     }
     
     @differentiable(wrt: (self, input))
-    func call(_ input: Tensor<Float>) -> Tensor<Float> {
+    func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let qkvProjected = wqkv(input)
         let qkvSplit = splitHeads(qkvProjected, headCount: headCount)
         let attentionInput = splitQKV(qkvSplit)
@@ -200,7 +200,7 @@ struct MultiHeadAttention: Layer {
         return wo(joinHeads(outputs, headCount: headCount))
     }
     
-    func call(_ input: Tensor<Float>, state: inout AttentionContext) -> Tensor<Float> {
+    func callAsFunction(_ input: Tensor<Float>, state: inout AttentionContext) -> Tensor<Float> {
         let qkvProjected = wqkv(input)
         let qkvSplit = splitQKV(qkvProjected)
         let attentionInput = makeAttentionInput(
@@ -234,14 +234,14 @@ struct EncoderLayer: Layer {
     }
 
     @differentiable(wrt: (self, input))
-    func call(_ input: Tensor<Float>) -> Tensor<Float> {
+    func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let attended = input + input.sequenced(
             through: selfAttentionNorm, selfAttention, selfAttentionDropout)
         return attended + attended.sequenced(
             through: feedForwardNorm, feedForward, feedForwardDropout)
     }
 
-    func call(_ input: Tensor<Float>, state: inout AttentionContext) -> Tensor<Float> {
+    func callAsFunction(_ input: Tensor<Float>, state: inout AttentionContext) -> Tensor<Float> {
         var tmp = input
         tmp = selfAttentionNorm(tmp)
         tmp = selfAttention(tmp, state: &state)
@@ -264,7 +264,7 @@ struct Embedding: Differentiable {
     }
 
     @differentiable(wrt: self)
-    func call(_ input: Tensor<Int32>) -> Tensor<Float> {
+    func callAsFunction(_ input: Tensor<Int32>) -> Tensor<Float> {
         return weight.gathering(atIndices: input)
     }
 }
@@ -275,13 +275,14 @@ struct TransformerLM {
     var layers: [EncoderLayer]
     var norm: LayerNorm<Float>
 
-    func call(_ tokens: Tensor<Int32>, states: inout [AttentionContext]) -> Tensor<Float> {
+    func callAsFunction(_ tokens: Tensor<Int32>, states: inout [AttentionContext]) -> Tensor<Float> {
         let positions = (0..<tokens.shape[1]).map { Int32($0 + states[0].key.shape[1]) }
         let positionsTensor = Tensor<Int32>(shape: [1, tokens.shape[1]], scalars: positions)
         var h = embedding(tokens)
         h = h + positionalEmbeddings.gathering(atIndices: positionsTensor)
         for i in 0..<layers.count {
-            h = layers[i](h, state: &states[i])
+            // Remove the .call when TF-516 is fixed.
+            h = layers[i].callAsFunction(h, state: &states[i])
         }
         h = norm(h)
         let tmp = TimeDistributed(

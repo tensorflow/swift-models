@@ -10,6 +10,10 @@ This directory contains reinforcement learning algorithms in [OpenAI Gym](https:
 
 > The agent controls the movement of a character in a grid world. Some tiles of the grid are walkable, and others lead to the agent falling into the water. Additionally, the movement direction of the agent is uncertain and only partially depends on the chosen direction. The agent is rewarded for finding a walkable path to a goal tile.
 
+## [Blackjack](https://gym.openai.com/envs/Blackjack-v0)
+
+> This demonstrates four different approaches to playing the game Blackjack, including a q-learning approach.
+
 ## Setup
 
 To begin, you'll need the [latest version of Swift for
@@ -26,4 +30,5 @@ To build and run the models, run:
 ```bash
 swift run Gym-CartPole
 swift run Gym-FrozenLake
+swift run Gym-Blackjack
 ```

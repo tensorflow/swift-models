@@ -48,7 +48,7 @@ struct Net: Layer {
     }
 
     @differentiable
-    func call(_ input: Input) -> Output {
+    func callAsFunction(_ input: Input) -> Output {
         return input.sequenced(through: l1, l2)
     }
 }
@@ -184,7 +184,7 @@ while true {
             return loss
         }
     }
-    optimizer.update(&net.allDifferentiableVariables, along: gradients)
+    optimizer.update(&net, along: gradients)
 
     print("It has episode count \(episodeCount) and mean reward \(meanReward)")
 

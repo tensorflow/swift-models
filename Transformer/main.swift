@@ -14,13 +14,19 @@
 
 import Python
 import TensorFlow
+import Foundation
 
+let modelName = "117M"
 let sys = Python.import("sys")
 sys.path = sys.path + ["."]
-let encoder = Python.import("encoder").get_encoder("117M")
+let encoder = Python.import("encoder").get_encoder(modelName)
 
-let checkpoint = "models/117M/model.ckpt"
-let model = TransformerLM(contentsOfPythonCheckpointFile: checkpoint, scope: "model")
+let checkpoint = "models/\(modelName)/model.ckpt"
+let configFile = "models/\(modelName)/hparams.json"
+let configData = try Data(contentsOf: URL(fileURLWithPath: configFile))
+let config = try JSONDecoder().decode(Config.self, from: configData)
+let model = TransformerLM(
+    contentsOfPythonCheckpointFile: checkpoint, config: config, scope: "model")
 
 let start_token = Int32(encoder.encoder["<|endoftext|>"])!
 var tokens = Tensor(shape: [1, 1], scalars: [start_token])

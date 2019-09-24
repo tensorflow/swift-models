@@ -61,7 +61,7 @@ struct ConvBN: Layer {
     }
 
     @differentiable
-    func call(_ input: Tensor<Float>) -> Tensor<Float> {
+    func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         return norm(conv(input))
     }
 }
@@ -90,7 +90,7 @@ struct ResidualIdentityBlock: Layer {
     }
 
     @differentiable
-    func call(_ input: Tensor<Float>) -> Tensor<Float> {
+    func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         var tmp = relu(layer1(input))
         tmp = layer2(tmp)
         return relu(tmp + input)
@@ -106,9 +106,9 @@ extension ResidualIdentityBlock: LoadableFromPythonCheckpoint {
 
 // This is needed because we can't conform tuples to protocols
 public struct GoModelOutput: Differentiable {
-    public let policy: Tensor<Float>
-    public let value: Tensor<Float>
-    public let logits: Tensor<Float>
+    public var policy: Tensor<Float>
+    public var value: Tensor<Float>
+    public var logits: Tensor<Float>
 }
 
 public struct GoModel: Layer {
@@ -158,7 +158,7 @@ public struct GoModel: Layer {
     }
   
     @differentiable(wrt: (self, input), vjp: _vjpCall)
-    public func call(_ input: Tensor<Float>) -> GoModelOutput {
+    public func callAsFunction(_ input: Tensor<Float>) -> GoModelOutput {
         let batchSize = input.shape[0]
         var output = relu(initialConv(input))
 
@@ -183,12 +183,12 @@ public struct GoModel: Layer {
 
     @usableFromInline
     func _vjpCall(_ input: Tensor<Float>)
-        -> (GoModelOutput, (GoModelOutput.CotangentVector)
-        -> (GoModel.CotangentVector, Tensor<Float>)) {
+        -> (GoModelOutput, (GoModelOutput.TangentVector)
+        -> (GoModel.TangentVector, Tensor<Float>)) {
         // TODO(jekbradbury): add a real VJP
         // (we're only interested in inference for now and have control flow in our `call(_:)` method)
         return (self(input), {
-            seed in (GoModel.CotangentVector.zero, Tensor<Float>(0))
+            seed in (GoModel.TangentVector.zero, Tensor<Float>(0))
         })
     }
 }
