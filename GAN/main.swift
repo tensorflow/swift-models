@@ -12,59 +12,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Foundation
-import TensorFlow
-import Python
 import Datasets
-
-// Import Python modules.
-let matplotlib = Python.import("matplotlib")
-let np = Python.import("numpy")
-
-// Use the AGG renderer for saving images to disk.
-matplotlib.use("Agg")
-
-let plt = Python.import("matplotlib.pyplot")
+import Foundation
+import ModelSupport
+import TensorFlow
 
 let epochCount = 10
 let batchSize = 32
 let outputFolder = "./output/"
-let imageHeight = 28, imageWidth = 28
+let imageHeight = 28
+let imageWidth = 28
 let imageSize = imageHeight * imageWidth
 let latentSize = 64
-
-func plotImage(_ image: Tensor<Float>, name: String) {
-    // Create figure.
-    let ax = plt.gca()
-    let array = np.array([image.scalars])
-    let pixels = array.reshape(image.shape)
-    if !FileManager.default.fileExists(atPath: outputFolder) {
-        try! FileManager.default.createDirectory(
-            atPath: outputFolder,
-            withIntermediateDirectories: false,
-            attributes: nil)
-    }
-    ax.imshow(pixels, cmap: "gray")
-    plt.savefig("\(outputFolder)\(name).png", dpi: 300)
-    plt.close()
-}
 
 // Models
 
 struct Generator: Layer {
-    var dense1 = Dense<Float>(inputSize: latentSize, outputSize: latentSize * 2,
-                              activation: { leakyRelu($0) })
-    var dense2 = Dense<Float>(inputSize: latentSize * 2, outputSize: latentSize * 4,
-                              activation: { leakyRelu($0) })
-    var dense3 = Dense<Float>(inputSize: latentSize * 4, outputSize: latentSize * 8,
-                              activation: { leakyRelu($0) })
-    var dense4 = Dense<Float>(inputSize: latentSize * 8, outputSize: imageSize,
-                              activation: tanh)
-    
+    var dense1 = Dense<Float>(
+        inputSize: latentSize, outputSize: latentSize * 2,
+        activation: { leakyRelu($0) })
+
+    var dense2 = Dense<Float>(
+        inputSize: latentSize * 2, outputSize: latentSize * 4,
+        activation: { leakyRelu($0) })
+
+    var dense3 = Dense<Float>(
+        inputSize: latentSize * 4, outputSize: latentSize * 8,
+        activation: { leakyRelu($0) })
+
+    var dense4 = Dense<Float>(
+        inputSize: latentSize * 8, outputSize: imageSize,
+        activation: tanh)
+
     var batchnorm1 = BatchNorm<Float>(featureCount: latentSize * 2)
     var batchnorm2 = BatchNorm<Float>(featureCount: latentSize * 4)
     var batchnorm3 = BatchNorm<Float>(featureCount: latentSize * 8)
-    
+
     @differentiable
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let x1 = batchnorm1(dense1(input))
@@ -75,15 +58,22 @@ struct Generator: Layer {
 }
 
 struct Discriminator: Layer {
-    var dense1 = Dense<Float>(inputSize: imageSize, outputSize: 256,
-                              activation: { leakyRelu($0) })
-    var dense2 = Dense<Float>(inputSize: 256, outputSize: 64,
-                              activation: { leakyRelu($0) })
-    var dense3 = Dense<Float>(inputSize: 64, outputSize: 16,
-                              activation: { leakyRelu($0) })
-    var dense4 = Dense<Float>(inputSize: 16, outputSize: 1,
-                              activation: identity)
-    
+    var dense1 = Dense<Float>(
+        inputSize: imageSize, outputSize: 256,
+        activation: { leakyRelu($0) })
+
+    var dense2 = Dense<Float>(
+        inputSize: 256, outputSize: 64,
+        activation: { leakyRelu($0) })
+
+    var dense3 = Dense<Float>(
+        inputSize: 64, outputSize: 16,
+        activation: { leakyRelu($0) })
+
+    var dense4 = Dense<Float>(
+        inputSize: 16, outputSize: 1,
+        activation: identity)
+
     @differentiable
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         input.sequenced(through: dense1, dense2, dense3, dense4)
@@ -94,16 +84,19 @@ struct Discriminator: Layer {
 
 @differentiable
 func generatorLoss(fakeLogits: Tensor<Float>) -> Tensor<Float> {
-    sigmoidCrossEntropy(logits: fakeLogits,
-                        labels: Tensor(ones: fakeLogits.shape))
+    sigmoidCrossEntropy(
+        logits: fakeLogits,
+        labels: Tensor(ones: fakeLogits.shape))
 }
 
 @differentiable
 func discriminatorLoss(realLogits: Tensor<Float>, fakeLogits: Tensor<Float>) -> Tensor<Float> {
-    let realLoss = sigmoidCrossEntropy(logits: realLogits,
-                                       labels: Tensor(ones: realLogits.shape))
-    let fakeLoss = sigmoidCrossEntropy(logits: fakeLogits,
-                                       labels: Tensor(zeros: fakeLogits.shape))
+    let realLoss = sigmoidCrossEntropy(
+        logits: realLogits,
+        labels: Tensor(ones: realLogits.shape))
+    let fakeLoss = sigmoidCrossEntropy(
+        logits: fakeLogits,
+        labels: Tensor(zeros: fakeLogits.shape))
     return realLoss + fakeLoss
 }
 
@@ -123,18 +116,28 @@ let optD = Adam(for: discriminator, learningRate: 2e-4, beta1: 0.5)
 // Noise vectors and plot function for testing
 let testImageGridSize = 4
 let testVector = sampleVector(size: testImageGridSize * testImageGridSize)
-func plotTestImage(_ testImage: Tensor<Float>, name: String) {
-    var gridImage = testImage.reshaped(to: [testImageGridSize, testImageGridSize,
-                                            imageHeight, imageWidth])
+
+func saveImageGrid(_ testImage: Tensor<Float>, name: String) throws {
+    var gridImage = testImage.reshaped(
+        to: [
+            testImageGridSize, testImageGridSize,
+            imageHeight, imageWidth,
+        ])
     // Add padding.
     gridImage = gridImage.padded(forSizes: [(0, 0), (0, 0), (1, 1), (1, 1)], with: 1)
     // Transpose to create single image.
     gridImage = gridImage.transposed(withPermutations: [0, 2, 1, 3])
-    gridImage = gridImage.reshaped(to: [(imageHeight + 2) * testImageGridSize,
-                                        (imageWidth + 2) * testImageGridSize])
+    gridImage = gridImage.reshaped(
+        to: [
+            (imageHeight + 2) * testImageGridSize,
+            (imageWidth + 2) * testImageGridSize,
+        ])
     // Convert [-1, 1] range to [0, 1] range.
     gridImage = (gridImage + 1) / 2
-    plotImage(gridImage, name: name)
+
+    try saveImage(
+        gridImage, size: (gridImage.shape[0], gridImage.shape[1]), directory: outputFolder,
+        name: name)
 }
 
 print("Start training...")
@@ -147,34 +150,39 @@ for epoch in 1...epochCount {
         // Perform alternative update.
         // Update generator.
         let vec1 = sampleVector(size: batchSize)
-        
+
         let 𝛁generator = generator.gradient { generator -> Tensor<Float> in
             let fakeImages = generator(vec1)
             let fakeLogits = discriminator(fakeImages)
             let loss = generatorLoss(fakeLogits: fakeLogits)
             return loss
         }
-        optG.update(&generator.allDifferentiableVariables, along: 𝛁generator)
-        
+        optG.update(&generator, along: 𝛁generator)
+
         // Update discriminator.
         let realImages = dataset.trainingImages.minibatch(at: i, batchSize: batchSize)
         let vec2 = sampleVector(size: batchSize)
         let fakeImages = generator(vec2)
-        
+
         let 𝛁discriminator = discriminator.gradient { discriminator -> Tensor<Float> in
             let realLogits = discriminator(realImages)
             let fakeLogits = discriminator(fakeImages)
             let loss = discriminatorLoss(realLogits: realLogits, fakeLogits: fakeLogits)
             return loss
         }
-        optD.update(&discriminator.allDifferentiableVariables, along: 𝛁discriminator)
+        optD.update(&discriminator, along: 𝛁discriminator)
     }
-    
+
     // Start inference phase.
     Context.local.learningPhase = .inference
     let testImage = generator(testVector)
-    plotTestImage(testImage, name: "epoch-\(epoch)-output")
-    
+
+    do {
+        try saveImageGrid(testImage, name: "epoch-\(epoch)-output")
+    } catch {
+        print("Could not save image grid with error: \(error)")
+    }
+
     let lossG = generatorLoss(fakeLogits: testImage)
     print("[Epoch: \(epoch)] Loss-G: \(lossG)")
 }
