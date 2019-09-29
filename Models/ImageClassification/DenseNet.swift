@@ -19,102 +19,18 @@ import TensorFlow
 // Gao Huang, Zhuang Liu, Laurens van der Maaten, Kilian Q. Weinberger
 // https://arxiv.org/pdf/1608.06993.pdf
 
-public struct Conv: Layer {
-    public var bNorm: BatchNorm<Float>
-    public var conv: Conv2D<Float>
-
-    public init(
-        filterSize: Int,
-        stride: Int = 1,
-        inputFilterCount: Int,
-        outputFilterCount: Int
-    ) {
-        bNorm = BatchNorm(featureCount: inputFilterCount)
-        conv = Conv2D(
-            filterShape: (filterSize, filterSize, inputFilterCount, outputFilterCount),
-            strides: (stride, stride),
-            padding: .same)
-    }
-
-    @differentiable
-    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        return conv(relu(bNorm(input)))
-    }
-}
-
-// Seperate structure for the 1x1 and 3x3 conv layers whose collection
-// make a dense block
-public struct ConvPair: Layer {
-    public var conv1x1: Conv
-    public var conv3x3: Conv
-
-    public init(inputFilterCount: Int, growthRate: Int) {
-        conv1x1 = Conv(
-            filterSize: 1,
-            inputFilterCount: inputFilterCount,
-            outputFilterCount: inputFilterCount*2)
-        conv3x3 = Conv(
-            filterSize: 3,
-            inputFilterCount: inputFilterCount*2,
-            outputFilterCount: growthRate
-        )
-    }
-
-    @differentiable
-    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        let conv1Output = conv1x1(input)
-        let conv3Output = conv3x3(conv1Output)
-        return conv3Output.concatenated(with: input, alongAxis: -1)
-    }
-}
-
-public struct DenseBlock: Layer {
-    public var pairs: [ConvPair] = []
-
-    public init(repitionCount: Int, growthRate: Int = 32, inputFilterCount: Int) {
-        for i in 0..<repitionCount {
-            let filterCount = inputFilterCount + i * growthRate
-            pairs.append(ConvPair(inputFilterCount: filterCount, growthRate: growthRate))
-        }
-    }
-
-    @differentiable
-    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        let pairsReduced = pairs.differentiableReduce(input) {last, layer in
-            layer(last)
-        }
-        return pairsReduced
-    }
-}
-
-public struct TransitionLayer: Layer {
-    public var conv: Conv
-    public var pool: AvgPool2D<Float>
-
-    public init(inputFilterCount: Int) {
-        conv = Conv(
-            filterSize: 1,
-            inputFilterCount: inputFilterCount,
-            outputFilterCount: inputFilterCount/2)
-        pool = AvgPool2D(poolSize: (2, 2), strides: (2, 2), padding: .same)
-    }
-
-    @differentiable
-    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        return input.sequenced(through: conv, pool)
-    }
-}
-
 public struct DenseNet: Layer {
     public var conv = Conv(
         filterSize: 7,
         stride: 2,
         inputFilterCount: 3,
-        outputFilterCount: 64)
+        outputFilterCount: 64
+    )
     public var maxpool = MaxPool2D<Float>(
         poolSize: (3, 3),
         strides: (2, 2),
-        padding: .same)
+        padding: .same
+    )
     public var denseBlock1 = DenseBlock(repitionCount: 6, inputFilterCount: 64)
     public var transitionLayer1 = TransitionLayer(inputFilterCount: 256)
     public var denseBlock2 = DenseBlock(repitionCount: 12, inputFilterCount: 128)
@@ -137,5 +53,96 @@ public struct DenseNet: Layer {
         let level3 = level2.sequenced(through: denseBlock3, transitionLayer3)
         let output = level3.sequenced(through: denseBlock4, globalAvgPool, dense)
         return output
+    }
+}
+
+extension DenseNet {
+    public struct Conv: Layer {
+        public var bNorm: BatchNorm<Float>
+        public var conv: Conv2D<Float>
+
+        public init(
+            filterSize: Int,
+            stride: Int = 1,
+            inputFilterCount: Int,
+            outputFilterCount: Int
+        ) {
+            bNorm = BatchNorm(featureCount: inputFilterCount)
+            conv = Conv2D(
+                filterShape: (filterSize, filterSize, inputFilterCount, outputFilterCount),
+                strides: (stride, stride),
+                padding: .same
+            )
+        }
+
+        @differentiable
+        public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
+            return conv(relu(bNorm(input)))
+        }
+    }
+
+    // Seperate structure for the 1x1 and 3x3 conv layers whose collection
+    // make a dense block
+    public struct ConvPair: Layer {
+        public var conv1x1: Conv
+        public var conv3x3: Conv
+
+        public init(inputFilterCount: Int, growthRate: Int) {
+            conv1x1 = Conv(
+                filterSize: 1,
+                inputFilterCount: inputFilterCount,
+                outputFilterCount: inputFilterCount * 2
+            )
+            conv3x3 = Conv(
+                filterSize: 3,
+                inputFilterCount: inputFilterCount * 2,
+                outputFilterCount: growthRate
+            )
+        }
+
+        @differentiable
+        public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
+            let conv1Output = conv1x1(input)
+            let conv3Output = conv3x3(conv1Output)
+            return conv3Output.concatenated(with: input, alongAxis: -1)
+        }
+    }
+
+    public struct DenseBlock: Layer {
+        public var pairs: [ConvPair] = []
+
+        public init(repitionCount: Int, growthRate: Int = 32, inputFilterCount: Int) {
+            for i in 0 ..< repitionCount {
+                let filterCount = inputFilterCount + i * growthRate
+                pairs.append(ConvPair(inputFilterCount: filterCount, growthRate: growthRate))
+            }
+        }
+
+        @differentiable
+        public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
+            let pairsReduced = pairs.differentiableReduce(input) { last, layer in
+                layer(last)
+            }
+            return pairsReduced
+        }
+    }
+
+    public struct TransitionLayer: Layer {
+        public var conv: Conv
+        public var pool: AvgPool2D<Float>
+
+        public init(inputFilterCount: Int) {
+            conv = Conv(
+                filterSize: 1,
+                inputFilterCount: inputFilterCount,
+                outputFilterCount: inputFilterCount / 2
+            )
+            pool = AvgPool2D(poolSize: (2, 2), strides: (2, 2), padding: .same)
+        }
+
+        @differentiable
+        public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
+            return input.sequenced(through: conv, pool)
+        }
     }
 }
