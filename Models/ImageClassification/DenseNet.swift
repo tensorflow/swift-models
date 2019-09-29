@@ -31,13 +31,13 @@ public struct DenseNet: Layer {
         strides: (2, 2),
         padding: .same
     )
-    public var denseBlock1 = DenseBlock(repitionCount: 6, inputFilterCount: 64)
+    public var denseBlock1 = DenseBlock(repetitionCount: 6, inputFilterCount: 64)
     public var transitionLayer1 = TransitionLayer(inputFilterCount: 256)
-    public var denseBlock2 = DenseBlock(repitionCount: 12, inputFilterCount: 128)
+    public var denseBlock2 = DenseBlock(repetitionCount: 12, inputFilterCount: 128)
     public var transitionLayer2 = TransitionLayer(inputFilterCount: 512)
-    public var denseBlock3 = DenseBlock(repitionCount: 24, inputFilterCount: 256)
+    public var denseBlock3 = DenseBlock(repetitionCount: 24, inputFilterCount: 256)
     public var transitionLayer3 = TransitionLayer(inputFilterCount: 1024)
-    public var denseBlock4 = DenseBlock(repitionCount: 16, inputFilterCount: 512)
+    public var denseBlock4 = DenseBlock(repetitionCount: 16, inputFilterCount: 512)
     public var globalAvgPool = GlobalAvgPool2D<Float>()
     public var dense: Dense<Float>
 
@@ -58,7 +58,7 @@ public struct DenseNet: Layer {
 
 extension DenseNet {
     public struct Conv: Layer {
-        public var bNorm: BatchNorm<Float>
+        public var batchNorm: BatchNorm<Float>
         public var conv: Conv2D<Float>
 
         public init(
@@ -67,7 +67,7 @@ extension DenseNet {
             inputFilterCount: Int,
             outputFilterCount: Int
         ) {
-            bNorm = BatchNorm(featureCount: inputFilterCount)
+            batchNorm = BatchNorm(featureCount: inputFilterCount)
             conv = Conv2D(
                 filterShape: (filterSize, filterSize, inputFilterCount, outputFilterCount),
                 strides: (stride, stride),
@@ -77,7 +77,7 @@ extension DenseNet {
 
         @differentiable
         public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-            return conv(relu(bNorm(input)))
+            conv(relu(batchNorm(input)))
         }
     }
 
@@ -110,8 +110,8 @@ extension DenseNet {
     public struct DenseBlock: Layer {
         public var pairs: [ConvPair] = []
 
-        public init(repitionCount: Int, growthRate: Int = 32, inputFilterCount: Int) {
-            for i in 0 ..< repitionCount {
+        public init(repetitionCount: Int, growthRate: Int = 32, inputFilterCount: Int) {
+            for i in 0 ..< repetitionCount {
                 let filterCount = inputFilterCount + i * growthRate
                 pairs.append(ConvPair(inputFilterCount: filterCount, growthRate: growthRate))
             }
@@ -119,10 +119,9 @@ extension DenseNet {
 
         @differentiable
         public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-            let pairsReduced = pairs.differentiableReduce(input) { last, layer in
+            return pairs.differentiableReduce(input) { last, layer in
                 layer(last)
             }
-            return pairsReduced
         }
     }
 
@@ -141,7 +140,7 @@ extension DenseNet {
 
         @differentiable
         public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-            return input.sequenced(through: conv, pool)
+            input.sequenced(through: conv, pool)
         }
     }
 }
