@@ -81,7 +81,7 @@ extension DenseNet {
         }
     }
 
-    /// A pair of a 1x1 `Conv` layer and a 3x3 `Conv` layer.
+    // A pair of a 1x1 `Conv` layer and a 3x3 `Conv` layer.
     public struct ConvPair: Layer {
         public var conv1x1: Conv
         public var conv3x3: Conv
@@ -111,7 +111,7 @@ extension DenseNet {
         public var pairs: [ConvPair] = []
 
         public init(repetitionCount: Int, growthRate: Int = 32, inputFilterCount: Int) {
-            for i in 0 ..< repetitionCount {
+            for i in 0..<repetitionCount {
                 let filterCount = inputFilterCount + i * growthRate
                 pairs.append(ConvPair(inputFilterCount: filterCount, growthRate: growthRate))
             }
