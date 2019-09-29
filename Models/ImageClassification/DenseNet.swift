@@ -81,7 +81,7 @@ extension DenseNet {
         }
     }
 
-    // Seperate structure for the 1x1 and 3x3 conv layers whose collection
+    /// A pair of a 1x1 `Conv` layer and a 3x3 `Conv` layer.
     // make a dense block
     public struct ConvPair: Layer {
         public var conv1x1: Conv
