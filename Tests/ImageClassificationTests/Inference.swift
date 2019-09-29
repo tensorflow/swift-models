@@ -25,7 +25,7 @@ final class ImageClassificationInferenceTests: XCTestCase {
     func testDenseNet() {
         let input = Tensor<Float>(
             randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
-            standdardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
+            standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
         let denseNet = DenseNet(classCount: 1000)
         let denseNetResult = denseNet(input)
         XCTAssertEqual(denseNetResult.shape, [1, 1000])
