@@ -81,7 +81,7 @@ extension DenseNet {
         }
     }
 
-    // A pair of a 1x1 `Conv` layer and a 3x3 `Conv` layer.
+    /// A pair of a 1x1 `Conv` layer and a 3x3 `Conv` layer.
     public struct ConvPair: Layer {
         public var conv1x1: Conv
         public var conv3x3: Conv
@@ -119,7 +119,7 @@ extension DenseNet {
 
         @differentiable
         public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-            return pairs.differentiableReduce(input) { last, layer in
+            pairs.differentiableReduce(input) { last, layer in
                 layer(last)
             }
         }
