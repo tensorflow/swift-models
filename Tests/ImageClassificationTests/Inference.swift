@@ -22,13 +22,13 @@ final class ImageClassificationInferenceTests: XCTestCase {
         Context.local.learningPhase = .inference
     }
     
-    func testDenseNet() {
+    func testDenseNet121() {
         let input = Tensor<Float>(
             randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
             standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
         let denseNet121 = DenseNet121(classCount: 1000)
-        let denseNetResult = denseNet121(input)
-        XCTAssertEqual(denseNetResult.shape, [1, 1000])
+        let denseNet121Result = denseNet121(input)
+        XCTAssertEqual(denseNet121Result.shape, [1, 1000])
     }
 
     func testLeNet() {
@@ -167,7 +167,7 @@ final class ImageClassificationInferenceTests: XCTestCase {
 
 extension ImageClassificationInferenceTests {
     static var allTests = [
-        ("testDenseNet", testDenseNet),
+        ("testDenseNet121", testDenseNet121),
         ("testLeNet", testLeNet),
         ("testResNet", testResNet),
         ("testResNetV2", testResNetV2),
