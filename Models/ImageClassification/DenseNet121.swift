@@ -19,7 +19,7 @@ import TensorFlow
 // Gao Huang, Zhuang Liu, Laurens van der Maaten, Kilian Q. Weinberger
 // https://arxiv.org/pdf/1608.06993.pdf
 
-public struct DenseNet: Layer {
+public struct DenseNet121: Layer {
     public var conv = Conv(
         filterSize: 7,
         stride: 2,
@@ -56,7 +56,7 @@ public struct DenseNet: Layer {
     }
 }
 
-extension DenseNet {
+extension DenseNet121 {
     public struct Conv: Layer {
         public var batchNorm: BatchNorm<Float>
         public var conv: Conv2D<Float>
