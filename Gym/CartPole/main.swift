@@ -68,8 +68,8 @@ struct Episode {
 
 /// Filtering out bad/short episodes before we feed them as neural net training data.
 func filteringBatch(
-  episodes: [Episode],
-  actionCount: Int
+    episodes: [Episode],
+    actionCount: Int
 ) -> (input: Tensor<Float>, target: Tensor<Float>, episodeCount: Int, meanReward: Float) {
     let rewards = episodes.map { $0.reward }
     let rewardBound = Float(np.percentile(rewards, percentile))!
@@ -111,10 +111,10 @@ func filteringBatch(
 }
 
 func nextBatch(
-  env: PythonObject,
-  net: Net,
-  batchSize: Int,
-  actionCount: Int
+    env: PythonObject,
+    net: Net,
+    batchSize: Int,
+    actionCount: Int
 ) -> [Episode] {
     var observationNumpy = env.reset()
 
