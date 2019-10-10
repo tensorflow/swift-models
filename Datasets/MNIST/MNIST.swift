@@ -57,6 +57,12 @@ public struct MNIST {
     }
 }
 
+extension Tensor {
+    public func minibatch(at index: Int, batchSize: Int) -> Tensor {
+        let start = index * batchSize
+        return self[start..<start+batchSize]
+    }
+}
 
 fileprivate func fetchDataset(localStorageDirectory: URL,
                               imagesFilename: String,
