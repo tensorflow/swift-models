@@ -59,9 +59,9 @@ func downloadCIFAR10IfNotPresent(to directory: String = ".") {
     print("Archive downloaded, processing...")
 
     #if os(macOS)
-        let tarLocation = "/usr/bin/tar"
+    let tarLocation = "/usr/bin/tar"
     #else
-        let tarLocation = "/bin/tar"
+    let tarLocation = "/bin/tar"
     #endif
 
     let task = Process()
