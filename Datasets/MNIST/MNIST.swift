@@ -31,7 +31,10 @@ public struct MNIST {
 
     public let batchSize: Int
 
-    public init(batchSize: Int, flattening: Bool = false, normalizing: Bool = false, localStorageDirectory: URL = DatasetUtils.curentWorkingDirectoryURL) {
+    public init(
+        batchSize: Int, flattening: Bool = false, normalizing: Bool = false,
+        localStorageDirectory: URL = DatasetUtils.curentWorkingDirectoryURL
+    ) {
         self.batchSize = batchSize
 
         let (trainingImages, trainingLabels) = fetchDataset(
@@ -40,7 +43,7 @@ public struct MNIST {
             labelsFilename: "train-labels-idx1-ubyte",
             flattening: flattening,
             normalizing: normalizing)
-        
+
         self.trainingImages = trainingImages
         self.trainingLabels = trainingLabels
         self.trainingSize = Int(trainingLabels.shape[0])
@@ -64,29 +67,33 @@ extension Tensor {
     }
 }
 
-fileprivate func fetchDataset(localStorageDirectory: URL,
-                              imagesFilename: String,
-                              labelsFilename: String,
-                              flattening: Bool,
-                              normalizing: Bool) -> (images: Tensor<Float>, labels: Tensor<Int32>) {
-    
+fileprivate func fetchDataset(
+    localStorageDirectory: URL,
+    imagesFilename: String,
+    labelsFilename: String,
+    flattening: Bool,
+    normalizing: Bool
+) -> (images: Tensor<Float>, labels: Tensor<Int32>) {
+
     guard let remoteRoot: URL = URL(string: "http://yann.lecun.com/exdb/mnist") else {
         fatalError("Failed to create MNST root url: http://yann.lecun.com/exdb/mnist")
     }
-    
-    let imagesData = DatasetUtils.fetchResource(filename: imagesFilename,
-                                                remoteRoot: remoteRoot,
-                                                localStorageDirectory: localStorageDirectory)
-    let labelsData = DatasetUtils.fetchResource(filename: labelsFilename,
-                                                remoteRoot: remoteRoot,
-                                                localStorageDirectory: localStorageDirectory)
-    
+
+    let imagesData = DatasetUtils.fetchResource(
+        filename: imagesFilename,
+        remoteRoot: remoteRoot,
+        localStorageDirectory: localStorageDirectory)
+    let labelsData = DatasetUtils.fetchResource(
+        filename: labelsFilename,
+        remoteRoot: remoteRoot,
+        localStorageDirectory: localStorageDirectory)
+
     let images = [UInt8](imagesData).dropFirst(16).map(Float.init)
     let labels = [UInt8](labelsData).dropFirst(8).map(Int32.init)
-    
+
     let rowCount = labels.count
     let (imageWidth, imageHeight) = (28, 28)
-    
+
     if flattening {
         var flattenedImages = Tensor(shape: [rowCount, imageHeight * imageWidth], scalars: images)
             / 255.0
@@ -96,10 +103,11 @@ fileprivate func fetchDataset(localStorageDirectory: URL,
         return (images: flattenedImages, labels: Tensor(labels))
     } else {
         return (
-            images: Tensor(shape: [rowCount, 1, imageHeight, imageWidth], scalars: images)
+            images:
+                Tensor(shape: [rowCount, 1, imageHeight, imageWidth], scalars: images)
                 .transposed(withPermutations: [0, 2, 3, 1]) / 255,  // NHWC
             labels: Tensor(labels)
         )
     }
-    
+
 }
