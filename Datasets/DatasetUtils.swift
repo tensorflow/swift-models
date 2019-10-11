@@ -95,7 +95,6 @@ public struct DatasetUtils {
     }
 
     static func extractArchive(for resource: ResourceDefinition) {
-
         print("Extracting archive...")
 
         let archivePath = resource.archiveURL.path
