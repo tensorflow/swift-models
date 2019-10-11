@@ -115,7 +115,6 @@ public struct DatasetUtils {
         } catch {
             fatalError("Failed to extract \(archivePath) with error: \(error)")
         }
-
     }
 
 }
