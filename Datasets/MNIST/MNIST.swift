@@ -74,7 +74,6 @@ fileprivate func fetchDataset(
     flattening: Bool,
     normalizing: Bool
 ) -> (images: Tensor<Float>, labels: Tensor<Int32>) {
-
     guard let remoteRoot: URL = URL(string: "http://yann.lecun.com/exdb/mnist") else {
         fatalError("Failed to create MNST root url: http://yann.lecun.com/exdb/mnist")
     }
@@ -105,9 +104,8 @@ fileprivate func fetchDataset(
         return (
             images:
                 Tensor(shape: [rowCount, 1, imageHeight, imageWidth], scalars: images)
-                .transposed(withPermutations: [0, 2, 3, 1]) / 255,  // NHWC
+                    .transposed(withPermutations: [0, 2, 3, 1]) / 255,  // NHWC
             labels: Tensor(labels)
         )
     }
-
 }

@@ -18,8 +18,7 @@ import Foundation
     import FoundationNetworking
 #endif
 
-public struct DatasetUtils {
-
+public struct DatasetUtilities {
     public static let curentWorkingDirectoryURL = URL(
         fileURLWithPath: FileManager.default.currentDirectoryPath)
 
@@ -28,7 +27,6 @@ public struct DatasetUtils {
         remoteRoot: URL,
         localStorageDirectory: URL = curentWorkingDirectoryURL
     ) -> Data {
-
         print("Loading resource: \(filename)")
 
         let resource = ResourceDefinition(
@@ -38,7 +36,6 @@ public struct DatasetUtils {
 
         let localURL = resource.localURL
 
-        // Fetch from remote if the file is not available locally
         if !FileManager.default.fileExists(atPath: localURL.path) {
             print(
                 "File does not exist locally at expected path: \(localURL.path) and must be fetched"
@@ -54,17 +51,15 @@ public struct DatasetUtils {
         } catch {
             fatalError("Failed to contents of resource: \(localURL)")
         }
-
     }
 
     struct ResourceDefinition {
-
         let filename: String
         let remoteRoot: URL
         let localStorageDirectory: URL
 
         var localURL: URL {
-            return localStorageDirectory.appendingPathComponent(filename)
+            localStorageDirectory.appendingPathComponent(filename)
         }
 
         var remoteURL: URL {
@@ -74,7 +69,6 @@ public struct DatasetUtils {
         var archiveURL: URL {
             localURL.appendingPathExtension("gz")
         }
-
     }
 
     static func fetchFromRemoteAndSave(resource: ResourceDefinition) {
@@ -95,7 +89,6 @@ public struct DatasetUtils {
     }
 
     static func extractArchive(for resource: ResourceDefinition) {
-
         print("Extracting archive...")
 
         let archivePath = resource.archiveURL.path
@@ -115,7 +108,5 @@ public struct DatasetUtils {
         } catch {
             fatalError("Failed to extract \(archivePath) with error: \(error)")
         }
-
     }
-
 }
