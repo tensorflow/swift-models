@@ -33,7 +33,7 @@ public struct MNIST {
 
     public init(
         batchSize: Int, flattening: Bool = false, normalizing: Bool = false,
-        localStorageDirectory: URL = DatasetUtils.curentWorkingDirectoryURL
+        localStorageDirectory: URL = DatasetUtilities.curentWorkingDirectoryURL
     ) {
         self.batchSize = batchSize
 
@@ -78,11 +78,11 @@ fileprivate func fetchDataset(
         fatalError("Failed to create MNST root url: http://yann.lecun.com/exdb/mnist")
     }
 
-    let imagesData = DatasetUtils.fetchResource(
+    let imagesData = DatasetUtilities.fetchResource(
         filename: imagesFilename,
         remoteRoot: remoteRoot,
         localStorageDirectory: localStorageDirectory)
-    let labelsData = DatasetUtils.fetchResource(
+    let labelsData = DatasetUtilities.fetchResource(
         filename: labelsFilename,
         remoteRoot: remoteRoot,
         localStorageDirectory: localStorageDirectory)
