@@ -40,7 +40,7 @@ public struct DatasetUtilities {
             print(
                 "File does not exist locally at expected path: \(localURL.path) and must be fetched"
             )
-            fetchFromRemoteAndSave(resource: resource)
+            fetchFromRemoteAndSave(resource)
         }
 
         do {
@@ -71,7 +71,7 @@ public struct DatasetUtilities {
         }
     }
 
-    static func fetchFromRemoteAndSave(resource: ResourceDefinition) {
+    static func fetchFromRemoteAndSave(_ resource: ResourceDefinition) {
         let remoteLocation = resource.remoteURL
         let archiveLocation = resource.archiveURL
 
