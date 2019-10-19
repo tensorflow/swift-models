@@ -102,7 +102,7 @@ func causallyMasked(_ dotProducts: Tensor<Float>, enable: Bool = false) -> Tenso
 // causal mask is intentionally invisible to differentiation
 func _vjpCausallyMasked(_ dotProducts: Tensor<Float>, enable: Bool)
     -> (Tensor<Float>, (Tensor<Float>) -> Tensor<Float>) {
-    return (causallyMasked(dotProducts, enable:enable), identity)
+    return (causallyMasked(dotProducts, enable: enable), identity)
 }
 
 struct Attention: ParameterlessLayer {
