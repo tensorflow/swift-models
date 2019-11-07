@@ -54,10 +54,7 @@ struct ConvBN: Layer {
         // TODO(jekbradbury): thread through bias and affine boolean arguments
         // (behavior is correct for inference but this should be changed for training)
         self.conv = Conv2D(filterShape: filterShape, strides: strides, padding: padding)
-        self.norm = BatchNorm(
-            featureCount: filterShape.3,
-            momentum: Tensor<Float>(0.95),
-            epsilon: Tensor<Float>(1e-5))
+        self.norm = BatchNorm(featureCount: filterShape.3, momentum: 0.95, epsilon: 1e-5)
     }
 
     @differentiable
