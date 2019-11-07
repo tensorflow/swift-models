@@ -227,10 +227,10 @@ struct EncoderLayer: Layer {
             size: size,
             headCount: headCount)
         selfAttentionDropout = Dropout(probability: dropProbability)
-        selfAttentionNorm = LayerNorm(featureCount: size, axis: 2, epsilon: Tensor<Float>(1e-5))
+        selfAttentionNorm = LayerNorm(featureCount: size, axis: 2, epsilon: 1e-5)
         feedForward = FeedForward(size: size, hidden: 4 * size, dropProbability: dropProbability)
         feedForwardDropout = Dropout(probability: dropProbability)
-        feedForwardNorm = LayerNorm(featureCount: size, axis: 2, epsilon: Tensor<Float>(1e-5))
+        feedForwardNorm = LayerNorm(featureCount: size, axis: 2, epsilon: 1e-5)
     }
 
     @differentiable(wrt: (self, input))
