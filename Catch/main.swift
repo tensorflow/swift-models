@@ -90,8 +90,8 @@ extension CatchAgent {
         let paddleX = observation.scalars[0]
         let ballX = observation.scalars[1]
         switch paddleX {
-        case ..<ballX: return .left
         case ballX:    return .none
+        case ..<ballX: return .left
         default:       return .right
         }
     }
