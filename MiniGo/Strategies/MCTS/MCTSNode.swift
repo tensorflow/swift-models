@@ -194,6 +194,6 @@ extension MCTSNode {
         if let index = cdf.firstIndex(where: { threshold < $0 }) {
             return elements[index]
         }
-        return elements.last! // element never empty here, it's safe to force unwrap
+        return elements.last! // Elements are never empty. It's safe to force-unwrap.
     }
 }
