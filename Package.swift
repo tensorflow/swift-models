@@ -18,12 +18,14 @@ let package = Package(
         .executable(name: "MiniGoDemo", targets: ["MiniGoDemo"]),
         .library(name: "MiniGo", targets: ["MiniGo"]),
         .executable(name: "GAN", targets: ["GAN"]),
+        .executable(name: "Benchmarks", targets: ["Benchmarks"]),
     ],
     targets: [
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "Datasets", path: "Datasets"),
         .target(name: "ModelSupport", path: "Support"),
-        .target(name: "Autoencoder", dependencies: ["Datasets", "ModelSupport"], path: "Autoencoder"),
+        .target(
+            name: "Autoencoder", dependencies: ["Datasets", "ModelSupport"], path: "Autoencoder"),
         .target(name: "Catch", path: "Catch"),
         .target(name: "Gym-FrozenLake", path: "Gym/FrozenLake"),
         .target(name: "Gym-CartPole", path: "Gym/CartPole"),
@@ -45,5 +47,9 @@ let package = Package(
         .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
         .target(name: "Transformer", path: "Transformer"),
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
+        .target(
+            name: "Benchmarks",
+            dependencies: ["Datasets", "ModelSupport", "ImageClassificationModels"],
+            path: "Benchmarks"),
     ]
 )
