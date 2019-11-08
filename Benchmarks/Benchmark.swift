@@ -42,11 +42,9 @@ func timeExecution(_ operation: () -> Void) -> Double {
 
     var endTime = timeval()
     gettimeofday(&endTime, nil)
-    return (
-        Double(
-            (endTime.tv_sec - startTime.tv_sec) * 1000 + (endTime.tv_usec - startTime.tv_usec)
-                / 1000)
-    )
+    let secondsPortion = (endTime.tv_sec - startTime.tv_sec) * 1000
+    let microsecondsPortion = Int((endTime.tv_usec - startTime.tv_usec) / 1000)
+    return Double(secondsPortion + microsecondsPortion)
 }
 
 func statistics(for values: [Double]) -> (average: Double, standardDeviation: Double) {
