@@ -14,16 +14,14 @@
 
 import TensorFlow
 import Datasets
-import ImageClassificationModels
 
-final class LeNetBenchmark {
+struct ImageClassificationTraining<Model>
+where Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == Float {
+    // TODO: (https://github.com/tensorflow/swift-models/issues/206) Datasets should have a common
+    // interface to allow for them to be interchangeable in these benchmark cases.
+    let dataset: MNIST
     let epochs: Int
     let batchSize: Int
-    let dataset: MNIST
-    var inferenceModel: LeNet!
-    var inferenceImages: Tensor<Float>!
-    var batches: Int!
-    var inferenceBatches: Int!
 
     init(epochs: Int, batchSize: Int) {
         self.epochs = epochs
@@ -31,8 +29,9 @@ final class LeNetBenchmark {
         self.dataset = MNIST(batchSize: batchSize)
     }
 
-    func performTraining() {
-        var model = LeNet()
+    func train() {
+        var model = Model()
+        // TODO: Split out the optimizer as a separate specification.
         let optimizer = SGD(for: model, learningRate: 0.1)
 
         Context.local.learningPhase = .training
@@ -46,25 +45,6 @@ final class LeNetBenchmark {
                 }
                 optimizer.update(&model, along: 𝛁model)
             }
-        }
-    }
-
-    func setupInference(_ parameters: BenchmarkVariety) {
-        guard case let .inferenceThroughput(batches, batchSize) = parameters else {
-            fatalError(
-                "Passed the wrong kind of benchmark variety into this setup function: \(parameters)."
-            )
-        }
-        inferenceBatches = batches
-        inferenceModel = LeNet()
-        inferenceImages = Tensor<Float>(
-            randomNormal: [batchSize, 28, 28, 1], mean: Tensor<Float>(0.5),
-            standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
-    }
-
-    func performInference() {
-        for _ in 0..<inferenceBatches {
-            let _ = inferenceModel(inferenceImages)
         }
     }
 }

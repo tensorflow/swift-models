@@ -12,15 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import ImageClassificationModels
+
 // LeNet-MNIST
-let leNetBenchmark = LeNetBenchmark(epochs: 1, batchSize: 128)
+let leNetTrainingBenchmark = ImageClassificationTraining<LeNet>(epochs: 1, batchSize: 128)
 benchmark(
     name: "LeNet-MNIST (training)",
-    iterations: 10, variety: .trainingTime, operation: leNetBenchmark.performTraining,
+    iterations: 10, variety: .trainingTime, operation: leNetTrainingBenchmark.train,
     callback: logResults)
+
+let leNetInferenceBenchmark = ImageClassificationInference<LeNet>(batches: 1000, batchSize: 1)
 benchmark(
     name: "LeNet-MNIST (inference)",
     iterations: 10, variety: .inferenceThroughput(batches: 1000, batchSize: 1),
-    setup: leNetBenchmark.setupInference,
-    operation: leNetBenchmark.performInference,
+    operation: leNetInferenceBenchmark.performInference,
     callback: logResults)

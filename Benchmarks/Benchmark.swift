@@ -59,12 +59,10 @@ enum BenchmarkVariety {
 /// Performs the specified benchmark over a certain number of iterations and provides the result to a callback function.
 func benchmark(
     name: String,
-    iterations: Int, variety: BenchmarkVariety, setup: ((BenchmarkVariety) -> Void)? = nil,
+    iterations: Int, variety: BenchmarkVariety,
     operation: () -> Void,
     callback: (BenchmarkResults) -> Void
 ) {
-    setup?(variety)
-
     var timings: [Double] = []
     for _ in 0..<iterations {
         let timing = time(operation)
