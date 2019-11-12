@@ -14,53 +14,82 @@
 
 import Foundation
 
-protocol BenchmarkResults: CustomStringConvertible {
-    var description: String { get }
-}
+struct BenchmarkResults: CustomStringConvertible {
+    enum BenchmarkResultType {
+        case inference(samplesPerSecond: Double, standardDeviation: Double)
+        case training(averageTime: Double, standardDeviation: Double)
+    }
 
-struct TrainingBenchmarkResults: BenchmarkResults {
+    let name: String
     let iterations: Int
-    let averageTime: Double
-    let standardDeviation: Double
+    let result: BenchmarkResultType
 
     var description: String {
-        get {
+        switch result {
+        case let .inference(samplesPerSecond, standardDeviation):
             return """
-                  \tAfter \(iterations) iterations:
-                  \tAverage: \(averageTime) ms, standard deviation: \(standardDeviation) ms
+                    Benchmark: \(name):
+                    \tAfter \(iterations) iterations:
+                    \tSamples per second: \(samplesPerSecond), standard deviation: \(standardDeviation)
+                """
+        case let .training(averageTime, standardDeviation):
+            return """
+                    Benchmark: \(name):
+                    \tAfter \(iterations) iterations:
+                    \tAverage: \(averageTime) ms, standard deviation: \(standardDeviation) ms
                 """
         }
     }
 }
 
-struct InferenceBenchmarkResults: BenchmarkResults {
-    let iterations: Int
-    let samplesPerSecond: Double
-    let standardDeviation: Double
+enum BenchmarkVariety {
+    case inferenceThroughput(batches: Int, batchSize: Int)
+    case trainingTime
 
-    var description: String {
-        get {
-            return """
-                  \tAfter \(iterations) iterations:
-                  \tSamples per second: \(samplesPerSecond), standard deviation: \(standardDeviation)
-                """
+    func interpretTiming(_ timing: Double) -> Double {
+        switch self {
+        case let .inferenceThroughput(batches, batchSize):
+            return Double(batches * batchSize) / (timing / 1000.0)
+        case .trainingTime:
+            return timing
         }
     }
 }
 
-func timeExecution(_ operation: () -> Void) -> Double {
-    var startTime = timeval()
-    gettimeofday(&startTime, nil)
+/// Performs the specified benchmark over a certain number of iterations and provides the result to a callback function.
+func benchmark(
+    name: String,
+    iterations: Int, variety: BenchmarkVariety, setup: ((BenchmarkVariety) -> Void)? = nil,
+    operation: () -> Void,
+    callback: (BenchmarkResults) -> Void
+) {
+    setup?(variety)
 
-    operation()
+    var timings: [Double] = []
+    for _ in 0..<iterations {
+        let timing = time(operation)
+        timings.append(variety.interpretTiming(timing))
+    }
 
-    var endTime = timeval()
-    gettimeofday(&endTime, nil)
-    let secondsPortion = (endTime.tv_sec - startTime.tv_sec) * 1000
-    let microsecondsPortion = Int((endTime.tv_usec - startTime.tv_usec) / 1000)
-    return Double(secondsPortion + microsecondsPortion)
+    let (samplesPerSecond, standardDeviation) = statistics(for: timings)
+    let results = BenchmarkResults(
+        name: name, iterations: iterations,
+        result: .inference(samplesPerSecond: samplesPerSecond, standardDeviation: standardDeviation)
+    )
+    callback(results)
 }
 
+/// Returns the time elapsed while running `body` in milliseconds.
+func time(_ body: () -> Void) -> Double {
+    let divisor: Double = 1_000_000
+    let start = Double(DispatchTime.now().uptimeNanoseconds) / divisor
+    body()
+    let end = Double(DispatchTime.now().uptimeNanoseconds) / divisor
+    let elapsed = end - start
+    return elapsed
+}
+
+/// Provides the average and standard deviation of an array of values.
 func statistics(for values: [Double]) -> (average: Double, standardDeviation: Double) {
     guard values.count > 0 else { return (average: 0.0, standardDeviation: 0.0) }
     guard values.count > 1 else { return (average: values.first!, standardDeviation: 0.0) }
@@ -74,41 +103,7 @@ func statistics(for values: [Double]) -> (average: Double, standardDeviation: Do
     return (average: average, standardDeviation: standardDeviation)
 }
 
-func benchmarkTraining(iterations: Int, operation: () -> Void, callback: (BenchmarkResults) -> Void)
-{
-    var timings: [Double] = []
-    for _ in 0..<iterations {
-        timings.append(timeExecution(operation))
-    }
-
-    let (averageTime, standardDeviation) = statistics(for: timings)
-
-    let results = TrainingBenchmarkResults(
-        iterations: iterations, averageTime: averageTime, standardDeviation: standardDeviation)
-    callback(results)
-}
-
-func benchmarkInference(
-    iterations: Int, batches: Int, batchSize: Int, setup: (Int, Int) -> Void, operation: () -> Void,
-    callback: (BenchmarkResults) -> Void
-) {
-    setup(batches, batchSize)
-
-    var timings: [Double] = []
-    for _ in 0..<iterations {
-        timings.append(Double(batches * batchSize) / (timeExecution(operation) / 1000.0))
-    }
-
-    let (samplesPerSecond, standardDeviation) = statistics(for: timings)
-    let results = InferenceBenchmarkResults(
-        iterations: iterations, samplesPerSecond: samplesPerSecond,
-        standardDeviation: standardDeviation)
-    callback(results)
-}
-
-func logResults(name: String) -> (BenchmarkResults) -> Void {
-    return { results in
-        print("Benchmark: \(name):")
-        print("\(results)")
-    }
+// This is a simple callback function example that only logs the result to the console.
+func logResults(results: BenchmarkResults) {
+    print("\(results)")
 }

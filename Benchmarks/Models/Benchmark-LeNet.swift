@@ -49,7 +49,12 @@ final class LeNetBenchmark {
         }
     }
 
-    func setupInference(batches: Int, batchSize: Int) {
+    func setupInference(_ parameters: BenchmarkVariety) {
+        guard case let .inferenceThroughput(batches, batchSize) = parameters else {
+            fatalError(
+                "Passed the wrong kind of benchmark variety into this setup function: \(parameters)."
+            )
+        }
         inferenceBatches = batches
         inferenceModel = LeNet()
         inferenceImages = Tensor<Float>(
