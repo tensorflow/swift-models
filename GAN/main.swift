@@ -126,7 +126,7 @@ func saveImageGrid(_ testImage: Tensor<Float>, name: String) throws {
     // Add padding.
     gridImage = gridImage.padded(forSizes: [(0, 0), (0, 0), (1, 1), (1, 1)], with: 1)
     // Transpose to create single image.
-    gridImage = gridImage.transposed(withPermutations: [0, 2, 1, 3])
+    gridImage = gridImage.transposed(permutation: [0, 2, 1, 3])
     gridImage = gridImage.reshaped(
         to: [
             (imageHeight + 2) * testImageGridSize,
