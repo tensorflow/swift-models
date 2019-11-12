@@ -89,12 +89,11 @@ extension CatchAgent {
     func perfectAction(for observation: Observation) -> Action {
         let paddleX = observation.scalars[0]
         let ballX = observation.scalars[1]
-        if paddleX > ballX {
-            return .right
-        } else if paddleX < ballX {
-            return .left
+        switch paddleX {
+        case ballX:    return .none
+        case ..<ballX: return .left
+        default:       return .right
         }
-        return .none
     }
 
     /// Returns a random action.
