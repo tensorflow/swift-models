@@ -83,7 +83,7 @@ func statistics(for values: [Double]) -> (average: Double, standardDeviation: Do
 
 // This is a simple callback function example that only logs the result to the console.
 func logResults(_ result: BenchmarkResults) {
-    let (average, standardDeviation) = statistics(for: result.interpretTimings())
+    let (average, standardDeviation) = statistics(for: result.interpretedTimings)
 
     switch result.variety {
     case .inferenceThroughput:
