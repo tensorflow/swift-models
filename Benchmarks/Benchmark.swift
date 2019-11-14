@@ -27,7 +27,7 @@ struct BenchmarkResults {
 }
 
 extension BenchmarkResults {
-    func interpretTimings() -> [Double] {
+    var interpretedTimings: [Double] {
         switch self.variety {
         case let .inferenceThroughput(batches, batchSize):
             return timings.map { Double(batches * batchSize) / ($0 / 1000.0) }
