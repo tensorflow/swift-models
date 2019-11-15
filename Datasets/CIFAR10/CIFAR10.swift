@@ -25,12 +25,12 @@ import TensorFlow
 #endif
 
 public struct CIFAR10: ImageClassificationDataset {
-    public let trainingDataset: Dataset<CIFARExample>
-    public let testDataset: Dataset<CIFARExample>
+    public let trainingDataset: Dataset<LabeledExample>
+    public let testDataset: Dataset<LabeledExample>
 
     public init() {
-        self.trainingDataset = Dataset<CIFARExample>(elements: loadCIFARTrainingFiles())
-        self.testDataset = Dataset<CIFARExample>(elements: loadCIFARTestFile())
+        self.trainingDataset = Dataset<LabeledExample>(elements: loadCIFARTrainingFiles())
+        self.testDataset = Dataset<LabeledExample>(elements: loadCIFARTestFile())
     }
 }
 
@@ -84,7 +84,7 @@ func downloadCIFAR10IfNotPresent(to directory: String = ".") {
     print("Unarchiving completed")
 }
 
-func loadCIFARFile(named name: String, in directory: String = ".") -> CIFARExample {
+func loadCIFARFile(named name: String, in directory: String = ".") -> LabeledExample {
     downloadCIFAR10IfNotPresent(to: directory)
     let path = "\(directory)/cifar-10-batches-bin/\(name)"
 
@@ -119,17 +119,17 @@ func loadCIFARFile(named name: String, in directory: String = ".") -> CIFARExamp
     let std = Tensor<Float>([0.229, 0.224, 0.225])
     let imagesNormalized = ((imageTensor / 255.0) - mean) / std
 
-    return CIFARExample(label: Tensor<Int32>(labelTensor), data: imagesNormalized)
+    return LabeledExample(label: Tensor<Int32>(labelTensor), data: imagesNormalized)
 }
 
-func loadCIFARTrainingFiles() -> CIFARExample {
+func loadCIFARTrainingFiles() -> LabeledExample {
     let data = (1..<6).map { loadCIFARFile(named: "data_batch_\($0).bin") }
-    return CIFARExample(
+    return LabeledExample(
         label: _Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.label }),
         data: _Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.data })
     )
 }
 
-func loadCIFARTestFile() -> CIFARExample {
+func loadCIFARTestFile() -> LabeledExample {
     return loadCIFARFile(named: "test_batch.bin")
 }

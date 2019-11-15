@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-protocol ImageClassificationDataset {
+import TensorFlow
 
+public protocol ImageClassificationDataset {
+    var trainingDataset: Dataset<LabeledExample> { get }
+    var testDataset: Dataset<LabeledExample> { get }
 }
