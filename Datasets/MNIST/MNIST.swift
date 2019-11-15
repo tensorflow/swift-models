@@ -20,7 +20,7 @@
 import Foundation
 import TensorFlow
 
-public struct MNIST {
+public struct MNIST: ImageClassificationDataset {
     public let trainingImages: Tensor<Float>
     public let trainingLabels: Tensor<Int32>
     public let testImages: Tensor<Float>

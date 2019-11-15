@@ -24,7 +24,7 @@ import TensorFlow
     import FoundationNetworking
 #endif
 
-public struct CIFAR10 {
+public struct CIFAR10: ImageClassificationDataset {
     public let trainingDataset: Dataset<CIFARExample>
     public let testDataset: Dataset<CIFARExample>
 
