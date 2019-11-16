@@ -20,50 +20,34 @@
 import Foundation
 import TensorFlow
 
-public struct MNIST {
-    public let trainingImages: Tensor<Float>
-    public let trainingLabels: Tensor<Int32>
-    public let testImages: Tensor<Float>
-    public let testLabels: Tensor<Int32>
+public struct MNIST: ImageClassificationDataset {
+    public let trainingDataset: Dataset<LabeledExample>
+    public let testDataset: Dataset<LabeledExample>
+    public let trainingExampleCount = 60000
 
-    public let trainingSize: Int
-    public let testSize: Int
-
-    public let batchSize: Int
+    public init() {
+        self.init(flattening: false, normalizing: false)
+    }
 
     public init(
-        batchSize: Int, flattening: Bool = false, normalizing: Bool = false,
+        flattening: Bool = false, normalizing: Bool = false,
         localStorageDirectory: URL = DatasetUtilities.curentWorkingDirectoryURL
     ) {
-        self.batchSize = batchSize
+        self.trainingDataset = Dataset<LabeledExample>(
+            elements: fetchDataset(
+                localStorageDirectory: localStorageDirectory,
+                imagesFilename: "train-images-idx3-ubyte",
+                labelsFilename: "train-labels-idx1-ubyte",
+                flattening: flattening,
+                normalizing: normalizing))
 
-        let (trainingImages, trainingLabels) = fetchDataset(
-            localStorageDirectory: localStorageDirectory,
-            imagesFilename: "train-images-idx3-ubyte",
-            labelsFilename: "train-labels-idx1-ubyte",
-            flattening: flattening,
-            normalizing: normalizing)
-
-        self.trainingImages = trainingImages
-        self.trainingLabels = trainingLabels
-        self.trainingSize = Int(trainingLabels.shape[0])
-
-        let (testImages, testLabels) = fetchDataset(
-            localStorageDirectory: localStorageDirectory,
-            imagesFilename: "t10k-images-idx3-ubyte",
-            labelsFilename: "t10k-labels-idx1-ubyte",
-            flattening: flattening,
-            normalizing: normalizing)
-        self.testImages = testImages
-        self.testLabels = testLabels
-        self.testSize = Int(testLabels.shape[0])
-    }
-}
-
-extension Tensor {
-    public func minibatch(at index: Int, batchSize: Int) -> Tensor {
-        let start = index * batchSize
-        return self[start..<start+batchSize]
+        self.testDataset = Dataset<LabeledExample>(
+            elements: fetchDataset(
+                localStorageDirectory: localStorageDirectory,
+                imagesFilename: "t10k-images-idx3-ubyte",
+                labelsFilename: "t10k-labels-idx1-ubyte",
+                flattening: flattening,
+                normalizing: normalizing))
     }
 }
 
@@ -73,8 +57,8 @@ fileprivate func fetchDataset(
     labelsFilename: String,
     flattening: Bool,
     normalizing: Bool
-) -> (images: Tensor<Float>, labels: Tensor<Int32>) {
-    guard let remoteRoot: URL = URL(string: "http://yann.lecun.com/exdb/mnist") else {
+) -> LabeledExample {
+    guard let remoteRoot:URL = URL(string: "http://yann.lecun.com/exdb/mnist") else {
         fatalError("Failed to create MNST root url: http://yann.lecun.com/exdb/mnist")
     }
 
@@ -99,13 +83,13 @@ fileprivate func fetchDataset(
         if normalizing {
             flattenedImages = flattenedImages * 2.0 - 1.0
         }
-        return (images: flattenedImages, labels: Tensor(labels))
+        return LabeledExample(label: Tensor(labels), data: flattenedImages)
     } else {
-        return (
-            images:
+        return LabeledExample(
+            label: Tensor(labels),
+            data:
                 Tensor(shape: [rowCount, 1, imageHeight, imageWidth], scalars: images)
-                    .transposed(permutation: [0, 2, 3, 1]) / 255,  // NHWC
-            labels: Tensor(labels)
+                .transposed(permutation: [0, 2, 3, 1]) / 255  // NHWC
         )
     }
 }

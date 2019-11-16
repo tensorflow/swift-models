@@ -105,7 +105,7 @@ func sampleVector(size: Int) -> Tensor<Float> {
     Tensor(randomNormal: [size, latentSize])
 }
 
-let dataset = MNIST(batchSize: batchSize, flattening: true, normalizing: true)
+let dataset = MNIST(flattening: true, normalizing: true)
 
 var generator = Generator()
 var discriminator = Discriminator()
@@ -146,7 +146,7 @@ print("Start training...")
 for epoch in 1...epochCount {
     // Start training phase.
     Context.local.learningPhase = .training
-    for i in 0 ..< dataset.trainingSize / batchSize {
+    for i in 0..<dataset.trainingSize / batchSize {
         // Perform alternative update.
         // Update generator.
         let vec1 = sampleVector(size: batchSize)

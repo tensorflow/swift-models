@@ -27,6 +27,7 @@ import TensorFlow
 public struct CIFAR10: ImageClassificationDataset {
     public let trainingDataset: Dataset<LabeledExample>
     public let testDataset: Dataset<LabeledExample>
+    public let trainingExampleCount = 50000
 
     public init() {
         self.trainingDataset = Dataset<LabeledExample>(elements: loadCIFARTrainingFiles())

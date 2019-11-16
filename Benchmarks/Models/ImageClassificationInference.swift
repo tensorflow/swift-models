@@ -22,10 +22,11 @@ protocol ImageClassificationModel: Layer where Input == Tensor<Float>, Output ==
 
 extension LeNet: ImageClassificationModel {}
 
-class ImageClassificationInference<Model> where Model: ImageClassificationModel {
+class ImageClassificationInference<Model, ClassificationDataset>
+where Model: ImageClassificationModel, ClassificationDataset: ImageClassificationDataset {
     // TODO: (https://github.com/tensorflow/swift-models/issues/206) Datasets should have a common
     // interface to allow for them to be interchangeable in these benchmark cases.
-    let dataset: MNIST
+    let dataset: ClassificationDataset
     var model: Model
     let images: Tensor<Float>
     let batches: Int
@@ -34,7 +35,7 @@ class ImageClassificationInference<Model> where Model: ImageClassificationModel 
     init(batches: Int, batchSize: Int, images: Tensor<Float>? = nil) {
         self.batches = batches
         self.batchSize = batchSize
-        self.dataset = MNIST(batchSize: batchSize)
+        self.dataset = ClassificationDataset()
         self.model = Model()
         if let providedImages = images {
             self.images = providedImages
