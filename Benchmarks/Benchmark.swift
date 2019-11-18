@@ -37,6 +37,13 @@ extension BenchmarkResults {
     }
 }
 
+struct BenchmarkSettings {
+    let batches: Int
+    let batchSize: Int
+    let iterations: Int
+    let epochs: Int
+}
+
 /// Performs the specified benchmark over a certain number of iterations and provides the result to a callback function.
 func benchmark(
     name: String,

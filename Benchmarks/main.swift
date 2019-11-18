@@ -14,18 +14,83 @@
 
 import ImageClassificationModels
 import Datasets
+import Commander
 
-// LeNet-MNIST
-let leNetTrainingBenchmark = ImageClassificationTraining<LeNet, MNIST>(epochs: 1, batchSize: 128)
-benchmark(
-    name: "LeNet-MNIST (training)",
-    iterations: 10, variety: .trainingTime, operation: leNetTrainingBenchmark.train,
-    callback: logResults)
+let trainingBenchmarks = [
+	"lenet-mnist": { (settings: BenchmarkSettings) in
+        let leNetTrainingBenchmark = ImageClassificationTraining<LeNet, MNIST>(
+            epochs: settings.epochs, batchSize: settings.batchSize)
+        benchmark(
+            name: "LeNet-MNIST (training)",
+            iterations: 10, variety: .trainingTime, operation: leNetTrainingBenchmark.train,
+            callback: logResults)
+    }
+]
 
-let leNetInferenceBenchmark = ImageClassificationInference<LeNet, MNIST>(
-    batches: 1000, batchSize: 1)
-benchmark(
-    name: "LeNet-MNIST (inference)",
-    iterations: 10, variety: .inferenceThroughput(batches: 1000, batchSize: 1),
-    operation: leNetInferenceBenchmark.performInference,
-    callback: logResults)
+let inferenceBenchmarks = [
+    "lenet-mnist": { (settings: BenchmarkSettings) in
+        let leNetInferenceBenchmark = ImageClassificationInference<LeNet, MNIST>(
+            batches: settings.batches, batchSize: settings.batchSize)
+        benchmark(
+            name: "LeNet-MNIST (inference)",
+            iterations: settings.iterations,
+            variety: .inferenceThroughput(batches: settings.batches, batchSize: settings.batchSize),
+            operation: leNetInferenceBenchmark.performInference,
+            callback: logResults)
+    }
+]
+
+let main = Group { group in
+    group.command(
+        "inference",
+        Argument<String>("name", description: "Benchmark name."),
+        Option("batches", default: 1000),
+        Option("batchSize", default: 1),
+        Option("iterations", default: 10),
+        Option("epochs", default: 1)
+    ) { (name, batches, batchSize, iterations, epochs) in
+        let settings = BenchmarkSettings(
+            batches: batches,
+            batchSize: batchSize,
+            iterations: iterations,
+            epochs: epochs)
+        if let runner = inferenceBenchmarks[name] {
+            runner(settings)
+        } else {
+            print("No registered inference benchmark with a name: \(name)")
+            print("Consider running `list` command to see all available benchmarks.")
+        }
+    }
+    group.command(
+        "training",
+        Argument<String>("name", description: "Benchmark name."),
+        Option("batches", default: 1000),
+        Option("batchSize", default: 1),
+        Option("iterations", default: 10),
+        Option("epochs", default: 1)
+    ) { (name, batches, batchSize, iterations, epochs) in
+        let settings = BenchmarkSettings(
+            batches: batches,
+            batchSize: batchSize,
+            iterations: iterations,
+            epochs: epochs)
+        if let runner = trainingBenchmarks[name] {
+            runner(settings)
+        } else {
+            print("No registered training benchmark with a name: \(name)")
+            print("Consider running `list` command to see all available benchmarks.")
+        }
+    }
+    group.command("list") {
+        print("Registered training benchmarks:")
+        for (name, _) in trainingBenchmarks {
+            print("  * \(name)")
+        }
+        print("Registered inference benchmarks:")
+        for (name, _) in inferenceBenchmarks {
+            print("  * \(name)")
+        }
+    }
+}
+
+main.run()

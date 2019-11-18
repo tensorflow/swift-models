@@ -20,6 +20,9 @@ let package = Package(
         .executable(name: "GAN", targets: ["GAN"]),
         .executable(name: "Benchmarks", targets: ["Benchmarks"]),
     ],
+    dependencies: [
+        .package(url: "https://github.com/kylef/Commander.git", from: "0.9.1"),
+    ],
     targets: [
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "Datasets", path: "Datasets"),
@@ -49,7 +52,7 @@ let package = Package(
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
         .target(
             name: "Benchmarks",
-            dependencies: ["Datasets", "ModelSupport", "ImageClassificationModels"],
+            dependencies: ["Datasets", "ModelSupport", "ImageClassificationModels", "Commander"],
             path: "Benchmarks"),
     ]
 )
