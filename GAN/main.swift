@@ -146,7 +146,9 @@ print("Start training...")
 for epoch in 1...epochCount {
     // Start training phase.
     Context.local.learningPhase = .training
-    for i in 0..<dataset.trainingSize / batchSize {
+    let trainingShuffled = dataset.trainingDataset.shuffled(
+        sampleCount: dataset.trainingExampleCount, randomSeed: Int64(epoch))
+    for batch in trainingShuffled.batched(batchSize) {
         // Perform alternative update.
         // Update generator.
         let vec1 = sampleVector(size: batchSize)
@@ -160,7 +162,7 @@ for epoch in 1...epochCount {
         optG.update(&generator, along: 𝛁generator)
 
         // Update discriminator.
-        let realImages = dataset.trainingImages.minibatch(at: i, batchSize: batchSize)
+        let realImages = batch.data
         let vec2 = sampleVector(size: batchSize)
         let fakeImages = generator(vec2)
 

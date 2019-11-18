@@ -39,25 +39,32 @@ var autoencoder = Sequential {
 }
 let optimizer = RMSProp(for: autoencoder)
 
+let individualTestImages = dataset.testDataset.batched(1)
+var testImageIterator = individualTestImages.makeIterator()
+
 // Training loop
 for epoch in 1...epochCount {
-    let sampleImage = Tensor(
-        shape: [1, imageHeight * imageWidth], scalars: dataset.trainingImages[epoch].scalars)
-    let testImage = autoencoder(sampleImage)
+    if let nextIndividualImage = testImageIterator.next() {
+        let sampleTensor = nextIndividualImage.data
+        let sampleImage = Tensor(
+            shape: [1, imageHeight * imageWidth], scalars: sampleTensor.scalars)
 
-    do {
-        try saveImage(
-            sampleImage, size: (imageWidth, imageHeight), directory: outputFolder,
-            name: "epoch-\(epoch)-input")
-        try saveImage(
-            testImage, size: (imageWidth, imageHeight), directory: outputFolder,
-            name: "epoch-\(epoch)-output")
-    } catch {
-        print("Could not save image with error: \(error)")
+        let testImage = autoencoder(sampleImage)
+
+        do {
+            try saveImage(
+                sampleImage, size: (imageWidth, imageHeight), directory: outputFolder,
+                name: "epoch-\(epoch)-input")
+            try saveImage(
+                testImage, size: (imageWidth, imageHeight), directory: outputFolder,
+                name: "epoch-\(epoch)-output")
+        } catch {
+            print("Could not save image with error: \(error)")
+        }
+
+        let sampleLoss = meanSquaredError(predicted: testImage, expected: sampleImage)
+        print("[Epoch: \(epoch)] Loss: \(sampleLoss)")
     }
-
-    let sampleLoss = meanSquaredError(predicted: testImage, expected: sampleImage)
-    print("[Epoch: \(epoch)] Loss: \(sampleLoss)")
 
     let trainingShuffled = dataset.trainingDataset.shuffled(
         sampleCount: dataset.trainingExampleCount, randomSeed: Int64(epoch))
