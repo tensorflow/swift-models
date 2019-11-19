@@ -15,18 +15,20 @@
 import TensorFlow
 import Datasets
 
-struct ImageClassificationTraining<Model>
-where Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == Float {
+struct ImageClassificationTraining<Model, ClassificationDataset>
+where Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == Float,
+    ClassificationDataset: ImageClassificationDataset
+{
     // TODO: (https://github.com/tensorflow/swift-models/issues/206) Datasets should have a common
     // interface to allow for them to be interchangeable in these benchmark cases.
-    let dataset: MNIST
+    let dataset: ClassificationDataset
     let epochs: Int
     let batchSize: Int
 
     init(epochs: Int, batchSize: Int) {
         self.epochs = epochs
         self.batchSize = batchSize
-        self.dataset = MNIST(batchSize: batchSize)
+        self.dataset = ClassificationDataset()
     }
 
     func train() {
@@ -35,13 +37,14 @@ where Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == 
         let optimizer = SGD(for: model, learningRate: 0.1)
 
         Context.local.learningPhase = .training
-        for _ in 1...epochs {
-            for i in 0..<dataset.trainingSize / batchSize {
-                let x = dataset.trainingImages.minibatch(at: i, batchSize: batchSize)
-                let y = dataset.trainingLabels.minibatch(at: i, batchSize: batchSize)
+        for epoch in 1...epochs {
+            let trainingShuffled = dataset.trainingDataset.shuffled(
+                sampleCount: dataset.trainingExampleCount, randomSeed: Int64(epoch))
+            for batch in trainingShuffled.batched(batchSize) {
+                let (labels, images) = (batch.label, batch.data)
                 let 𝛁model = model.gradient { model -> Tensor<Float> in
-                    let ŷ = model(x)
-                    return softmaxCrossEntropy(logits: ŷ, labels: y)
+                    let logits = model(images)
+                    return softmaxCrossEntropy(logits: logits, labels: labels)
                 }
                 optimizer.update(&model, along: 𝛁model)
             }

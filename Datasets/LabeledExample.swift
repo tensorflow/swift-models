@@ -14,7 +14,7 @@
 
 import TensorFlow
 
-public struct CIFARExample: TensorGroup {
+public struct LabeledExample: TensorGroup {
     public var label: Tensor<Int32>
     public var data: Tensor<Float>
 
