@@ -33,7 +33,7 @@ where Model: ImageClassificationModel, ClassificationDataset: ImageClassificatio
     let batches: Int
     let batchSize: Int
 
-    init(withSettings settings: BenchmarkSettings, andImages images: Tensor<Float>? = nil) {
+    init(settings: BenchmarkSettings, images: Tensor<Float>? = nil) {
         self.batches = settings.batches
         self.batchSize = settings.batchSize
         self.dataset = ClassificationDataset()

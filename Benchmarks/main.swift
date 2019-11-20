@@ -17,11 +17,11 @@ import Datasets
 import ImageClassificationModels
 
 let trainingBenchmarks = [
-    "lenet-mnist": { ImageClassificationTraining<LeNet, MNIST>(withSettings: $0) },
+    "lenet-mnist": { ImageClassificationTraining<LeNet, MNIST>(settings: $0) },
 ]
 
 let inferenceBenchmarks = [
-    "lenet-mnist": { ImageClassificationInference<LeNet, MNIST>(withSettings: $0) },
+    "lenet-mnist": { ImageClassificationInference<LeNet, MNIST>(settings: $0) },
 ]
 
 func runTrainingBenchmark(_ name: String, withSettings settings: BenchmarkSettings) {
@@ -55,9 +55,8 @@ func runInferenceBenchmark(_ name: String, withSettings settings: BenchmarkSetti
 }
 
 let main =
-    Group {
-        group
-        ingroup.command(
+    Group { group in
+        group.command(
             "measure",
             Flag("training"),
             Flag("inference"),

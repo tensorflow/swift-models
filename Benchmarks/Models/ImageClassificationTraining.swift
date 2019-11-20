@@ -27,7 +27,7 @@ where
     let epochs: Int
     let batchSize: Int
 
-    init(withSettings settings: BenchmarkSettings) {
+    init(settings: BenchmarkSettings) {
         self.epochs = settings.epochs
         self.batchSize = settings.batchSize
         self.dataset = ClassificationDataset()
