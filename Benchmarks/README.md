@@ -18,5 +18,8 @@ installed. Make sure you've added the correct version of `swift` to your path.
 To run all benchmarks, type the following while in the swift-models directory:
 
 ```sh
-swift run -c release Benchmarks
+swift run -c release Benchmarks measure --benchmark lanet-mnist --training
+--epochs 1 --batchSize 128
+swift run -c release Benchmarks measure --benchmark lanet-mnist --training
+--batches 1000 --batchSize 1
 ```
