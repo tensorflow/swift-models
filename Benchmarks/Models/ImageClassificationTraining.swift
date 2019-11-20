@@ -12,26 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import TensorFlow
 import Datasets
+import TensorFlow
 
-struct ImageClassificationTraining<Model, ClassificationDataset>
-where Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == Float,
+struct ImageClassificationTraining<Model, ClassificationDataset>: Benchmark
+where
+    Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == Float,
     ClassificationDataset: ImageClassificationDataset
 {
     // TODO: (https://github.com/tensorflow/swift-models/issues/206) Datasets should have a common
     // interface to allow for them to be interchangeable in these benchmark cases.
     let dataset: ClassificationDataset
+
     let epochs: Int
     let batchSize: Int
 
-    init(epochs: Int, batchSize: Int) {
-        self.epochs = epochs
-        self.batchSize = batchSize
+    init(withSettings settings: BenchmarkSettings) {
+        self.epochs = settings.epochs
+        self.batchSize = settings.batchSize
         self.dataset = ClassificationDataset()
     }
 
-    func train() {
+    func run() {
         var model = Model()
         // TODO: Split out the optimizer as a separate specification.
         let optimizer = SGD(for: model, learningRate: 0.1)

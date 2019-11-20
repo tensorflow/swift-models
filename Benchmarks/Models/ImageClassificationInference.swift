@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import TensorFlow
 import Datasets
 import ImageClassificationModels
+import TensorFlow
 
 protocol ImageClassificationModel: Layer where Input == Tensor<Float>, Output == Tensor<Float> {
     init()
@@ -22,19 +22,20 @@ protocol ImageClassificationModel: Layer where Input == Tensor<Float>, Output ==
 
 extension LeNet: ImageClassificationModel {}
 
-class ImageClassificationInference<Model, ClassificationDataset>
+class ImageClassificationInference<Model, ClassificationDataset>: Benchmark
 where Model: ImageClassificationModel, ClassificationDataset: ImageClassificationDataset {
     // TODO: (https://github.com/tensorflow/swift-models/issues/206) Datasets should have a common
     // interface to allow for them to be interchangeable in these benchmark cases.
     let dataset: ClassificationDataset
+
     var model: Model
     let images: Tensor<Float>
     let batches: Int
     let batchSize: Int
 
-    init(batches: Int, batchSize: Int, images: Tensor<Float>? = nil) {
-        self.batches = batches
-        self.batchSize = batchSize
+    init(withSettings settings: BenchmarkSettings, andImages images: Tensor<Float>? = nil) {
+        self.batches = settings.batches
+        self.batchSize = settings.batchSize
         self.dataset = ClassificationDataset()
         self.model = Model()
         if let providedImages = images {
@@ -46,7 +47,7 @@ where Model: ImageClassificationModel, ClassificationDataset: ImageClassificatio
         }
     }
 
-    func performInference() {
+    func run() {
         for _ in 0..<batches {
             let _ = model(images)
         }
