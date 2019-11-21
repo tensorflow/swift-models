@@ -68,7 +68,7 @@ let main =
     Group { group in
         group.command(
             "measure-all",
-            description: "run all benchmarks with default settigns"
+            description: "Run all benchmarks with default settings."
         ) {
             for (name, benchmarkModel) in benchmarkModels {
                 runBenchmark(
@@ -83,14 +83,14 @@ let main =
         }
         group.command(
             "measure",
-            Flag("training"),
-            Flag("inference"),
-            Option("benchmark", default: ""),
-            Option("batches", default: -1),
-            Option("batchSize", default: -1),
-            Option("iterations", default: -1),
-            Option("epochs", default: -1),
-            description: "run a single benchmark with custom settings"
+            Flag("training", description: "Run training benchmark."),
+            Flag("inference", description: "Run inference benchmark."),
+            Option("benchmark", default: "", description: "Name of the benchmark to run."),
+            Option("batches", default: -1, description: "Number of batches."),
+            Option("batchSize", default: -1, description: "Size of a single batch."),
+            Option("iterations", default: -1, description: "Number of benchmark iterations."),
+            Option("epochs", default: -1, description: "Number of training epochs."),
+            description: "Run a single benchmark with provided settings."
         ) { (trainingFlag, inferenceFlag, name, batches, batchSize, iterations, epochs) in
             let settings = BenchmarkSettings(
                 batches: batches,
@@ -115,8 +115,8 @@ let main =
             }
         }
         group.command(
-            "list",
-            description: "list all available benchmarks and their default settings"
+            "list-defaults",
+            description: "List all available benchmarks and their default settings."
         ) {
             for (name, benchmarkModel) in benchmarkModels {
                 print(
