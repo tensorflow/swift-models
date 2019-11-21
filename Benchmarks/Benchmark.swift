@@ -14,22 +14,52 @@
 
 import Foundation
 
+protocol Benchmark {
+    func run()
+}
+
+protocol BenchmarkModel {
+    func inferenceDefaults() -> BenchmarkSettings
+    func inferenceBenchmark(_ settings: BenchmarkSettings) -> Benchmark
+    func trainingDefaults() -> BenchmarkSettings
+    func trainingBenchmark(_ settings: BenchmarkSettings) -> Benchmark
+}
+
 enum BenchmarkVariety {
-    case inferenceThroughput(batches: Int, batchSize: Int)
+    case inferenceThroughput
     case trainingTime
+}
+
+struct BenchmarkSettings {
+    let batches: Int
+    let batchSize: Int
+    let iterations: Int
+    let epochs: Int
+
+    func withDefaults(_ defaults: BenchmarkSettings) -> BenchmarkSettings {
+        let newBatches = batches == -1 ? defaults.batches : batches
+        let newBatchSize = batchSize == -1 ? defaults.batchSize : batchSize
+        let newIterations = iterations == -1 ? defaults.iterations : iterations
+        let newEpochs = epochs == -1 ? defaults.epochs : epochs
+        return BenchmarkSettings(
+            batches: newBatches, batchSize: newBatchSize,
+            iterations: newIterations, epochs: newEpochs)
+    }
 }
 
 struct BenchmarkResults {
     let name: String
-    let iterations: Int
     let timings: [Double]
+    let settings: BenchmarkSettings
     let variety: BenchmarkVariety
 }
 
 extension BenchmarkResults {
     var interpretedTimings: [Double] {
         switch self.variety {
-        case let .inferenceThroughput(batches, batchSize):
+        case .inferenceThroughput:
+            let batches = settings.batches
+            let batchSize = settings.batchSize
             return timings.map { Double(batches * batchSize) / ($0 / 1000.0) }
         case .trainingTime:
             return timings
@@ -40,20 +70,19 @@ extension BenchmarkResults {
 /// Performs the specified benchmark over a certain number of iterations and provides the result to a callback function.
 func benchmark(
     name: String,
-    iterations: Int, variety: BenchmarkVariety,
-    operation: () -> Void,
+    settings: BenchmarkSettings,
+    variety: BenchmarkVariety,
+    benchmark: Benchmark,
     callback: (BenchmarkResults) -> Void
 ) {
     var timings: [Double] = []
-    for _ in 0..<iterations {
-        let timing = time(operation)
+    for _ in 0..<settings.iterations {
+        let timing = time(benchmark.run)
         timings.append(timing)
     }
 
     let results = BenchmarkResults(
-        name: name, iterations: iterations,
-        timings: timings, variety: variety
-    )
+        name: name, timings: timings, settings: settings, variety: variety)
     callback(results)
 }
 
@@ -90,14 +119,14 @@ func logResults(_ result: BenchmarkResults) {
         print(
             """
                 Benchmark: \(result.name):
-                \tAfter \(result.iterations) iterations:
+                \tAfter \(result.settings.iterations) iterations:
                 \tSamples per second: \(String(format: "%.2f", average)), standard deviation: \(String(format: "%.2f", standardDeviation))
             """)
     case .trainingTime:
         print(
             """
                 Benchmark: \(result.name):
-                \tAfter \(result.iterations) iterations:
+                \tAfter \(result.settings.iterations) iterations:
                 \tAverage: \(String(format: "%.2f", average)) ms, standard deviation: \(String(format: "%.2f", standardDeviation)) ms
             """)
     }
