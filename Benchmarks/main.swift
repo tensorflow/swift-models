@@ -13,39 +13,32 @@
 // limitations under the License.
 
 import Commander
-import Datasets
-import ImageClassificationModels
 
-let trainingBenchmarks = [
-    "lenet-mnist": { ImageClassificationTraining<LeNet, MNIST>(settings: $0) },
-]
-
-let inferenceBenchmarks = [
-    "lenet-mnist": { ImageClassificationInference<LeNet, MNIST>(settings: $0) },
-]
-
-func runTrainingBenchmark(_ name: String, withSettings settings: BenchmarkSettings) {
-    if let makeBenchmark = trainingBenchmarks[name] {
-        let bench = makeBenchmark(settings)
+func runBenchmark(
+    _ name: String,
+    withSettings settings: BenchmarkSettings,
+    andVariety variety: BenchmarkVariety
+) {
+    if let benchmarkModel = benchmarkModels[name] {
+        var bench: Benchmark
+        var benchSettings: BenchmarkSettings
+        var varietyName: String
+        switch variety {
+        case .inferenceThroughput:
+            benchSettings =
+                settings.withDefaults(benchmarkModel.inferenceDefaults())
+            bench = benchmarkModel.inferenceBenchmark(benchSettings)
+            varietyName = "inference"
+        case .trainingTime:
+            benchSettings =
+                settings.withDefaults(benchmarkModel.trainingDefaults())
+            bench = benchmarkModel.trainingBenchmark(benchSettings)
+            varietyName = "training"
+        }
         benchmark(
-            name: "\(name) (training)",
-            settings: settings,
-            variety: .trainingTime,
-            benchmark: bench,
-            callback: logResults)
-    } else {
-        print("No registered training benchmark with a name: \(name)")
-        print("Consider running `list` command to see all available benchmarks.")
-    }
-}
-
-func runInferenceBenchmark(_ name: String, withSettings settings: BenchmarkSettings) {
-    if let makeBenchmark = inferenceBenchmarks[name] {
-        let bench = makeBenchmark(settings)
-        benchmark(
-            name: "\(name) (inference)",
-            settings: settings,
-            variety: .inferenceThroughput,
+            name: "\(name) (\(varietyName))",
+            settings: benchSettings,
+            variety: variety,
             benchmark: bench,
             callback: logResults)
     } else {
@@ -54,17 +47,50 @@ func runInferenceBenchmark(_ name: String, withSettings settings: BenchmarkSetti
     }
 }
 
+func flags(from settings: BenchmarkSettings) -> String {
+    var result = ""
+    if settings.batches != -1 {
+        result += "--batches \(settings.batches) "
+    }
+    if settings.batchSize != -1 {
+        result += "--batchSize \(settings.batchSize) "
+    }
+    if settings.iterations != -1 {
+        result += "--iterations \(settings.iterations) "
+    }
+    if settings.epochs != -1 {
+        result += "--epochs \(settings.epochs) "
+    }
+    return result
+}
+
 let main =
     Group { group in
+        group.command(
+            "measure-all",
+            description: "run all benchmarks with default settigns"
+        ) {
+            for (name, benchmarkModel) in benchmarkModels {
+                runBenchmark(
+                    name,
+                    withSettings: benchmarkModel.trainingDefaults(),
+                    andVariety: .trainingTime)
+                runBenchmark(
+                    name,
+                    withSettings: benchmarkModel.inferenceDefaults(),
+                    andVariety: .inferenceThroughput)
+            }
+        }
         group.command(
             "measure",
             Flag("training"),
             Flag("inference"),
             Option("benchmark", default: ""),
-            Option("batches", default: 1000),
-            Option("batchSize", default: 1),
-            Option("iterations", default: 10),
-            Option("epochs", default: 1)
+            Option("batches", default: -1),
+            Option("batchSize", default: -1),
+            Option("iterations", default: -1),
+            Option("epochs", default: -1),
+            description: "run a single benchmark with custom settings"
         ) { (trainingFlag, inferenceFlag, name, batches, batchSize, iterations, epochs) in
             let settings = BenchmarkSettings(
                 batches: batches,
@@ -78,22 +104,27 @@ let main =
             } else if name == "" {
                 print("Must provide a --benchmark to run.")
             } else {
+                var variety: BenchmarkVariety
                 if trainingFlag {
-                    runTrainingBenchmark(name, withSettings: settings)
+                    variety = .trainingTime
+                } else {
+                    assert(inferenceFlag)
+                    variety = .inferenceThroughput
                 }
-                if inferenceFlag {
-                    runInferenceBenchmark(name, withSettings: settings)
-                }
+                runBenchmark(name, withSettings: settings, andVariety: variety)
             }
         }
-        group.command("list") {
-            print("Registered training benchmarks:")
-            for (name, _) in trainingBenchmarks {
-                print("  * \(name)")
-            }
-            print("Registered inference benchmarks:")
-            for (name, _) in inferenceBenchmarks {
-                print("  * \(name)")
+        group.command(
+            "list",
+            description: "list all available benchmarks and their default settings"
+        ) {
+            for (name, benchmarkModel) in benchmarkModels {
+                print(
+                    "--benchmark \(name) --training \(flags(from: benchmarkModel.trainingDefaults()))"
+                )
+                print(
+                    "--benchmark \(name) --inference \(flags(from: benchmarkModel.inferenceDefaults()))"
+                )
             }
         }
     }
