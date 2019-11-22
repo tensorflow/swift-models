@@ -31,7 +31,7 @@ public struct MNIST: ImageClassificationDataset {
 
     public init(
         flattening: Bool = false, normalizing: Bool = false,
-        localStorageDirectory: URL = DatasetUtilities.curentWorkingDirectoryURL
+        localStorageDirectory: URL = DatasetUtilities.currentWorkingDirectoryURL
     ) {
         self.trainingDataset = Dataset<LabeledExample>(
             elements: fetchDataset(

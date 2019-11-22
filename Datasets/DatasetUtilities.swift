@@ -19,13 +19,13 @@ import Foundation
 #endif
 
 public struct DatasetUtilities {
-    public static let curentWorkingDirectoryURL = URL(
+    public static let currentWorkingDirectoryURL = URL(
         fileURLWithPath: FileManager.default.currentDirectoryPath)
 
     public static func fetchResource(
         filename: String,
         remoteRoot: URL,
-        localStorageDirectory: URL = curentWorkingDirectoryURL
+        localStorageDirectory: URL = currentWorkingDirectoryURL
     ) -> Data {
         print("Loading resource: \(filename)")
 
