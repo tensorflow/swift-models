@@ -36,7 +36,7 @@ func readTensor<Scalar: TensorFlowScalar>(
     scalarType: Scalar.Type
 ) -> Tensor<Scalar> {
     // TODO(jekbradbury): support variadic dtype attrs in RawOpsGenerated
-    return Raw.restoreV2(prefix: StringTensor(path),
+    return _Raw.restoreV2(prefix: StringTensor(path),
                          tensorNames: StringTensor([name]),
                          shapeAndSlices: StringTensor([""]))
 }
@@ -73,7 +73,7 @@ extension LayerNorm: InitializableFromPythonCheckpoint {
             offset: readTensor(fromPath: path, name: scope + "/b", scalarType: Scalar.self),
             scale: readTensor(fromPath: path, name: scope + "/g", scalarType: Scalar.self),
             axis: -1,
-            epsilon: Tensor(1e-5))
+            epsilon: 1e-5)
     }
 }
 

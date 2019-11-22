@@ -119,7 +119,7 @@ extension BoardState {
         // boardSize, featurePlanes]` order.
         //
         // Rotate our inputs to this order by transposing and reshape to a single-element batch.
-        return featureTensor.transposed(withPermutations: 1, 2, 0)
+        return featureTensor.transposed(permutation: 1, 2, 0)
             .reshaped(to: [1, boardSize, boardSize, 17])
     }
 }

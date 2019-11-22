@@ -68,8 +68,8 @@ struct Episode {
 
 /// Filtering out bad/short episodes before we feed them as neural net training data.
 func filteringBatch(
-  episodes: [Episode],
-  actionCount: Int
+    episodes: [Episode],
+    actionCount: Int
 ) -> (input: Tensor<Float>, target: Tensor<Float>, episodeCount: Int, meanReward: Float) {
     let rewards = episodes.map { $0.reward }
     let rewardBound = Float(np.percentile(rewards, percentile))!
@@ -111,10 +111,10 @@ func filteringBatch(
 }
 
 func nextBatch(
-  env: PythonObject,
-  net: Net,
-  batchSize: Int,
-  actionCount: Int
+    env: PythonObject,
+    net: Net,
+    batchSize: Int,
+    actionCount: Int
 ) -> [Episode] {
     var observationNumpy = env.reset()
 
@@ -127,8 +127,7 @@ func nextBatch(
 
         while true {
             let observationPython = Tensor<Double>(numpy: observationNumpy).unwrapped()
-            let actionProbabilities =
-              softmax(net(Tensor(observationPython).reshaped(to: [1, 4])))
+            let actionProbabilities = softmax(net(Tensor(observationPython).reshaped(to: [1, 4])))
             let actionProbabilitiesPython = actionProbabilities[0].makeNumpyArray()
             let len = Python.len(actionProbabilitiesPython)
             assert(actionCount == Int(Python.len(actionProbabilitiesPython)))
@@ -138,8 +137,10 @@ func nextBatch(
             // print(nextObservation)
             // print(reward)
 
-            steps.append(Episode.Step(observation: Tensor<Float>(observationPython),
-                                      action: Int32(actionPython).unwrapped()))
+            steps.append(
+                Episode.Step(
+                    observation: Tensor<Float>(observationPython),
+                    action: Int32(actionPython).unwrapped()))
 
             episodeReward += Float(reward).unwrapped()
 
@@ -162,7 +163,8 @@ let observationSize = Int(env.observation_space.shape[0]).unwrapped()
 let actionCount = Int(env.action_space.n).unwrapped()
 // print(actionCount)
 
-var net = Net(observationSize: Int(observationSize), hiddenSize: hiddenSize, actionCount: actionCount)
+var net = Net(
+    observationSize: Int(observationSize), hiddenSize: hiddenSize, actionCount: actionCount)
 // SGD optimizer reaches convergence with ~125 mini batches, while Adam uses ~25.
 // let optimizer = SGD<Net, Float>(learningRate: 0.1, momentum: 0.9)
 let optimizer = Adam(for: net, learningRate: 0.01)
@@ -174,7 +176,7 @@ while true {
 
     let episodes = nextBatch(env: env, net: net, batchSize: batchSize, actionCount: actionCount)
     let (input, target, episodeCount, meanReward) = filteringBatch(
-      episodes: episodes, actionCount: actionCount)
+        episodes: episodes, actionCount: actionCount)
 
     let gradients = withLearningPhase(.training) {
         net.gradient { net -> Tensor<Float> in

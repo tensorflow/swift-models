@@ -31,21 +31,27 @@ public struct MNIST {
 
     public let batchSize: Int
 
-    public init(batchSize: Int, flattening: Bool = false, normalizing: Bool = false) {
+    public init(
+        batchSize: Int, flattening: Bool = false, normalizing: Bool = false,
+        localStorageDirectory: URL = DatasetUtilities.curentWorkingDirectoryURL
+    ) {
         self.batchSize = batchSize
 
-        let (trainingImages, trainingLabels) = readMNIST(
-            imagesFile: "train-images-idx3-ubyte",
-            labelsFile: "train-labels-idx1-ubyte",
+        let (trainingImages, trainingLabels) = fetchDataset(
+            localStorageDirectory: localStorageDirectory,
+            imagesFilename: "train-images-idx3-ubyte",
+            labelsFilename: "train-labels-idx1-ubyte",
             flattening: flattening,
             normalizing: normalizing)
+
         self.trainingImages = trainingImages
         self.trainingLabels = trainingLabels
         self.trainingSize = Int(trainingLabels.shape[0])
 
-        let (testImages, testLabels) = readMNIST(
-            imagesFile: "t10k-images-idx3-ubyte",
-            labelsFile: "t10k-labels-idx1-ubyte",
+        let (testImages, testLabels) = fetchDataset(
+            localStorageDirectory: localStorageDirectory,
+            imagesFilename: "t10k-images-idx3-ubyte",
+            labelsFilename: "t10k-labels-idx1-ubyte",
             flattening: flattening,
             normalizing: normalizing)
         self.testImages = testImages
@@ -61,36 +67,31 @@ extension Tensor {
     }
 }
 
-/// Reads a file into an array of bytes.
-func readFile(_ path: String, possibleDirectories: [String]) -> [UInt8] {
-    for folder in possibleDirectories {
-        let parent = URL(fileURLWithPath: folder)
-        let filePath = parent.appendingPathComponent(path)
-        guard FileManager.default.fileExists(atPath: filePath.path) else {
-            continue
-        }
-        let data = try! Data(contentsOf: filePath, options: [])
-        return [UInt8](data)
+fileprivate func fetchDataset(
+    localStorageDirectory: URL,
+    imagesFilename: String,
+    labelsFilename: String,
+    flattening: Bool,
+    normalizing: Bool
+) -> (images: Tensor<Float>, labels: Tensor<Int32>) {
+    guard let remoteRoot: URL = URL(string: "http://yann.lecun.com/exdb/mnist") else {
+        fatalError("Failed to create MNST root url: http://yann.lecun.com/exdb/mnist")
     }
-    print("File not found: \(path)")
-    exit(-1)
-}
 
-/// Reads MNIST images and labels from specified file paths.
-func readMNIST(imagesFile: String, labelsFile: String, flattening: Bool, normalizing: Bool) -> (
-    images: Tensor<Float>,
-    labels: Tensor<Int32>
-) {
-    print("Reading data from files: \(imagesFile), \(labelsFile).")
-    let images = readFile(imagesFile, possibleDirectories: [".", "./Datasets/MNIST"]).dropFirst(16)
-        .map(Float.init)
-    let labels = readFile(labelsFile, possibleDirectories: [".", "./Datasets/MNIST"]).dropFirst(8)
-        .map(Int32.init)
+    let imagesData = DatasetUtilities.fetchResource(
+        filename: imagesFilename,
+        remoteRoot: remoteRoot,
+        localStorageDirectory: localStorageDirectory)
+    let labelsData = DatasetUtilities.fetchResource(
+        filename: labelsFilename,
+        remoteRoot: remoteRoot,
+        localStorageDirectory: localStorageDirectory)
+
+    let images = [UInt8](imagesData).dropFirst(16).map(Float.init)
+    let labels = [UInt8](labelsData).dropFirst(8).map(Int32.init)
+
     let rowCount = labels.count
-    let imageHeight = 28
-    let imageWidth = 28
-
-    print("Constructing data tensors.")
+    let (imageWidth, imageHeight) = (28, 28)
 
     if flattening {
         var flattenedImages = Tensor(shape: [rowCount, imageHeight * imageWidth], scalars: images)
@@ -101,8 +102,9 @@ func readMNIST(imagesFile: String, labelsFile: String, flattening: Bool, normali
         return (images: flattenedImages, labels: Tensor(labels))
     } else {
         return (
-            images: Tensor(shape: [rowCount, 1, imageHeight, imageWidth], scalars: images)
-                .transposed(withPermutations: [0, 2, 3, 1]) / 255,  // NHWC
+            images:
+                Tensor(shape: [rowCount, 1, imageHeight, imageWidth], scalars: images)
+                    .transposed(permutation: [0, 2, 3, 1]) / 255,  // NHWC
             labels: Tensor(labels)
         )
     }

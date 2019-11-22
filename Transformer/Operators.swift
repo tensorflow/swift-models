@@ -37,7 +37,7 @@ func batchedMatmul<Scalar : Numeric>(
     adjointLeft: Bool = false,
     adjointRight: Bool = false
 ) -> Tensor<Scalar> {
-    return Raw.batchMatMul(left, right, adjX: adjointLeft, adjY: adjointRight)
+    return _Raw.batchMatMul(left, right, adjX: adjointLeft, adjY: adjointRight)
 }
 
 @usableFromInline

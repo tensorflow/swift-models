@@ -113,7 +113,7 @@ func loadCIFARFile(named name: String, in directory: String = ".") -> CIFARExamp
     let images = Tensor<UInt8>(shape: [imageCount, 3, 32, 32], scalars: bytes)
 
     // Transpose from the CIFAR-provided N(CHW) to TF's default NHWC.
-    let imageTensor = Tensor<Float>(images.transposed(withPermutations: [0, 2, 3, 1]))
+    let imageTensor = Tensor<Float>(images.transposed(permutation: [0, 2, 3, 1]))
 
     let mean = Tensor<Float>([0.485, 0.456, 0.406])
     let std = Tensor<Float>([0.229, 0.224, 0.225])
@@ -125,8 +125,8 @@ func loadCIFARFile(named name: String, in directory: String = ".") -> CIFARExamp
 func loadCIFARTrainingFiles() -> CIFARExample {
     let data = (1..<6).map { loadCIFARFile(named: "data_batch_\($0).bin") }
     return CIFARExample(
-        label: Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.label }),
-        data: Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.data })
+        label: _Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.label }),
+        data: _Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.data })
     )
 }
 
