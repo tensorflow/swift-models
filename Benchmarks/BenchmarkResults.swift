@@ -12,6 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let benchmarkModels = [
-    "lenet-mnist": LeNetMnist(),
-]
+struct BenchmarkResults: Codable {
+    let name: String
+    let timings: [Double]
+    let settings: BenchmarkSettings
+    let variety: BenchmarkVariety
+}
+
+extension BenchmarkResults {
+    var interpretedTimings: [Double] {
+        switch self.variety {
+        case .inferenceThroughput:
+            let batches = settings.batches
+            let batchSize = settings.batchSize
+            return timings.map { Double(batches * batchSize) / ($0 / 1000.0) }
+        case .trainingTime:
+            return timings
+        }
+    }
+}

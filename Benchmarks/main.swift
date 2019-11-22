@@ -15,10 +15,12 @@
 import Commander
 import ModelSupport
 
+/// Collect benchmark results and print them to stdout using a given reporter.
 func runBenchmark(
-    _ name: String,
-    withSettings settings: BenchmarkSettings,
-    andVariety variety: BenchmarkVariety
+    named name: String,
+    settings: BenchmarkSettings,
+    variety: BenchmarkVariety,
+    reporter: BenchmarkReporter
 ) {
     if let benchmarkModel = benchmarkModels[name] {
         var bench: Benchmark
@@ -27,59 +29,46 @@ func runBenchmark(
         switch variety {
         case .inferenceThroughput:
             benchSettings =
-                settings.withDefaults(benchmarkModel.inferenceDefaults())
-            bench = benchmarkModel.inferenceBenchmark(benchSettings)
+                settings.withDefaults(benchmarkModel.defaultInferenceSettings)
+            bench = benchmarkModel.makeInferenceBenchmark(benchSettings)
             varietyName = "inference"
         case .trainingTime:
             benchSettings =
-                settings.withDefaults(benchmarkModel.trainingDefaults())
-            bench = benchmarkModel.trainingBenchmark(benchSettings)
+                settings.withDefaults(benchmarkModel.defaultTrainingSettings)
+            bench = benchmarkModel.makeTrainingBenchmark(benchSettings)
             varietyName = "training"
         }
-        benchmark(
+        let results = measure(
             name: "\(name) (\(varietyName))",
             settings: benchSettings,
             variety: variety,
-            benchmark: bench,
-            callback: logResults)
+            benchmark: bench)
+        reporter.printResults(results)
     } else {
         printError("No registered inference benchmark with a name: \(name)")
         printError("Consider running `list` command to see all available benchmarks.")
     }
 }
 
-func flags(from settings: BenchmarkSettings) -> String {
-    var result = ""
-    if settings.batches != -1 {
-        result += "--batches \(settings.batches) "
-    }
-    if settings.batchSize != -1 {
-        result += "--batchSize \(settings.batchSize) "
-    }
-    if settings.iterations != -1 {
-        result += "--iterations \(settings.iterations) "
-    }
-    if settings.epochs != -1 {
-        result += "--epochs \(settings.epochs) "
-    }
-    return result
-}
-
 let main =
     Group { group in
         group.command(
             "measure-all",
+            Flag("json", description: "Output json instead of plain text."),
             description: "Run all benchmarks with default settings."
-        ) {
+        ) { useJson in
+            let reporter: BenchmarkReporter = useJson ? JsonReporter() : PlainTextReporter()
             for (name, benchmarkModel) in benchmarkModels {
                 runBenchmark(
-                    name,
-                    withSettings: benchmarkModel.trainingDefaults(),
-                    andVariety: .trainingTime)
+                    named: name,
+                    settings: benchmarkModel.defaultTrainingSettings,
+                    variety: .trainingTime,
+                    reporter: reporter)
                 runBenchmark(
-                    name,
-                    withSettings: benchmarkModel.inferenceDefaults(),
-                    andVariety: .inferenceThroughput)
+                    named: name,
+                    settings: benchmarkModel.defaultInferenceSettings,
+                    variety: .inferenceThroughput,
+                    reporter: reporter)
             }
         }
         group.command(
@@ -91,8 +80,10 @@ let main =
             Option("batchSize", default: -1, description: "Size of a single batch."),
             Option("iterations", default: -1, description: "Number of benchmark iterations."),
             Option("epochs", default: -1, description: "Number of training epochs."),
+            Flag("json", description: "Output json instead of plain text."),
             description: "Run a single benchmark with provided settings."
-        ) { (trainingFlag, inferenceFlag, name, batches, batchSize, iterations, epochs) in
+        ) { (trainingFlag, inferenceFlag, name, batches, batchSize, iterations, epochs, useJson) in
+            let reporter: BenchmarkReporter = useJson ? JsonReporter() : PlainTextReporter()
             let settings = BenchmarkSettings(
                 batches: batches,
                 batchSize: batchSize,
@@ -112,21 +103,21 @@ let main =
                     assert(inferenceFlag)
                     variety = .inferenceThroughput
                 }
-                runBenchmark(name, withSettings: settings, andVariety: variety)
+                runBenchmark(
+                    named: name,
+                    settings: settings,
+                    variety: variety,
+                    reporter: reporter
+                )
             }
         }
         group.command(
             "list-defaults",
+            Flag("json"),
             description: "List all available benchmarks and their default settings."
-        ) {
-            for (name, benchmarkModel) in benchmarkModels {
-                print(
-                    "--benchmark \(name) --training \(flags(from: benchmarkModel.trainingDefaults()))"
-                )
-                print(
-                    "--benchmark \(name) --inference \(flags(from: benchmarkModel.inferenceDefaults()))"
-                )
-            }
+        ) { useJson in
+            let reporter: BenchmarkReporter = useJson ? JsonReporter() : PlainTextReporter()
+            reporter.printDefaults()
         }
     }
 
