@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import Commander
+import ModelSupport
 
 func runBenchmark(
     _ name: String,
@@ -42,8 +43,8 @@ func runBenchmark(
             benchmark: bench,
             callback: logResults)
     } else {
-        print("No registered inference benchmark with a name: \(name)")
-        print("Consider running `list` command to see all available benchmarks.")
+        printerr("No registered inference benchmark with a name: \(name)")
+        printerr("Consider running `list` command to see all available benchmarks.")
     }
 }
 
@@ -98,11 +99,11 @@ let main =
                 iterations: iterations,
                 epochs: epochs)
             if !trainingFlag && !inferenceFlag {
-                print("Must specify either --training xor --inference benchmark variety.")
+                printerr("Must specify either --training xor --inference benchmark variety.")
             } else if trainingFlag && inferenceFlag {
-                print("Can't specify both --training and --inference benchmark variety.")
+                printerr("Can't specify both --training and --inference benchmark variety.")
             } else if name == "" {
-                print("Must provide a --benchmark to run.")
+                printerr("Must provide a --benchmark to run.")
             } else {
                 var variety: BenchmarkVariety
                 if trainingFlag {
