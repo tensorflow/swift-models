@@ -28,7 +28,7 @@ public struct DatasetUtilities {
         remoteRoot: URL,
         localStorageDirectory: URL = currentWorkingDirectoryURL
     ) -> Data {
-        printerr("Loading resource: \(filename)")
+        printError("Loading resource: \(filename)")
 
         let resource = ResourceDefinition(
             filename: filename,
@@ -38,16 +38,16 @@ public struct DatasetUtilities {
         let localURL = resource.localURL
 
         if !FileManager.default.fileExists(atPath: localURL.path) {
-            printerr(
+            printError(
                 "File does not exist locally at expected path: \(localURL.path) and must be fetched"
             )
             fetchFromRemoteAndSave(resource)
         }
 
         do {
-            printerr("Loading local data at: \(localURL.path)")
+            printError("Loading local data at: \(localURL.path)")
             let data = try Data(contentsOf: localURL)
-            printerr("Succesfully loaded resource: \(filename)")
+            printError("Succesfully loaded resource: \(filename)")
             return data
         } catch {
             fatalError("Failed to contents of resource: \(localURL)")
@@ -77,20 +77,20 @@ public struct DatasetUtilities {
         let archiveLocation = resource.archiveURL
 
         do {
-            printerr("Fetching URL: \(remoteLocation)...")
+            printError("Fetching URL: \(remoteLocation)...")
             let archiveData = try Data(contentsOf: remoteLocation)
-            printerr("Writing fetched archive to: \(archiveLocation.path)")
+            printError("Writing fetched archive to: \(archiveLocation.path)")
             try archiveData.write(to: archiveLocation)
         } catch {
             fatalError("Failed to fetch and save resource with error: \(error)")
         }
-        printerr("Archive saved to: \(archiveLocation.path)")
+        printError("Archive saved to: \(archiveLocation.path)")
 
         extractArchive(for: resource)
     }
 
     static func extractArchive(for resource: ResourceDefinition) {
-        printerr("Extracting archive...")
+        printError("Extracting archive...")
 
         let archivePath = resource.archiveURL.path
 

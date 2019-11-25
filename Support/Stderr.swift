@@ -9,6 +9,6 @@ extension FileHandle: TextOutputStream {
     }
 }
 
-public func printerr(_ msg: String) {
-    print(msg, to: &stderr)
+public func printError(_ message: String) {
+    print(message, to: &stderr)
 }

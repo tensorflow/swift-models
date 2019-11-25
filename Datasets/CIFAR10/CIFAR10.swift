@@ -42,23 +42,23 @@ func downloadCIFAR10IfNotPresent(to directory: String = ".") {
 
     guard !directoryExists else { return }
 
-    printerr("Downloading CIFAR dataset...")
+    printError("Downloading CIFAR dataset...")
     let archivePath = "\(directory)/cifar-10-binary.tar.gz"
     let archiveExists = FileManager.default.fileExists(atPath: archivePath)
     if !archiveExists {
-        printerr("Archive missing, downloading...")
+        printError("Archive missing, downloading...")
         do {
             let downloadedFile = try Data(
                 contentsOf: URL(
                     string: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz")!)
             try downloadedFile.write(to: URL(fileURLWithPath: archivePath))
         } catch {
-            printerr("Could not download CIFAR dataset, error: \(error)")
+            printError("Could not download CIFAR dataset, error: \(error)")
             exit(-1)
         }
     }
 
-    printerr("Archive downloaded, processing...")
+    printError("Archive downloaded, processing...")
 
     #if os(macOS)
         let tarLocation = "/usr/bin/tar"
@@ -73,17 +73,17 @@ func downloadCIFAR10IfNotPresent(to directory: String = ".") {
         try task.run()
         task.waitUntilExit()
     } catch {
-        printerr("CIFAR extraction failed with error: \(error)")
+        printError("CIFAR extraction failed with error: \(error)")
     }
 
     do {
         try FileManager.default.removeItem(atPath: archivePath)
     } catch {
-        printerr("Could not remove archive, error: \(error)")
+        printError("Could not remove archive, error: \(error)")
         exit(-1)
     }
 
-    printerr("Unarchiving completed")
+    printError("Unarchiving completed")
 }
 
 func loadCIFARFile(named name: String, in directory: String = ".") -> LabeledExample {
@@ -92,11 +92,11 @@ func loadCIFARFile(named name: String, in directory: String = ".") -> LabeledExa
 
     let imageCount = 10000
     guard let fileContents = try? Data(contentsOf: URL(fileURLWithPath: path)) else {
-        printerr("Could not read dataset file: \(name)")
+        printError("Could not read dataset file: \(name)")
         exit(-1)
     }
     guard fileContents.count == 30_730_000 else {
-        printerr(
+        printError(
             "Dataset file \(name) should have 30730000 bytes, instead had \(fileContents.count)")
         exit(-1)
     }

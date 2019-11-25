@@ -43,8 +43,8 @@ func runBenchmark(
             benchmark: bench,
             callback: logResults)
     } else {
-        printerr("No registered inference benchmark with a name: \(name)")
-        printerr("Consider running `list` command to see all available benchmarks.")
+        printError("No registered inference benchmark with a name: \(name)")
+        printError("Consider running `list` command to see all available benchmarks.")
     }
 }
 
@@ -99,11 +99,11 @@ let main =
                 iterations: iterations,
                 epochs: epochs)
             if !trainingFlag && !inferenceFlag {
-                printerr("Must specify either --training xor --inference benchmark variety.")
+                printError("Must specify either --training xor --inference benchmark variety.")
             } else if trainingFlag && inferenceFlag {
-                printerr("Can't specify both --training and --inference benchmark variety.")
+                printError("Can't specify both --training and --inference benchmark variety.")
             } else if name == "" {
-                printerr("Must provide a --benchmark to run.")
+                printError("Must provide a --benchmark to run.")
             } else {
                 var variety: BenchmarkVariety
                 if trainingFlag {
