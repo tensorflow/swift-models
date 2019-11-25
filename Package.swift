@@ -20,12 +20,17 @@ let package = Package(
         .executable(name: "GAN", targets: ["GAN"]),
         .executable(name: "FastStyleTransferDemo", targets: ["FastStyleTransferDemo"]),
         .library(name: "FastStyleTransfer", targets: ["FastStyleTransfer"]),
+        .executable(name: "Benchmarks", targets: ["Benchmarks"]),
+    ],
+    dependencies: [
+        .package(url: "https://github.com/kylef/Commander.git", from: "0.9.1"),
     ],
     targets: [
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "Datasets", path: "Datasets"),
         .target(name: "ModelSupport", path: "Support"),
-        .target(name: "Autoencoder", dependencies: ["Datasets", "ModelSupport"], path: "Autoencoder"),
+        .target(
+            name: "Autoencoder", dependencies: ["Datasets", "ModelSupport"], path: "Autoencoder"),
         .target(name: "Catch", path: "Catch"),
         .target(name: "Gym-FrozenLake", path: "Gym/FrozenLake"),
         .target(name: "Gym-CartPole", path: "Gym/CartPole"),
@@ -44,11 +49,16 @@ let package = Package(
             name: "MiniGoDemo", dependencies: ["MiniGo"], path: "MiniGo",
             sources: ["main.swift"]),
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
+        .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
         .target(name: "Transformer", path: "Transformer"),
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
         .target(name: "FastStyleTransfer", path: "FastStyleTransfer", exclude: ["Demo"]),
         .target(name: "FastStyleTransferDemo", dependencies: ["FastStyleTransfer"], 
             path: "FastStyleTransfer/Demo"),
         .testTarget(name: "FastStyleTransferTests", dependencies: ["FastStyleTransfer"]),
+        .target(
+            name: "Benchmarks",
+            dependencies: ["Datasets", "ModelSupport", "ImageClassificationModels", "Commander"],
+            path: "Benchmarks"),
     ]
 )

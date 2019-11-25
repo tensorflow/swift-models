@@ -37,11 +37,11 @@ public struct Image {
     }
 
     public init(jpeg url: URL, byteOrdering: ByteOrdering = .rgb) {
-        let loadedFile = Raw.readFile(filename: StringTensor(url.absoluteString))
-        let loadedJpeg = Raw.decodeJpeg(contents: loadedFile, channels: 3, dctMethod: "")
+        let loadedFile = _Raw.readFile(filename: StringTensor(url.absoluteString))
+        let loadedJpeg = _Raw.decodeJpeg(contents: loadedFile, channels: 3, dctMethod: "")
         if byteOrdering == .bgr {
             self.imageData = .uint8(
-                data: Raw.reverse(loadedJpeg, dims: Tensor<Bool>([false, false, false, true])))
+                data: _Raw.reverse(loadedJpeg, dims: Tensor<Bool>([false, false, false, true])))
         } else {
             self.imageData = .uint8(data: loadedJpeg)
         }
@@ -59,21 +59,21 @@ public struct Image {
             outputImageData = Tensor<UInt8>(adjustedData)
         }
 
-        let encodedJpeg = Raw.encodeJpeg(
+        let encodedJpeg = _Raw.encodeJpeg(
             image: outputImageData, format: .grayscale, quality: quality, xmpMetadata: "")
-        Raw.writeFile(filename: StringTensor(url.absoluteString), contents: encodedJpeg)
+        _Raw.writeFile(filename: StringTensor(url.absoluteString), contents: encodedJpeg)
     }
 
     public func resized(to size: (Int, Int)) -> Image {
         switch self.imageData {
         case let .uint8(data):
             return Image(
-                tensor: Raw.resizeBilinear(
+                tensor: _Raw.resizeBilinear(
                     images: Tensor<UInt8>([data]),
                     size: Tensor<Int32>([Int32(size.0), Int32(size.1)])))
         case let .float(data):
             return Image(
-                tensor: Raw.resizeBilinear(
+                tensor: _Raw.resizeBilinear(
                     images: Tensor<Float>([data]),
                     size: Tensor<Int32>([Int32(size.0), Int32(size.1)])))
         }

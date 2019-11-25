@@ -105,7 +105,7 @@ func sampleVector(size: Int) -> Tensor<Float> {
     Tensor(randomNormal: [size, latentSize])
 }
 
-let dataset = MNIST(batchSize: batchSize, flattening: true, normalizing: true)
+let dataset = MNIST(flattening: true, normalizing: true)
 
 var generator = Generator()
 var discriminator = Discriminator()
@@ -126,7 +126,7 @@ func saveImageGrid(_ testImage: Tensor<Float>, name: String) throws {
     // Add padding.
     gridImage = gridImage.padded(forSizes: [(0, 0), (0, 0), (1, 1), (1, 1)], with: 1)
     // Transpose to create single image.
-    gridImage = gridImage.transposed(withPermutations: [0, 2, 1, 3])
+    gridImage = gridImage.transposed(permutation: [0, 2, 1, 3])
     gridImage = gridImage.reshaped(
         to: [
             (imageHeight + 2) * testImageGridSize,
@@ -146,7 +146,9 @@ print("Start training...")
 for epoch in 1...epochCount {
     // Start training phase.
     Context.local.learningPhase = .training
-    for i in 0 ..< dataset.trainingSize / batchSize {
+    let trainingShuffled = dataset.trainingDataset.shuffled(
+        sampleCount: dataset.trainingExampleCount, randomSeed: Int64(epoch))
+    for batch in trainingShuffled.batched(batchSize) {
         // Perform alternative update.
         // Update generator.
         let vec1 = sampleVector(size: batchSize)
@@ -160,7 +162,7 @@ for epoch in 1...epochCount {
         optG.update(&generator, along: 𝛁generator)
 
         // Update discriminator.
-        let realImages = dataset.trainingImages.minibatch(at: i, batchSize: batchSize)
+        let realImages = batch.data
         let vec2 = sampleVector(size: batchSize)
         let fakeImages = generator(vec2)
 

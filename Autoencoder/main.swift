@@ -23,58 +23,53 @@ let imageHeight = 28
 let imageWidth = 28
 
 let outputFolder = "./output/"
-
-/// An autoencoder.
-struct Autoencoder: Layer {
-    var encoder1 = Dense<Float>(
-        inputSize: imageHeight * imageWidth, outputSize: 128,
-        activation: relu)
-
-    var encoder2 = Dense<Float>(inputSize: 128, outputSize: 64, activation: relu)
-    var encoder3 = Dense<Float>(inputSize: 64, outputSize: 12, activation: relu)
-    var encoder4 = Dense<Float>(inputSize: 12, outputSize: 3, activation: relu)
-
-    var decoder1 = Dense<Float>(inputSize: 3, outputSize: 12, activation: relu)
-    var decoder2 = Dense<Float>(inputSize: 12, outputSize: 64, activation: relu)
-    var decoder3 = Dense<Float>(inputSize: 64, outputSize: 128, activation: relu)
-
-    var decoder4 = Dense<Float>(
-        inputSize: 128, outputSize: imageHeight * imageWidth,
-        activation: tanh)
-
-    @differentiable
-    func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        let encoder = input.sequenced(through: encoder1, encoder2, encoder3, encoder4)
-        return encoder.sequenced(through: decoder1, decoder2, decoder3, decoder4)
-    }
+let dataset = MNIST(flattening: true)
+// An autoencoder.
+var autoencoder = Sequential {
+    // The encoder.
+    Dense<Float>(inputSize: imageHeight * imageWidth, outputSize: 128, activation: relu)
+    Dense<Float>(inputSize: 128, outputSize: 64, activation: relu)
+    Dense<Float>(inputSize: 64, outputSize: 12, activation: relu)
+    Dense<Float>(inputSize: 12, outputSize: 3, activation: relu)
+    // The decoder.
+    Dense<Float>(inputSize: 3, outputSize: 12, activation: relu)
+    Dense<Float>(inputSize: 12, outputSize: 64, activation: relu)
+    Dense<Float>(inputSize: 64, outputSize: 128, activation: relu)
+    Dense<Float>(inputSize: 128, outputSize: imageHeight * imageWidth, activation: tanh)
 }
-
-let dataset = MNIST(batchSize: batchSize, flattening: true)
-var autoencoder = Autoencoder()
 let optimizer = RMSProp(for: autoencoder)
+
+let individualTestImages = dataset.testDataset.batched(1)
+var testImageIterator = individualTestImages.makeIterator()
 
 // Training loop
 for epoch in 1...epochCount {
-    let sampleImage = Tensor(
-        shape: [1, imageHeight * imageWidth], scalars: dataset.trainingImages[epoch].scalars)
-    let testImage = autoencoder(sampleImage)
+    if let nextIndividualImage = testImageIterator.next() {
+        let sampleTensor = nextIndividualImage.data
+        let sampleImage = Tensor(
+            shape: [1, imageHeight * imageWidth], scalars: sampleTensor.scalars)
 
-    do {
-        try saveImage(
-            sampleImage, size: (imageWidth, imageHeight), directory: outputFolder,
-            name: "epoch-\(epoch)-input")
-        try saveImage(
-            testImage, size: (imageWidth, imageHeight), directory: outputFolder,
-            name: "epoch-\(epoch)-output")
-    } catch {
-        print("Could not save image with error: \(error)")
+        let testImage = autoencoder(sampleImage)
+
+        do {
+            try saveImage(
+                sampleImage, size: (imageWidth, imageHeight), directory: outputFolder,
+                name: "epoch-\(epoch)-input")
+            try saveImage(
+                testImage, size: (imageWidth, imageHeight), directory: outputFolder,
+                name: "epoch-\(epoch)-output")
+        } catch {
+            print("Could not save image with error: \(error)")
+        }
+
+        let sampleLoss = meanSquaredError(predicted: testImage, expected: sampleImage)
+        print("[Epoch: \(epoch)] Loss: \(sampleLoss)")
     }
 
-    let sampleLoss = meanSquaredError(predicted: testImage, expected: sampleImage)
-    print("[Epoch: \(epoch)] Loss: \(sampleLoss)")
-
-    for i in 0 ..< dataset.trainingSize / batchSize {
-        let x = dataset.trainingImages.minibatch(at: i, batchSize: batchSize)
+    let trainingShuffled = dataset.trainingDataset.shuffled(
+        sampleCount: dataset.trainingExampleCount, randomSeed: Int64(epoch))
+    for batch in trainingShuffled.batched(batchSize) {
+        let x = batch.data
 
         let 𝛁model = autoencoder.gradient { autoencoder -> Tensor<Float> in
             let image = autoencoder(x)
