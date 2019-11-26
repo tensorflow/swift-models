@@ -13,18 +13,16 @@
 // limitations under the License.
 
 struct BenchmarkResults: Codable {
-    let name: String
+    let configuration: BenchmarkConfiguration
     let timings: [Double]
-    let settings: BenchmarkSettings
-    let variety: BenchmarkVariety
 }
 
 extension BenchmarkResults {
     var interpretedTimings: [Double] {
-        switch self.variety {
+        switch configuration.variety {
         case .inferenceThroughput:
-            let batches = settings.batches
-            let batchSize = settings.batchSize
+            let batches = configuration.settings.batches
+            let batchSize = configuration.settings.batchSize
             return timings.map { Double(batches * batchSize) / ($0 / 1000.0) }
         case .trainingTime:
             return timings

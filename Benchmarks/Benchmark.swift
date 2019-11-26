@@ -20,19 +20,16 @@ protocol Benchmark {
 
 /// Performs the specified benchmark over a certain number of iterations and provides the result to a callback function.
 func measure(
-    name: String,
-    settings: BenchmarkSettings,
-    variety: BenchmarkVariety,
+    configuration: BenchmarkConfiguration,
     benchmark: Benchmark
 ) -> BenchmarkResults {
     var timings: [Double] = []
-    for _ in 0..<settings.iterations {
+    for _ in 0..<configuration.settings.iterations {
         let timing = time(benchmark.run)
         timings.append(timing)
     }
 
-    return BenchmarkResults(
-        name: name, timings: timings, settings: settings, variety: variety)
+    return BenchmarkResults(configuration: configuration, timings: timings)
 }
 
 /// Returns the time elapsed while running `body` in milliseconds.

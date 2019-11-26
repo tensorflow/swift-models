@@ -15,13 +15,13 @@
 import Datasets
 import ImageClassificationModels
 
-struct LeNetMnist: BenchmarkModel {
+struct LeNetMNIST: BenchmarkModel {
 
     var defaultInferenceSettings: BenchmarkSettings {
         return BenchmarkSettings(batches: 1000, batchSize: 1, iterations: 10, epochs: -1)
     }
 
-    func makeInferenceBenchmark(_ settings: BenchmarkSettings) -> Benchmark {
+    func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark {
         return ImageClassificationInference<LeNet, MNIST>(settings: settings)
     }
 
@@ -29,7 +29,7 @@ struct LeNetMnist: BenchmarkModel {
         return BenchmarkSettings(batches: -1, batchSize: 128, iterations: 10, epochs: 1)
     }
 
-    func makeTrainingBenchmark(_ settings: BenchmarkSettings) -> Benchmark {
+    func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark {
         return ImageClassificationTraining<LeNet, MNIST>(settings: settings)
     }
 }

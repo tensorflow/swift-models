@@ -14,16 +14,15 @@
 
 /// Protocol that contains benchmark factory methods for a given model. 
 protocol BenchmarkModel {
-
     /// Settings to use in inference benchmark if no custom flags are given.
     var defaultInferenceSettings: BenchmarkSettings { get }
 
     /// Create an instance of inference  benchmark with given settings.
-    func makeInferenceBenchmark(_ settings: BenchmarkSettings) -> Benchmark
+    func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark
 
     /// Settings to use in training benchmark if no custom flags are given.
     var defaultTrainingSettings: BenchmarkSettings { get }
 
     /// Create an instance of training benchmark with given settings.
-    func makeTrainingBenchmark(_ settings: BenchmarkSettings) -> Benchmark
+    func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark
 }

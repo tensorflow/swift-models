@@ -15,35 +15,34 @@
 import Commander
 import ModelSupport
 
-/// Collect benchmark results and print them to stdout using a given reporter.
+/// Collect benchmark results and print them to stdout using a given printing style
 func runBenchmark(
     named name: String,
     settings: BenchmarkSettings,
     variety: BenchmarkVariety,
-    reporter: BenchmarkReporter
+    style: PrintingStyle
 ) {
     if let benchmarkModel = benchmarkModels[name] {
         var bench: Benchmark
         var benchSettings: BenchmarkSettings
-        var varietyName: String
         switch variety {
         case .inferenceThroughput:
             benchSettings =
                 settings.withDefaults(benchmarkModel.defaultInferenceSettings)
-            bench = benchmarkModel.makeInferenceBenchmark(benchSettings)
-            varietyName = "inference"
+            bench = benchmarkModel.makeInferenceBenchmark(settings: benchSettings)
         case .trainingTime:
             benchSettings =
                 settings.withDefaults(benchmarkModel.defaultTrainingSettings)
-            bench = benchmarkModel.makeTrainingBenchmark(benchSettings)
-            varietyName = "training"
+            bench = benchmarkModel.makeTrainingBenchmark(settings: benchSettings)
         }
-        let results = measure(
-            name: "\(name) (\(varietyName))",
-            settings: benchSettings,
+        let configuration = BenchmarkConfiguration(
+            name: name,
             variety: variety,
+            settings: benchSettings)
+        let results = measure(
+            configuration: configuration,
             benchmark: bench)
-        reporter.printResults(results)
+        results.print(using: style)
     } else {
         printError("No registered inference benchmark with a name: \(name)")
         printError("Consider running `list` command to see all available benchmarks.")
@@ -56,19 +55,19 @@ let main =
             "measure-all",
             Flag("json", description: "Output json instead of plain text."),
             description: "Run all benchmarks with default settings."
-        ) { useJson in
-            let reporter: BenchmarkReporter = useJson ? JsonReporter() : PlainTextReporter()
+        ) { useJSON in
+            let style: PrintingStyle = useJSON ? .json : .plainText
             for (name, benchmarkModel) in benchmarkModels {
                 runBenchmark(
                     named: name,
                     settings: benchmarkModel.defaultTrainingSettings,
                     variety: .trainingTime,
-                    reporter: reporter)
+                    style: style)
                 runBenchmark(
                     named: name,
                     settings: benchmarkModel.defaultInferenceSettings,
                     variety: .inferenceThroughput,
-                    reporter: reporter)
+                    style: style)
             }
         }
         group.command(
@@ -82,8 +81,8 @@ let main =
             Option("epochs", default: -1, description: "Number of training epochs."),
             Flag("json", description: "Output json instead of plain text."),
             description: "Run a single benchmark with provided settings."
-        ) { (trainingFlag, inferenceFlag, name, batches, batchSize, iterations, epochs, useJson) in
-            let reporter: BenchmarkReporter = useJson ? JsonReporter() : PlainTextReporter()
+        ) { (trainingFlag, inferenceFlag, name, batches, batchSize, iterations, epochs, useJSON) in
+            let style: PrintingStyle = useJSON ? .json : .plainText
             let settings = BenchmarkSettings(
                 batches: batches,
                 batchSize: batchSize,
@@ -107,7 +106,7 @@ let main =
                     named: name,
                     settings: settings,
                     variety: variety,
-                    reporter: reporter
+                    style: style
                 )
             }
         }
@@ -115,9 +114,22 @@ let main =
             "list-defaults",
             Flag("json"),
             description: "List all available benchmarks and their default settings."
-        ) { useJson in
-            let reporter: BenchmarkReporter = useJson ? JsonReporter() : PlainTextReporter()
-            reporter.printDefaults()
+        ) { useJSON in
+            let style: PrintingStyle = useJSON ? .json : .plainText
+            for (name, benchModel) in benchmarkModels {
+                let trainingConfiguration =
+                    BenchmarkConfiguration(
+                        name: name,
+                        variety: .trainingTime,
+                        settings: benchModel.defaultTrainingSettings)
+                trainingConfiguration.print(using: style)
+                let inferenceConfiguration =
+                    BenchmarkConfiguration(
+                        name: name,
+                        variety: .inferenceThroughput,
+                        settings: benchModel.defaultInferenceSettings)
+                inferenceConfiguration.print(using: style)
+            }
         }
     }
 
