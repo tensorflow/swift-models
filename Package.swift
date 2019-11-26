@@ -12,6 +12,7 @@ let package = Package(
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
+        .library(name: "TextModels", targets: ["TextModels"]),
         .executable(name: "Custom-CIFAR10", targets: ["Custom-CIFAR10"]),
         .executable(name: "ResNet-CIFAR10", targets: ["ResNet-CIFAR10"]),
         .executable(name: "LeNet-MNIST", targets: ["LeNet-MNIST"]),
@@ -26,11 +27,13 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/kylef/Commander.git", from: "0.9.1"),
+        .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.6.0")
     ],
     targets: [
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "Datasets", dependencies: ["ModelSupport"], path: "Datasets"),
         .target(name: "ModelSupport", path: "Support"),
+        .target(name: "TextModels", dependencies: ["SwiftProtobuf"], path: "Models/Text"),
         .target(
             name: "Autoencoder", dependencies: ["Datasets", "ModelSupport"], path: "Autoencoder"),
         .target(name: "Catch", path: "Catch"),
