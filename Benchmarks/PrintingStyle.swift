@@ -30,7 +30,8 @@ extension BenchmarkResults {
     }
 
     private func printAsPlainText() {
-        let (average, standardDeviation) = statistics(for: self.interpretedTimings)
+        let average = self.interpretedTimings.average
+        let standardDeviation = self.interpretedTimings.standardDeviation
         let configuration = self.configuration
         let settings = configuration.settings
 
@@ -105,16 +106,25 @@ func printJSON<T: Encodable>(_ value: T) {
     print(json)
 }
 
-/// Provides the average and standard deviation of an array of values.
-func statistics(for values: [Double]) -> (average: Double, standardDeviation: Double) {
-    guard values.count > 0 else { return (average: 0.0, standardDeviation: 0.0) }
-    guard values.count > 1 else { return (average: values.first!, standardDeviation: 0.0) }
+/// Statistics-related helpers.
+extension Array where Element == Double {
+    /// Average value across all elements of the array.
+    var average: Element {
+        guard self.count > 0 else { return 0.0 }
+        guard self.count > 1 else { return self.first! }
 
-    let average = (values.reduce(0.0) { $0 + $1 }) / Double(values.count)
+        return (self.reduce(0.0) { $0 + $1 }) / Double(self.count)
+    }
 
-    let standardDeviation = sqrt(
-        values.reduce(0.0) { $0 + ($1 - average) * ($1 - average) }
-            / Double(values.count - 1))
+    /// Standard deviation of elements within the array. 
+    var standardDeviation: Element {
+        guard self.count > 0 else { return 0.0 }
+        guard self.count > 1 else { return 0.0 }
 
-    return (average: average, standardDeviation: standardDeviation)
+        let average = self.average
+
+        return Foundation.sqrt(
+            self.reduce(0.0) { $0 + ($1 - average) * ($1 - average) }
+                / Double(self.count - 1))
+    }
 }
