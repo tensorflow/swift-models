@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let benchmarkModels = [
-    "lenet-mnist": LeNetMNIST(),
-]
+/// Auxiliary struct used to show benchmark default settings coupled with benchmark name.
+struct BenchmarkConfiguration: Codable {
+    let name: String
+    let variety: BenchmarkVariety
+    let settings: BenchmarkSettings
+}
