@@ -29,7 +29,7 @@ extension BenchmarkResults {
         }
     }
 
-    func printAsPlainText() {
+    private func printAsPlainText() {
         let (average, standardDeviation) = statistics(for: self.interpretedTimings)
         let configuration = self.configuration
         let settings = configuration.settings
@@ -52,7 +52,7 @@ extension BenchmarkResults {
         }
     }
 
-    func printAsJSON() {
+    private func printAsJSON() {
         printJSON(self)
     }
 }
@@ -67,7 +67,7 @@ extension BenchmarkConfiguration {
         }
     }
 
-    func printAsPlainText() {
+    private func printAsPlainText() {
         var result = ""
         result += "--benchmark "
         result += self.name
@@ -93,7 +93,7 @@ extension BenchmarkConfiguration {
         Swift.print(result)
     }
 
-    func printAsJSON() {
+    private func printAsJSON() {
         printJSON(self)
     }
 }
