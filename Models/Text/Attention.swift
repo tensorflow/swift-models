@@ -155,7 +155,8 @@ public struct MultiHeadAttention: Layer, Regularizable {
         self.keyBias = keyBiasInitializer([headCount * headSize])
         self.valueWeight = valueWeightInitializer([targetSize, headCount * headSize])
         self.valueBias = valueBiasInitializer([headCount * headSize])
-        self.attentionDropout = Dropout(probability: attentionDropoutProbability)
+        // TODO: Make dropout generic over the probability type.
+        self.attentionDropout = Dropout(probability: Double(attentionDropoutProbability))
     }
 
     @differentiable
@@ -219,6 +220,6 @@ extension MultiHeadAttention {
 
     /// Default initializer to use for the linear transform biases.
     public static var defaultBiasInitializer: ParameterInitializer<Scalar> {
-        zerosInitializer()
+        zeros()
     }
 }

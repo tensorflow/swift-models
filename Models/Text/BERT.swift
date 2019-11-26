@@ -165,7 +165,8 @@ public struct BERT: Module, Regularizable {
         self.embeddingLayerNorm = LayerNorm<Scalar>(
             featureCount: hiddenSize,
             axis: -1)
-        self.embeddingDropout = Dropout(probability: hiddenDropoutProbability)
+        // TODO: Make dropout generic over the probability type.
+        self.embeddingDropout = Dropout(probability: Double(hiddenDropoutProbability))
 
         // Add an embedding projection layer if using the ALBERT variant.
         self.embeddingProjection = {
@@ -635,7 +636,7 @@ extension BERT {
         /// - Parameters:
         ///   - directory: Directory to load the pretrained model from.
         public func load(from directory: URL) throws -> BERT {
-            logger.info("Loading BERT pre-trained model '\(name)'.")
+            print("Loading BERT pre-trained model '\(name)'.")
             let directory = directory.appendingPathComponent(variant.description)
             try maybeDownload(to: directory)
 
@@ -748,7 +749,7 @@ extension BERT {
             case .bertBase, .bertLarge, .robertaBase, .robertaLarge:
                 // Download the model, if necessary.
                 let compressedFileURL = directory.appendingPathComponent("\(subDirectory).zip")
-                try NCA.maybeDownload(from: url, to: compressedFileURL)
+                try TextModels.maybeDownload(from: url, to: compressedFileURL)
 
                 // Extract the data, if necessary.
                 let extractedDirectoryURL = compressedFileURL.deletingPathExtension()
@@ -758,7 +759,7 @@ extension BERT {
             case .albertBase, .albertLarge, .albertXLarge, .albertXXLarge:
                 // Download the model, if necessary.
                 let compressedFileURL = directory.appendingPathComponent("\(subDirectory).tar.gz")
-                try NCA.maybeDownload(from: url, to: compressedFileURL)
+                try TextModels.maybeDownload(from: url, to: compressedFileURL)
 
                 // Extract the data, if necessary.
                 let extractedDirectoryURL = directory.appendingPathComponent(subDirectory)
