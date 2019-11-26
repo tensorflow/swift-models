@@ -22,6 +22,20 @@ public protocol Regularizable: Differentiable {
     var regularizationValue: TangentVector { get }
 }
 
+extension Dense: Regularizable {
+    public var regularizationValue: TangentVector {
+        // TODO: This initializer is currently internal.
+        TangentVector(weight: weight, bias: Tensor(Scalar(0)))
+    }
+}
+
+extension LayerNorm: Regularizable {
+    public var regularizationValue: TangentVector {
+        // TODO: This initializer is currently internal.
+        TangentVector(offset: Tensor(Scalar(0)), scale: Tensor(Scalar(0)))
+    }
+}
+
 /// Adam optimizer with weight decay.
 ///
 /// Reference: ["Adam - A Method for Stochastic Optimization"](

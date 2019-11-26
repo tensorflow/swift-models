@@ -166,7 +166,7 @@ extension TransformerEncoder {
 
     /// Default initializer to use for the linear transform biases.
     public static var defaultBiasInitializer: ParameterInitializer<Scalar> {
-        zerosInitializer()
+        zeros()
     }
 }
 
@@ -273,7 +273,8 @@ public struct TransformerEncoderLayer: Layer, Regularizable {
             keyBiasInitializer: keyBiasInitializer,
             valueWeightInitializer: valueWeightInitializer,
             valueBiasInitializer: valueBiasInitializer)
-        self.hiddenDropout = Dropout(probability: hiddenDropoutProbability)
+        // TODO: Make dropout generic over the probability type.
+        self.hiddenDropout = Dropout(probability: Double(hiddenDropoutProbability))
         self.attentionWeight = attentionWeightInitializer(
             [attentionHeadCount * hiddenSize / attentionHeadCount, hiddenSize])
         self.attentionBias = attentionBiasInitializer([hiddenSize])
@@ -322,6 +323,6 @@ extension TransformerEncoderLayer {
 
     /// Default initializer to use for the linear transform biases.
     public static var defaultBiasInitializer: ParameterInitializer<Scalar> {
-        zerosInitializer()
+        zeros()
     }
 }
