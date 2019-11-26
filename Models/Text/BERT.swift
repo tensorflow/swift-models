@@ -49,7 +49,7 @@ public struct BERT: Module, Regularizable {
     public var tokenEmbedding: Embedding<Scalar>
     public var tokenTypeEmbedding: Embedding<Scalar>
     public var positionEmbedding: Embedding<Scalar>
-    public var embeddingLayerNormalization: LayerNormalization<Scalar>
+    public var embeddingLayerNorm: LayerNorm<Scalar>
     @noDerivative public var embeddingDropout: Dropout<Scalar>
     public var embeddingProjection: [Dense<Scalar>]
     public var encoderLayers: [TransformerEncoderLayer]
@@ -59,7 +59,7 @@ public struct BERT: Module, Regularizable {
             tokenEmbedding: tokenEmbedding.regularizationValue,
             tokenTypeEmbedding: tokenTypeEmbedding.regularizationValue,
             positionEmbedding: positionEmbedding.regularizationValue,
-            embeddingLayerNormalization: embeddingLayerNormalization.regularizationValue,
+            embeddingLayerNorm: embeddingLayerNorm.regularizationValue,
             embeddingProjection: [Dense<Scalar>].TangentVector(
                 embeddingProjection.map { $0.regularizationValue }),
             encoderLayers: [TransformerEncoderLayer].TangentVector(
@@ -162,7 +162,7 @@ public struct BERT: Module, Regularizable {
                 standardDeviation: Tensor(initializerStandardDeviation)),
             useOneHotEmbeddings: false)
 
-        self.embeddingLayerNormalization = LayerNormalization<Scalar>(
+        self.embeddingLayerNorm = LayerNorm<Scalar>(
             featureCount: hiddenSize,
             axis: -1)
         self.embeddingDropout = Dropout(probability: hiddenDropoutProbability)
@@ -313,7 +313,7 @@ public struct BERT: Module, Regularizable {
         case .roberta: ()
         }
 
-        embeddings = embeddingLayerNormalization(embeddings)
+        embeddings = embeddingLayerNorm(embeddings)
         embeddings = embeddingDropout(embeddings)
 
         if case .albert = variant {
@@ -782,9 +782,9 @@ extension BERT {
             Tensor(checkpointReader.loadTensor(named: "bert/embeddings/word_embeddings"))
         positionEmbedding.embeddings =
             Tensor(checkpointReader.loadTensor(named: "bert/embeddings/position_embeddings"))
-        embeddingLayerNormalization.offset =
+        embeddingLayerNorm.offset =
             Tensor(checkpointReader.loadTensor(named: "bert/embeddings/LayerNorm/beta"))
-        embeddingLayerNormalization.scale =
+        embeddingLayerNorm.scale =
             Tensor(checkpointReader.loadTensor(named: "bert/embeddings/LayerNorm/gamma"))
         switch variant {
         case .bert, .albert:
@@ -812,9 +812,9 @@ extension BERT {
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/output/dense/kernel"))
                 encoderLayers[layerIndex].attentionBias =
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/output/dense/bias"))
-                encoderLayers[layerIndex].attentionLayerNormalization.offset =
+                encoderLayers[layerIndex].attentionLayerNorm.offset =
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/output/LayerNorm/beta"))
-                encoderLayers[layerIndex].attentionLayerNormalization.scale =
+                encoderLayers[layerIndex].attentionLayerNorm.scale =
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/output/LayerNorm/gamma"))
                 encoderLayers[layerIndex].intermediateWeight =
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/intermediate/dense/kernel"))
@@ -824,9 +824,9 @@ extension BERT {
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/output/dense/kernel"))
                 encoderLayers[layerIndex].outputBias =
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/output/dense/bias"))
-                encoderLayers[layerIndex].outputLayerNormalization.offset =
+                encoderLayers[layerIndex].outputLayerNorm.offset =
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/output/LayerNorm/beta"))
-                encoderLayers[layerIndex].outputLayerNormalization.scale =
+                encoderLayers[layerIndex].outputLayerNorm.scale =
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/output/LayerNorm/gamma"))
             }
         case .albert:
@@ -854,9 +854,9 @@ extension BERT {
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention_1/output/dense/kernel"))
                 encoderLayers[layerIndex].attentionBias =
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention_1/output/dense/bias"))
-                encoderLayers[layerIndex].attentionLayerNormalization.offset =
+                encoderLayers[layerIndex].attentionLayerNorm.offset =
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/LayerNorm/beta"))
-                encoderLayers[layerIndex].attentionLayerNormalization.scale =
+                encoderLayers[layerIndex].attentionLayerNorm.scale =
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/LayerNorm/gamma"))
                 encoderLayers[layerIndex].intermediateWeight =
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/ffn_1/intermediate/dense/kernel"))
@@ -868,9 +868,9 @@ extension BERT {
                 encoderLayers[layerIndex].outputBias =
                     Tensor(checkpointReader.loadTensor(
                         named: "\(prefix)/ffn_1/intermediate/output/dense/bias"))
-                encoderLayers[layerIndex].outputLayerNormalization.offset =
+                encoderLayers[layerIndex].outputLayerNorm.offset =
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/LayerNorm_1/beta"))
-                encoderLayers[layerIndex].outputLayerNormalization.scale =
+                encoderLayers[layerIndex].outputLayerNorm.scale =
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/LayerNorm_1/gamma"))
             }
         }
