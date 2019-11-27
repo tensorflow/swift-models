@@ -20,10 +20,7 @@ where
     Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == Float,
     ClassificationDataset: ImageClassificationDataset
 {
-    // TODO: (https://github.com/tensorflow/swift-models/issues/206) Datasets should have a common
-    // interface to allow for them to be interchangeable in these benchmark cases.
     let dataset: ClassificationDataset
-
     let epochs: Int
     let batchSize: Int
 

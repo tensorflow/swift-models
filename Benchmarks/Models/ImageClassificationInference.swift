@@ -24,8 +24,6 @@ extension LeNet: ImageClassificationModel {}
 
 class ImageClassificationInference<Model, ClassificationDataset>: Benchmark
 where Model: ImageClassificationModel, ClassificationDataset: ImageClassificationDataset {
-    // TODO: (https://github.com/tensorflow/swift-models/issues/206) Datasets should have a common
-    // interface to allow for them to be interchangeable in these benchmark cases.
     let dataset: ClassificationDataset
 
     var model: Model
