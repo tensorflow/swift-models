@@ -13,72 +13,61 @@
 // limitations under the License.
 
 import Commander
+import ModelSupport
 
+/// Collect benchmark results and print them to stdout using a given printing style
 func runBenchmark(
-    _ name: String,
-    withSettings settings: BenchmarkSettings,
-    andVariety variety: BenchmarkVariety
+    named name: String,
+    settings: BenchmarkSettings,
+    variety: BenchmarkVariety,
+    style: PrintingStyle
 ) {
     if let benchmarkModel = benchmarkModels[name] {
         var bench: Benchmark
         var benchSettings: BenchmarkSettings
-        var varietyName: String
         switch variety {
         case .inferenceThroughput:
             benchSettings =
-                settings.withDefaults(benchmarkModel.inferenceDefaults())
-            bench = benchmarkModel.inferenceBenchmark(benchSettings)
-            varietyName = "inference"
+                settings.withDefaults(benchmarkModel.defaultInferenceSettings)
+            bench = benchmarkModel.makeInferenceBenchmark(settings: benchSettings)
         case .trainingTime:
             benchSettings =
-                settings.withDefaults(benchmarkModel.trainingDefaults())
-            bench = benchmarkModel.trainingBenchmark(benchSettings)
-            varietyName = "training"
+                settings.withDefaults(benchmarkModel.defaultTrainingSettings)
+            bench = benchmarkModel.makeTrainingBenchmark(settings: benchSettings)
         }
-        benchmark(
-            name: "\(name) (\(varietyName))",
-            settings: benchSettings,
+        let configuration = BenchmarkConfiguration(
+            name: name,
             variety: variety,
-            benchmark: bench,
-            callback: logResults)
+            settings: benchSettings)
+        let results = measure(
+            configuration: configuration,
+            benchmark: bench)
+        results.print(using: style)
     } else {
-        print("No registered inference benchmark with a name: \(name)")
-        print("Consider running `list` command to see all available benchmarks.")
+        printError("No registered inference benchmark with a name: \(name)")
+        printError("Consider running `list` command to see all available benchmarks.")
     }
-}
-
-func flags(from settings: BenchmarkSettings) -> String {
-    var result = ""
-    if settings.batches != -1 {
-        result += "--batches \(settings.batches) "
-    }
-    if settings.batchSize != -1 {
-        result += "--batchSize \(settings.batchSize) "
-    }
-    if settings.iterations != -1 {
-        result += "--iterations \(settings.iterations) "
-    }
-    if settings.epochs != -1 {
-        result += "--epochs \(settings.epochs) "
-    }
-    return result
 }
 
 let main =
     Group { group in
         group.command(
             "measure-all",
+            Flag("json", description: "Output json instead of plain text."),
             description: "Run all benchmarks with default settings."
-        ) {
+        ) { useJSON in
+            let style: PrintingStyle = useJSON ? .json : .plainText
             for (name, benchmarkModel) in benchmarkModels {
                 runBenchmark(
-                    name,
-                    withSettings: benchmarkModel.trainingDefaults(),
-                    andVariety: .trainingTime)
+                    named: name,
+                    settings: benchmarkModel.defaultTrainingSettings,
+                    variety: .trainingTime,
+                    style: style)
                 runBenchmark(
-                    name,
-                    withSettings: benchmarkModel.inferenceDefaults(),
-                    andVariety: .inferenceThroughput)
+                    named: name,
+                    settings: benchmarkModel.defaultInferenceSettings,
+                    variety: .inferenceThroughput,
+                    style: style)
             }
         }
         group.command(
@@ -90,19 +79,21 @@ let main =
             Option("batchSize", default: -1, description: "Size of a single batch."),
             Option("iterations", default: -1, description: "Number of benchmark iterations."),
             Option("epochs", default: -1, description: "Number of training epochs."),
+            Flag("json", description: "Output json instead of plain text."),
             description: "Run a single benchmark with provided settings."
-        ) { (trainingFlag, inferenceFlag, name, batches, batchSize, iterations, epochs) in
+        ) { (trainingFlag, inferenceFlag, name, batches, batchSize, iterations, epochs, useJSON) in
+            let style: PrintingStyle = useJSON ? .json : .plainText
             let settings = BenchmarkSettings(
                 batches: batches,
                 batchSize: batchSize,
                 iterations: iterations,
                 epochs: epochs)
             if !trainingFlag && !inferenceFlag {
-                print("Must specify either --training xor --inference benchmark variety.")
+                printError("Must specify either --training xor --inference benchmark variety.")
             } else if trainingFlag && inferenceFlag {
-                print("Can't specify both --training and --inference benchmark variety.")
+                printError("Can't specify both --training and --inference benchmark variety.")
             } else if name == "" {
-                print("Must provide a --benchmark to run.")
+                printError("Must provide a --benchmark to run.")
             } else {
                 var variety: BenchmarkVariety
                 if trainingFlag {
@@ -111,20 +102,33 @@ let main =
                     assert(inferenceFlag)
                     variety = .inferenceThroughput
                 }
-                runBenchmark(name, withSettings: settings, andVariety: variety)
+                runBenchmark(
+                    named: name,
+                    settings: settings,
+                    variety: variety,
+                    style: style
+                )
             }
         }
         group.command(
             "list-defaults",
+            Flag("json"),
             description: "List all available benchmarks and their default settings."
-        ) {
-            for (name, benchmarkModel) in benchmarkModels {
-                print(
-                    "--benchmark \(name) --training \(flags(from: benchmarkModel.trainingDefaults()))"
-                )
-                print(
-                    "--benchmark \(name) --inference \(flags(from: benchmarkModel.inferenceDefaults()))"
-                )
+        ) { useJSON in
+            let style: PrintingStyle = useJSON ? .json : .plainText
+            for (name, benchModel) in benchmarkModels {
+                let trainingConfiguration =
+                    BenchmarkConfiguration(
+                        name: name,
+                        variety: .trainingTime,
+                        settings: benchModel.defaultTrainingSettings)
+                trainingConfiguration.print(using: style)
+                let inferenceConfiguration =
+                    BenchmarkConfiguration(
+                        name: name,
+                        variety: .inferenceThroughput,
+                        settings: benchModel.defaultInferenceSettings)
+                inferenceConfiguration.print(using: style)
             }
         }
     }

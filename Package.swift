@@ -27,7 +27,7 @@ let package = Package(
     ],
     targets: [
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
-        .target(name: "Datasets", path: "Datasets"),
+        .target(name: "Datasets", dependencies: ["ModelSupport"], path: "Datasets"),
         .target(name: "ModelSupport", path: "Support"),
         .target(
             name: "Autoencoder", dependencies: ["Datasets", "ModelSupport"], path: "Autoencoder"),
