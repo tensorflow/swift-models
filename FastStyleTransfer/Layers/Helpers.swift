@@ -1,7 +1,7 @@
 import TensorFlow
 
 /// A 2-D layer applying padding with reflection over a mini-batch.
-public struct ReflectionPad2D<Scalar: TensorFlowFloatingPoint>: Layer {
+public struct ReflectionPad2D<Scalar: TensorFlowFloatingPoint>: ParameterlessLayer {
     /// The padding values along the spatial dimensions.
     @noDerivative public let padding: ((Int, Int), (Int, Int))
 
@@ -28,17 +28,17 @@ public struct ReflectionPad2D<Scalar: TensorFlowFloatingPoint>: Layer {
     @differentiable
     public func callAsFunction(_ input: Tensor<Scalar>) -> Tensor<Scalar> {
         // Padding applied to height and width dimensions only.
-        return input.paddedWithReflection(forSizes: [
+        return input.padded(forSizes: [
             (0, 0),
             padding.0,
             padding.1,
             (0, 0)
-        ])
+        ], mode: .reflect)
     }
 }
 
 /// A layer applying `relu` activation function.
-public struct ReLU<Scalar: TensorFlowFloatingPoint>: Layer {
+public struct ReLU<Scalar: TensorFlowFloatingPoint>: ParameterlessLayer {
     /// Returns the output obtained from applying the layer to the given input.
     ///
     /// - Parameter input: The input to the layer.

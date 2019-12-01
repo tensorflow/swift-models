@@ -82,13 +82,13 @@ func loadJpegAsTensor(from file: String) throws -> Tensor<Float> {
     guard FileManager.default.fileExists(atPath: file) else {
         throw FileError.fileNotFound
     }
-    let imgData = Raw.readFile(filename: StringTensor(file))
-    return Tensor<Float>(Raw.decodeJpeg(contents: imgData, channels: 3, dctMethod: "")) / 255
+    let imgData = _Raw.readFile(filename: StringTensor(file))
+    return Tensor<Float>(_Raw.decodeJpeg(contents: imgData, channels: 3, dctMethod: "")) / 255
 }
 
 /// Clips & converts HxWxC `tensor` of floats to byte range and saves as JPEG.
 func saveTensorAsJpeg(_ tensor: Tensor<Float>, to file: String) {
-    let clipped = Raw.clipByValue(t: tensor, clipValueMin: Tensor(0), clipValueMax: Tensor(255))
-    let jpg = Raw.encodeJpeg(image: Tensor<UInt8>(clipped), format: .rgb, xmpMetadata: "")
-    Raw.writeFile(filename: StringTensor(file), contents: jpg)
+    let clipped = _Raw.clipByValue(t: tensor, clipValueMin: Tensor(0), clipValueMax: Tensor(255))
+    let jpg = _Raw.encodeJpeg(image: Tensor<UInt8>(clipped), format: .rgb, xmpMetadata: "")
+    _Raw.writeFile(filename: StringTensor(file), contents: jpg)
 }

@@ -11,7 +11,7 @@ public func resizeNearestNeighbor<Scalar: TensorFlowFloatingPoint>(
         shape: [2],
         scalars: [input.shape[1], input.shape[2]].map { Int32(round(Float($0) * scaleFactor)) }
     )
-    return Raw.resizeNearestNeighbor(images: input, size: size)
+    return _Raw.resizeNearestNeighbor(images: input, size: size)
 }
 
 @usableFromInline
@@ -24,6 +24,6 @@ internal func _vjpResizeNearestNeighbor<Scalar: TensorFlowFloatingPoint>(
             shape: [2],
             scalars: [input.shape[1], input.shape[2]].map { Int32($0) }
         )
-        return Raw.resizeNearestNeighborGrad(grads: result, size: size)
+        return _Raw.resizeNearestNeighborGrad(grads: result, size: size)
     })
 }

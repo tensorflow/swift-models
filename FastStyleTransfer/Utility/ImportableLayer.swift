@@ -49,7 +49,7 @@ public extension ImportableLayer {
             let shape = self[keyPath: keyPath].shape
             if let mapping = map[label], var weights = parameters[mapping.0] {
                 if let permutes = mapping.1 {
-                    weights = weights.transposed(withPermutations: permutes)
+                    weights = weights.transposed(permutation: permutes)
                 }
                 if weights.shape != shape {
                     fatalError("Shapes do not match for \(label): \(shape) vs. \(weights.shape)")
@@ -68,7 +68,7 @@ public extension ImportableLayer {
     /// Updates model parameters with values from V2 checkpoint, according to `ImportMap`.
     mutating func unsafeImport(fromCheckpointPath path: String, map: ImportMap) {
         let tensorNames = map.values.map { $0.0 }
-        let tensorValues = Raw.restoreV2(
+        let tensorValues = _Raw.restoreV2(
             prefix: StringTensor(path),
             tensorNames: StringTensor(tensorNames),
             shapeAndSlices: StringTensor(Array(repeating: "", count: tensorNames.count)),
