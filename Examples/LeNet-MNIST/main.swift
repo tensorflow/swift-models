@@ -28,7 +28,7 @@ var classifier = Sequential {
     Flatten<Float>()
     Dense<Float>(inputSize: 400, outputSize: 120, activation: relu)
     Dense<Float>(inputSize: 120, outputSize: 84, activation: relu)
-    Dense<Float>(inputSize: 84, outputSize: 10, activation: softmax)
+    Dense<Float>(inputSize: 84, outputSize: 10)
 }
 
 let optimizer = SGD(for: classifier, learningRate: 0.1)
@@ -39,6 +39,7 @@ struct Statistics {
     var correctGuessCount: Int = 0
     var totalGuessCount: Int = 0
     var totalLoss: Float = 0
+    var batches: Int = 0
 }
 
 let testBatches = dataset.testDataset.batched(batchSize)
@@ -62,6 +63,7 @@ for epoch in 1...epochCount {
             trainStats.totalGuessCount += batchSize
             let loss = softmaxCrossEntropy(logits: ŷ, labels: labels)
             trainStats.totalLoss += loss.scalarized()
+            trainStats.batches += 1
             return loss
         }
         // Update the model's differentiable variables along the gradient vector.
@@ -78,6 +80,7 @@ for epoch in 1...epochCount {
         testStats.totalGuessCount += batchSize
         let loss = softmaxCrossEntropy(logits: ŷ, labels: labels)
         testStats.totalLoss += loss.scalarized()
+        testStats.batches += 1
     }
 
     let trainAccuracy = Float(trainStats.correctGuessCount) / Float(trainStats.totalGuessCount)
@@ -85,10 +88,10 @@ for epoch in 1...epochCount {
     print(
         """
         [Epoch \(epoch)] \
-        Training Loss: \(trainStats.totalLoss), \
+        Training Loss: \(trainStats.totalLoss / Float(trainStats.batches)), \
         Training Accuracy: \(trainStats.correctGuessCount)/\(trainStats.totalGuessCount) \
         (\(trainAccuracy)), \
-        Test Loss: \(testStats.totalLoss), \
+        Test Loss: \(testStats.totalLoss / Float(testStats.batches)), \
         Test Accuracy: \(testStats.correctGuessCount)/\(testStats.totalGuessCount) \
         (\(testAccuracy))
         """)
