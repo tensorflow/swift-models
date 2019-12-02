@@ -53,7 +53,8 @@ struct ConvBN: Layer {
     ) {
         // TODO(jekbradbury): thread through bias and affine boolean arguments
         // (behavior is correct for inference but this should be changed for training)
-        self.conv = Conv2D(filterShape: filterShape, strides: strides, padding: padding)
+        self.conv = Conv2D(
+          filterShape: filterShape, strides: strides, padding: padding, activation: identity)
         self.norm = BatchNorm(featureCount: filterShape.3, momentum: 0.95, epsilon: 1e-5)
     }
 
