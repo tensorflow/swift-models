@@ -25,7 +25,6 @@ extension LeNet: ImageClassificationModel {}
 class ImageClassificationInference<Model, ClassificationDataset>: Benchmark
 where Model: ImageClassificationModel, ClassificationDataset: ImageClassificationDataset {
     let dataset: ClassificationDataset
-
     var model: Model
     let images: Tensor<Float>
     let batches: Int

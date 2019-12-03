@@ -15,6 +15,7 @@ let package = Package(
         .executable(name: "Custom-CIFAR10", targets: ["Custom-CIFAR10"]),
         .executable(name: "ResNet-CIFAR10", targets: ["ResNet-CIFAR10"]),
         .executable(name: "LeNet-MNIST", targets: ["LeNet-MNIST"]),
+        .executable(name: "SqueezeNet-Imagenette", targets: ["SqueezeNet-Imagenette"]),
         .executable(name: "MiniGoDemo", targets: ["MiniGoDemo"]),
         .library(name: "MiniGo", targets: ["MiniGo"]),
         .executable(name: "GAN", targets: ["GAN"]),
@@ -42,6 +43,9 @@ let package = Package(
         .target(
             name: "LeNet-MNIST", dependencies: ["ImageClassificationModels", "Datasets"],
             path: "Examples/LeNet-MNIST"),
+        .target(
+            name: "SqueezeNet-Imagenette", dependencies: ["ImageClassificationModels", "Datasets"],
+            path: "Examples/SqueezeNet-Imagenette"),
         .target(name: "MiniGo", path: "MiniGo", exclude: ["main.swift"]),
         .target(
             name: "MiniGoDemo", dependencies: ["MiniGo"], path: "MiniGo",
