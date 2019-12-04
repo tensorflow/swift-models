@@ -55,7 +55,7 @@ for epoch in 1...epochCount {
     for batch in trainingShuffled.batched(batchSize) {
         let (labels, images) = (batch.label, batch.data)
         // Compute the gradient with respect to the model.
-        let 𝛁model = classifier.gradient { classifier -> Tensor<Float> in
+        let 𝛁model = TensorFlow.gradient(at: classifier) { classifier -> Tensor<Float> in
             let ŷ = classifier(images)
             let correctPredictions = ŷ.argmax(squeezingAxis: 1) .== labels
             trainStats.correctGuessCount += Int(

@@ -153,7 +153,7 @@ for epoch in 1...epochCount {
         // Update generator.
         let vec1 = sampleVector(size: batchSize)
 
-        let 𝛁generator = generator.gradient { generator -> Tensor<Float> in
+        let 𝛁generator = TensorFlow.gradient(at: generator) { generator -> Tensor<Float> in
             let fakeImages = generator(vec1)
             let fakeLogits = discriminator(fakeImages)
             let loss = generatorLoss(fakeLogits: fakeLogits)
@@ -166,7 +166,7 @@ for epoch in 1...epochCount {
         let vec2 = sampleVector(size: batchSize)
         let fakeImages = generator(vec2)
 
-        let 𝛁discriminator = discriminator.gradient { discriminator -> Tensor<Float> in
+        let 𝛁discriminator = TensorFlow.gradient(at: discriminator) { discriminator -> Tensor<Float> in
             let realLogits = discriminator(realImages)
             let fakeLogits = discriminator(fakeImages)
             let loss = discriminatorLoss(realLogits: realLogits, fakeLogits: fakeLogits)
