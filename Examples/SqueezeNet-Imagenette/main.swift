@@ -16,7 +16,7 @@ import Datasets
 import ImageClassificationModels
 import TensorFlow
 
-let batchSize = 16
+let batchSize = 32
 
 let dataset = Imagenette(inputSize: .resized320, outputSize: 224)
 let testBatches = dataset.testDataset.batched(batchSize)

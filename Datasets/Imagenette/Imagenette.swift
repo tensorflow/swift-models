@@ -24,8 +24,8 @@ import TensorFlow
 public struct Imagenette: ImageClassificationDataset {
     public let trainingDataset: Dataset<LabeledExample>
     public let testDataset: Dataset<LabeledExample>
-    public let trainingExampleCount = 60000  // TODO: Fix these
-    public let validationExampleCount = 60000
+    public let trainingExampleCount = 12894
+    public let validationExampleCount = 500
 
     public enum ImageSize {
         case full
@@ -48,9 +48,11 @@ public struct Imagenette: ImageClassificationDataset {
     public init(inputSize: ImageSize, outputSize: Int) {
         do {
             self.trainingDataset = Dataset<LabeledExample>(
-                elements: try loadImagenetteTrainingImages(inputSize: inputSize, outputSize: outputSize))
+                elements: try loadImagenetteTrainingImages(
+                    inputSize: inputSize, outputSize: outputSize))
             self.testDataset = Dataset<LabeledExample>(
-                elements: try loadImagenetteValidationImages(inputSize: inputSize, outputSize: outputSize))
+                elements: try loadImagenetteValidationImages(
+                    inputSize: inputSize, outputSize: outputSize))
         } catch {
             fatalError("Could not load Imagenette dataset: \(error)")
         }
@@ -112,7 +114,7 @@ func loadImagenetteDirectory(
     named name: String, in directory: String = ".", inputSize: Imagenette.ImageSize, outputSize: Int
 ) throws -> LabeledExample {
     downloadImagenetteIfNotPresent(to: directory, size: inputSize)
-    let path = URL(fileURLWithPath: "\(directory)/\(name)")
+    let path = URL(fileURLWithPath: "\(directory)/imagenette\(inputSize.suffix)/\(name)")
 
     let dirContents = try FileManager.default.contentsOfDirectory(
         at: path, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])
@@ -130,34 +132,31 @@ func loadImagenetteDirectory(
             options: [.skipsHiddenFiles])
         for fileURL in subdirContents {
             let image = Image(jpeg: fileURL)
-            // TODO: Resize to new square size on loading
-            // TODO: Return float tensor
-            print("Image: \(fileURL)")
+            let resizedImage = image.resized(to: (outputSize, outputSize))
+            imageData.append(contentsOf: resizedImage.tensor.scalars)
 
-            // newImageData.append(contentsOf: imageFloats)
-            // newImageLabels.append(currentLabel)
+            labels.append(currentLabel)
 
             imageCount += 1
         }
         currentLabel += 1
     }
 
-    print("Total of \(imageCount) images")
-
     let labelTensor = Tensor<Int32>(shape: [imageCount], scalars: labels)
-    // TODO: Account for proper image size and color channels
-    let images = Tensor<Float>(shape: [imageCount, 3, 32, 32], scalars: imageData)
-
-    // Transpose from the CIFAR-provided N(CHW) to TF's default NHWC.
-    let imageTensor = Tensor<Float>(images.transposed(permutation: [0, 2, 3, 1]))
+    let imageTensor = Tensor<Float>(
+        shape: [imageCount, outputSize, outputSize, 3], scalars: imageData)
 
     return LabeledExample(label: labelTensor, data: imageTensor)
 }
 
-func loadImagenetteTrainingImages(inputSize: Imagenette.ImageSize, outputSize: Int) throws -> LabeledExample {
+func loadImagenetteTrainingImages(inputSize: Imagenette.ImageSize, outputSize: Int) throws
+    -> LabeledExample
+{
     return try loadImagenetteDirectory(named: "train", inputSize: inputSize, outputSize: outputSize)
 }
 
-func loadImagenetteValidationImages(inputSize: Imagenette.ImageSize, outputSize: Int) throws -> LabeledExample {
+func loadImagenetteValidationImages(inputSize: Imagenette.ImageSize, outputSize: Int) throws
+    -> LabeledExample
+{
     return try loadImagenetteDirectory(named: "val", inputSize: inputSize, outputSize: outputSize)
 }
