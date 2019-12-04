@@ -18,10 +18,15 @@ import numpy as np
 import tensorflow as tf
 import subprocess as subp
 
+
 class SwiftBenchmark(tf.test.Benchmark):
   """Perfzero-compatible Swift benchmark."""
 
-  def __init__(self, output_dir=None, default_flags=None, flag_methods=None, root_data_dir=None):
+  def __init__(self,
+               output_dir=None,
+               default_flags=None,
+               flag_methods=None,
+               root_data_dir=None):
     """Perfzero-friendly constructor, we don't use most of those settings in swift."""
     if not output_dir:
       output_dir = '/tmp'
@@ -46,25 +51,28 @@ class SwiftBenchmark(tf.test.Benchmark):
     result = run_swift_benchmark(name=self.benchmark_name, variety='inference')
     self.report_benchmark(**result)
 
-# This location assumes that are we are running within the S4TF's perfzero 
-# docker image. Perfzero automatically clones the swift-models project into the 
+
+# This location assumes that are we are running within the S4TF's perfzero
+# docker image. Perfzero automatically clones the swift-models project into the
 # corresponding site-packages location.
-cwd = "/workspace/perfzero/workspace/site-packages/swift-models/"
+cwd = '/workspace/perfzero/workspace/site-packages/swift-models/'
+
 
 def extract_extras(settings):
   return None
 
+
 def extract_metrics(timings_ms, batch_size):
   metrics = []
-  return metrics 
+  return metrics
+
 
 def run_swift_benchmark(name, variety):
   print('running swift benchmark {} ({})'.format(name, variety))
   output = subp.check_output(['swift', 'run', '-c', 'release', 
-                              'Benchmarks', 'measure', 
-                              '--benchmark', name, 
-                              '--' + variety, 
-                              '--json'], cwd=cwd)
+                              'Benchmarks', 'measure', '--benchmark',
+                              name, '--' + variety, '--json'],
+                             cwd=cwd)
   result = json.loads(output)
   print(result)
   settings = result['configuration']['settings']
@@ -78,24 +86,29 @@ def run_swift_benchmark(name, variety):
       'metrics': extract_metrics(timings_ms, settings['batchSize']),
   }
 
-def new_swift_benchmark(name): 
+
+def new_swift_benchmark(name):
   """Create a new benchmark class with given name."""
   return type(name, (SwiftBenchmark,), {'benchmark_name': name})
 
+
 def discover_swift_benchmarks():
-  """Invoke swift benchmark cli to enumarate all available benchmarks
-  and add them as new top-level types in the current module."""
+  """Automatically discover and register swift benchmarks.
+  
+  Invokes swift benchmark cli to enumarate all available benchmarks
+  and add them as new top-level types in the current module.
+  """
 
   g = globals()
-  defaults = subp.check_output(['swift', 'run', '-c', 'release',
-                                'Benchmarks', 'list-defaults', 
-                                '--json'], cwd=cwd)
-  for line in defaults.split(b"\n"):
+  defaults = subp.check_output(['swift', 'run', '-c', 'release', 
+                                'Benchmarks', 'list-defaults', '--json'], 
+                               cwd=cwd)
+  for line in defaults.split(b'\n'):
     if len(line) > 0:
       name = json.loads(line)['name']
       if name not in g:
         g[name] = new_swift_benchmark(name)
         print("discovered swift benchmark '{}'".format(name))
 
-discover_swift_benchmarks()
 
+discover_swift_benchmarks()
