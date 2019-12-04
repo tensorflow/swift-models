@@ -40,13 +40,13 @@ public struct ConvBlock: Layer {
     // let convolved = input.sequenced(through: zeroPad, conv, batchNorm)
     // return relu6(convolved)
     let c1 = zeroPad(input)
-    print("zeroPad: \(c1.shape)")
+//    print("zeroPad: \(c1.shape)")
     let c2 = conv(c1)
-    print("conv: \(c2.shape)")
+//    print("conv: \(c2.shape)")
     let c3 = batchNorm(c2)
-    print("batchNorm: \(c3.shape)")
+//    print("batchNorm: \(c3.shape)")
     let c4 = relu(c3)
-    print("relu: \(c4.shape)")
+//    print("relu: \(c4.shape)")
     return c4
   }
 
@@ -79,17 +79,17 @@ public struct DepthwiseConvBlock: Layer {
     // let convolved2 = relu6(convolved1).sequenced(through: conv, batchNorm2)
     // return relu6(convolved2)
     let c1 = dConv(input)
-    print("dConv: \(c1.shape)")
+ //   print("dConv: \(c1.shape)")
     let c2 = batchNorm1(c1)
-    print("batchNorm1: \(c2.shape)")
+ //   print("batchNorm1: \(c2.shape)")
     let c2_2 = relu6(c2)
-    print("relu6: \(c2_2.shape)")
-    let c3 = conv(c2)
-    print("conv: \(c3.shape)")
+ //   print("relu6: \(c2_2.shape)")
+    let c3 = conv(c2_2)
+ //   print("conv: \(c3.shape)")
     let c4 = batchNorm2(c3)
-    print("batchNorm2: \(c4.shape)")
+ //   print("batchNorm2: \(c4.shape)")
     let c5 = relu6(c4)
-    print("relu6: \(c5.shape)")
+ //   print("relu6: \(c5.shape)")
     return c5
   }
 
@@ -110,6 +110,9 @@ public struct MobileNetV1: Layer {
   public var dConvBlock11: DepthwiseConvBlock
   public var dConvBlock12: DepthwiseConvBlock
   public var dConvBlock13: DepthwiseConvBlock
+  public var avgPool = GlobalAvgPool2D<Float>()
+  public var reshape = Reshape<Float>(shape: [1, 1, 1, 1024])
+  public var dropout = Dropout<Float>(probability: 0.001)
   public var convLast: Conv2D<Float>
   public var dense: Dense<Float>
 
@@ -133,7 +136,9 @@ public struct MobileNetV1: Layer {
     // TODO(michellecasbon): Add remaining layers
     convLast = Conv2D<Float>(
       filterShape: (1, 1, 1024, classCount),
-      strides: (1, 1))
+      strides: (1, 1),
+      padding: .same,
+      activation: softmax)
     dense = Dense<Float>(inputSize: 32, outputSize: 32)
   }
 
@@ -159,8 +164,21 @@ public struct MobileNetV1: Layer {
     print("dConvBlock9: \(c7.shape)")
     let c8 = c7.sequenced(through: dConvBlock10, dConvBlock11, dConvBlock12, dConvBlock13)
     print("dConvBlock13: \(c8.shape)")
+ 
+    let c9 = avgPool(c8)
+    print("avgPool: \(c9.shape)")
+    let c9_2 = reshape(c9)
+    print("reshape: \(c9_2.shape)")
+    let c10 = dropout(c9_2)
+    print("dropout: \(c10.shape)")
+    let c11 = convLast(c10)
+    print("convLast: \(c11.shape)")
+    let c12 = softmax(c11)
+    print("softmax: \(c12.shape)")
+    let c13 = c12.reshaped(to: [1, 1000])
+    print("reshaped: \(c13.shape)")
   
-    return c8
+    return c13
   }  
 }
 
