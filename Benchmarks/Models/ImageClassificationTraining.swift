@@ -41,7 +41,7 @@ where
                 sampleCount: dataset.trainingExampleCount, randomSeed: Int64(epoch))
             for batch in trainingShuffled.batched(batchSize) {
                 let (labels, images) = (batch.label, batch.data)
-                let 𝛁model = model.gradient { model -> Tensor<Float> in
+                let 𝛁model = TensorFlow.gradient(at: model) { model -> Tensor<Float> in
                     let logits = model(images)
                     return softmaxCrossEntropy(logits: logits, labels: labels)
                 }
