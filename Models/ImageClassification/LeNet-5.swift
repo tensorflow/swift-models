@@ -30,7 +30,7 @@ public struct LeNet: Layer {
     public var flatten = Flatten<Float>()
     public var fc1 = Dense<Float>(inputSize: 400, outputSize: 120, activation: relu)
     public var fc2 = Dense<Float>(inputSize: 120, outputSize: 84, activation: relu)
-    public var fc3 = Dense<Float>(inputSize: 84, outputSize: 10, activation: identity)
+    public var fc3 = Dense<Float>(inputSize: 84, outputSize: 10)
 
     public init() {}
 
