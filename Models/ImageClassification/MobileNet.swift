@@ -97,8 +97,7 @@ public struct MobileNetV1: Layer {
     convLast = Conv2D<Float>(
       filterShape: (1, 1, 1024, classCount),
       strides: (1, 1),
-      padding: .same,
-      activation: softmax)
+      padding: .same)
   }
 
   @differentiable
