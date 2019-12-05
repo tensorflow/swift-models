@@ -22,8 +22,7 @@ import TensorFlow
 // https://arxiv.org/abs/1704.04861
 
 public struct ConvBlock: Layer {
-  public var zeroPad = ZeroPadding2D<Float>(
-      padding: ((0, 1), (0, 1)))
+  public var zeroPad = ZeroPadding2D<Float>(padding: ((0, 1), (0, 1)))
   public var conv: Conv2D<Float>
   public var batchNorm: BatchNorm<Float>
 
@@ -43,7 +42,6 @@ public struct ConvBlock: Layer {
 }
 
 public struct DepthwiseConvBlock: Layer {
-  public var zeroPad = ZeroPadding2D<Float>(padding: ((0, 1), (0, 1)))
   public var dConv: DepthwiseConv2D<Float>
   public var batchNorm1: BatchNorm<Float>
   public var conv: Conv2D<Float>
@@ -109,7 +107,7 @@ public struct MobileNetV1: Layer {
     let convolved2 = convolved.sequenced(through: dConvBlock5, dConvBlock6, dConvBlock7, dConvBlock8, dConvBlock9)
     let convolved3 = convolved2.sequenced(through: dConvBlock10, dConvBlock11, dConvBlock12, dConvBlock13)
     let convolved4 = convolved3.sequenced(through: avgPool, reshape, dropout, convLast)
-    let output = softmax(convolved4).reshaped(to: [1, classCount])
+    let output = convolved4.reshaped(to: [1, classCount])
     return output
   }  
 }
