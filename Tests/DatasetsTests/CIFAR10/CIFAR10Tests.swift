@@ -9,11 +9,9 @@ final class CIFAR10Tests: XCTestCase {
 
 		var totalCount = 0
 		for example in dataset.trainingDataset {
-		  if totalCount == 0 {
-		    XCTAssertTrue((0..<10).contains(example.label.scalar!))
-		    XCTAssertEqual(example.data.shape, [32, 32, 3])
-		  }
-		  totalCount += 1
+	    	XCTAssertTrue((0..<10).contains(example.label.scalar!))
+	    	XCTAssertEqual(example.data.shape, [32, 32, 3])
+			totalCount += 1
 		}
 		XCTAssertEqual(totalCount, 50000)
 	}
