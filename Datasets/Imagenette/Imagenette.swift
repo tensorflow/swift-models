@@ -77,7 +77,7 @@ func downloadImagenetteIfNotPresent(to directory: String = ".", size: Imagenette
                         "https://s3.amazonaws.com/fast-ai-imageclas/imagenette\(size.suffix).tgz")!)
             try downloadedFile.write(to: URL(fileURLWithPath: archivePath))
         } catch {
-            printError("Could not download CIFAR dataset, error: \(error)")
+            printError("Could not download Imagenette dataset, error: \(error)")
             exit(-1)
         }
     }
@@ -133,7 +133,8 @@ func loadImagenetteDirectory(
         for fileURL in subdirContents {
             let image = Image(jpeg: fileURL)
             let resizedImage = image.resized(to: (outputSize, outputSize))
-            imageData.append(contentsOf: resizedImage.tensor.scalars)
+            let scaledImage = resizedImage.tensor / 255.0
+            imageData.append(contentsOf: scaledImage.scalars)
 
             labels.append(currentLabel)
 
