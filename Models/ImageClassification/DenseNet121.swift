@@ -71,8 +71,7 @@ extension DenseNet121 {
             conv = Conv2D(
                 filterShape: (filterSize, filterSize, inputFilterCount, outputFilterCount),
                 strides: (stride, stride),
-                padding: .same,
-                activation: identity
+                padding: .same
             )
         }
 
