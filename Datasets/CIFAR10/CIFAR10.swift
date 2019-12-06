@@ -125,8 +125,8 @@ func loadCIFARFile(named name: String, in directory: String = ".") -> CIFARExamp
 func loadCIFARTrainingFiles() -> CIFARExample {
     let data = (1..<6).map { loadCIFARFile(named: "data_batch_\($0).bin") }
     return CIFARExample(
-        label: _Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.label }),
-        data: _Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.data })
+        label: Tensor(concatenating: data.map { $0.label }, alongAxis: 0),
+        data: Tensor(concatenating: data.map { $0.data }, alongAxis: 0)
     )
 }
 
