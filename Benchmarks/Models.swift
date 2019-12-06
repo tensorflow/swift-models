@@ -13,5 +13,5 @@
 // limitations under the License.
 
 let benchmarkModels = [
-    "lenet-mnist": LeNetMNIST(),
+    "LeNetMNIST": LeNetMNIST(),
 ]
