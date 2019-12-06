@@ -16,3 +16,9 @@ final class CIFAR10Tests: XCTestCase {
     }
 }
 
+extension CIFAR10Tests {
+    static var allTests = [
+        ("testCreateCIFAR10", testCreateCIFAR10),
+    ]
+}
+
