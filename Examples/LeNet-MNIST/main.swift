@@ -60,7 +60,7 @@ for epoch in 1...epochCount {
             let correctPredictions = ŷ.argmax(squeezingAxis: 1) .== labels
             trainStats.correctGuessCount += Int(
                 Tensor<Int32>(correctPredictions).sum().scalarized())
-            trainStats.totalGuessCount += batchSize
+            trainStats.totalGuessCount += batch.data.shape[0]
             let loss = softmaxCrossEntropy(logits: ŷ, labels: labels)
             trainStats.totalLoss += loss.scalarized()
             trainStats.batches += 1
@@ -77,7 +77,7 @@ for epoch in 1...epochCount {
         let ŷ = classifier(images)
         let correctPredictions = ŷ.argmax(squeezingAxis: 1) .== labels
         testStats.correctGuessCount += Int(Tensor<Int32>(correctPredictions).sum().scalarized())
-        testStats.totalGuessCount += batchSize
+        testStats.totalGuessCount += batch.data.shape[0]
         let loss = softmaxCrossEntropy(logits: ŷ, labels: labels)
         testStats.totalLoss += loss.scalarized()
         testStats.batches += 1
