@@ -42,12 +42,17 @@ public struct ConvBlock: Layer {
 }
 
 public struct DepthwiseConvBlock: Layer {
+  @noDerivative
+  var strides: (Int, Int)
+
+  public var zeroPad = ZeroPadding2D<Float>(padding: ((0, 1), (0, 1)))
   public var dConv: DepthwiseConv2D<Float>
   public var batchNorm1: BatchNorm<Float>
   public var conv: Conv2D<Float>
   public var batchNorm2: BatchNorm<Float>
 
   public init(filterCount: Int, pointwiseFilterCount: Int, strides: (Int, Int)) {
+    self.strides = strides
     dConv = DepthwiseConv2D<Float>(
       filterShape: (3, 3, filterCount, 1),
       strides: strides,
@@ -62,10 +67,16 @@ public struct DepthwiseConvBlock: Layer {
 
   @differentiable
   public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-    // TODO(michellecasbon): Add conditional zero padding
-    let convolved1 = relu6(input.sequenced(through: dConv, batchNorm1))
-    let convolved2 = relu6(convolved1.sequenced(through: conv, batchNorm2))
-    return convolved2
+    var convolved1: Tensor<Float>
+    if self.strides == (1, 1) {
+      convolved1 = input.sequenced(through: dConv, batchNorm1)
+    }
+    else {
+      convolved1 = input.sequenced(through: zeroPad, dConv, batchNorm1)
+    }
+    let convolved2 = relu6(convolved1)
+    let convolved3 = relu6(convolved2.sequenced(through: conv, batchNorm2))
+    return convolved3
   }
 }
 
