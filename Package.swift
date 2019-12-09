@@ -50,6 +50,7 @@ let package = Package(
             sources: ["main.swift"]),
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
         .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
+        .testTarget(name: "DatasetsTests", dependencies: ["Datasets"]),
         .target(name: "Transformer", path: "Transformer"),
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
         .target(name: "FastStyleTransfer", path: "FastStyleTransfer", exclude: ["Demo"]),
