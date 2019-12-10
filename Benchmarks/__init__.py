@@ -59,7 +59,7 @@ cwd = '/workspace/perfzero/workspace/site-packages/swift-models/'
 
 
 def extract_extras(settings):
-  return None
+  return
 
 
 def extract_metrics(timings_ms, batch_size):
