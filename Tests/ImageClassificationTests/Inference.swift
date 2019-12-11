@@ -163,6 +163,15 @@ final class ImageClassificationInferenceTests: XCTestCase {
         let wideResNet40k8Result = wideResNet40k8(input)
         XCTAssertEqual(wideResNet40k8Result.shape, [1, 10])
     }
+
+    func testVGG16() {
+        let input = Tensor<Float>(
+            randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
+            standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
+        let vgg16 = VGG16()
+        let vgg16Result = vgg16(input)
+        XCTAssertEqual(vgg16Result.shape, [1, 1000])
+    }
 }
 
 extension ImageClassificationInferenceTests {
@@ -174,5 +183,6 @@ extension ImageClassificationInferenceTests {
         ("testSqueezeNetV1_0", testSqueezeNetV1_0),
         ("testSqueezeNetV1_1", testSqueezeNetV1_1),
         ("testWideResNet", testWideResNet),
+        ("testVGG16", testVGG16),
     ]
 }
