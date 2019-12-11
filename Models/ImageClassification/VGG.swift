@@ -20,9 +20,6 @@ import TensorFlow
 // https://arxiv.org/abs/1409.1556
 
 public struct VGG16: Layer {
-    public typealias Input = Tensor<Float>
-    public typealias Output = Tensor<Float>
-
     var conv1a = Conv2D<Float>(filterShape: (3, 3, 3, 64), padding: .same, activation: relu)
     var conv1b = Conv2D<Float>(filterShape: (3, 3, 64, 64), padding: .same, activation: relu)
     var pool1 = MaxPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
@@ -54,7 +51,7 @@ public struct VGG16: Layer {
     public init() {}
 
     @differentiable
-    public func callAsFunction(_ input: Input) -> Output {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let conv1 = input.sequenced(through: conv1a, conv1b, pool1)
         let conv2 = conv1.sequenced(through: conv2a, conv2b, pool2)
         let conv3 = conv2.sequenced(through: conv3a, conv3b, conv3c, pool3)
