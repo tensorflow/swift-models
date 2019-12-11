@@ -100,11 +100,12 @@ public struct MobileNetV1: Layer {
   public var dConvBlock13 = DepthwiseConvBlock(filterCount: 1024, pointwiseFilterCount: 1024, strides: (1, 1))
   public var avgPool = GlobalAvgPool2D<Float>()
   public var reshape = Reshape<Float>(shape: [1, 1, 1, 1024])
-  public var dropout = Dropout<Float>(probability: 0.001)
+  public var dropoutLayer: Dropout<Float>
   public var convLast: Conv2D<Float>
 
-  public init(classCount: Int) {
+  public init(classCount: Int, dropout: Double = 0.001) {
     self.classCount = classCount
+    dropoutLayer = Dropout<Float>(probability: dropout)
     convLast = Conv2D<Float>(
       filterShape: (1, 1, 1024, classCount),
       strides: (1, 1),
@@ -116,7 +117,7 @@ public struct MobileNetV1: Layer {
     let convolved = input.sequenced(through: convBlock1, dConvBlock1, dConvBlock2, dConvBlock3, dConvBlock4)
     let convolved2 = convolved.sequenced(through: dConvBlock5, dConvBlock6, dConvBlock7, dConvBlock8, dConvBlock9)
     let convolved3 = convolved2.sequenced(through: dConvBlock10, dConvBlock11, dConvBlock12, dConvBlock13)
-    let convolved4 = convolved3.sequenced(through: avgPool, reshape, dropout, convLast)
+    let convolved4 = convolved3.sequenced(through: avgPool, reshape, dropoutLayer, convLast)
     let output = convolved4.reshaped(to: [1, classCount])
     return output
   }  
