@@ -43,6 +43,8 @@ public struct ConvBlock: Layer {
 
 public struct DepthwiseConvBlock: Layer {
   @noDerivative
+  var depthMultiplier: Int
+  @noDerivative
   var strides: (Int, Int)
 
   public var zeroPad = ZeroPadding2D<Float>(padding: ((0, 1), (0, 1)))
@@ -51,10 +53,18 @@ public struct DepthwiseConvBlock: Layer {
   public var conv: Conv2D<Float>
   public var batchNorm2: BatchNorm<Float>
 
-  public init(filterCount: Int, pointwiseFilterCount: Int, strides: (Int, Int)) {
+  public init(filterCount: Int, pointwiseFilterCount: Int, depthMultiplier: Int, strides: (Int, Int)) {
+    if depthMultiplier > 0 {
+        self.depthMultiplier = depthMultiplier
+    } else {
+        print("Depth multiplier must be an integer greater than 0. Setting to default value of 1.")
+        self.depthMultiplier = 1
+    }
+
     self.strides = strides
+
     dConv = DepthwiseConv2D<Float>(
-      filterShape: (3, 3, filterCount, 1),
+      filterShape: (3, 3, filterCount, self.depthMultiplier),
       strides: strides,
       padding: .same)
     batchNorm1 = BatchNorm<Float>(featureCount: filterCount)
@@ -85,26 +95,41 @@ public struct MobileNetV1: Layer {
   var classCount: Int
 
   public var convBlock1 = ConvBlock(filterCount: 32, strides: (2, 2))
-  public var dConvBlock1 = DepthwiseConvBlock(filterCount: 32, pointwiseFilterCount: 64, strides: (1, 1))
-  public var dConvBlock2 = DepthwiseConvBlock(filterCount: 64, pointwiseFilterCount: 128, strides: (2, 2))
-  public var dConvBlock3 = DepthwiseConvBlock(filterCount: 128, pointwiseFilterCount: 128, strides: (1, 1))
-  public var dConvBlock4 = DepthwiseConvBlock(filterCount: 128, pointwiseFilterCount: 256, strides: (2, 2))
-  public var dConvBlock5 = DepthwiseConvBlock(filterCount: 256, pointwiseFilterCount: 256, strides: (1, 1))
-  public var dConvBlock6 = DepthwiseConvBlock(filterCount: 256, pointwiseFilterCount: 512, strides: (2, 2))
-  public var dConvBlock7 = DepthwiseConvBlock(filterCount: 512, pointwiseFilterCount: 512, strides: (1, 1))
-  public var dConvBlock8 = DepthwiseConvBlock(filterCount: 512, pointwiseFilterCount: 512, strides: (1, 1))
-  public var dConvBlock9 = DepthwiseConvBlock(filterCount: 512, pointwiseFilterCount: 512, strides: (1, 1))
-  public var dConvBlock10 = DepthwiseConvBlock(filterCount: 512, pointwiseFilterCount: 512, strides: (1, 1))
-  public var dConvBlock11 = DepthwiseConvBlock(filterCount: 512, pointwiseFilterCount: 512, strides: (1, 1))
-  public var dConvBlock12 = DepthwiseConvBlock(filterCount: 512, pointwiseFilterCount: 1024, strides: (2, 2))
-  public var dConvBlock13 = DepthwiseConvBlock(filterCount: 1024, pointwiseFilterCount: 1024, strides: (1, 1))
+  public var dConvBlock1: DepthwiseConvBlock
+  public var dConvBlock2: DepthwiseConvBlock
+  public var dConvBlock3: DepthwiseConvBlock
+  public var dConvBlock4: DepthwiseConvBlock
+  public var dConvBlock5: DepthwiseConvBlock
+  public var dConvBlock6: DepthwiseConvBlock
+  public var dConvBlock7: DepthwiseConvBlock
+  public var dConvBlock8: DepthwiseConvBlock
+  public var dConvBlock9: DepthwiseConvBlock
+  public var dConvBlock10: DepthwiseConvBlock
+  public var dConvBlock11: DepthwiseConvBlock
+  public var dConvBlock12: DepthwiseConvBlock
+  public var dConvBlock13: DepthwiseConvBlock
   public var avgPool = GlobalAvgPool2D<Float>()
   public var reshape = Reshape<Float>(shape: [1, 1, 1, 1024])
   public var dropoutLayer: Dropout<Float>
   public var convLast: Conv2D<Float>
 
-  public init(classCount: Int, dropout: Double = 0.001) {
+  public init(classCount: Int, depthMultiplier: Int = 1, dropout: Double = 0.001) {
     self.classCount = classCount
+
+    dConvBlock1 = DepthwiseConvBlock(filterCount: 32, pointwiseFilterCount: 64, depthMultiplier: depthMultiplier, strides: (1, 1))
+    dConvBlock2 = DepthwiseConvBlock(filterCount: 64, pointwiseFilterCount: 128, depthMultiplier: depthMultiplier, strides: (2, 2))
+    dConvBlock3 = DepthwiseConvBlock(filterCount: 128, pointwiseFilterCount: 128, depthMultiplier: depthMultiplier, strides: (1, 1))
+    dConvBlock4 = DepthwiseConvBlock(filterCount: 128, pointwiseFilterCount: 256, depthMultiplier: depthMultiplier, strides: (2, 2))
+    dConvBlock5 = DepthwiseConvBlock(filterCount: 256, pointwiseFilterCount: 256, depthMultiplier: depthMultiplier, strides: (1, 1))
+    dConvBlock6 = DepthwiseConvBlock(filterCount: 256, pointwiseFilterCount: 512, depthMultiplier: depthMultiplier, strides: (2, 2))
+    dConvBlock7 = DepthwiseConvBlock(filterCount: 512, pointwiseFilterCount: 512, depthMultiplier: depthMultiplier, strides: (1, 1))
+    dConvBlock8 = DepthwiseConvBlock(filterCount: 512, pointwiseFilterCount: 512, depthMultiplier: depthMultiplier, strides: (1, 1))
+    dConvBlock9 = DepthwiseConvBlock(filterCount: 512, pointwiseFilterCount: 512, depthMultiplier: depthMultiplier, strides: (1, 1))
+    dConvBlock10 = DepthwiseConvBlock(filterCount: 512, pointwiseFilterCount: 512, depthMultiplier: depthMultiplier, strides: (1, 1))
+    dConvBlock11 = DepthwiseConvBlock(filterCount: 512, pointwiseFilterCount: 512, depthMultiplier: depthMultiplier, strides: (1, 1))
+    dConvBlock12 = DepthwiseConvBlock(filterCount: 512, pointwiseFilterCount: 1024, depthMultiplier: depthMultiplier, strides: (2, 2))
+    dConvBlock13 = DepthwiseConvBlock(filterCount: 1024, pointwiseFilterCount: 1024, depthMultiplier: depthMultiplier, strides: (1, 1))
+
     dropoutLayer = Dropout<Float>(probability: dropout)
     convLast = Conv2D<Float>(
       filterShape: (1, 1, 1024, classCount),
