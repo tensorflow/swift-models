@@ -19,4 +19,5 @@ public protocol ImageClassificationDataset {
     var trainingDataset: Dataset<LabeledExample> { get }
     var testDataset: Dataset<LabeledExample> { get }
     var trainingExampleCount: Int { get }
+    var testExampleCount: Int { get }
 }
