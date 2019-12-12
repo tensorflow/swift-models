@@ -44,8 +44,9 @@ public struct ConvBlock: Layer {
     let convolved = input.sequenced(through: zeroPad, conv, batchNorm)
     if self.printSummary {
       print("ZeroPadding2D")
-      print("Conv2D: \(conv.filter.shape)")
+      print("Conv2D")
       print("BatchNorm")
+      print(convolved.shape)
       print("Relu6")
     }
     return relu6(convolved)
@@ -79,7 +80,7 @@ public struct DepthwiseConvBlock: Layer {
     dConv = DepthwiseConv2D<Float>(
       filterShape: (3, 3, filterCount, self.depthMultiplier),
       strides: strides,
-      padding: .same)
+      padding: strides == (1, 1) ? .same : .valid)
     batchNorm1 = BatchNorm<Float>(featureCount: filterCount * self.depthMultiplier)
     conv = Conv2D<Float>(
       filterShape: (1, 1, filterCount * self.depthMultiplier, pointwiseFilterCount),
@@ -94,25 +95,28 @@ public struct DepthwiseConvBlock: Layer {
     if self.strides == (1, 1) {
       convolved1 = input.sequenced(through: dConv, batchNorm1)
       if self.printSummary {
-        print("DepthwiseConv2D: \(dConv.filter.shape)")
+        print("DepthwiseConv2D")
         print("BatchNorm")
+        print(convolved1.shape)
       }
     }
     else {
       convolved1 = input.sequenced(through: zeroPad, dConv, batchNorm1)
       if self.printSummary {
         print("ZeroPadding2D")
-        print("DepthwiseConv2D: \(dConv.filter.shape)")
+        print("DepthwiseConv2D")
         print("BatchNorm")
+        print(convolved1.shape)
       }
     }
     let convolved2 = relu6(convolved1)
     let convolved3 = relu6(convolved2.sequenced(through: conv, batchNorm2))
     if self.printSummary {
       print("Relu6")
-      print("Conv2D: \(conv.filter.shape)")
+      print("Conv2D")
       print("BatchNorm")
       print("Relu6")
+      print(convolved3.shape)
     }
     return convolved3
   }
@@ -174,13 +178,21 @@ public struct MobileNetV1: Layer {
     let convolved = input.sequenced(through: convBlock1, dConvBlock1, dConvBlock2, dConvBlock3, dConvBlock4)
     let convolved2 = convolved.sequenced(through: dConvBlock5, dConvBlock6, dConvBlock7, dConvBlock8, dConvBlock9)
     let convolved3 = convolved2.sequenced(through: dConvBlock10, dConvBlock11, dConvBlock12, dConvBlock13)
+
+    // Verify shape since any discrepancies will be masked after pooling
+    let expectedWidth = input.shape[1] / 32
+    let expectedHeight = input.shape[2] / 32
+    if convolved3.shape != TensorShape(1, expectedWidth, expectedHeight, 1024) {
+      print("Invalid shape before GlobalAveragePooling2D: \(convolved2.shape) should be [1, \(expectedWidth), \(expectedHeight), 1024].")
+    }
+
     let convolved4 = convolved3.sequenced(through: avgPool, reshape, dropoutLayer, convLast)
     let output = convolved4.reshaped(to: [1, classCount])
     if self.printSummary {
       print("GlobalAvgPool2D")
       print("Reshape: \(reshape.shape)")
       print("Dropout")
-      print("Conv2D: \(convLast.filter.shape)")
+      print("Conv2D")
       print("Reshape: [1, \(classCount)]")
     }
     return output
