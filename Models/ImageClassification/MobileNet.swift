@@ -56,13 +56,14 @@ public struct ConvBlock: Layer {
 
 public struct DepthwiseConvBlock: Layer {
   @noDerivative
-  var depthMultiplier: Int
+  let depthMultiplier: Int
   @noDerivative
-  var strides: (Int, Int)
+  let strides: (Int, Int)
   @noDerivative
-  var printSummary: Bool
+  let printSummary: Bool
 
-  public var zeroPad = ZeroPadding2D<Float>(padding: ((0, 1), (0, 1)))
+  @noDerivative
+  public let zeroPad = ZeroPadding2D<Float>(padding: ((0, 1), (0, 1)))
   public var dConv: DepthwiseConv2D<Float>
   public var batchNorm1: BatchNorm<Float>
   public var conv: Conv2D<Float>
@@ -70,17 +71,12 @@ public struct DepthwiseConvBlock: Layer {
 
   public init(filterCount: Int, pointwiseFilterCount: Int, depthMultiplier: Int,
     strides: (Int, Int), printSummary: Bool = false) {
+    if depthMultiplier < 1 {
+      fatalError("Depth multiplier must be an integer greater than 0.")
+    }
+    self.depthMultiplier = depthMultiplier
     self.strides = strides
     self.printSummary = printSummary
-    if depthMultiplier > 0 {
-      self.depthMultiplier = depthMultiplier
-    } else {
-      print("""
-            Depth multiplier must be an integer greater than 0.
-            Setting depth multiplier to default value of 1.
-            """)
-      self.depthMultiplier = 1
-    }
 
     dConv = DepthwiseConv2D<Float>(
       filterShape: (3, 3, filterCount, self.depthMultiplier),
@@ -131,9 +127,9 @@ public struct DepthwiseConvBlock: Layer {
 
 public struct MobileNetV1: Layer {
   @noDerivative
-  var classCount: Int
+  let classCount: Int
   @noDerivative
-  var printSummary: Bool
+  let printSummary: Bool
 
   public var convBlock1: ConvBlock
   public var dConvBlock1: DepthwiseConvBlock
