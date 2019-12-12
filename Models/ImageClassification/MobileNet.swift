@@ -59,9 +59,7 @@ public struct DepthwiseConvBlock: Layer {
         filterCount: Int, pointwiseFilterCount: Int, depthMultiplier: Int,
         strides: (Int, Int)
     ) {
-        if depthMultiplier < 1 {
-            fatalError("Depth multiplier must be an integer greater than 0.")
-        }
+        precondition(depthMultiplier > 0, "Depth multiplier must be positive")
         self.depthMultiplier = depthMultiplier
         self.strides = strides
 
