@@ -57,6 +57,16 @@ final class ImageClassificationInferenceTests: XCTestCase {
         let mobileNetCIFARResult = mobileNetCIFAR(inputCIFAR)
         XCTAssertEqual(mobileNetCIFARResult.shape, [1, 10])
 
+        // Width multiplier
+        let mobileNetWMSmall = MobileNetV1(classCount: 10, widthMultiplier: 0.5)
+        let mobileNetWMSmallResult = mobileNetWMSmall(inputCIFAR)
+        XCTAssertEqual(mobileNetWMSmallResult.shape, [1, 10])
+
+        // Width multiplier
+        let mobileNetWMLarge = MobileNetV1(classCount: 10, widthMultiplier: 1.5)
+        let mobileNetWMLargeResult = mobileNetWMLarge(inputCIFAR)
+        XCTAssertEqual(mobileNetWMLargeResult.shape, [1, 10])
+
         // Depth multiplier and dropout
         let mobileNetDMD = MobileNetV1(classCount: 10, depthMultiplier: 2, dropout: 0.01)
         let mobileNetDMDResult = mobileNetDMD(inputCIFAR)
