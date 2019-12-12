@@ -21,7 +21,7 @@ final class ImageClassificationInferenceTests: XCTestCase {
     override class func setUp() {
         Context.local.learningPhase = .inference
     }
-    
+
     func testDenseNet121() {
         let input = Tensor<Float>(
             randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
