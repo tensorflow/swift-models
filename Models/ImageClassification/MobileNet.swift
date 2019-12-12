@@ -29,7 +29,8 @@ public struct ConvBlock: Layer {
   public var conv: Conv2D<Float>
   public var batchNorm: BatchNorm<Float>
 
-  public init(filterCount: Int, strides: (Int, Int), printSummary: Bool = false) {
+  public init(filterCount: Int, strides: (Int, Int),
+    printSummary: Bool = false) {
     self.printSummary = printSummary
 
     conv = Conv2D<Float>(
@@ -67,23 +68,29 @@ public struct DepthwiseConvBlock: Layer {
   public var conv: Conv2D<Float>
   public var batchNorm2: BatchNorm<Float>
 
-  public init(filterCount: Int, pointwiseFilterCount: Int, depthMultiplier: Int, strides: (Int, Int), printSummary: Bool = false) {
+  public init(filterCount: Int, pointwiseFilterCount: Int, depthMultiplier: Int,
+    strides: (Int, Int), printSummary: Bool = false) {
     self.strides = strides
     self.printSummary = printSummary
     if depthMultiplier > 0 {
-        self.depthMultiplier = depthMultiplier
+      self.depthMultiplier = depthMultiplier
     } else {
-        print("Depth multiplier must be an integer greater than 0. Setting to default value of 1.")
-        self.depthMultiplier = 1
+      print("""
+            Depth multiplier must be an integer greater than 0.
+            Setting depth multiplier to default value of 1.
+            """)
+      self.depthMultiplier = 1
     }
 
     dConv = DepthwiseConv2D<Float>(
       filterShape: (3, 3, filterCount, self.depthMultiplier),
       strides: strides,
       padding: strides == (1, 1) ? .same : .valid)
-    batchNorm1 = BatchNorm<Float>(featureCount: filterCount * self.depthMultiplier)
+    batchNorm1 = BatchNorm<Float>(
+      featureCount: filterCount * self.depthMultiplier)
     conv = Conv2D<Float>(
-      filterShape: (1, 1, filterCount * self.depthMultiplier, pointwiseFilterCount),
+      filterShape: (1, 1, filterCount * self.depthMultiplier,
+        pointwiseFilterCount),
       strides: (1, 1),
       padding: .same)
     batchNorm2 = BatchNorm<Float>(featureCount: pointwiseFilterCount)
@@ -147,24 +154,92 @@ public struct MobileNetV1: Layer {
   public var dropoutLayer: Dropout<Float>
   public var convLast: Conv2D<Float>
 
-  public init(classCount: Int, depthMultiplier: Int = 1, dropout: Double = 0.001, printSummary: Bool = false) {
+  public init(classCount: Int, depthMultiplier: Int = 1,
+    dropout: Double = 0.001, printSummary: Bool = false) {
     self.classCount = classCount
     self.printSummary = printSummary
 
-    convBlock1 = ConvBlock(filterCount: 32, strides: (2, 2), printSummary: printSummary)
-    dConvBlock1 = DepthwiseConvBlock(filterCount: 32, pointwiseFilterCount: 64, depthMultiplier: depthMultiplier, strides: (1, 1), printSummary: printSummary)
-    dConvBlock2 = DepthwiseConvBlock(filterCount: 64, pointwiseFilterCount: 128, depthMultiplier: depthMultiplier, strides: (2, 2), printSummary: printSummary)
-    dConvBlock3 = DepthwiseConvBlock(filterCount: 128, pointwiseFilterCount: 128, depthMultiplier: depthMultiplier, strides: (1, 1), printSummary: printSummary)
-    dConvBlock4 = DepthwiseConvBlock(filterCount: 128, pointwiseFilterCount: 256, depthMultiplier: depthMultiplier, strides: (2, 2), printSummary: printSummary)
-    dConvBlock5 = DepthwiseConvBlock(filterCount: 256, pointwiseFilterCount: 256, depthMultiplier: depthMultiplier, strides: (1, 1), printSummary: printSummary)
-    dConvBlock6 = DepthwiseConvBlock(filterCount: 256, pointwiseFilterCount: 512, depthMultiplier: depthMultiplier, strides: (2, 2), printSummary: printSummary)
-    dConvBlock7 = DepthwiseConvBlock(filterCount: 512, pointwiseFilterCount: 512, depthMultiplier: depthMultiplier, strides: (1, 1), printSummary: printSummary)
-    dConvBlock8 = DepthwiseConvBlock(filterCount: 512, pointwiseFilterCount: 512, depthMultiplier: depthMultiplier, strides: (1, 1), printSummary: printSummary)
-    dConvBlock9 = DepthwiseConvBlock(filterCount: 512, pointwiseFilterCount: 512, depthMultiplier: depthMultiplier, strides: (1, 1), printSummary: printSummary)
-    dConvBlock10 = DepthwiseConvBlock(filterCount: 512, pointwiseFilterCount: 512, depthMultiplier: depthMultiplier, strides: (1, 1), printSummary: printSummary)
-    dConvBlock11 = DepthwiseConvBlock(filterCount: 512, pointwiseFilterCount: 512, depthMultiplier: depthMultiplier, strides: (1, 1), printSummary: printSummary)
-    dConvBlock12 = DepthwiseConvBlock(filterCount: 512, pointwiseFilterCount: 1024, depthMultiplier: depthMultiplier, strides: (2, 2), printSummary: printSummary)
-    dConvBlock13 = DepthwiseConvBlock(filterCount: 1024, pointwiseFilterCount: 1024, depthMultiplier: depthMultiplier, strides: (1, 1), printSummary: printSummary)
+    convBlock1 = ConvBlock(filterCount: 32,
+      strides: (2, 2),
+      printSummary: printSummary)
+    dConvBlock1 = DepthwiseConvBlock(
+      filterCount: 32,
+      pointwiseFilterCount: 64,
+      depthMultiplier: depthMultiplier,
+      strides: (1, 1),
+      printSummary: printSummary)
+    dConvBlock2 = DepthwiseConvBlock(
+      filterCount: 64,
+      pointwiseFilterCount: 128,
+      depthMultiplier: depthMultiplier,
+      strides: (2, 2),
+      printSummary: printSummary)
+    dConvBlock3 = DepthwiseConvBlock(
+      filterCount: 128,
+      pointwiseFilterCount: 128,
+      depthMultiplier: depthMultiplier,
+      strides: (1, 1),
+      printSummary: printSummary)
+    dConvBlock4 = DepthwiseConvBlock(
+      filterCount: 128,
+      pointwiseFilterCount: 256,
+      depthMultiplier: depthMultiplier,
+      strides: (2, 2),
+      printSummary: printSummary)
+    dConvBlock5 = DepthwiseConvBlock(
+      filterCount: 256,
+      pointwiseFilterCount: 256,
+      depthMultiplier: depthMultiplier,
+      strides: (1, 1),
+      printSummary: printSummary)
+    dConvBlock6 = DepthwiseConvBlock(
+      filterCount: 256,
+      pointwiseFilterCount: 512,
+      depthMultiplier: depthMultiplier,
+      strides: (2, 2),
+      printSummary: printSummary)
+    dConvBlock7 = DepthwiseConvBlock(
+      filterCount: 512,
+      pointwiseFilterCount: 512,
+      depthMultiplier: depthMultiplier,
+      strides: (1, 1),
+      printSummary: printSummary)
+    dConvBlock8 = DepthwiseConvBlock(
+      filterCount: 512,
+      pointwiseFilterCount: 512,
+      depthMultiplier: depthMultiplier,
+      strides: (1, 1),
+      printSummary: printSummary)
+    dConvBlock9 = DepthwiseConvBlock(
+      filterCount: 512,
+      pointwiseFilterCount: 512,
+      depthMultiplier: depthMultiplier,
+      strides: (1, 1),
+      printSummary: printSummary)
+    dConvBlock10 = DepthwiseConvBlock(
+      filterCount: 512,
+      pointwiseFilterCount: 512,
+      depthMultiplier: depthMultiplier,
+      strides: (1, 1),
+      printSummary: printSummary)
+    dConvBlock11 = DepthwiseConvBlock(
+      filterCount: 512,
+      pointwiseFilterCount: 512,
+      depthMultiplier: depthMultiplier,
+      strides: (1, 1),
+      printSummary: printSummary)
+    dConvBlock12 = DepthwiseConvBlock(
+      filterCount: 512,
+      pointwiseFilterCount: 1024,
+      depthMultiplier: depthMultiplier,
+      strides: (2, 2),
+      printSummary: printSummary)
+    dConvBlock13 = DepthwiseConvBlock(
+      filterCount: 1024,
+      pointwiseFilterCount: 1024,
+      depthMultiplier: depthMultiplier,
+      strides: (1, 1),
+      printSummary: printSummary)
 
     dropoutLayer = Dropout<Float>(probability: dropout)
     convLast = Conv2D<Float>(
@@ -175,18 +250,25 @@ public struct MobileNetV1: Layer {
 
   @differentiable
   public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-    let convolved = input.sequenced(through: convBlock1, dConvBlock1, dConvBlock2, dConvBlock3, dConvBlock4)
-    let convolved2 = convolved.sequenced(through: dConvBlock5, dConvBlock6, dConvBlock7, dConvBlock8, dConvBlock9)
-    let convolved3 = convolved2.sequenced(through: dConvBlock10, dConvBlock11, dConvBlock12, dConvBlock13)
+    let convolved = input.sequenced(through: convBlock1, dConvBlock1,
+      dConvBlock2, dConvBlock3, dConvBlock4)
+    let convolved2 = convolved.sequenced(through: dConvBlock5, dConvBlock6,
+      dConvBlock7, dConvBlock8, dConvBlock9)
+    let convolved3 = convolved2.sequenced(through: dConvBlock10, dConvBlock11,
+      dConvBlock12, dConvBlock13)
 
     // Verify shape since any discrepancies will be masked after pooling
     let expectedWidth = input.shape[1] / 32
     let expectedHeight = input.shape[2] / 32
     if convolved3.shape != TensorShape(1, expectedWidth, expectedHeight, 1024) {
-      print("Invalid shape before GlobalAveragePooling2D: \(convolved2.shape) should be [1, \(expectedWidth), \(expectedHeight), 1024].")
+      print("""
+            Invalid shape before GlobalAveragePooling2D: \(convolved2.shape)
+            should be [1, \(expectedWidth), \(expectedHeight), 1024].
+            """)
     }
 
-    let convolved4 = convolved3.sequenced(through: avgPool, reshape, dropoutLayer, convLast)
+    let convolved4 = convolved3.sequenced(through: avgPool, reshape,
+      dropoutLayer, convLast)
     let output = convolved4.reshaped(to: [1, classCount])
     if self.printSummary {
       print("GlobalAvgPool2D")
