@@ -209,8 +209,6 @@ public struct MobileNetV1: Layer {
         let convolved3 = convolved2.sequenced(
             through: dConvBlock10, dConvBlock11,
             dConvBlock12, dConvBlock13)
-
-        // Verify shape since any discrepancies will be masked after pooling
         let convolved4 = convolved3.sequenced(
             through: avgPool, reshape,
             dropoutLayer, convLast)
