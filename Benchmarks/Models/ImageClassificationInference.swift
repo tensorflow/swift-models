@@ -31,6 +31,10 @@ where Model: ImageClassificationModel, ClassificationDataset: ImageClassificatio
     let batches: Int
     let batchSize: Int
 
+    var exampleCount: Int {
+        return batches * batchSize
+    }
+
     init(settings: BenchmarkSettings, images: Tensor<Float>? = nil) {
         self.batches = settings.batches
         self.batchSize = settings.batchSize
