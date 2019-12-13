@@ -12,13 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import TensorFlow
 import Datasets
+import Foundation
+import TensorFlow
 
 let epochCount = 12
 let batchSize = 128
 
-let dataset = MNIST()
+let downloadLocation = FileManager.default.temporaryDirectory.appendingPathComponent("MNIST")
+let dataset = MNIST(localStorageDirectory: downloadLocation)
 // The LeNet-5 model, equivalent to `LeNet` in `ImageClassificationModels`.
 var classifier = Sequential {
     Conv2D<Float>(filterShape: (5, 5, 1, 6), padding: .same, activation: relu)
