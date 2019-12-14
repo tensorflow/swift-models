@@ -168,7 +168,7 @@ final class ImageClassificationInferenceTests: XCTestCase {
         let input = Tensor<Float>(
             randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
             standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
-        let vgg16 = VGG(inputKind: .vgg16, classCount: 1000)
+        let vgg16 = VGG16(classCount: 1000)
         let vgg16Result = vgg16(input)
         XCTAssertEqual(vgg16Result.shape, [1, 1000])
     }
@@ -177,7 +177,7 @@ final class ImageClassificationInferenceTests: XCTestCase {
         let input = Tensor<Float>(
             randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
             standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
-        let vgg19 = VGG(inputKind: .vgg19, classCount: 1000)
+        let vgg19 = VGG19(classCount: 1000)
         let vgg19Result = vgg19(input)
         XCTAssertEqual(vgg19Result.shape, [1, 1000])
     }
