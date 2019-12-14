@@ -40,7 +40,7 @@ public struct VGGBlock: Layer {
     }
 }
 
-public struct VGG: Layer {
+public struct VGG16: Layer {
     var layer1: VGGBlock
     var layer2: VGGBlock
     var layer3: VGGBlock
@@ -52,12 +52,12 @@ public struct VGG: Layer {
     var dense2 = Dense<Float>(inputSize: 4096, outputSize: 4096, activation: relu)
     var output: Dense<Float>
 
-    init(classCount: Int, layerDepth: Int) {
+    public init(classCount: Int = 1000) {
         layer1 = VGGBlock(featureCounts: (3, 64, 64, 64), blockCount: 2)
         layer2 = VGGBlock(featureCounts: (64, 128, 128, 128), blockCount: 2)
-        layer3 = VGGBlock(featureCounts: (128, 256, 256, 256), blockCount: layerDepth)
-        layer4 = VGGBlock(featureCounts: (256, 512, 512, 512), blockCount: layerDepth)
-        layer5 = VGGBlock(featureCounts: (512, 512, 512, 512), blockCount: layerDepth)
+        layer3 = VGGBlock(featureCounts: (128, 256, 256, 256), blockCount: 3)
+        layer4 = VGGBlock(featureCounts: (256, 512, 512, 512), blockCount: 3)
+        layer5 = VGGBlock(featureCounts: (512, 512, 512, 512), blockCount: 3)
         output = Dense(inputSize: 4096, outputSize: classCount, activation: softmax)
     }
 
@@ -68,18 +68,30 @@ public struct VGG: Layer {
     }
 }
 
-extension VGG {
-    public enum Kind {
-        case vgg16
-        case vgg19
+public struct VGG19: Layer {
+    var layer1: VGGBlock
+    var layer2: VGGBlock
+    var layer3: VGGBlock
+    var layer4: VGGBlock
+    var layer5: VGGBlock
+
+    var flatten = Flatten<Float>()
+    var dense1 = Dense<Float>(inputSize: 512 * 7 * 7, outputSize: 4096, activation: relu)
+    var dense2 = Dense<Float>(inputSize: 4096, outputSize: 4096, activation: relu)
+    var output: Dense<Float>
+
+    public init(classCount: Int = 1000) {
+        layer1 = VGGBlock(featureCounts: (3, 64, 64, 64), blockCount: 2)
+        layer2 = VGGBlock(featureCounts: (64, 128, 128, 128), blockCount: 2)
+        layer3 = VGGBlock(featureCounts: (128, 256, 256, 256), blockCount: 4)
+        layer4 = VGGBlock(featureCounts: (256, 512, 512, 512), blockCount: 4)
+        layer5 = VGGBlock(featureCounts: (512, 512, 512, 512), blockCount: 4)
+        output = Dense(inputSize: 4096, outputSize: classCount, activation: softmax)
     }
 
-    public init(inputKind: Kind, classCount: Int) {
-        switch inputKind {
-        case .vgg16:
-            self.init(classCount: classCount, layerDepth: 3)
-        case .vgg19:
-            self.init(classCount: classCount, layerDepth: 4)
-        }
+    @differentiable
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
+        let backbone = input.sequenced(through: layer1, layer2, layer3, layer4, layer5)
+        return backbone.sequenced(through: flatten, dense1, dense2, output)
     }
 }
