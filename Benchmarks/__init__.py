@@ -80,7 +80,7 @@ def extract_metrics(result, variety):
   timings = result['timings']
   example_count = result['exampleCount']
 
-  # 50 percentile of a single iteration running time in seconds.
+  # 50th percentile of a single iteration's running time in seconds.
   timings_s = np.array(timings) / 1000
   wall_time = np.percentile(timings_s, 50)
 
