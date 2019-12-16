@@ -71,7 +71,7 @@ def extract_extras(settings):
 
 
 def extract_metrics(result, variety):
-  """Extract perfzero metrics based on the measurmenets.
+  """Extract PerfZero metrics based on the measurements.
 
   Extracts metrics such as number of examples per second,
   based on the the original raw timings.
