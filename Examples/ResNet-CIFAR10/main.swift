@@ -16,7 +16,7 @@ import Datasets
 import ImageClassificationModels
 import TensorFlow
 
-let batchSize = 100
+let batchSize = 10
 
 let dataset = CIFAR10()
 let testBatches = dataset.testDataset.batched(batchSize)
