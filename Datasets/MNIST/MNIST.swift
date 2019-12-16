@@ -31,7 +31,8 @@ public struct MNIST: ImageClassificationDataset {
 
     public init(
         flattening: Bool = false, normalizing: Bool = false,
-        localStorageDirectory: URL = DatasetUtilities.currentWorkingDirectoryURL
+        localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "MNIST")
     ) {
         self.trainingDataset = Dataset<LabeledExample>(
             elements: fetchDataset(
@@ -58,8 +59,19 @@ fileprivate func fetchDataset(
     flattening: Bool,
     normalizing: Bool
 ) -> LabeledExample {
-    guard let remoteRoot:URL = URL(string: "http://yann.lecun.com/exdb/mnist") else {
-        fatalError("Failed to create MNST root url: http://yann.lecun.com/exdb/mnist")
+    guard let remoteRoot = URL(string: "http://yann.lecun.com/exdb/mnist") else {
+        fatalError("Failed to create MNIST root url: http://yann.lecun.com/exdb/mnist")
+    }
+
+    if !FileManager.default.fileExists(atPath: localStorageDirectory.path) {
+        do {
+            try FileManager.default.createDirectory(
+                at: localStorageDirectory, withIntermediateDirectories: false)
+        } catch {
+            fatalError(
+                "Failed to create storage directory: \(localStorageDirectory.path), error: \(error)"
+            )
+        }
     }
 
     let imagesData = DatasetUtilities.fetchResource(
@@ -78,7 +90,8 @@ fileprivate func fetchDataset(
     let (imageWidth, imageHeight) = (28, 28)
 
     if flattening {
-        var flattenedImages = Tensor(shape: [rowCount, imageHeight * imageWidth], scalars: images)
+        var flattenedImages =
+            Tensor(shape: [rowCount, imageHeight * imageWidth], scalars: images)
             / 255.0
         if normalizing {
             flattenedImages = flattenedImages * 2.0 - 1.0
