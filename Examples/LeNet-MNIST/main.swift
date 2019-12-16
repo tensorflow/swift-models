@@ -12,9 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Datasets
-import Foundation
 import TensorFlow
+import Datasets
 
 let epochCount = 12
 let batchSize = 128
