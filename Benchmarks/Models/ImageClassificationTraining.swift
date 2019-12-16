@@ -24,6 +24,10 @@ where
     let epochs: Int
     let batchSize: Int
 
+    var exampleCount: Int {
+        return epochs * dataset.trainingExampleCount
+    }
+
     init(settings: BenchmarkSettings) {
         self.epochs = settings.epochs
         self.batchSize = settings.batchSize
