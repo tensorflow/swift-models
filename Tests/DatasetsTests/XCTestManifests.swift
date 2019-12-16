@@ -18,6 +18,7 @@ import XCTest
 public func allTests() -> [XCTestCaseEntry] {
     return [
         testCase(CIFAR10Tests.allTests),
+        testCase(MNISTTests.allTests),
     ]
 }
 #endif
