@@ -7,7 +7,7 @@ let plt = Python.import("matplotlib.pyplot")
 let np = Python.import("numpy")
 
 let batchSize = 512
-let mnist = MNIST(flattening: false, normalizing: true)
+let mnist = MNIST(batchSize: batchSize, flattening: false, normalizing: true)
 
 let zDim = 100
 
