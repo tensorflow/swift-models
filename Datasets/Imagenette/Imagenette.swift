@@ -29,7 +29,7 @@ public struct Imagenette: ImageClassificationDataset {
     public let trainingDataset: Dataset<LabeledExample>
     public let testDataset: Dataset<LabeledExample>
     public let trainingExampleCount = 12894
-    public let validationExampleCount = 500
+    public let testExampleCount = 500
 
     public enum ImageSize {
         case full
