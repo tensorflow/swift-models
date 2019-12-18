@@ -19,6 +19,8 @@ let package = Package(
         .executable(name: "MiniGoDemo", targets: ["MiniGoDemo"]),
         .library(name: "MiniGo", targets: ["MiniGo"]),
         .executable(name: "GAN", targets: ["GAN"]),
+        .executable(name: "FastStyleTransferDemo", targets: ["FastStyleTransferDemo"]),
+        .library(name: "FastStyleTransfer", targets: ["FastStyleTransfer"]),
         .executable(name: "Benchmarks", targets: ["Benchmarks"]),
     ],
     dependencies: [
@@ -52,8 +54,13 @@ let package = Package(
             sources: ["main.swift"]),
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
         .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
+        .testTarget(name: "DatasetsTests", dependencies: ["Datasets"]),
         .target(name: "Transformer", path: "Transformer"),
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
+        .target(name: "FastStyleTransfer", path: "FastStyleTransfer", exclude: ["Demo"]),
+        .target(name: "FastStyleTransferDemo", dependencies: ["FastStyleTransfer"], 
+            path: "FastStyleTransfer/Demo"),
+        .testTarget(name: "FastStyleTransferTests", dependencies: ["FastStyleTransfer"]),
         .target(
             name: "Benchmarks",
             dependencies: ["Datasets", "ModelSupport", "ImageClassificationModels", "Commander"],

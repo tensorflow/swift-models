@@ -21,7 +21,7 @@ final class ImageClassificationInferenceTests: XCTestCase {
     override class func setUp() {
         Context.local.learningPhase = .inference
     }
-    
+
     func testDenseNet121() {
         let input = Tensor<Float>(
             randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
@@ -38,6 +38,39 @@ final class ImageClassificationInferenceTests: XCTestCase {
             standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
         let result = leNet(input)
         XCTAssertEqual(result.shape, [1, 10])
+    }
+
+    func testMobileNetV1() {
+        // ImageNet size
+        let inputImageNet = Tensor<Float>(
+            randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
+            standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
+        let mobileNet = MobileNetV1(classCount: 1000)
+        let mobileNetResult = mobileNet(inputImageNet)
+        XCTAssertEqual(mobileNetResult.shape, [1, 1000])
+
+        // CIFAR10 size
+        let inputCIFAR = Tensor<Float>(
+            randomNormal: [1, 32, 32, 3], mean: Tensor<Float>(0.5),
+            standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
+        let mobileNetCIFAR = MobileNetV1(classCount: 10)
+        let mobileNetCIFARResult = mobileNetCIFAR(inputCIFAR)
+        XCTAssertEqual(mobileNetCIFARResult.shape, [1, 10])
+
+        // Width multiplier
+        let mobileNetWMSmall = MobileNetV1(classCount: 10, widthMultiplier: 0.5)
+        let mobileNetWMSmallResult = mobileNetWMSmall(inputCIFAR)
+        XCTAssertEqual(mobileNetWMSmallResult.shape, [1, 10])
+
+        // Width multiplier
+        let mobileNetWMLarge = MobileNetV1(classCount: 10, widthMultiplier: 1.5)
+        let mobileNetWMLargeResult = mobileNetWMLarge(inputCIFAR)
+        XCTAssertEqual(mobileNetWMLargeResult.shape, [1, 10])
+
+        // Depth multiplier and dropout
+        let mobileNetDMD = MobileNetV1(classCount: 10, depthMultiplier: 2, dropout: 0.01)
+        let mobileNetDMDResult = mobileNetDMD(inputCIFAR)
+        XCTAssertEqual(mobileNetDMDResult.shape, [1, 10])
     }
 
     func testResNet() {
@@ -163,16 +196,37 @@ final class ImageClassificationInferenceTests: XCTestCase {
         let wideResNet40k8Result = wideResNet40k8(input)
         XCTAssertEqual(wideResNet40k8Result.shape, [1, 10])
     }
+
+    func testVGG16() {
+        let input = Tensor<Float>(
+            randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
+            standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
+        let vgg16 = VGG16(classCount: 1000)
+        let vgg16Result = vgg16(input)
+        XCTAssertEqual(vgg16Result.shape, [1, 1000])
+    }
+
+    func testVGG19() {
+        let input = Tensor<Float>(
+            randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
+            standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
+        let vgg19 = VGG19(classCount: 1000)
+        let vgg19Result = vgg19(input)
+        XCTAssertEqual(vgg19Result.shape, [1, 1000])
+    }
 }
 
 extension ImageClassificationInferenceTests {
     static var allTests = [
         ("testDenseNet121", testDenseNet121),
         ("testLeNet", testLeNet),
+        ("testMobileNetV1", testMobileNetV1),
         ("testResNet", testResNet),
         ("testResNetV2", testResNetV2),
         ("testSqueezeNetV1_0", testSqueezeNetV1_0),
         ("testSqueezeNetV1_1", testSqueezeNetV1_1),
         ("testWideResNet", testWideResNet),
+        ("testVGG16", testVGG16),
+        ("testVGG19", testVGG19),
     ]
 }

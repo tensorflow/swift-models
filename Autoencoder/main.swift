@@ -71,7 +71,7 @@ for epoch in 1...epochCount {
     for batch in trainingShuffled.batched(batchSize) {
         let x = batch.data
 
-        let 𝛁model = autoencoder.gradient { autoencoder -> Tensor<Float> in
+        let 𝛁model = TensorFlow.gradient(at: autoencoder) { autoencoder -> Tensor<Float> in
             let image = autoencoder(x)
             return meanSquaredError(predicted: image, expected: x)
         }

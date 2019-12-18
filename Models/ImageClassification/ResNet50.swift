@@ -34,8 +34,7 @@ public struct ConvBN: Layer {
         strides: (Int, Int) = (1, 1),
         padding: Padding = .valid
     ) {
-        self.conv = Conv2D(
-          filterShape: filterShape, strides: strides, padding: padding, activation: identity)
+        self.conv = Conv2D(filterShape: filterShape, strides: strides, padding: padding)
         self.norm = BatchNorm(featureCount: filterShape.3)
     }
 
@@ -219,16 +218,16 @@ public struct ResNetBasic: Layer {
 
         l2b = ResidualBasicBlockStack(
             featureCounts: (64, 64, 64, 64),
-            blockCount: layerBlockCounts.0)
+            blockCount: layerBlockCounts.0 - 1)
         l3b = ResidualBasicBlockStack(
             featureCounts: (128, 128, 128, 128),
-            blockCount: layerBlockCounts.1)
+            blockCount: layerBlockCounts.1 - 1)
         l4b = ResidualBasicBlockStack(
             featureCounts: (256, 256, 256, 256),
-            blockCount: layerBlockCounts.2)
+            blockCount: layerBlockCounts.2 - 1)
         l5b = ResidualBasicBlockStack(
             featureCounts: (512, 512, 512, 512),
-            blockCount: layerBlockCounts.3)
+            blockCount: layerBlockCounts.3 - 1)
     }
 
     @differentiable
@@ -294,16 +293,16 @@ public struct ResNet: Layer {
 
         l2b = ResidualIdentityBlockStack(
             featureCounts: (256, 64, 64, 256),
-            blockCount: layerBlockCounts.0)
+            blockCount: layerBlockCounts.0 - 1)
         l3b = ResidualIdentityBlockStack(
             featureCounts: (512, 128, 128, 512),
-            blockCount: layerBlockCounts.1)
+            blockCount: layerBlockCounts.1 - 1)
         l4b = ResidualIdentityBlockStack(
             featureCounts: (1024, 256, 256, 1024),
-            blockCount: layerBlockCounts.2)
+            blockCount: layerBlockCounts.2 - 1)
         l5b = ResidualIdentityBlockStack(
             featureCounts: (2048, 512, 512, 2048),
-            blockCount: layerBlockCounts.3)
+            blockCount: layerBlockCounts.3 - 1)
     }
 
     @differentiable

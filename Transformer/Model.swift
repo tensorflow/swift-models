@@ -92,10 +92,7 @@ func causallyMasked(_ dotProducts: Tensor<Float>, enable: Bool = false) -> Tenso
     }
     let (queryTimeSteps, keyTimeSteps) = (dotProducts.shape[1], dotProducts.shape[2])
     let ones = Tensor<Float>(ones: [1, queryTimeSteps, keyTimeSteps])
-    let mask = _Raw.matrixBandPart(
-        ones,
-        numLower: Tensor(Int32(-1)),
-        numUpper: Tensor(Int32(queryTimeSteps - keyTimeSteps)))
+    let mask = ones.bandPart(-1, queryTimeSteps - keyTimeSteps)
     return dotProducts * mask - 1e10 * (1 - mask)
 }
 
@@ -173,7 +170,7 @@ func _vjpSplitQKV(_ input: Tensor<Float>)
     -> (AttentionInput, (AttentionInput.TangentVector) -> Tensor<Float>) {
     let value = splitQKV(input)
     return (value, { seed in
-        return _Raw.concatV2([seed.query, seed.key, seed.value], axis: Tensor<Int32>(2))
+        return Tensor(concatenating: [seed.query, seed.key, seed.value], alongAxis: 2)
     })
 }
 

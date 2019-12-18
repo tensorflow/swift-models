@@ -179,7 +179,7 @@ while true {
         episodes: episodes, actionCount: actionCount)
 
     let gradients = withLearningPhase(.training) {
-        net.gradient { net -> Tensor<Float> in
+        TensorFlow.gradient(at: net) { net -> Tensor<Float> in
             let logits = net(input)
             let loss = softmaxCrossEntropy(logits: logits, probabilities: target)
             print("loss is \(loss)")

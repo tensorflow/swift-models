@@ -55,12 +55,12 @@ for epoch in 1...epochCount {
     for batch in trainingShuffled.batched(batchSize) {
         let (labels, images) = (batch.label, batch.data)
         // Compute the gradient with respect to the model.
-        let 𝛁model = classifier.gradient { classifier -> Tensor<Float> in
+        let 𝛁model = TensorFlow.gradient(at: classifier) { classifier -> Tensor<Float> in
             let ŷ = classifier(images)
             let correctPredictions = ŷ.argmax(squeezingAxis: 1) .== labels
             trainStats.correctGuessCount += Int(
                 Tensor<Int32>(correctPredictions).sum().scalarized())
-            trainStats.totalGuessCount += batchSize
+            trainStats.totalGuessCount += batch.data.shape[0]
             let loss = softmaxCrossEntropy(logits: ŷ, labels: labels)
             trainStats.totalLoss += loss.scalarized()
             trainStats.batches += 1
@@ -77,7 +77,7 @@ for epoch in 1...epochCount {
         let ŷ = classifier(images)
         let correctPredictions = ŷ.argmax(squeezingAxis: 1) .== labels
         testStats.correctGuessCount += Int(Tensor<Int32>(correctPredictions).sum().scalarized())
-        testStats.totalGuessCount += batchSize
+        testStats.totalGuessCount += batch.data.shape[0]
         let loss = softmaxCrossEntropy(logits: ŷ, labels: labels)
         testStats.totalLoss += loss.scalarized()
         testStats.batches += 1

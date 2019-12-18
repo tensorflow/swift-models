@@ -30,8 +30,7 @@ public struct Conv2DBatchNorm: Layer {
         strides: (Int, Int) = (1, 1),
         padding: Padding = .valid
     ) {
-        self.conv = Conv2D(
-          filterShape: filterShape, strides: strides, padding: padding, activation: identity)
+        self.conv = Conv2D(filterShape: filterShape, strides: strides, padding: padding)
         self.norm = BatchNorm(featureCount: filterShape.3)
     }
 

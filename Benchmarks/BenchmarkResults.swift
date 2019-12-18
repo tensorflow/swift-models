@@ -15,6 +15,7 @@
 struct BenchmarkResults: Codable {
     let configuration: BenchmarkConfiguration
     let timings: [Double]
+    let exampleCount: Int
 }
 
 extension BenchmarkResults {

@@ -39,17 +39,14 @@ public struct BatchNormConv2DBlock: Layer {
         self.conv1 = Conv2D(
             filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1), 
             strides: strides, 
-            padding: padding,
-            activation: identity)
+            padding: padding)
         self.norm2 = BatchNorm(featureCount: featureCounts.1)
         self.conv2 = Conv2D(filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1), 
                             strides: (1, 1), 
-                            padding: padding,
-                            activation: identity)
+                            padding: padding)
         self.shortcut = Conv2D(filterShape: (1, 1, featureCounts.0, featureCounts.1), 
                                strides: strides, 
-                               padding: padding,
-                               activation: identity)
+                               padding: padding)
         self.isExpansion = featureCounts.1 != featureCounts.0 || strides != (1, 1) 
     }
 
@@ -105,8 +102,7 @@ public struct WideResNet: Layer {
     public var classifier: Dense<Float>
 
     public init(depthFactor: Int = 2, widenFactor: Int = 8) {
-        self.l1 = Conv2D(
-          filterShape: (3, 3, 3, 16), strides: (1, 1), padding: .same, activation: identity)
+        self.l1 = Conv2D(filterShape: (3, 3, 3, 16), strides: (1, 1), padding: .same)
 
         self.l2 = WideResNetBasicBlock(
             featureCounts: (16, 16 * widenFactor), depthFactor: depthFactor, initialStride: (1, 1))
