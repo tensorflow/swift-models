@@ -21,6 +21,10 @@ import Foundation
 import ModelSupport
 import TensorFlow
 
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
+
 public struct Imagenette: ImageClassificationDataset {
     public let trainingDataset: Dataset<LabeledExample>
     public let testDataset: Dataset<LabeledExample>
@@ -45,28 +49,45 @@ public struct Imagenette: ImageClassificationDataset {
         self.init(inputSize: .resized320, outputSize: 224)
     }
 
-    public init(inputSize: ImageSize, outputSize: Int) {
+    public init(
+        inputSize: ImageSize, outputSize: Int,
+        localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "Imagenette")
+    ) {
         do {
             self.trainingDataset = Dataset<LabeledExample>(
                 elements: try loadImagenetteTrainingImages(
-                    inputSize: inputSize, outputSize: outputSize))
+                    inputSize: inputSize, outputSize: outputSize,
+                    localStorageDirectory: localStorageDirectory))
             self.testDataset = Dataset<LabeledExample>(
                 elements: try loadImagenetteValidationImages(
-                    inputSize: inputSize, outputSize: outputSize))
+                    inputSize: inputSize, outputSize: outputSize,
+                    localStorageDirectory: localStorageDirectory))
         } catch {
             fatalError("Could not load Imagenette dataset: \(error)")
         }
     }
 }
 
-func downloadImagenetteIfNotPresent(to directory: String = ".", size: Imagenette.ImageSize) {
-    let downloadPath = "\(directory)/imagenette\(size.suffix)"
+func downloadImagenetteIfNotPresent(to directory: URL, size: Imagenette.ImageSize) {
+    if !FileManager.default.fileExists(atPath: directory.path) {
+        do {
+            try FileManager.default.createDirectory(
+                at: directory, withIntermediateDirectories: false)
+        } catch {
+            fatalError(
+                "Failed to create storage directory: \(directory.path), error: \(error)"
+            )
+        }
+    }
+
+    let downloadPath = directory.appendingPathComponent("imagenette\(size.suffix)").path
     let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
 
     guard !directoryExists else { return }
 
     printError("Downloading Imagenette dataset...")
-    let archivePath = "\(directory)/imagenette\(size.suffix).tgz"
+    let archivePath = directory.appendingPathComponent("imagenette\(size.suffix).tgz").path
     let archiveExists = FileManager.default.fileExists(atPath: archivePath)
     if !archiveExists {
         printError("Archive missing, downloading...")
@@ -92,7 +113,7 @@ func downloadImagenetteIfNotPresent(to directory: String = ".", size: Imagenette
 
     let task = Process()
     task.executableURL = URL(fileURLWithPath: tarLocation)
-    task.arguments = ["xzf", archivePath]
+    task.arguments = ["xzf", archivePath, "-C", directory.path]
     do {
         try task.run()
         task.waitUntilExit()
@@ -111,11 +132,10 @@ func downloadImagenetteIfNotPresent(to directory: String = ".", size: Imagenette
 }
 
 func loadImagenetteDirectory(
-    named name: String, in directory: String = ".", inputSize: Imagenette.ImageSize, outputSize: Int
+    named name: String, in directory: URL, inputSize: Imagenette.ImageSize, outputSize: Int
 ) throws -> LabeledExample {
     downloadImagenetteIfNotPresent(to: directory, size: inputSize)
-    let path = URL(fileURLWithPath: "\(directory)/imagenette\(inputSize.suffix)/\(name)")
-
+    let path = directory.appendingPathComponent("imagenette\(inputSize.suffix)/\(name)")
     let dirContents = try FileManager.default.contentsOfDirectory(
         at: path, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])
 
@@ -150,14 +170,20 @@ func loadImagenetteDirectory(
     return LabeledExample(label: labelTensor, data: imageTensor)
 }
 
-func loadImagenetteTrainingImages(inputSize: Imagenette.ImageSize, outputSize: Int) throws
+func loadImagenetteTrainingImages(
+    inputSize: Imagenette.ImageSize, outputSize: Int, localStorageDirectory: URL
+) throws
     -> LabeledExample
 {
-    return try loadImagenetteDirectory(named: "train", inputSize: inputSize, outputSize: outputSize)
+    return try loadImagenetteDirectory(
+        named: "train", in: localStorageDirectory, inputSize: inputSize, outputSize: outputSize)
 }
 
-func loadImagenetteValidationImages(inputSize: Imagenette.ImageSize, outputSize: Int) throws
+func loadImagenetteValidationImages(
+    inputSize: Imagenette.ImageSize, outputSize: Int, localStorageDirectory: URL
+) throws
     -> LabeledExample
 {
-    return try loadImagenetteDirectory(named: "val", inputSize: inputSize, outputSize: outputSize)
+    return try loadImagenetteDirectory(
+        named: "val", in: localStorageDirectory, inputSize: inputSize, outputSize: outputSize)
 }
