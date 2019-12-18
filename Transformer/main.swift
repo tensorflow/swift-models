@@ -53,7 +53,7 @@ for _ in 0..<100 {
     let lastLogit = logits.slice(
         lowerBounds: [0, timeSteps - 1, 0],
         upperBounds: [batchSize, timeSteps, vocabSize]) / temperature
-    tokens = _Raw.multinomial(logits: lastLogit.squeezingShape(at: 1), numSamples: Tensor<Int32>(1))
+    tokens = Tensor(randomCategorialLogits: lastLogit.squeezingShape(at: 1), sampleCount: 1)
     print(encoder.decode(tokens[0].makeNumpyArray()), terminator: "")
 }
 print()
