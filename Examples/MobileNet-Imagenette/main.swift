@@ -16,12 +16,12 @@ import Datasets
 import ImageClassificationModels
 import TensorFlow
 
-let batchSize = 32
+let batchSize = 16
 
 let dataset = Imagenette(inputSize: .resized320, outputSize: 224)
 let testBatches = dataset.testDataset.batched(batchSize)
 
-var model = SqueezeNetV1_1(classCount: 10)
+var model = MobileNetV1(classCount: 10)
 
 let optimizer = SGD(for: model, learningRate: 0.002, momentum: 0.9)
 
