@@ -24,6 +24,7 @@ public struct MNIST: ImageClassificationDataset {
     public let trainingDataset: Dataset<LabeledExample>
     public let testDataset: Dataset<LabeledExample>
     public let trainingExampleCount = 60000
+    public let testExampleCount = 10000
 
     public init() {
         self.init(flattening: false, normalizing: false)
