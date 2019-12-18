@@ -107,15 +107,15 @@ func discriminatorLoss(realLabels: Tensor<Float>, fakeLabels: Tensor<Float>) -> 
 
 // MARK: - Training
 
-// create instances of models
+// Create instances of models.
 var discriminator = Discriminator()
 var generator = Generator()
 
-// optimizers
+// Define optimizers.
 let optG = Adam(for: generator, learningRate: 0.0001)
 let optD = Adam(for: discriminator, learningRate: 0.0001)
 
-// test noise so we can track progress
+// Test noise so we can track progress.
 let noise = Tensor<Float>(randomNormal: TensorShape(1, zDim))
 
 let epochs = 20
@@ -124,7 +124,7 @@ for epoch in 0 ... epochs {
     for i in 0 ..< (mnist.trainingSize / batchSize) + 1 {
         let realImages = mnist.trainingImages.minibatch(at: i, batchSize: i * batchSize >= mnist.trainingSize ? (mnist.trainingSize - ((i - 1) * batchSize)) : batchSize)
 
-        // train generator
+        // Train generator.
         let noiseG = Tensor<Float>(randomNormal: TensorShape(batchSize, zDim))
         let 𝛁generator = generator.gradient { generator -> Tensor<Float> in
             let fakeImages = generator(noiseG)
@@ -134,7 +134,7 @@ for epoch in 0 ... epochs {
         }
         optG.update(&generator, along: 𝛁generator)
 
-        // train discriminator
+        // Train discriminator.
         let noiseD = Tensor<Float>(randomNormal: TensorShape(batchSize, zDim))
         let fakeImages = generator(noiseD)
 
@@ -147,20 +147,20 @@ for epoch in 0 ... epochs {
         optD.update(&discriminator, along: 𝛁discriminator)
     }
 
-    // test
+    // Test the networks.
     Context.local.learningPhase = .inference
 
-    // render images
+    // Render images.
     let generatedImage = generator(noise)
     plt.imshow(generatedImage.reshaped(to: TensorShape(28, 28)).makeNumpyArray())
     plt.show()
 
-    // print loss
+    // Print loss.
     let generatorLoss_ = generatorLoss(fakeLabels: generatedImage)
     print("epoch: \(epoch) | Generator loss: \(generatorLoss_)")
 }
 
-// Generate another image
+// Generate another image.
 let noise1 = Tensor<Float>(randomNormal: TensorShape(1, 100))
 let generatedImage = generator(noise1)
 plt.imshow(generatedImage.reshaped(to: TensorShape(28, 28)).makeNumpyArray())
