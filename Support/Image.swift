@@ -28,6 +28,13 @@ public struct Image {
 
     let imageData: ImageTensor
 
+    public var tensor: Tensor<Float> {
+        switch self.imageData {
+        case let .float(data): return data
+        case let .uint8(data): return Tensor<Float>(data)
+        }
+    }
+
     public init(tensor: Tensor<UInt8>) {
         self.imageData = .uint8(data: tensor)
     }

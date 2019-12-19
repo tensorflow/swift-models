@@ -99,8 +99,8 @@ public struct DepthwiseConvBlock: Layer {
 }
 
 public struct MobileNetV1: Layer {
-    @noDerivative
-    let classCount: Int
+    @noDerivative let classCount: Int
+    @noDerivative let scaledFilterShape: Int
 
     public var convBlock1: ConvBlock
     public var dConvBlock1: DepthwiseConvBlock
@@ -117,7 +117,6 @@ public struct MobileNetV1: Layer {
     public var dConvBlock12: DepthwiseConvBlock
     public var dConvBlock13: DepthwiseConvBlock
     public var avgPool = GlobalAvgPool2D<Float>()
-    public var reshape: Reshape<Float>
     public var dropoutLayer: Dropout<Float>
     public var convLast: Conv2D<Float>
 
@@ -126,8 +125,7 @@ public struct MobileNetV1: Layer {
         dropout: Double = 0.001
     ) {
         self.classCount = classCount
-
-        let scaledFilterShape: Int = Int(1024.0 * widthMultiplier)
+        scaledFilterShape = Int(1024.0 * widthMultiplier)
 
         convBlock1 = ConvBlock(filterCount: 32, widthMultiplier: widthMultiplier, strides: (2, 2))
         dConvBlock1 = DepthwiseConvBlock(
@@ -209,7 +207,6 @@ public struct MobileNetV1: Layer {
             depthMultiplier: depthMultiplier,
             strides: (1, 1))
 
-        reshape = Reshape<Float>([1, 1, 1, scaledFilterShape])
         dropoutLayer = Dropout<Float>(probability: dropout)
         convLast = Conv2D<Float>(
             filterShape: (1, 1, scaledFilterShape, classCount),
@@ -226,12 +223,11 @@ public struct MobileNetV1: Layer {
             through: dConvBlock5, dConvBlock6,
             dConvBlock7, dConvBlock8, dConvBlock9)
         let convolved3 = convolved2.sequenced(
-            through: dConvBlock10, dConvBlock11,
-            dConvBlock12, dConvBlock13)
-        let convolved4 = convolved3.sequenced(
-            through: avgPool, reshape,
-            dropoutLayer, convLast)
-        let output = convolved4.reshaped(to: [1, classCount])
+            through: dConvBlock10, dConvBlock11, dConvBlock12, dConvBlock13, avgPool).reshaped(to: [
+                input.shape[0], 1, 1, scaledFilterShape
+            ])
+        let convolved4 = convolved3.sequenced(through: dropoutLayer, convLast)
+        let output = convolved4.reshaped(to: [input.shape[0], classCount])
         return output
     }
 }
