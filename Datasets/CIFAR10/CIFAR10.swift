@@ -62,7 +62,7 @@ func downloadCIFAR10IfNotPresent(to directory: URL) {
 
     guard !directoryExists else { return }
 
-    printError("Downloading CIFAR dataset...")
+    printError("Preparing CIFAR dataset...")
     let archivePath = directory.appendingPathComponent("cifar-10-binary.tar.gz").path
     let archiveExists = FileManager.default.fileExists(atPath: archivePath)
     if !archiveExists {
@@ -76,9 +76,10 @@ func downloadCIFAR10IfNotPresent(to directory: URL) {
             printError("Could not download CIFAR dataset, error: \(error)")
             exit(-1)
         }
+        print("Archive downloaded, processing...")
+    } else {
+        print("Archive exists, processing...")
     }
-
-    printError("Archive downloaded, processing...")
 
     #if os(macOS)
         let tarLocation = "/usr/bin/tar"
