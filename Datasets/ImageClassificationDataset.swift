@@ -15,7 +15,6 @@
 import TensorFlow
 
 public protocol ImageClassificationDataset {
-    init()
     var trainingDataset: Dataset<LabeledExample> { get }
     var testDataset: Dataset<LabeledExample> { get }
     var trainingExampleCount: Int { get }
