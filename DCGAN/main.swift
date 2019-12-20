@@ -1,13 +1,12 @@
 import Datasets
 import Foundation
+import ModelSupport
 import TensorFlow
-
-import Python
-let plt = Python.import("matplotlib.pyplot")
-let np = Python.import("numpy")
 
 let batchSize = 512
 let mnist = MNIST(flattening: false, normalizing: true)
+
+let outputFolder = "./output/"
 
 let zDim = 100
 
@@ -118,7 +117,7 @@ let optD = Adam(for: discriminator, learningRate: 0.0001)
 // Test noise so we can track progress.
 let noise = Tensor<Float>(randomNormal: TensorShape(1, zDim))
 
-print("Begin training.")
+print("Begin training...")
 let epochs = 20
 for epoch in 0 ... epochs {
     Context.local.learningPhase = .training
@@ -154,8 +153,9 @@ for epoch in 0 ... epochs {
 
     // Render images.
     let generatedImage = generator(noise)
-    plt.imshow(generatedImage.reshaped(to: TensorShape(28, 28)).makeNumpyArray())
-    plt.savefig("\(epoch).png")
+    try saveImage(
+        generatedImage, size: (28, 28), directory: outputFolder,
+        name: "\(epoch).jpg")
 
     // Print loss.
     let generatorLoss_ = generatorLoss(fakeLabels: generatedImage)
@@ -165,5 +165,6 @@ for epoch in 0 ... epochs {
 // Generate another image.
 let noise1 = Tensor<Float>(randomNormal: TensorShape(1, 100))
 let generatedImage = generator(noise1)
-plt.imshow(generatedImage.reshaped(to: TensorShape(28, 28)).makeNumpyArray())
-plt.savefig("final.png")
+try saveImage(
+        generatedImage, size: (28, 28), directory: outputFolder,
+        name: "final.jpg")
