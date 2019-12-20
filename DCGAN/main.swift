@@ -7,7 +7,7 @@ let plt = Python.import("matplotlib.pyplot")
 let np = Python.import("numpy")
 
 let batchSize = 512
-let mnist = MNIST(batchSize: batchSize, flattening: false, normalizing: true)
+let mnist = MNIST(flattening: false, normalizing: true)
 
 let zDim = 100
 
@@ -118,11 +118,13 @@ let optD = Adam(for: discriminator, learningRate: 0.0001)
 // Test noise so we can track progress.
 let noise = Tensor<Float>(randomNormal: TensorShape(1, zDim))
 
+print("Begin training.")
 let epochs = 20
 for epoch in 0 ... epochs {
     Context.local.learningPhase = .training
-    for i in 0 ..< (mnist.trainingSize / batchSize) + 1 {
-        let realImages = mnist.trainingImages.minibatch(at: i, batchSize: i * batchSize >= mnist.trainingSize ? (mnist.trainingSize - ((i - 1) * batchSize)) : batchSize)
+    let trainingShuffled = mnist.trainingDataset.shuffled(sampleCount: mnist.trainingExampleCount, randomSeed: Int64(epoch)) 
+    for batch in trainingShuffled.batched(batchSize) {
+        let realImages = batch.data 
 
         // Train generator.
         let noiseG = Tensor<Float>(randomNormal: TensorShape(batchSize, zDim))
@@ -153,7 +155,7 @@ for epoch in 0 ... epochs {
     // Render images.
     let generatedImage = generator(noise)
     plt.imshow(generatedImage.reshaped(to: TensorShape(28, 28)).makeNumpyArray())
-    plt.show()
+    plt.savefig("\(epoch).png")
 
     // Print loss.
     let generatorLoss_ = generatorLoss(fakeLabels: generatedImage)
