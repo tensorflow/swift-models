@@ -97,10 +97,10 @@ struct Discriminator: Layer {
 @differentiable
 func discriminatorLoss(realLabels: Tensor<Float>, fakeLabels: Tensor<Float>) -> Tensor<Float> {
     let realLoss = sigmoidCrossEntropy(logits: realLabels,
-                                       labels: Tensor(ones: realLabels.shape)) // should say it's real, 1
+                                       labels: Tensor(ones: realLabels.shape))
     let fakeLoss = sigmoidCrossEntropy(logits: fakeLabels,
-                                       labels: Tensor(zeros: fakeLabels.shape)) // should say it's fake, 0
-    return realLoss + fakeLoss // accumaltive
+                                       labels: Tensor(zeros: fakeLabels.shape))
+    return realLoss + fakeLoss
 }
 
 // MARK: - Training
