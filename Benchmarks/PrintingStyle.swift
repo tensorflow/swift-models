@@ -108,23 +108,24 @@ func printJSON<T: Encodable>(_ value: T) {
 
 /// Statistics-related helpers.
 extension Array where Element == Double {
-    /// Average value across all elements of the array.
+    /// The average value of elements.
     var average: Element {
-        guard self.count > 0 else { return 0.0 }
-        guard self.count > 1 else { return self.first! }
-
-        return (self.reduce(0.0) { $0 + $1 }) / Double(self.count)
+        guard count > 0 else { return 0 }
+        guard count > 1 else { return first! }
+        return (reduce(into: 0) { $0 += $1 }) / Double(count)
     }
 
-    /// Standard deviation of elements within the array. 
+    /// The variance of elements.
+    var variance: Element {
+        guard count > 0 else { return 0 }
+        guard count > 1 else { return 0 }
+        let deltaDegreesOfFreedom = 1
+        let squaredDeviationsSum = reduce(into: 0) { $0 += ($1 - average) * ($1 - average) }
+        return squaredDeviationsSum / Double(count - deltaDegreesOfFreedom)
+    }
+
+    /// The standard deviation of elements.
     var standardDeviation: Element {
-        guard self.count > 0 else { return 0.0 }
-        guard self.count > 1 else { return 0.0 }
-
-        let average = self.average
-
-        return Foundation.sqrt(
-            self.reduce(0.0) { $0 + ($1 - average) * ($1 - average) }
-                / Double(self.count - 1))
+        return Double.sqrt(variance)
     }
 }
