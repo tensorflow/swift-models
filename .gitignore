@@ -1,5 +1,7 @@
 # Ignore editor spam.
 *~
+*.swp
+*.swo
 
 .build
 *.xcodeproj
@@ -17,5 +19,3 @@ train-images-idx3-ubyte
 imagenette
 imagenette-160
 imagenette-320
-*.swp
-*.swo
