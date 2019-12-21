@@ -33,33 +33,23 @@ struct Generator: Layer {
 
     var dense1 = Dense<Float>(inputSize: zDim, outputSize: 7 * 7 * 256)
     var batchNorm1 = BatchNorm<Float>(featureCount: 7 * 7 * 256)
-    // leaky relu
-    // reshape
-
     var transConv2D1 = TransposedConv2D<Float>(
         filterShape: (5, 5, 128, 256),
         strides: (1, 1),
         padding: .same
     )
-    // flatten
     var batchNorm2 = BatchNorm<Float>(featureCount: 7 * 7 * 128)
-    // leaky relu
-
     var transConv2D2 = TransposedConv2D<Float>(
         filterShape: (5, 5, 64, 128),
         strides: (2, 2),
         padding: .same
     )
-    // flatten
     var batchNorm3 = BatchNorm<Float>(featureCount: 14 * 14 * 64)
-    // leaky relu
-
     var transConv2D3 = TransposedConv2D<Float>(
         filterShape: (5, 5, 1, 64),
         strides: (2, 2),
         padding: .same
     )
-    // tanh
 
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
@@ -87,17 +77,12 @@ struct Discriminator: Layer {
         strides: (2, 2),
         padding: .same
     )
-    // leaky relu
     var dropout = Dropout<Float>(probability: 0.3)
-
     var conv2D2 = Conv2D<Float>(
         filterShape: (5, 5, 64, 128),
         strides: (2, 2),
         padding: .same
     )
-    // leaky relu
-    // dropout
-
     var flatten = Flatten<Float>()
     var dense = Dense<Float>(inputSize: 6272, outputSize: 1)
 
