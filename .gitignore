@@ -1,5 +1,7 @@
 # Ignore editor spam.
 *~
+*.swp
+*.swo
 
 .build
 *.xcodeproj
