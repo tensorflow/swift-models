@@ -33,11 +33,20 @@ public struct CIFAR10: ImageClassificationDataset {
 
     public init() {
         self.init(
+            remoteBinaryArchiveUrl: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz",
             localStorageDirectory: FileManager.default.temporaryDirectory.appendingPathComponent(
                 "CIFAR10"))
     }
 
-    public init(localStorageDirectory: URL) {
+    public init(downloadResourceFrom: String) {
+        self.init(
+            remoteBinaryArchiveUrl: downloadResourceFrom,
+            localStorageDirectory: FileManager.default.temporaryDirectory.appendingPathComponent(
+                "CIFAR10"))
+    }
+
+    public init(remoteBinaryArchiveUrl: String, localStorageDirectory: URL) {
+        downloadCIFAR10IfNotPresent(from: remoteBinaryArchiveUrl, to: localStorageDirectory)
         self.trainingDataset = Dataset<LabeledExample>(
             elements: loadCIFARTrainingFiles(localStorageDirectory: localStorageDirectory))
         self.testDataset = Dataset<LabeledExample>(
@@ -45,7 +54,7 @@ public struct CIFAR10: ImageClassificationDataset {
     }
 }
 
-func downloadCIFAR10IfNotPresent(to directory: URL) {
+func downloadCIFAR10IfNotPresent(from url: String, to directory: URL) {
     if !FileManager.default.fileExists(atPath: directory.path) {
         do {
             try FileManager.default.createDirectory(
@@ -59,10 +68,12 @@ func downloadCIFAR10IfNotPresent(to directory: URL) {
 
     let downloadPath = directory.appendingPathComponent("cifar-10-batches-bin").path
     let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
+    let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: downloadPath)
+    let directoryEmpty = (contentsOfDir == nil) || (contentsOfDir!.isEmpty)
 
-    guard !directoryExists else { return }
+    guard (!directoryExists || directoryEmpty) else { return }
 
-    printError("Downloading CIFAR dataset...")
+    printError("Preparing CIFAR dataset...")
     let archivePath = directory.appendingPathComponent("cifar-10-binary.tar.gz").path
     let archiveExists = FileManager.default.fileExists(atPath: archivePath)
     if !archiveExists {
@@ -70,15 +81,16 @@ func downloadCIFAR10IfNotPresent(to directory: URL) {
         do {
             let downloadedFile = try Data(
                 contentsOf: URL(
-                    string: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz")!)
+                    string: url)!)
             try downloadedFile.write(to: URL(fileURLWithPath: archivePath))
         } catch {
             printError("Could not download CIFAR dataset, error: \(error)")
             exit(-1)
         }
+        print("Archive downloaded, processing...")
+    } else {
+        printError("Archive exists, processing...")
     }
-
-    printError("Archive downloaded, processing...")
 
     #if os(macOS)
         let tarLocation = "/usr/bin/tar"
@@ -107,7 +119,6 @@ func downloadCIFAR10IfNotPresent(to directory: URL) {
 }
 
 func loadCIFARFile(named name: String, in directory: URL) -> LabeledExample {
-    downloadCIFAR10IfNotPresent(to: directory)
     let path = directory.appendingPathComponent("cifar-10-batches-bin/\(name)").path
 
     let imageCount = 10000
