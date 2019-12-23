@@ -15,6 +15,8 @@
 import Python
 import TensorFlow
 
+// Initialize Python. This comment is a hook for internal use, do not remove.
+
 let gym = Python.import("gym")
 let environment = gym.make("Blackjack-v0")
 

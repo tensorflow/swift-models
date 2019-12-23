@@ -15,6 +15,8 @@
 import Python
 import TensorFlow
 
+// Initialize Python. This comment is a hook for internal use, do not remove.
+
 let np = Python.import("numpy")
 let gym = Python.import("gym")
 
