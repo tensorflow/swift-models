@@ -14,11 +14,6 @@ final class CIFAR10Tests: XCTestCase {
     }
 
     func testCreateCIFAR10() {
-        let dataset = CIFAR10()
-        verify(dataset)
-    }
-
-    func testCreateCIFAR10FromS4TFHostedBinaries() {
         let dataset = CIFAR10(downloadResourceFrom: "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/CIFAR10/cifar-10-binary.tar.gz")
         verify(dataset)
     }
@@ -36,8 +31,7 @@ final class CIFAR10Tests: XCTestCase {
 
 extension CIFAR10Tests {
     static var allTests = [
-        ("testCreateCIFAR10", testCreateCIFAR10),
-        ("testCreateCIFAR10FromS4TFHostedBinaries", testCreateCIFAR10FromS4TFHostedBinaries)
+        ("testCreateCIFAR10", testCreateCIFAR10)
     ]
 }
 

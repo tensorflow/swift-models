@@ -32,21 +32,22 @@ public struct CIFAR10: ImageClassificationDataset {
     public let testExampleCount = 10000
 
     public init() {
-        self.init(
-            remoteBinaryArchiveUrl: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz",
-            localStorageDirectory: FileManager.default.temporaryDirectory.appendingPathComponent(
-                "CIFAR10"))
+        self.init(downloadResourceFrom: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz")
     }
 
     public init(downloadResourceFrom: String) {
-        self.init(
-            remoteBinaryArchiveUrl: downloadResourceFrom,
-            localStorageDirectory: FileManager.default.temporaryDirectory.appendingPathComponent(
-                "CIFAR10"))
+        if let resourceUrl = URL(string:downloadResourceFrom) {
+            self.init(
+                remoteBinaryArchiveLocation: resourceUrl,
+                localStorageDirectory: FileManager.default.temporaryDirectory.appendingPathComponent("CIFAR10"))
+        } else {
+            printError("Invalid path, please specify another one")
+            exit(-1)
+        }
     }
 
-    public init(remoteBinaryArchiveUrl: String, localStorageDirectory: URL) {
-        downloadCIFAR10IfNotPresent(from: remoteBinaryArchiveUrl, to: localStorageDirectory)
+    public init(remoteBinaryArchiveLocation: URL, localStorageDirectory: URL) {
+        downloadCIFAR10IfNotPresent(from: remoteBinaryArchiveLocation, to: localStorageDirectory)
         self.trainingDataset = Dataset<LabeledExample>(
             elements: loadCIFARTrainingFiles(localStorageDirectory: localStorageDirectory))
         self.testDataset = Dataset<LabeledExample>(
@@ -54,7 +55,7 @@ public struct CIFAR10: ImageClassificationDataset {
     }
 }
 
-func downloadCIFAR10IfNotPresent(from url: String, to directory: URL) {
+func downloadCIFAR10IfNotPresent(from location: URL, to directory: URL) {
     if !FileManager.default.fileExists(atPath: directory.path) {
         do {
             try FileManager.default.createDirectory(
@@ -79,9 +80,7 @@ func downloadCIFAR10IfNotPresent(from url: String, to directory: URL) {
     if !archiveExists {
         printError("Archive missing, downloading...")
         do {
-            let downloadedFile = try Data(
-                contentsOf: URL(
-                    string: url)!)
+            let downloadedFile = try Data(contentsOf: location)
             try downloadedFile.write(to: URL(fileURLWithPath: archivePath))
         } catch {
             printError("Could not download CIFAR dataset, error: \(error)")
