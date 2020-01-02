@@ -1,20 +1,24 @@
+import Datasets
 import Foundation
 import TensorFlow
 import XCTest
-import Datasets
 
 final class CIFAR10Tests: XCTestCase {
     override func setUp() {
         super.setUp()
-        // clean up dataset files in the first place
-        let path = FileManager.default.temporaryDirectory.appendingPathComponent("CIFAR10/cifar-10-batches-bin").path
+        // Force downloading of the dataset during tests by removing any pre-existing local files.
+        let path = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "CIFAR10/cifar-10-batches-bin").path
         if FileManager.default.fileExists(atPath: path) {
             try! FileManager.default.removeItem(atPath: path)
         }
     }
 
     func testCreateCIFAR10() {
-        let dataset = CIFAR10(downloadResourceFrom: "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/CIFAR10/cifar-10-binary.tar.gz")
+        let dataset = CIFAR10(
+            downloadResourceFrom:
+                "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/CIFAR10/cifar-10-binary.tar.gz"
+        )
         verify(dataset)
     }
 
@@ -31,7 +35,6 @@ final class CIFAR10Tests: XCTestCase {
 
 extension CIFAR10Tests {
     static var allTests = [
-        ("testCreateCIFAR10", testCreateCIFAR10)
+        ("testCreateCIFAR10", testCreateCIFAR10),
     ]
 }
-

@@ -86,7 +86,7 @@ func downloadCIFAR10IfNotPresent(from location: URL, to directory: URL) {
             printError("Could not download CIFAR dataset, error: \(error)")
             exit(-1)
         }
-        print("Archive downloaded, processing...")
+        printError("Archive downloaded, processing...")
     } else {
         printError("Archive exists, processing...")
     }
