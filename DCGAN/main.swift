@@ -126,7 +126,7 @@ for epoch in 0 ... epochs {
 
         // Train generator.
         let noiseG = Tensor<Float>(randomNormal: TensorShape(batchSize, zDim))
-        let 𝛁generator = generator.gradient { generator -> Tensor<Float> in
+        let 𝛁generator = TensorFlow.gradient(at: generator) { generator -> Tensor<Float> in
             let fakeImages = generator(noiseG)
             let fakeLabels = discriminator(fakeImages)
             let loss = generatorLoss(fakeLabels: fakeLabels)
@@ -138,7 +138,7 @@ for epoch in 0 ... epochs {
         let noiseD = Tensor<Float>(randomNormal: TensorShape(batchSize, zDim))
         let fakeImages = generator(noiseD)
 
-        let 𝛁discriminator = discriminator.gradient { discriminator -> Tensor<Float> in
+        let 𝛁discriminator = TensorFlow.gradient(at: discriminator) { discriminator -> Tensor<Float> in
             let realLabels = discriminator(realImages)
             let fakeLabels = discriminator(fakeImages)
             let loss = discriminatorLoss(realLabels: realLabels, fakeLabels: fakeLabels)
