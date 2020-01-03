@@ -16,8 +16,11 @@ final class CIFAR10Tests: XCTestCase {
 
     func testCreateCIFAR10() {
         let dataset = CIFAR10(
-            downloadResourceFrom:
-                "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/CIFAR10/cifar-10-binary.tar.gz"
+            remoteBinaryArchiveLocation:
+                URL(
+                    string:
+                        "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/CIFAR10/cifar-10-binary.tar.gz"
+                )!
         )
         verify(dataset)
     }

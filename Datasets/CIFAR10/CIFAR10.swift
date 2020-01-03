@@ -32,18 +32,16 @@ public struct CIFAR10: ImageClassificationDataset {
     public let testExampleCount = 10000
 
     public init() {
-        self.init(downloadResourceFrom: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz")
+        self.init(
+            remoteBinaryArchiveLocation: URL(
+                string: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz")!)
     }
 
-    public init(downloadResourceFrom: String) {
-        if let resourceUrl = URL(string:downloadResourceFrom) {
-            self.init(
-                remoteBinaryArchiveLocation: resourceUrl,
-                localStorageDirectory: FileManager.default.temporaryDirectory.appendingPathComponent("CIFAR10"))
-        } else {
-            printError("Invalid path, please specify another one")
-            exit(-1)
-        }
+    public init(remoteBinaryArchiveLocation: URL) {
+        self.init(
+            remoteBinaryArchiveLocation: remoteBinaryArchiveLocation,
+            localStorageDirectory: FileManager.default.temporaryDirectory.appendingPathComponent(
+                "CIFAR10"))
     }
 
     public init(remoteBinaryArchiveLocation: URL, localStorageDirectory: URL) {
@@ -72,7 +70,7 @@ func downloadCIFAR10IfNotPresent(from location: URL, to directory: URL) {
     let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: downloadPath)
     let directoryEmpty = (contentsOfDir == nil) || (contentsOfDir!.isEmpty)
 
-    guard (!directoryExists || directoryEmpty) else { return }
+    guard !directoryExists || directoryEmpty else { return }
 
     printError("Preparing CIFAR dataset...")
     let archivePath = directory.appendingPathComponent("cifar-10-binary.tar.gz").path
