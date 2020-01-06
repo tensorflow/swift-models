@@ -21,10 +21,6 @@ import Foundation
 import ModelSupport
 import TensorFlow
 
-#if canImport(FoundationNetworking)
-    import FoundationNetworking
-#endif
-
 public struct Imagenette: ImageClassificationDataset {
     public let trainingDataset: Dataset<LabeledExample>
     public let testDataset: Dataset<LabeledExample>
