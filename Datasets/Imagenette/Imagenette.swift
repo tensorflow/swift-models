@@ -70,65 +70,18 @@ public struct Imagenette: ImageClassificationDataset {
 }
 
 func downloadImagenetteIfNotPresent(to directory: URL, size: Imagenette.ImageSize) {
-    if !FileManager.default.fileExists(atPath: directory.path) {
-        do {
-            try FileManager.default.createDirectory(
-                at: directory, withIntermediateDirectories: false)
-        } catch {
-            fatalError(
-                "Failed to create storage directory: \(directory.path), error: \(error)"
-            )
-        }
-    }
-
     let downloadPath = directory.appendingPathComponent("imagenette\(size.suffix)").path
     let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
+    let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: downloadPath)
+    let directoryEmpty = (contentsOfDir == nil) || (contentsOfDir!.isEmpty)
 
-    guard !directoryExists else { return }
+    guard !directoryExists || directoryEmpty else { return }
 
-    printError("Downloading Imagenette dataset...")
-    let archivePath = directory.appendingPathComponent("imagenette\(size.suffix).tgz").path
-    let archiveExists = FileManager.default.fileExists(atPath: archivePath)
-    if !archiveExists {
-        printError("Archive missing, downloading...")
-        do {
-            let downloadedFile = try Data(
-                contentsOf: URL(
-                    string:
-                        "https://s3.amazonaws.com/fast-ai-imageclas/imagenette\(size.suffix).tgz")!)
-            try downloadedFile.write(to: URL(fileURLWithPath: archivePath))
-        } catch {
-            printError("Could not download Imagenette dataset, error: \(error)")
-            exit(-1)
-        }
-    }
-
-    printError("Archive downloaded, processing...")
-
-    #if os(macOS)
-        let tarLocation = "/usr/bin/tar"
-    #else
-        let tarLocation = "/bin/tar"
-    #endif
-
-    let task = Process()
-    task.executableURL = URL(fileURLWithPath: tarLocation)
-    task.arguments = ["xzf", archivePath, "-C", directory.path]
-    do {
-        try task.run()
-        task.waitUntilExit()
-    } catch {
-        printError("Imagenette extraction failed with error: \(error)")
-    }
-
-    do {
-        try FileManager.default.removeItem(atPath: archivePath)
-    } catch {
-        printError("Could not remove archive, error: \(error)")
-        exit(-1)
-    }
-
-    printError("Unarchiving completed")
+    let location = URL(
+        string: "https://s3.amazonaws.com/fast-ai-imageclas/imagenette\(size.suffix).tgz")!
+    let _ = DatasetUtilities.downloadResource(
+        filename: "imagenette\(size.suffix)", fileExtension: "tgz",
+        remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
 }
 
 func loadImagenetteDirectory(

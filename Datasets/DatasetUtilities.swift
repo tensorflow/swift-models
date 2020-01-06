@@ -118,7 +118,7 @@ public enum DatasetUtilities {
         case "gz":
             toolName = "gunzip"
             arguments = [archivePath]
-        case "tar.gz":
+        case "tar.gz", "tgz":
             toolName = "tar"
             arguments = ["xzf", archivePath, "-C", resource.localStorageDirectory.path]
         default:
