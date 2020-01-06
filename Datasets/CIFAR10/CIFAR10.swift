@@ -21,10 +21,6 @@ import Foundation
 import ModelSupport
 import TensorFlow
 
-#if canImport(FoundationNetworking)
-    import FoundationNetworking
-#endif
-
 public struct CIFAR10: ImageClassificationDataset {
     public let trainingDataset: Dataset<LabeledExample>
     public let testDataset: Dataset<LabeledExample>
@@ -54,17 +50,6 @@ public struct CIFAR10: ImageClassificationDataset {
 }
 
 func downloadCIFAR10IfNotPresent(from location: URL, to directory: URL) {
-    if !FileManager.default.fileExists(atPath: directory.path) {
-        do {
-            try FileManager.default.createDirectory(
-                at: directory, withIntermediateDirectories: false)
-        } catch {
-            fatalError(
-                "Failed to create storage directory: \(directory.path), error: \(error)"
-            )
-        }
-    }
-
     let downloadPath = directory.appendingPathComponent("cifar-10-batches-bin").path
     let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
     let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: downloadPath)
@@ -72,47 +57,9 @@ func downloadCIFAR10IfNotPresent(from location: URL, to directory: URL) {
 
     guard !directoryExists || directoryEmpty else { return }
 
-    printError("Preparing CIFAR dataset...")
-    let archivePath = directory.appendingPathComponent("cifar-10-binary.tar.gz").path
-    let archiveExists = FileManager.default.fileExists(atPath: archivePath)
-    if !archiveExists {
-        printError("Archive missing, downloading...")
-        do {
-            let downloadedFile = try Data(contentsOf: location)
-            try downloadedFile.write(to: URL(fileURLWithPath: archivePath))
-        } catch {
-            printError("Could not download CIFAR dataset, error: \(error)")
-            exit(-1)
-        }
-        printError("Archive downloaded, processing...")
-    } else {
-        printError("Archive exists, processing...")
-    }
-
-    #if os(macOS)
-        let tarLocation = "/usr/bin/tar"
-    #else
-        let tarLocation = "/bin/tar"
-    #endif
-
-    let task = Process()
-    task.executableURL = URL(fileURLWithPath: tarLocation)
-    task.arguments = ["xzf", archivePath, "-C", directory.path]
-    do {
-        try task.run()
-        task.waitUntilExit()
-    } catch {
-        printError("CIFAR extraction failed with error: \(error)")
-    }
-
-    do {
-        try FileManager.default.removeItem(atPath: archivePath)
-    } catch {
-        printError("Could not remove archive, error: \(error)")
-        exit(-1)
-    }
-
-    printError("Unarchiving completed")
+    let _ = DatasetUtilities.downloadResource(
+        filename: "cifar-10-binary", fileExtension: "tar.gz",
+        remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
 }
 
 func loadCIFARFile(named name: String, in directory: URL) -> LabeledExample {

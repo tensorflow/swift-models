@@ -19,19 +19,21 @@ import ModelSupport
     import FoundationNetworking
 #endif
 
-public struct DatasetUtilities {
+public enum DatasetUtilities {
     public static let currentWorkingDirectoryURL = URL(
         fileURLWithPath: FileManager.default.currentDirectoryPath)
 
-    public static func fetchResource(
+    public static func downloadResource(
         filename: String,
+        fileExtension: String,
         remoteRoot: URL,
         localStorageDirectory: URL = currentWorkingDirectoryURL
-    ) -> Data {
+    ) -> URL {
         printError("Loading resource: \(filename)")
 
         let resource = ResourceDefinition(
             filename: filename,
+            fileExtension: fileExtension,
             remoteRoot: remoteRoot,
             localStorageDirectory: localStorageDirectory)
 
@@ -44,10 +46,21 @@ public struct DatasetUtilities {
             fetchFromRemoteAndSave(resource)
         }
 
+        return localURL
+    }
+
+    public static func fetchResource(
+        filename: String,
+        fileExtension: String,
+        remoteRoot: URL,
+        localStorageDirectory: URL = currentWorkingDirectoryURL
+    ) -> Data {
+        let localURL = DatasetUtilities.downloadResource(
+            filename: filename, fileExtension: fileExtension, remoteRoot: remoteRoot,
+            localStorageDirectory: localStorageDirectory)
+
         do {
-            printError("Loading local data at: \(localURL.path)")
             let data = try Data(contentsOf: localURL)
-            printError("Succesfully loaded resource: \(filename)")
             return data
         } catch {
             fatalError("Failed to contents of resource: \(localURL)")
@@ -56,6 +69,7 @@ public struct DatasetUtilities {
 
     struct ResourceDefinition {
         let filename: String
+        let fileExtension: String
         let remoteRoot: URL
         let localStorageDirectory: URL
 
@@ -64,23 +78,21 @@ public struct DatasetUtilities {
         }
 
         var remoteURL: URL {
-            remoteRoot.appendingPathComponent(filename).appendingPathExtension("gz")
+            remoteRoot.appendingPathComponent(filename).appendingPathExtension(fileExtension)
         }
 
         var archiveURL: URL {
-            localURL.appendingPathExtension("gz")
+            localURL.appendingPathExtension(fileExtension)
         }
     }
 
     static func fetchFromRemoteAndSave(_ resource: ResourceDefinition) {
         let remoteLocation = resource.remoteURL
-        let archiveLocation = resource.archiveURL
+        let archiveLocation = resource.localStorageDirectory
 
         do {
             printError("Fetching URL: \(remoteLocation)...")
-            let archiveData = try Data(contentsOf: remoteLocation)
-            printError("Writing fetched archive to: \(archiveLocation.path)")
-            try archiveData.write(to: archiveLocation)
+            try download(from: remoteLocation, to: archiveLocation)
         } catch {
             fatalError("Failed to fetch and save resource with error: \(error)")
         }
@@ -95,19 +107,44 @@ public struct DatasetUtilities {
         let archivePath = resource.archiveURL.path
 
         #if os(macOS)
-            let gunzipLocation = "/usr/bin/gunzip"
+            let binaryLocation = "/usr/bin/"
         #else
-            let gunzipLocation = "/bin/gunzip"
+            let binaryLocation = "/bin/"
         #endif
 
+        let toolName: String
+        let arguments: [String]
+        switch resource.fileExtension {
+        case "gz":
+            toolName = "gunzip"
+            arguments = [archivePath]
+        case "tar.gz", "tgz":
+            toolName = "tar"
+            arguments = ["xzf", archivePath, "-C", resource.localStorageDirectory.path]
+        default:
+            printError("Unable to find archiver for extension \(resource.fileExtension).")
+            exit(-1)
+        }
+        let toolLocation = "\(binaryLocation)\(toolName)"
+
         let task = Process()
-        task.executableURL = URL(fileURLWithPath: gunzipLocation)
-        task.arguments = [archivePath]
+        task.executableURL = URL(fileURLWithPath: toolLocation)
+        task.arguments = arguments
         do {
             try task.run()
             task.waitUntilExit()
         } catch {
-            fatalError("Failed to extract \(archivePath) with error: \(error)")
+            printError("Failed to extract \(archivePath) with error: \(error)")
+            exit(-1)
+        }
+
+        if FileManager.default.fileExists(atPath: archivePath) {
+            do {
+                try FileManager.default.removeItem(atPath: archivePath)
+            } catch {
+                printError("Could not remove archive, error: \(error)")
+                exit(-1)
+            }
         }
     }
 }

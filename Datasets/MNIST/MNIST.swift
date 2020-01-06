@@ -64,23 +64,14 @@ fileprivate func fetchDataset(
         fatalError("Failed to create MNIST root url: http://yann.lecun.com/exdb/mnist")
     }
 
-    if !FileManager.default.fileExists(atPath: localStorageDirectory.path) {
-        do {
-            try FileManager.default.createDirectory(
-                at: localStorageDirectory, withIntermediateDirectories: false)
-        } catch {
-            fatalError(
-                "Failed to create storage directory: \(localStorageDirectory.path), error: \(error)"
-            )
-        }
-    }
-
     let imagesData = DatasetUtilities.fetchResource(
         filename: imagesFilename,
+        fileExtension: "gz",
         remoteRoot: remoteRoot,
         localStorageDirectory: localStorageDirectory)
     let labelsData = DatasetUtilities.fetchResource(
         filename: labelsFilename,
+        fileExtension: "gz",
         remoteRoot: remoteRoot,
         localStorageDirectory: localStorageDirectory)
 
