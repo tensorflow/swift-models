@@ -39,7 +39,9 @@ open class CheckpointReader {
     ///     name but for different models don't collide when downloaded.
     ///   - shards: The number of shards the weights have been split into. This is a temporary 
     ///     parameter until this can be read directly from the index.
-    public init(checkpointLocation: URL, modelName: String, shards: Int = 1) {
+    public init(
+        checkpointLocation: URL, modelName: String, shards: Int = 1, additionalFiles: [String] = []
+    ) {
         let checkpointBase = checkpointLocation.lastPathComponent
         if checkpointLocation.isFileURL {
             self.localCheckpointLocation = checkpointLocation
@@ -51,7 +53,8 @@ open class CheckpointReader {
             if !FileManager.default.fileExists(atPath: temporaryDirectory.path) {
                 do {
                     try CheckpointReader.downloadCheckpointFiles(
-                        from: checkpointLocation, to: temporaryDirectory, shards: shards)
+                        from: checkpointLocation, to: temporaryDirectory, shards: shards,
+                        additionalFiles: additionalFiles)
                 } catch {
                     fatalError("Failed to fetch and save checkpoint with error: \(error)")
                 }
@@ -64,18 +67,11 @@ open class CheckpointReader {
     /// Constructs the file names for checkpoint components from a base URL and downloads them to a
     /// target directory.
     static func downloadCheckpointFiles(
-        from checkpointLocation: URL, to temporaryDirectory: URL, shards: Int
+        from checkpointLocation: URL, to temporaryDirectory: URL, shards: Int,
+        additionalFiles: [String]
     ) throws {
         let indexFile = checkpointLocation.appendingPathExtension("index")
         try download(from: indexFile, to: temporaryDirectory)
-        print("Index: \(indexFile)")
-        let metaFile = checkpointLocation.appendingPathExtension("meta")
-        try download(from: metaFile, to: temporaryDirectory)
-        print("Meta: \(metaFile)")
-        // try download(from: remoteLocation, to: archiveLocation)
-        let pbFile = checkpointLocation.appendingPathExtension("pb")
-        try download(from: pbFile, to: temporaryDirectory)
-        print("pb: \(pbFile)")
         for shard in 0..<shards {
             let formatter = NumberFormatter()
             formatter.numberStyle = .decimal
@@ -88,8 +84,12 @@ open class CheckpointReader {
             let shardFile = checkpointLocation.appendingPathExtension(
                 "data-\(startingShard)-of-\(endingShard)"
             )
-            print("Binary: \(shardFile)")
             try download(from: shardFile, to: temporaryDirectory)
+        }
+        let checkpointDirectory = checkpointLocation.deletingLastPathComponent()
+        for file in additionalFiles {
+            let additionalFile = checkpointDirectory.appendingPathComponent(file)
+            try download(from: additionalFile, to: temporaryDirectory)
         }
     }
 
