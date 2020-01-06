@@ -49,10 +49,10 @@ let package = Package(
         .target(
             name: "MobileNet-Imagenette", dependencies: ["ImageClassificationModels", "Datasets"],
             path: "Examples/MobileNet-Imagenette"),
-        .target(name: "MiniGo", path: "MiniGo", exclude: ["main.swift"]),
         .target(
-            name: "MiniGoDemo", dependencies: ["MiniGo"], path: "MiniGo",
-            sources: ["main.swift"]),
+            name: "MiniGo", dependencies: ["ModelSupport"], path: "MiniGo", exclude: ["main.swift"]),
+        .target(
+            name: "MiniGoDemo", dependencies: ["MiniGo"], path: "MiniGo", sources: ["main.swift"]),
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
         .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
         .testTarget(name: "DatasetsTests", dependencies: ["Datasets"]),
@@ -60,7 +60,8 @@ let package = Package(
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
         .target(name: "DCGAN", dependencies: ["Datasets", "ModelSupport"], path: "DCGAN"),
         .target(name: "FastStyleTransfer", path: "FastStyleTransfer", exclude: ["Demo"]),
-        .target(name: "FastStyleTransferDemo", dependencies: ["FastStyleTransfer"], 
+        .target(
+            name: "FastStyleTransferDemo", dependencies: ["FastStyleTransfer"],
             path: "FastStyleTransfer/Demo"),
         .testTarget(name: "FastStyleTransferTests", dependencies: ["FastStyleTransfer"]),
         .target(
