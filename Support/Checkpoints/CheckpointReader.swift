@@ -32,7 +32,7 @@ open class CheckpointReader {
     /// Initializes the checkpoint reader from either a local or remote directory. If remote, 
     /// automatically downloads the checkpoint files into a temporary directory.
     ///
-    /// - Arguments:
+    /// - Parameters:
     ///   - checkpointLocation: A URL to the checkpoint files, where the last component is the file 
     ///     base of the checkpoint files.
     ///   - modelName: A distinct name for the model, to ensure that checkpoints with the same base 
