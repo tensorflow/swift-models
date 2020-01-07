@@ -33,7 +33,7 @@ let encoder = Python.import("encoder").get_encoder(temporaryDirectory.path)
 
 let configFile = temporaryDirectory.appendingPathComponent("hparams.json")
 let configData = try Data(contentsOf: configFile)
-let config = try JSONDecoder().decode(Config.self, from: configData)
+let config = try JSONDecoder().decode(TransformerLMConfig.self, from: configData)
 let model = TransformerLM(reader: reader, config: config, scope: "model")
 
 let start_token = Int32(encoder.encoder["<|endoftext|>"])!

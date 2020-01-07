@@ -15,7 +15,7 @@
 import ModelSupport
 import TensorFlow
 
-struct Config: Codable {
+struct TransformerLMConfig: Codable {
     let vocabSize: Int
     let contextSize: Int
     let embeddingSize: Int
@@ -41,11 +41,11 @@ extension CheckpointReader {
 }
 
 protocol InitializableFromPythonCheckpoint {
-    init(reader: CheckpointReader, config: Config, scope: String)
+    init(reader: CheckpointReader, config: TransformerLMConfig, scope: String)
 }
 
 extension Dense: InitializableFromPythonCheckpoint {
-    init(reader: CheckpointReader, config: Config, scope: String) {
+    init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
         let kernel = reader.readTensor(name: scope + "/w", scalarType: Scalar.self)
         self.init(
             weight: kernel.squeezingShape(at: 0),
@@ -55,7 +55,7 @@ extension Dense: InitializableFromPythonCheckpoint {
 
     init(
         reader: CheckpointReader,
-        config: Config,
+        config: TransformerLMConfig,
         scope: String,
         activation: String
     ) {
@@ -68,7 +68,7 @@ extension Dense: InitializableFromPythonCheckpoint {
 }
 
 extension LayerNorm: InitializableFromPythonCheckpoint {
-    init(reader: CheckpointReader, config: Config, scope: String) {
+    init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
         self.init(
             offset: reader.readTensor(name: scope + "/b", scalarType: Scalar.self),
             scale: reader.readTensor(name: scope + "/g", scalarType: Scalar.self),
@@ -78,7 +78,7 @@ extension LayerNorm: InitializableFromPythonCheckpoint {
 }
 
 extension MultiHeadAttention: InitializableFromPythonCheckpoint {
-    init(reader: CheckpointReader, config: Config, scope: String) {
+    init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
         attention = Attention(
             size: config.embeddingSize / config.headCount,
             causal: true,
@@ -92,7 +92,7 @@ extension MultiHeadAttention: InitializableFromPythonCheckpoint {
 }
 
 extension FeedForward: InitializableFromPythonCheckpoint {
-    init(reader: CheckpointReader, config: Config, scope: String) {
+    init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
         dense1 = TimeDistributed(
             Dense<Float>(reader: reader, config: config, scope: scope + "/c_fc", activation: "gelu")
         )
@@ -103,7 +103,7 @@ extension FeedForward: InitializableFromPythonCheckpoint {
 }
 
 extension EncoderLayer: InitializableFromPythonCheckpoint {
-    init(reader: CheckpointReader, config: Config, scope: String) {
+    init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
         selfAttention = MultiHeadAttention(reader: reader, config: config, scope: scope + "/attn")
         selfAttentionDropout = Dropout(probability: 0.2)
         selfAttentionNorm = LayerNorm(reader: reader, config: config, scope: scope + "/ln_1")
@@ -114,7 +114,7 @@ extension EncoderLayer: InitializableFromPythonCheckpoint {
 }
 
 extension TransformerLM: InitializableFromPythonCheckpoint {
-    init(reader: CheckpointReader, config: Config, scope: String) {
+    init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
         embedding = Embedding(
             weight: reader.readTensor(name: scope + "/wte", scalarType: Float.self))
         positionalEmbeddings = reader.readTensor(
