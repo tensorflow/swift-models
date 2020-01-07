@@ -79,10 +79,10 @@ open class CheckpointReader {
             formatter.maximumFractionDigits = 0
             formatter.hasThousandSeparators = false
             formatter.usesGroupingSeparator = false
-            let startingShard = formatter.string(from: shard as NSNumber)!
-            let endingShard = formatter.string(from: (shard + 1) as NSNumber)!
+            let currentShard = formatter.string(from: shard as NSNumber)!
+            let totalShards = formatter.string(from: shards as NSNumber)!
             let shardFile = checkpointLocation.appendingPathExtension(
-                "data-\(startingShard)-of-\(endingShard)"
+                "data-\(currentShard)-of-\(totalShards)"
             )
             try download(from: shardFile, to: temporaryDirectory)
         }
