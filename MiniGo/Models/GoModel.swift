@@ -64,7 +64,7 @@ struct ConvBN: Layer {
 }
 
 extension ConvBN: LoadableFromPythonCheckpoint {
-    mutating func load(from reader: PythonCheckpointReader) {
+    mutating func load(from reader: MiniGoCheckpointReader) {
         conv.load(from: reader)
         norm.load(from: reader)
     }
@@ -95,7 +95,7 @@ struct ResidualIdentityBlock: Layer {
 }
 
 extension ResidualIdentityBlock: LoadableFromPythonCheckpoint {
-    mutating func load(from reader: PythonCheckpointReader) {
+    mutating func load(from reader: MiniGoCheckpointReader) {
         layer1.load(from: reader)
         layer2.load(from: reader)
     }
@@ -197,7 +197,7 @@ extension GoModel: InferenceModel {
 }
 
 extension GoModel: LoadableFromPythonCheckpoint {
-    public mutating func load(from reader: PythonCheckpointReader) {
+    public mutating func load(from reader: MiniGoCheckpointReader) {
         initialConv.load(from: reader)
         for i in 0..<configuration.boardSize {
             residualBlocks[i].load(from: reader)
