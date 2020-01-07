@@ -61,7 +61,7 @@ let package = Package(
         .target(name: "DCGAN", dependencies: ["Datasets", "ModelSupport"], path: "DCGAN"),
         .target(name: "FastStyleTransfer", path: "FastStyleTransfer", exclude: ["Demo"]),
         .target(
-            name: "FastStyleTransferDemo", dependencies: ["FastStyleTransfer"],
+            name: "FastStyleTransferDemo", dependencies: ["FastStyleTransfer", "ModelSupport"],
             path: "FastStyleTransfer/Demo"),
         .testTarget(name: "FastStyleTransferTests", dependencies: ["FastStyleTransfer"]),
         .target(
