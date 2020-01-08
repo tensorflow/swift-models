@@ -59,9 +59,11 @@ let package = Package(
         .target(name: "Transformer", dependencies: ["ModelSupport"], path: "Transformer"),
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
         .target(name: "DCGAN", dependencies: ["Datasets", "ModelSupport"], path: "DCGAN"),
-        .target(name: "FastStyleTransfer", path: "FastStyleTransfer", exclude: ["Demo"]),
         .target(
-            name: "FastStyleTransferDemo", dependencies: ["FastStyleTransfer", "ModelSupport"],
+            name: "FastStyleTransfer", dependencies: ["ModelSupport"], path: "FastStyleTransfer",
+            exclude: ["Demo"]),
+        .target(
+            name: "FastStyleTransferDemo", dependencies: ["FastStyleTransfer"],
             path: "FastStyleTransfer/Demo"),
         .testTarget(name: "FastStyleTransferTests", dependencies: ["FastStyleTransfer"]),
         .target(
