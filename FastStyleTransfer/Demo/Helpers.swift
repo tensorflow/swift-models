@@ -1,6 +1,7 @@
-import Foundation
-import TensorFlow
 import FastStyleTransfer
+import Foundation
+import ModelSupport
+import TensorFlow
 
 extension TransformerNet: ImportableLayer {}
 
@@ -20,11 +21,36 @@ enum FileError: Error {
     case fileNotFound
 }
 
-/// Updates `model` with parameters from V2 checkpoint in `path`.
-func importWeights(_ model: inout TransformerNet, from path: String) throws {
-    guard FileManager.default.fileExists(atPath: path + ".data-00000-of-00001") else {
-        throw FileError.fileNotFound
+/// Updates `model` with parameters from a checkpoint for a matching style.
+func importWeights(_ model: inout TransformerNet, for style: String) throws {
+    let remoteCheckpoint: URL
+    let modelName: String
+    switch style {
+    case "candy":
+        remoteCheckpoint = URL(
+            string:
+                "https://storage.googleapis.com/s4tf-hosted-binaries/checkpoints/FastStyleTransfer/candy"
+        )!
+        modelName = "FastStyleTransfer_candy"
+    case "mosaic":
+        remoteCheckpoint = URL(
+            string:
+                "https://storage.googleapis.com/s4tf-hosted-binaries/checkpoints/FastStyleTransfer/mosaic"
+        )!
+        modelName = "FastStyleTransfer_mosaic"
+    case "udnie":
+        remoteCheckpoint = URL(
+            string:
+                "https://storage.googleapis.com/s4tf-hosted-binaries/checkpoints/FastStyleTransfer/udnie"
+        )!
+        modelName = "FastStyleTransfer_udnie"
+    default:
+        print("Please select one of the three currently supported styles: candy, mosaic, or udnie.")
+        exit(-1)
     }
+
+    let reader = CheckpointReader(checkpointLocation: remoteCheckpoint, modelName: modelName)
+
     // Names don't match exactly, and axes in filters need to be reversed.
     let map = [
         "conv1.conv2d.filter": ("conv1.conv2d.weight", [3, 2, 1, 0]),
@@ -74,21 +100,5 @@ func importWeights(_ model: inout TransformerNet, from path: String) throws {
         "in5.scale": ("in5.weight", nil),
         "in5.offset": ("in5.bias", nil),
     ]
-    model.unsafeImport(fromCheckpointPath: path, map: map)
-}
-
-/// Loads from `file` and returns JPEG image as HxWxC tensor of floats in (0..1) range.
-func loadJpegAsTensor(from file: String) throws -> Tensor<Float> {
-    guard FileManager.default.fileExists(atPath: file) else {
-        throw FileError.fileNotFound
-    }
-    let imgData = _Raw.readFile(filename: StringTensor(file))
-    return Tensor<Float>(_Raw.decodeJpeg(contents: imgData, channels: 3, dctMethod: "")) / 255
-}
-
-/// Clips & converts HxWxC `tensor` of floats to byte range and saves as JPEG.
-func saveTensorAsJpeg(_ tensor: Tensor<Float>, to file: String) {
-    let clipped = _Raw.clipByValue(t: tensor, clipValueMin: Tensor(0), clipValueMax: Tensor(255))
-    let jpg = _Raw.encodeJpeg(image: Tensor<UInt8>(clipped), format: .rgb, xmpMetadata: "")
-    _Raw.writeFile(filename: StringTensor(file), contents: jpg)
+    model.unsafeImport(from: reader, map: map)
 }

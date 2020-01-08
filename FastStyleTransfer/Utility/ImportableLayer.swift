@@ -1,4 +1,5 @@
 import TensorFlow
+import ModelSupport
 
 public protocol ImportableLayer: KeyPathIterable {}
 
@@ -66,15 +67,11 @@ public extension ImportableLayer {
 
 public extension ImportableLayer {
     /// Updates model parameters with values from V2 checkpoint, according to `ImportMap`.
-    mutating func unsafeImport(fromCheckpointPath path: String, map: ImportMap) {
-        let tensorNames = map.values.map { $0.0 }
-        let tensorValues = _Raw.restoreV2(
-            prefix: StringTensor(path),
-            tensorNames: StringTensor(tensorNames),
-            shapeAndSlices: StringTensor(Array(repeating: "", count: tensorNames.count)),
-            dtypes: Array(repeating: Float.tensorFlowDataType, count: tensorNames.count)
-        ).map { $0 as! Tensor<Float> }
-        let parameters = Dictionary(uniqueKeysWithValues: zip(tensorNames, tensorValues))
+    mutating func unsafeImport(from reader: CheckpointReader, map: ImportMap) {
+        var parameters: [String: Tensor<Float>] = [:]
+        for (name, _) in map.values {
+            parameters[name] = Tensor<Float>(reader.loadTensor(named: name))
+        }
         unsafeImport(parameters: parameters, map: map)
     }
 }
