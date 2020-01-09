@@ -198,7 +198,7 @@ public struct ResNetBasic: Layer {
     public var l5a = ResidualBasicBlockShortcut(featureCounts: (256, 512, 512, 512))
     public var l5b: ResidualBasicBlockStack
 
-    public var avgPool: AvgPool2D<Float>
+    public var avgPool = GlobalAvgPool2D<Float>()
     public var flatten = Flatten<Float>()
     public var classifier: Dense<Float>
 
@@ -207,11 +207,9 @@ public struct ResNetBasic: Layer {
         case .imagenet:
             l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
             maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
-            avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
         case .cifar:
             l1 = ConvBN(filterShape: (3, 3, 3, 64), padding: .same)
             maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1))  // no-op
-            avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
         }
 
         l2b = ResidualBasicBlockStack(
@@ -272,7 +270,7 @@ public struct ResNet: Layer {
     public var l5a = ResidualConvBlock(featureCounts: (1024, 512, 512, 2048))
     public var l5b: ResidualIdentityBlockStack
 
-    public var avgPool: AvgPool2D<Float>
+    public var avgPool = GlobalAvgPool2D<Float>()
     public var flatten = Flatten<Float>()
     public var classifier: Dense<Float>
 
@@ -281,11 +279,9 @@ public struct ResNet: Layer {
         case .imagenet:
             l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
             maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
-            avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
         case .cifar:
             l1 = ConvBN(filterShape: (3, 3, 3, 64), padding: .same)
             maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1))  // no-op
-            avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
         }
 
         l2b = ResidualIdentityBlockStack(
