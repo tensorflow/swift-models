@@ -20,7 +20,7 @@ import TensorFlow
 // https://arxiv.org/abs/1512.03385
 // using shortcut layer to connect BasicBlock layers (aka Option (B))
 
-public enum DataKind {
+public enum ImageSize {
     case cifar
     case imagenet
 }
@@ -198,22 +198,18 @@ public struct ResNetBasic: Layer {
     public var l5a = ResidualBasicBlockShortcut(featureCounts: (256, 512, 512, 512))
     public var l5b: ResidualBasicBlockStack
 
-    public var avgPool: AvgPool2D<Float>
+    public var avgPool = GlobalAvgPool2D<Float>()
     public var flatten = Flatten<Float>()
     public var classifier: Dense<Float>
 
-    public init(dataKind: DataKind, layerBlockCounts: (Int, Int, Int, Int)) {
-        switch dataKind {
+    public init(classCount: Int, imageSize: ImageSize, layerBlockCounts: (Int, Int, Int, Int)) {
+        switch imageSize {
         case .imagenet:
             l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
             maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
-            avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
-            classifier = Dense(inputSize: 512, outputSize: 1000)
         case .cifar:
             l1 = ConvBN(filterShape: (3, 3, 3, 64), padding: .same)
             maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1))  // no-op
-            avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
-            classifier = Dense(inputSize: 512, outputSize: 10)
         }
 
         l2b = ResidualBasicBlockStack(
@@ -228,6 +224,7 @@ public struct ResNetBasic: Layer {
         l5b = ResidualBasicBlockStack(
             featureCounts: (512, 512, 512, 512),
             blockCount: layerBlockCounts.3 - 1)
+        classifier = Dense(inputSize: 512, outputSize: classCount)
     }
 
     @differentiable
@@ -242,17 +239,17 @@ public struct ResNetBasic: Layer {
 }
 
 extension ResNetBasic {
-    public enum Kind {
+    public enum Depth {
         case resNet18
         case resNet34
     }
 
-    public init(inputKind: Kind, dataKind: DataKind) {
-        switch inputKind {
+    public init(classCount: Int, depth: Depth, imageSize: ImageSize) {
+        switch depth {
         case .resNet18:
-            self.init(dataKind: dataKind, layerBlockCounts: (2, 2, 2, 2))
+            self.init(classCount: classCount, imageSize: imageSize, layerBlockCounts: (2, 2, 2, 2))
         case .resNet34:
-            self.init(dataKind: dataKind, layerBlockCounts: (3, 4, 6, 3))
+            self.init(classCount: classCount, imageSize: imageSize, layerBlockCounts: (3, 4, 6, 3))
         }
     }
 }
@@ -273,22 +270,18 @@ public struct ResNet: Layer {
     public var l5a = ResidualConvBlock(featureCounts: (1024, 512, 512, 2048))
     public var l5b: ResidualIdentityBlockStack
 
-    public var avgPool: AvgPool2D<Float>
+    public var avgPool = GlobalAvgPool2D<Float>()
     public var flatten = Flatten<Float>()
     public var classifier: Dense<Float>
 
-    public init(dataKind: DataKind, layerBlockCounts: (Int, Int, Int, Int)) {
-        switch dataKind {
+    public init(classCount: Int, imageSize: ImageSize, layerBlockCounts: (Int, Int, Int, Int)) {
+        switch imageSize {
         case .imagenet:
             l1 = ConvBN(filterShape: (7, 7, 3, 64), strides: (2, 2), padding: .same)
             maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2))
-            avgPool = AvgPool2D(poolSize: (7, 7), strides: (7, 7))
-            classifier = Dense(inputSize: 2048, outputSize: 1000)
         case .cifar:
             l1 = ConvBN(filterShape: (3, 3, 3, 64), padding: .same)
             maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1))  // no-op
-            avgPool = AvgPool2D(poolSize: (4, 4), strides: (4, 4))
-            classifier = Dense(inputSize: 2048, outputSize: 10)
         }
 
         l2b = ResidualIdentityBlockStack(
@@ -303,6 +296,7 @@ public struct ResNet: Layer {
         l5b = ResidualIdentityBlockStack(
             featureCounts: (2048, 512, 512, 2048),
             blockCount: layerBlockCounts.3 - 1)
+        classifier = Dense(inputSize: 2048, outputSize: classCount)
     }
 
     @differentiable
@@ -317,20 +311,20 @@ public struct ResNet: Layer {
 }
 
 extension ResNet {
-    public enum Kind {
+    public enum Depth {
         case resNet50
         case resNet101
         case resNet152
     }
 
-    public init(inputKind: Kind, dataKind: DataKind) {
-        switch inputKind {
+    public init(classCount: Int, depth: Depth, imageSize: ImageSize) {
+        switch depth {
         case .resNet50:
-            self.init(dataKind: dataKind, layerBlockCounts: (3, 4, 6, 3))
+            self.init(classCount: classCount, imageSize: imageSize, layerBlockCounts: (3, 4, 6, 3))
         case .resNet101:
-            self.init(dataKind: dataKind, layerBlockCounts: (3, 4, 23, 3))
+            self.init(classCount: classCount, imageSize: imageSize, layerBlockCounts: (3, 4, 23, 3))
         case .resNet152:
-            self.init(dataKind: dataKind, layerBlockCounts: (3, 8, 36, 3))
+            self.init(classCount: classCount, imageSize: imageSize, layerBlockCounts: (3, 8, 36, 3))
         }
     }
 }
