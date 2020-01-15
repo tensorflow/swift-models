@@ -57,7 +57,7 @@ class SwiftBenchmark(tf.test.Benchmark):
 # This location assumes that are we are running within the S4TF's perfzero
 # docker image. Perfzero automatically clones the swift-models project into the
 # corresponding site-packages location.
-cwd = '/workspace/perfzero/workspace/site-packages/swift-models/'
+cwd = '/workspace/benchmarks/perfzero/workspace/site-packages/swift-models'
 
 
 def extract_extras(settings):
