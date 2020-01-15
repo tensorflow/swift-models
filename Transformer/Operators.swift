@@ -26,10 +26,7 @@ func gelu<Scalar: TensorFlowFloatingPoint>(_ x: Tensor<Scalar>) -> Tensor<Scalar
 
 /// Performs batched matrix multiplication of two tensors. The last two axes of each tensor
 /// are treated as the matrix axes; all others are treated as batch axes.
-@differentiable(
-    wrt: (left, right) 
-    where Scalar : Differentiable & TensorFlowFloatingPoint
-)
+@differentiable(wrt: (left, right) where Scalar : Differentiable & TensorFlowFloatingPoint)
 func batchedMatmul<Scalar : Numeric>(
     _ left: Tensor<Scalar>,
     _ right: Tensor<Scalar>,
