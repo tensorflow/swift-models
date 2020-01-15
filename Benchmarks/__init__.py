@@ -26,7 +26,8 @@ class SwiftBenchmark(tf.test.Benchmark):
                output_dir=None,
                default_flags=None,
                flag_methods=None,
-               root_data_dir=None):
+               root_data_dir=None,
+               tpu=None):
     """Perfzero-friendly constructor, we don't use most of those settings in swift."""
     if not output_dir:
       output_dir = '/tmp'
