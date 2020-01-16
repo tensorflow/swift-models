@@ -126,7 +126,7 @@ open class CheckpointReader {
         return metadata[name] != nil
     }
 
-    // /// Returns the shape of the tensor with the provided name stored in the checkpoint.
+    /// Returns the shape of the tensor with the provided name stored in the checkpoint.
     public func shapeOfTensor(named name: String) -> TensorShape {
         guard let bundleEntry = metadata[name] else {
             fatalError("No tensor named \(name) exists.")
@@ -138,7 +138,7 @@ open class CheckpointReader {
         return TensorShape(bundleEntry.shape.dim.map { Int($0.size) })
     }
 
-    // /// Returns the scalar type of the tensor with the provided name stored in the checkpoint.
+    /// Returns the scalar type of the tensor with the provided name stored in the checkpoint.
     public func scalarTypeOfTensor(named name: String) -> Any.Type {
         guard let bundleEntry = metadata[name] else {
             fatalError("No tensor named \(name) exists.")
