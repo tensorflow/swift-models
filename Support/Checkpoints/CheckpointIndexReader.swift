@@ -56,19 +56,24 @@ class CheckpointIndexReader {
 extension CheckpointIndexReader {
     func readHeader() throws -> Tensorflow_BundleHeaderProto {
         // The header has a string key of "", so there's nothing to read for the key.
-        let _ = readVarint()
+        // If a non-zero initial value is encountered, the file is Snappy-compressed, so we bail out
+        // until it can be uncompressed.
+        let initialValue = readVarint()
+        guard initialValue == 0 else {
+            fatalError("Snappy-compressed checkpoints are not currently supported.")
+        }
         let _ = readVarint()
         let valueLength = readVarint()
         let value = readDataBlock(size: valueLength)
 
-        return try Tensorflow_BundleHeaderProto(serializedData: value)
+        let tempHeader = try Tensorflow_BundleHeaderProto(serializedData: value)
+        return tempHeader
     }
 
     func readAllKeysAndValues() throws -> [String: Tensorflow_BundleEntryProto] {
         var lookupTable: [String: Tensorflow_BundleEntryProto] = [:]
         while let (key, value) = try readKeyAndValue() {
             lookupTable[key] = value
-            print("Key: \(key), value: \(value)")
         }
 
         return lookupTable
@@ -103,8 +108,6 @@ extension CheckpointIndexReader {
     }
 
     func readKeyAndValue() throws -> (String, Tensorflow_BundleEntryProto)? {
-        print("Index: \(index), count: \(binaryData.count)")
-
         guard !atEndOfFile else { return nil }
 
         let sharedKeyBytes = readVarint()

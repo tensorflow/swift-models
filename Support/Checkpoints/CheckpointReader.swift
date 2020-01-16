@@ -28,6 +28,7 @@ import TensorFlow
 open class CheckpointReader {
     let header: Tensorflow_BundleHeaderProto
     let metadata: [String: Tensorflow_BundleEntryProto]
+    var shardCache: [URL: Data] = [:]
 
     /// The local checkpoint location.
     public let localCheckpointLocation: URL
@@ -59,7 +60,7 @@ open class CheckpointReader {
                 modelName)
             let temporaryCheckpointBase = temporaryDirectory.appendingPathComponent(checkpointBase)
             self.localCheckpointLocation = temporaryCheckpointBase
-            let localIndexFileLocation = temporaryDirectory.appendingPathExtension("index")
+            let localIndexFileLocation = temporaryCheckpointBase.appendingPathExtension("index")
             if FileManager.default.fileExists(atPath: localIndexFileLocation.path) {
                 indexReader = try CheckpointIndexReader(file: localIndexFileLocation)
                 self.header = try indexReader.readHeader()
@@ -177,21 +178,29 @@ open class CheckpointReader {
         let shardFile = CheckpointReader.shardFile(
             location: localCheckpointLocation, shard: shard, totalShards: Int(header.numShards))
 
-        print("Tensor shape: \(shape)")
-        print("Shard file: \(shardFile)")
-        // Read binary data from shard
-        // Dump into ShapedArray
-
-        // TODO: Better error propagation here.
-        let shardData = try! Data(contentsOf: shardFile, options: .alwaysMapped)
-        let tensorData = shardData[bundleEntry.offset..<(bundleEntry.offset + bundleEntry.size)]
-        print("Tensor data: \(tensorData[0])")
+        let shardBytes = shardData(for: shardFile)
+        let tensorData = shardBytes.subdata(
+            in: Int(bundleEntry.offset)..<Int(bundleEntry.offset + bundleEntry.size))
 
         let scalarArray = tensorData.withUnsafeBytes { pointer in
             Array(pointer.bindMemory(to: Scalar.self))
         }
 
         return ShapedArray<Scalar>(shape: shape, scalars: scalarArray)
+    }
+
+    func shardData(for file: URL) -> Data {
+        if let shardBytes = shardCache[file] {
+            return shardBytes
+        } else {
+            do {
+                let shardBytes = try Data(contentsOf: file, options: .alwaysMapped)
+                shardCache[file] = shardBytes
+                return shardBytes
+            } catch {
+                fatalError("Could not read tensor from \(file.path).")
+            }
+        }
     }
 }
 
