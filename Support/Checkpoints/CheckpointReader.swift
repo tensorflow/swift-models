@@ -12,22 +12,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// The TensorFlow v2 checkpoint format is described in the following:
+// https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/util/tensor_bundle/tensor_bundle.h
+// and consists of an index file (with a `.index` extension) and a series of sharded data files that 
+// have the same base file name, but extensions of the form `.data-00001-of-00020`. The index file
+// contains key-value pairs of metadata that provide shapes of tensors and where to read in the
+// shards to obtain their raw bytes.
+
 import Foundation
 import TensorFlow
 
-/// A shell for what will be a Swift-native checkpoint reader. Currently supplements the internal 
-/// C API TensorFlow checkpoint reader with the ability to download remote checkpoints.
+/// A Swift-native TensorFlow v2 checkpoint reader that can download all checkpoint files from 
+/// remote locations and store them in a local temporary directory. This reader has no dependencies
+/// on the TensorFlow runtime or libraries.
 open class CheckpointReader {
-    fileprivate let reader: TensorFlowCheckpointReader
+    let header: Tensorflow_BundleHeaderProto
+    let metadata: [String: Tensorflow_BundleEntryProto]
 
     /// The local checkpoint location.
     public let localCheckpointLocation: URL
 
     /// The number of tensors stored in the checkpoint.
-    public var tensorCount: Int { reader.tensorCount }
+    public var tensorCount: Int { metadata.count }
 
     /// The names of the tensors stored in the checkpoint.
-    public var tensorNames: [String] { reader.tensorNames }
+    public var tensorNames: [String] { [String](metadata.keys) }
 
     /// Initializes the checkpoint reader from either a local or remote directory. If remote, 
     /// automatically downloads the checkpoint files into a temporary directory.
@@ -37,31 +46,44 @@ open class CheckpointReader {
     ///     base of the checkpoint files.
     ///   - modelName: A distinct name for the model, to ensure that checkpoints with the same base 
     ///     name but for different models don't collide when downloaded.
-    ///   - shards: The number of shards the weights have been split into. This is a temporary 
-    ///     parameter until this can be read directly from the index.
-    public init(
-        checkpointLocation: URL, modelName: String, shards: Int = 1, additionalFiles: [String] = []
-    ) {
+    public init(checkpointLocation: URL, modelName: String, additionalFiles: [String] = []) throws {
         let checkpointBase = checkpointLocation.lastPathComponent
+        let indexReader: CheckpointIndexReader
         if checkpointLocation.isFileURL {
             self.localCheckpointLocation = checkpointLocation
+            indexReader = try CheckpointIndexReader(
+                file: checkpointLocation.appendingPathExtension("index"))
+            self.header = try indexReader.readHeader()
         } else {
             let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
                 modelName)
             let temporaryCheckpointBase = temporaryDirectory.appendingPathComponent(checkpointBase)
             self.localCheckpointLocation = temporaryCheckpointBase
-            if !FileManager.default.fileExists(atPath: temporaryDirectory.path) {
-                do {
-                    try CheckpointReader.downloadCheckpointFiles(
-                        from: checkpointLocation, to: temporaryDirectory, shards: shards,
-                        additionalFiles: additionalFiles)
-                } catch {
-                    fatalError("Failed to fetch and save checkpoint with error: \(error)")
-                }
+            let localIndexFileLocation = temporaryDirectory.appendingPathExtension("index")
+            if FileManager.default.fileExists(atPath: localIndexFileLocation.path) {
+                indexReader = try CheckpointIndexReader(file: localIndexFileLocation)
+                self.header = try indexReader.readHeader()
+            } else {
+                // The index file contains the number of shards, so obtain that first.
+                try CheckpointReader.downloadIndexFile(
+                    from: checkpointLocation, to: temporaryDirectory)
+                indexReader = try CheckpointIndexReader(file: localIndexFileLocation)
+                self.header = try indexReader.readHeader()
+
+                try CheckpointReader.downloadCheckpointFiles(
+                    from: checkpointLocation, to: temporaryDirectory,
+                    shards: Int(self.header.numShards), additionalFiles: additionalFiles)
             }
         }
 
-        self.reader = TensorFlowCheckpointReader(checkpointPath: self.localCheckpointLocation.path)
+        self.metadata = try indexReader.readAllKeysAndValues()
+    }
+
+    /// Constructs the file names for checkpoint components from a base URL and downloads them to a
+    /// target directory.
+    static func downloadIndexFile(from checkpointLocation: URL, to temporaryDirectory: URL) throws {
+        let indexFile = checkpointLocation.appendingPathExtension("index")
+        try download(from: indexFile, to: temporaryDirectory)
     }
 
     /// Constructs the file names for checkpoint components from a base URL and downloads them to a
@@ -70,21 +92,10 @@ open class CheckpointReader {
         from checkpointLocation: URL, to temporaryDirectory: URL, shards: Int,
         additionalFiles: [String]
     ) throws {
-        let indexFile = checkpointLocation.appendingPathExtension("index")
-        try download(from: indexFile, to: temporaryDirectory)
         for shard in 0..<shards {
-            let formatter = NumberFormatter()
-            formatter.numberStyle = .decimal
-            formatter.minimumIntegerDigits = 5
-            formatter.maximumFractionDigits = 0
-            formatter.hasThousandSeparators = false
-            formatter.usesGroupingSeparator = false
-            let currentShard = formatter.string(from: shard as NSNumber)!
-            let totalShards = formatter.string(from: shards as NSNumber)!
-            let shardFile = checkpointLocation.appendingPathExtension(
-                "data-\(currentShard)-of-\(totalShards)"
-            )
-            try download(from: shardFile, to: temporaryDirectory)
+            let shardLocation = self.shardFile(
+                location: checkpointLocation, shard: shard, totalShards: shards)
+            try download(from: shardLocation, to: temporaryDirectory)
         }
         let checkpointDirectory = checkpointLocation.deletingLastPathComponent()
         for file in additionalFiles {
@@ -93,25 +104,99 @@ open class CheckpointReader {
         }
     }
 
+    /// Builds the specific file name from a base URL for a given data shard, out of a total number
+    /// of shards.
+    static func shardFile(location: URL, shard: Int, totalShards: Int) -> URL {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.minimumIntegerDigits = 5
+        formatter.maximumFractionDigits = 0
+        formatter.hasThousandSeparators = false
+        formatter.usesGroupingSeparator = false
+        let currentShard = formatter.string(from: shard as NSNumber)!
+        let totalShards = formatter.string(from: totalShards as NSNumber)!
+        return location.appendingPathExtension(
+            "data-\(currentShard)-of-\(totalShards)"
+        )
+    }
+
     /// Returns `true` if the checkpoint contains a tensor with the provided name.
     public func containsTensor(named name: String) -> Bool {
-        return reader.containsTensor(named: name)
+        return metadata[name] != nil
     }
 
-    /// Returns the shape of the tensor with the provided name stored in the checkpoint.
+    // /// Returns the shape of the tensor with the provided name stored in the checkpoint.
     public func shapeOfTensor(named name: String) -> TensorShape {
-        return reader.shapeOfTensor(named: name)
+        guard let bundleEntry = metadata[name] else {
+            fatalError("No tensor named \(name) exists.")
+        }
+        guard bundleEntry.hasShape else {
+            fatalError("Bundle entry for \(name) is missing a shape parameter.")
+        }
+
+        return TensorShape(bundleEntry.shape.dim.map { Int($0.size) })
     }
 
-    /// Returns the scalar type of the tensor with the provided name stored in the checkpoint.
+    // /// Returns the scalar type of the tensor with the provided name stored in the checkpoint.
     public func scalarTypeOfTensor(named name: String) -> Any.Type {
-        return reader.scalarTypeOfTensor(named: name)
+        guard let bundleEntry = metadata[name] else {
+            fatalError("No tensor named \(name) exists.")
+        }
+
+        switch bundleEntry.dtype {
+        case .dtBool: return Bool.self
+        case .dtInt8: return Int8.self
+        case .dtUint8: return UInt8.self
+        case .dtInt16: return Int16.self
+        case .dtUint16: return UInt16.self
+        case .dtInt32: return Int32.self
+        case .dtUint32: return UInt32.self
+        case .dtInt64: return Int64.self
+        case .dtUint64: return UInt64.self
+        case .dtBfloat16: return BFloat16.self
+        case .dtFloat: return Float.self
+        case .dtDouble: return Double.self
+        case .dtString: return String.self
+        default: fatalError("Unhandled type: \(bundleEntry.dtype)")
+        }
     }
 
     /// Loads and returns the value of the tensor with the provided name stored in the checkpoint.
     public func loadTensor<Scalar: _TensorFlowDataTypeCompatible>(
         named name: String
     ) -> ShapedArray<Scalar> {
-        return reader.loadTensor(named: name)
+        guard let bundleEntry = metadata[name] else {
+            fatalError("No tensor named \(name) exists.")
+        }
+        guard bundleEntry.hasShape else {
+            fatalError("Bundle entry for \(name) is missing a shape parameter.")
+        }
+
+        let shape = bundleEntry.shape.dim.map { Int($0.size) }
+        let shard = Int(bundleEntry.shardID)
+        let shardFile = CheckpointReader.shardFile(
+            location: localCheckpointLocation, shard: shard, totalShards: Int(header.numShards))
+
+        print("Tensor shape: \(shape)")
+        print("Shard file: \(shardFile)")
+        // Read binary data from shard
+        // Dump into ShapedArray
+
+        // TODO: Better error propagation here.
+        let shardData = try! Data(contentsOf: shardFile, options: .alwaysMapped)
+        let tensorData = shardData[bundleEntry.offset..<(bundleEntry.offset + bundleEntry.size)]
+        print("Tensor data: \(tensorData[0])")
+
+        let scalarArray = tensorData.withUnsafeBytes { pointer in
+            Array(pointer.bindMemory(to: Scalar.self))
+        }
+
+        return ShapedArray<Scalar>(shape: shape, scalars: scalarArray)
+    }
+}
+
+extension Tensorflow_TensorShapeProto {
+    var shapeArray: [Int] {
+        return self.dim.map { Int($0.size) }
     }
 }
