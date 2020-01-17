@@ -83,10 +83,7 @@ extension CheckpointIndexReader {
 // The internal file parsing methods for smaller datatypes that comprise the key-value groupings.
 extension CheckpointIndexReader {
     func readVarint() -> Int {
-        // TODO: Read varints longer than a single byte.
-        let varint = Int(binaryData[index])
-        index += 1
-        return varint
+        return binaryData.readVarint32(at: &index)
     }
 
     func readDataBlock(size: Int) -> Data {
