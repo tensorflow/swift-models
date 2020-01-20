@@ -24,8 +24,7 @@ public extension Data {
     // Implementation derived from decodeVarint() in 
     // https://github.com/apple/swift-protobuf/blob/master/Sources/SwiftProtobuf/BinaryDecoder.swift
     func readVarint32(at index: inout Int) -> Int {
-        let firstByte = self[index]
-        index += 1
+        let firstByte = readByte(at: &index)
         if (firstByte & 0x80) == 0 {
             return Int(firstByte)
         }
@@ -34,8 +33,7 @@ public extension Data {
         var shift = 7
 
         while true {
-            let currentByte = self[index]
-            index += 1
+            let currentByte = readByte(at: &index)
             value |= Int(currentByte & 0x7f) << shift
             if currentByte & 0x80 == 0 {
                 return value
@@ -44,20 +42,114 @@ public extension Data {
         }
     }
 
-    func decompressSnappyStream(at index: inout Int) -> Data? {
-        let uncompressedLength = readVarint32(at: &index)
-        print("Uncompressed length: \(uncompressedLength)")
-        // Should start with 
-
-        return nil
+    func readByte(at index: inout Int) -> UInt8 {
+        let byte =  self[index]
+        index += 1
+        return byte
     }
 
-    func decompressSnappy() -> Data {
+    func readDataBlock(at index: inout Int, size: Int) -> Data {
+        let dataBlock = self[index..<(index + size)]
+        index += size
+        return dataBlock
+    }
+
+    func decompressSnappyStream(at index: inout Int) -> Data? {
+        guard index < self.count else { return nil }
+        
+        let uncompressedLength = readVarint32(at: &index)
+        let startingIndex = index
+
+        var uncompressedData = Data()
+        while uncompressedData.count < uncompressedLength {
+            let tagByte = readByte(at: &index)
+            let tagType = tagByte & 0b00000011
+            let upperBits = tagByte >> 2
+            switch tagType {
+            case 0: // Literal string of bytes.
+                let literalLength: Int
+                switch upperBits {
+                case 0..<60: // Literal length is encoded in the upper bits of the tag byte.
+                    literalLength = Int(upperBits) + 1
+                case 60: // One-byte literal length following the tag byte.
+                    literalLength = Int(readByte(at: &index)) + 1
+                case 61: // Two-byte literal length following the tag byte.
+                    let firstByte = readByte(at: &index)
+                    let secondByte = readByte(at: &index)
+                    literalLength = Int(firstByte) + Int(secondByte) * 256 + 1
+                case 62: // Three-byte literal length following the tag byte.
+                    let firstByte = readByte(at: &index)
+                    let secondByte = readByte(at: &index)
+                    let thirdByte = readByte(at: &index)
+                    literalLength = Int(firstByte) + Int(secondByte) * 256 + Int(thirdByte) * 256 * 256 + 1
+                case 63: // Four-byte literal length following the tag byte.
+                    let firstByte = readByte(at: &index)
+                    let secondByte = readByte(at: &index)
+                    let thirdByte = readByte(at: &index)
+                    let fourthByte = readByte(at: &index)
+                    literalLength = Int(firstByte) + Int(secondByte) * 256 + Int(thirdByte) * 256 * 256
+                        + Int(fourthByte) * 256 * 256 * 256 + 1
+                default:
+                    // TODO: Replace this with a thrown custom error.
+                    fatalError("Illegal literal length: \(upperBits)")
+                }
+                let literalData = self.readDataBlock(at: &index, size: literalLength)
+                uncompressedData.append(literalData)
+            case 1: // Copy with 1-byte offset.
+                let copyLength = Int(upperBits & 0b00000111) + 4
+                let upperOffset = (upperBits & 0b00111000) >> 3
+                let lowerOffset = readByte(at: &index)
+                
+                let offset = Int(upperOffset) * 256 + Int(lowerOffset)
+                var sourceIndex = uncompressedData.count - offset - 0
+                if offset < copyLength {
+                    // Perform run-length encoding for offsets that cause reading past the end of the file.
+                    let copiedBytes = copyLength - offset
+                    let copyData = uncompressedData.readDataBlock(at: &sourceIndex, size: offset)
+                    uncompressedData.append(copyData)
+                    sourceIndex = uncompressedData.count - offset - 0
+                    let additionalData = uncompressedData.readDataBlock(at: &sourceIndex, size: copiedBytes)
+                    uncompressedData.append(additionalData)
+                } else {
+                    let copyData = uncompressedData.readDataBlock(at: &sourceIndex, size: copyLength)
+                    uncompressedData.append(copyData)
+                }
+            case 2: // Copy with 2-byte offset.
+                let copyLength = Int(upperBits) + 1
+                let firstByte = readByte(at: &index)
+                let secondByte = readByte(at: &index)
+                var sourceIndex = uncompressedData.count - (Int(firstByte) + Int(secondByte) * 256) - 0
+                let copyData = uncompressedData.readDataBlock(at: &sourceIndex, size: copyLength)
+                uncompressedData.append(copyData)
+            case 3: // Copy with 4-byte offset.
+                let copyLength = Int(upperBits) + 1
+                let firstByte = readByte(at: &index)
+                let secondByte = readByte(at: &index)
+                let thirdByte = readByte(at: &index)
+                let fourthByte = readByte(at: &index)
+                var sourceIndex = uncompressedData.count - (Int(firstByte) + Int(secondByte) * 256
+                    + Int(thirdByte) * 256 * 256 + Int(fourthByte) * 256 * 256 * 256) - 0
+                let copyData = uncompressedData.readDataBlock(at: &sourceIndex, size: copyLength)
+                uncompressedData.append(copyData)
+            default:
+                fatalError("Tag type of \(tagType) should not be possible.")
+            }
+        }
+
+        return uncompressedData
+    }
+
+    func decompressFromSnappy() -> Data {
         var decompressedData = Data()
         var index = 0
 
-        while let value = decompressSnappyStream(at: &index) {
+        if let value = decompressSnappyStream(at: &index) {
             decompressedData.append(value)
+        }
+        
+        if index < (self.count - 1) {
+            let footer = readDataBlock(at: &index, size: self.count - index - 1)
+            decompressedData.append(footer)
         }
 
         return decompressedData

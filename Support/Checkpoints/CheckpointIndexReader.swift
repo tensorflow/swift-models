@@ -44,7 +44,12 @@ class CheckpointIndexReader {
     var atEndOfFile: Bool { return index >= (binaryData.count - footerSize - 1) }
 
     init(file: URL) throws {
-        binaryData = try Data(contentsOf: file)
+        let fileData = try Data(contentsOf: file)
+        if fileData[0] == 0 {
+            binaryData = fileData
+        } else {
+            binaryData = fileData.decompressFromSnappy()
+        }
     }
 
     func resetHead() {
@@ -58,13 +63,13 @@ extension CheckpointIndexReader {
         // The header has a string key of "", so there's nothing to read for the key.
         // If a non-zero initial value is encountered, the file is Snappy-compressed, so we bail out
         // until it can be uncompressed.
-        let initialValue = readVarint()
+        let initialValue = binaryData.readVarint32(at: &index)
         guard initialValue == 0 else {
-            fatalError("Snappy-compressed checkpoints are not currently supported.")
+            fatalError("Snappy-compressed data should have been picked up earlier than this.")
         }
-        let _ = readVarint()
-        let valueLength = readVarint()
-        let value = readDataBlock(size: valueLength)
+        let _ = binaryData.readVarint32(at: &index)
+        let valueLength = binaryData.readVarint32(at: &index)
+        let value = binaryData.readDataBlock(at: &index, size: valueLength)
 
         let tempHeader = try Tensorflow_BundleHeaderProto(serializedData: value)
         return tempHeader
@@ -82,18 +87,8 @@ extension CheckpointIndexReader {
 
 // The internal file parsing methods for smaller datatypes that comprise the key-value groupings.
 extension CheckpointIndexReader {
-    func readVarint() -> Int {
-        return binaryData.readVarint32(at: &index)
-    }
-
-    func readDataBlock(size: Int) -> Data {
-        let dataBlock = binaryData[index..<(index + size)]
-        index += size
-        return dataBlock
-    }
-
     func readKey(sharedBytes: Int, unsharedBytes: Int) -> String {
-        let newBytes = readDataBlock(size: unsharedBytes)
+        let newBytes = binaryData.readDataBlock(at: &index, size: unsharedBytes)
         guard sharedBytes <= currentPrefix.count else {
             fatalError(
                 "Shared bytes of \(sharedBytes) exceeded stored prefix size of \(currentPrefix.count)."
@@ -107,11 +102,11 @@ extension CheckpointIndexReader {
     func readKeyAndValue() throws -> (String, Tensorflow_BundleEntryProto)? {
         guard !atEndOfFile else { return nil }
 
-        let sharedKeyBytes = readVarint()
-        let unsharedKeyBytes = readVarint()
-        let valueLength = readVarint()
+        let sharedKeyBytes = binaryData.readVarint32(at: &index)
+        let unsharedKeyBytes = binaryData.readVarint32(at: &index)
+        let valueLength = binaryData.readVarint32(at: &index)
         let key = readKey(sharedBytes: sharedKeyBytes, unsharedBytes: unsharedKeyBytes)
-        let value = readDataBlock(size: valueLength)
+        let value = binaryData.readDataBlock(at: &index, size: valueLength)
 
         // TODO: Need to verify if these three being zero always indicates no more tensors to read.
         if (sharedKeyBytes + unsharedKeyBytes + valueLength) == 0 { return nil }
