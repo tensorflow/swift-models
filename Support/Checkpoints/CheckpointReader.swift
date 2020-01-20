@@ -194,6 +194,10 @@ open class CheckpointReader {
             return shardBytes
         } else {
             do {
+                // It is far too slow to read the shards in each time a tensor is accessed, so we
+                // read the entire shard into an in-memory cache on first access. A better approach
+                // to mapping these files may be needed, because .alwaysMapped doesn't seem to help
+                // as much as it should.
                 let shardBytes = try Data(contentsOf: file, options: .alwaysMapped)
                 shardCache[file] = shardBytes
                 return shardBytes

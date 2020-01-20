@@ -20,6 +20,13 @@
 
 import Foundation
 
+public enum SnappyDecompressionError: Error {
+    case illegalLiteralLength(upperBits: UInt8)
+    case impossibleTagType(tagType: UInt8)
+}
+
+// The following extension to Data provides methods that read variable-length byte sequences
+// starting at an incoming index, then mutate the index by advancing it to the next read position.
 public extension Data {
     // Implementation derived from decodeVarint() in 
     // https://github.com/apple/swift-protobuf/blob/master/Sources/SwiftProtobuf/BinaryDecoder.swift
@@ -54,7 +61,7 @@ public extension Data {
         return dataBlock
     }
 
-    func decompressSnappyStream(at index: inout Int) -> Data? {
+    func decompressSnappyStream(at index: inout Int) throws -> Data? {
         guard index < self.count else { return nil }
         
         let uncompressedLength = readVarint32(at: &index)
@@ -62,6 +69,11 @@ public extension Data {
 
         var uncompressedData = Data()
         while uncompressedData.count < uncompressedLength {
+            // Each section starts with a tag byte, which determines whether to read a sequence of
+            // bytes directly into the uncompressed data (literal) or to copy a sequence of
+            // previously-decompressed bytes into this position. The last two bits indicate the
+            // class of the section, and the remaining bits encode class-specific information like
+            // how many offset or length bytes follow or the length of the section to copy.
             let tagByte = readByte(at: &index)
             let tagType = tagByte & 0b00000011
             let upperBits = tagByte >> 2
@@ -81,17 +93,17 @@ public extension Data {
                     let firstByte = readByte(at: &index)
                     let secondByte = readByte(at: &index)
                     let thirdByte = readByte(at: &index)
-                    literalLength = Int(firstByte) + Int(secondByte) * 256 + Int(thirdByte) * 256 * 256 + 1
+                    literalLength = Int(firstByte) + Int(secondByte) * 256 + Int(thirdByte) * 256
+                        * 256 + 1
                 case 63: // Four-byte literal length following the tag byte.
                     let firstByte = readByte(at: &index)
                     let secondByte = readByte(at: &index)
                     let thirdByte = readByte(at: &index)
                     let fourthByte = readByte(at: &index)
-                    literalLength = Int(firstByte) + Int(secondByte) * 256 + Int(thirdByte) * 256 * 256
-                        + Int(fourthByte) * 256 * 256 * 256 + 1
+                    literalLength = Int(firstByte) + Int(secondByte) * 256 + Int(thirdByte) * 256
+                        * 256 + Int(fourthByte) * 256 * 256 * 256 + 1
                 default:
-                    // TODO: Replace this with a thrown custom error.
-                    fatalError("Illegal literal length: \(upperBits)")
+                    throw SnappyDecompressionError.illegalLiteralLength(upperBits: upperBits)
                 }
                 let literalData = self.readDataBlock(at: &index, size: literalLength)
                 uncompressedData.append(literalData)
@@ -101,24 +113,27 @@ public extension Data {
                 let lowerOffset = readByte(at: &index)
                 
                 let offset = Int(upperOffset) * 256 + Int(lowerOffset)
-                var sourceIndex = uncompressedData.count - offset - 0
+                var sourceIndex = uncompressedData.count - offset
                 if offset < copyLength {
-                    // Perform run-length encoding for offsets that cause reading past the end of the file.
+                    // Perform run-length encoding for offsets that cause reading past the end of
+                    // the file.
                     let copiedBytes = copyLength - offset
                     let copyData = uncompressedData.readDataBlock(at: &sourceIndex, size: offset)
                     uncompressedData.append(copyData)
-                    sourceIndex = uncompressedData.count - offset - 0
-                    let additionalData = uncompressedData.readDataBlock(at: &sourceIndex, size: copiedBytes)
+                    sourceIndex = uncompressedData.count - offset
+                    let additionalData = uncompressedData.readDataBlock(
+                        at: &sourceIndex, size: copiedBytes)
                     uncompressedData.append(additionalData)
                 } else {
-                    let copyData = uncompressedData.readDataBlock(at: &sourceIndex, size: copyLength)
+                    let copyData = uncompressedData.readDataBlock(
+                        at: &sourceIndex, size: copyLength)
                     uncompressedData.append(copyData)
                 }
             case 2: // Copy with 2-byte offset.
                 let copyLength = Int(upperBits) + 1
                 let firstByte = readByte(at: &index)
                 let secondByte = readByte(at: &index)
-                var sourceIndex = uncompressedData.count - (Int(firstByte) + Int(secondByte) * 256) - 0
+                var sourceIndex = uncompressedData.count - (Int(firstByte) + Int(secondByte) * 256)
                 let copyData = uncompressedData.readDataBlock(at: &sourceIndex, size: copyLength)
                 uncompressedData.append(copyData)
             case 3: // Copy with 4-byte offset.
@@ -128,22 +143,28 @@ public extension Data {
                 let thirdByte = readByte(at: &index)
                 let fourthByte = readByte(at: &index)
                 var sourceIndex = uncompressedData.count - (Int(firstByte) + Int(secondByte) * 256
-                    + Int(thirdByte) * 256 * 256 + Int(fourthByte) * 256 * 256 * 256) - 0
+                    + Int(thirdByte) * 256 * 256 + Int(fourthByte) * 256 * 256 * 256)
                 let copyData = uncompressedData.readDataBlock(at: &sourceIndex, size: copyLength)
                 uncompressedData.append(copyData)
             default:
-                fatalError("Tag type of \(tagType) should not be possible.")
+                throw SnappyDecompressionError.impossibleTagType(tagType: tagType)
             }
         }
-
+        if uncompressedData.count != uncompressedLength {
+            // TODO: Determine if this should be elevated to a thrown error.
+            printError(
+                "Warning: uncompressed data length of \(uncompressedData.count) did not match desired length of \(uncompressedLength).")
+        }
+        
         return uncompressedData
     }
 
-    func decompressFromSnappy() -> Data {
+    // This assumes a single compressed block at the start of the file, and an uncompressed footer.
+    func decompressFromSnappy() throws -> Data {
         var decompressedData = Data()
         var index = 0
 
-        if let value = decompressSnappyStream(at: &index) {
+        if let value = try decompressSnappyStream(at: &index) {
             decompressedData.append(value)
         }
         

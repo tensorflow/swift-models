@@ -48,7 +48,7 @@ class CheckpointIndexReader {
         if fileData[0] == 0 {
             binaryData = fileData
         } else {
-            binaryData = fileData.decompressFromSnappy()
+            binaryData = try fileData.decompressFromSnappy()
         }
     }
 

@@ -45,7 +45,7 @@ final class SnappyDecompressionTests: XCTestCase {
         do {
             let miniGoData = try Data(
                 contentsOf: resourceBaseLocation.appendingPathComponent("minigo.index"))
-            let decompressedMiniGoData = miniGoData.decompressFromSnappy()
+            let decompressedMiniGoData = try miniGoData.decompressFromSnappy()
             XCTAssertEqual(decompressedMiniGoData[0], 0)
         } catch {
             XCTFail("Decompressing MiniGo index failed with error \(error).")
