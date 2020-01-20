@@ -52,3 +52,10 @@ final class SnappyDecompressionTests: XCTestCase {
         }
     }
 }
+
+extension SnappyDecompressionTests {
+    static var allTests = [
+        ("testReadingVarints", testReadingVarints),
+        ("testDecompressingMiniGo", testDecompressingMiniGo),
+    ]
+}
