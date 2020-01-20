@@ -26,7 +26,8 @@ class SwiftBenchmark(tf.test.Benchmark):
                output_dir=None,
                default_flags=None,
                flag_methods=None,
-               root_data_dir=None):
+               root_data_dir=None,
+               tpu=None):
     """Perfzero-friendly constructor, we don't use most of those settings in swift."""
     if not output_dir:
       output_dir = '/tmp'
@@ -57,7 +58,7 @@ class SwiftBenchmark(tf.test.Benchmark):
 # This location assumes that are we are running within the S4TF's perfzero
 # docker image. Perfzero automatically clones the swift-models project into the
 # corresponding site-packages location.
-cwd = '/workspace/perfzero/workspace/site-packages/swift-models/'
+cwd = '/workspace/benchmarks/perfzero/workspace/site-packages/swift-models'
 
 
 def extract_extras(settings):
