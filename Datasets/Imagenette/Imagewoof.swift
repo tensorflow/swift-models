@@ -24,8 +24,8 @@ import TensorFlow
 public struct Imagewoof: ImageClassificationDataset {
     public let trainingDataset: Dataset<LabeledExample>
     public let testDataset: Dataset<LabeledExample>
-    public let trainingExampleCount = 12485
-    public let testExampleCount = 531
+    public let trainingExampleCount = 12454
+    public let testExampleCount = 500
 
     public enum ImageSize {
         case full
