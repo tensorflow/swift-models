@@ -154,7 +154,7 @@ public struct GoModel: Layer {
             activation: tanh)
     }
   
-    @differentiable(wrt: (self, input), vjp: _vjpCall)
+    @differentiable(wrt: (self, input))
     public func callAsFunction(_ input: Tensor<Float>) -> GoModelOutput {
         let batchSize = input.shape[0]
         var output = relu(initialConv(input))
@@ -179,8 +179,9 @@ public struct GoModel: Layer {
     }
 
     @usableFromInline
+    @derivative(of: callAsFunction, wrt: (self, input))
     func _vjpCall(_ input: Tensor<Float>)
-        -> (GoModelOutput, (GoModelOutput.TangentVector)
+        -> (value: GoModelOutput, pullback: (GoModelOutput.TangentVector)
         -> (GoModel.TangentVector, Tensor<Float>)) {
         // TODO(jekbradbury): add a real VJP
         // (we're only interested in inference for now and have control flow in our `call(_:)` method)
