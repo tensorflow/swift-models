@@ -77,11 +77,11 @@ final class ImageClassificationInferenceTests: XCTestCase {
         let inputCIFAR = Tensor<Float>(
             randomNormal: [1, 32, 32, 3], mean: Tensor<Float>(0.5),
             standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
-        let resNet18CIFAR = ResNetBasic(classCount: 10, depth: .resNet18, imageSize: .cifar)
+        let resNet18CIFAR = ResNet(classCount: 10, depth: .resNet18, imageSize: .cifar)
         let resNet18CIFARResult = resNet18CIFAR(inputCIFAR)
         XCTAssertEqual(resNet18CIFARResult.shape, [1, 10])
 
-        let resNet34CIFAR = ResNetBasic(classCount: 10, depth: .resNet34, imageSize: .cifar)
+        let resNet34CIFAR = ResNet(classCount: 10, depth: .resNet34, imageSize: .cifar)
         let resNet34CIFARResult = resNet34CIFAR(inputCIFAR)
         XCTAssertEqual(resNet34CIFARResult.shape, [1, 10])
 
@@ -100,11 +100,11 @@ final class ImageClassificationInferenceTests: XCTestCase {
         let inputImageNet = Tensor<Float>(
             randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
             standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
-        let resNet18ImageNet = ResNetBasic(classCount: 1000, depth: .resNet18, imageSize: .imagenet)
+        let resNet18ImageNet = ResNet(classCount: 1000, depth: .resNet18, imageSize: .imagenet)
         let resNet18ImageNetResult = resNet18ImageNet(inputImageNet)
         XCTAssertEqual(resNet18ImageNetResult.shape, [1, 1000])
 
-        let resNet34ImageNet = ResNetBasic(classCount: 1000, depth: .resNet34, imageSize: .imagenet)
+        let resNet34ImageNet = ResNet(classCount: 1000, depth: .resNet34, imageSize: .imagenet)
         let resNet34ImageNetResult = resNet34ImageNet(inputImageNet)
         XCTAssertEqual(resNet34ImageNetResult.shape, [1, 1000])
 
