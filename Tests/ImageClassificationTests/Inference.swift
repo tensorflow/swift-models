@@ -85,6 +85,11 @@ final class ImageClassificationInferenceTests: XCTestCase {
         let resNet34CIFARResult = resNet34CIFAR(inputCIFAR)
         XCTAssertEqual(resNet34CIFARResult.shape, [1, 10])
 
+        let resNet50CIFARV1 = ResNet(
+            classCount: 10, depth: .resNet50, imageSize: .cifar, useLaterStride: false)
+        let resNet50CIFARV1Result = resNet50CIFARV1(inputCIFAR)
+        XCTAssertEqual(resNet50CIFARV1Result.shape, [1, 10])
+
         let resNet50CIFAR = ResNet(classCount: 10, depth: .resNet50, imageSize: .cifar)
         let resNet50CIFARResult = resNet50CIFAR(inputCIFAR)
         XCTAssertEqual(resNet50CIFARResult.shape, [1, 10])
@@ -107,6 +112,11 @@ final class ImageClassificationInferenceTests: XCTestCase {
         let resNet34ImageNet = ResNet(classCount: 1000, depth: .resNet34, imageSize: .imagenet)
         let resNet34ImageNetResult = resNet34ImageNet(inputImageNet)
         XCTAssertEqual(resNet34ImageNetResult.shape, [1, 1000])
+
+        let resNet50ImageNetV1 = ResNet(
+            classCount: 1000, depth: .resNet50, imageSize: .imagenet, useLaterStride: false)
+        let resNet50ImageNetV1Result = resNet50ImageNetV1(inputImageNet)
+        XCTAssertEqual(resNet50ImageNetV1Result.shape, [1, 1000])
 
         let resNet50ImageNet = ResNet(classCount: 1000, depth: .resNet50, imageSize: .imagenet)
         let resNet50ImageNetResult = resNet50ImageNet(inputImageNet)
