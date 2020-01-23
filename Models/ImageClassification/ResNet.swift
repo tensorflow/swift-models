@@ -67,7 +67,7 @@ public struct ResidualBlock: Layer {
             ]
             lastConv = ConvBN(filterShape: (3, 3, filters, filters * 4), padding: .same)
         } else {
-            if useLaterStride {  
+            if useLaterStride {
                 // Configure for ResNet V1.5 (the more common implementation).
                 earlyConvs.append(ConvBN(filterShape: (1, 1, inputFilters, filters)))
                 earlyConvs.append(
@@ -117,22 +117,22 @@ public struct ResNet: Layer {
     ///   - classCount: The number of classes the network will be or has been trained to identify.
     ///   - depth: A specific depth for the network, chosen from the enumerated values in 
     ///     ResNet.Depth.
-    ///   - imageSize: Either `.cifar` or `.imageNet`, based on whether to configure the network
-    ///     for 32x32 or 224x224 input images, respectively.
+    ///   - downsamplingInFirstStage: Whether or not to downsample by a total of 4X among the first
+    ///     two layers. For ImageNet-sized images, this should be true, but for smaller images like
+    ///     CIFAR-10, this probably should be false for best results.
     ///   - inputFilters: The number of filters at the first convolution.
     ///   - useLaterStride: If false, the stride within the residual block is placed at the position
     ///     specified in He, et al., corresponding to ResNet v1. If true, the stride is moved to the
     ///     3x3 convolution, corresponding to the v1.5 variant of the architecture. 
     public init(
-        classCount: Int, depth: Depth, imageSize: ImageSize, inputFilters: Int = 64,
-        useLaterStride: Bool = true
+        classCount: Int, depth: Depth, downsamplingInFirstStage: Bool = true,
+        inputFilters: Int = 64, useLaterStride: Bool = true
     ) {
-        switch imageSize {
-        case .imagenet:
+        if downsamplingInFirstStage {
             initialLayer = ConvBN(
                 filterShape: (7, 7, 3, inputFilters), strides: (2, 2), padding: .same)
             maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2), padding: .same)
-        case .cifar:
+        } else {
             initialLayer = ConvBN(filterShape: (3, 3, 3, inputFilters), padding: .same)
             maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1))  // no-op
         }
@@ -164,11 +164,6 @@ public struct ResNet: Layer {
 }
 
 extension ResNet {
-    public enum ImageSize {
-        case cifar
-        case imagenet
-    }
-
     public enum Depth {
         case resNet18
         case resNet34
