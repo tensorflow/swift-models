@@ -60,8 +60,8 @@ fileprivate func fetchDataset(
     flattening: Bool,
     normalizing: Bool
 ) -> LabeledExample {
-    guard let remoteRoot = URL(string: "http://yann.lecun.com/exdb/mnist") else {
-        fatalError("Failed to create MNIST root url: http://yann.lecun.com/exdb/mnist")
+    guard let remoteRoot = URL(string: "https://storage.googleapis.com/cvdf-datasets/mnist") else {
+        fatalError("Failed to create MNIST root url: https://storage.googleapis.com/cvdf-datasets/mnist")
     }
 
     let imagesData = DatasetUtilities.fetchResource(
