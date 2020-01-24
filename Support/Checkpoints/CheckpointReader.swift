@@ -158,7 +158,7 @@ open class CheckpointReader {
         case .dtFloat: return Float.self
         case .dtDouble: return Double.self
         case .dtString: return String.self
-        default: fatalError("Unhandled type: \(bundleEntry.dtype)")
+        default: fatalError("Unsupported tensor data type: \(bundleEntry.dtype)")
         }
     }
 
