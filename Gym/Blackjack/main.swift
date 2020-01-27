@@ -15,15 +15,15 @@
 import Python
 import TensorFlow
 
-// Initialize Python. This comment is a hook for internal use, do not remove.
-
-let gym = Python.import("gym")
-let environment = gym.make("Blackjack-v0")
-
 let iterationCount = 10000
 let learningPhase = iterationCount * 5 / 100
 
 typealias Strategy = Bool
+
+// Initialize Python. This comment is a hook for internal use, do not remove.
+
+let gym = Python.import("gym")
+let environment = gym.make("Blackjack-v0")
 
 class BlackjackState {
     var playerSum: Int = 0
