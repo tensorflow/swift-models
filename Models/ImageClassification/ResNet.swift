@@ -19,7 +19,8 @@ import TensorFlow
 // "Deep Residual Learning for Image Recognition"
 // Kaiming He, Xiangyu Zhang, Shaoqing Ren, Jian Sun
 // https://arxiv.org/abs/1512.03385
-// This uses shortcut layers to connect residual blocks (aka Option (B)).
+// This uses shortcut layers to connect residual blocks
+// (aka Option (B) in https://arxiv.org/abs/1812.01187).
 //
 // The structure of this implementation was inspired by the Flax ResNet example:
 // https://github.com/google-research/flax/blob/prerelease/examples/imagenet/models.py
