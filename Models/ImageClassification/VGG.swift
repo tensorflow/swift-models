@@ -25,12 +25,12 @@ public struct VGGBlock: Layer {
 
     public init(featureCounts: (Int, Int, Int, Int), blockCount: Int) {
         self.blocks = [Conv2D<Float>(filterShape: (3, 3, featureCounts.0, featureCounts.1),
-            padding: .same,
-            activation: relu)]
+                                     padding: .same,
+                                     activation: relu)]
         for _ in 1..<blockCount {
             self.blocks += [Conv2D<Float>(filterShape: (3, 3, featureCounts.2, featureCounts.3),
-                padding: .same,
-                activation: relu)]
+                                          padding: .same,
+                                          activation: relu)]
         }
     }
 
