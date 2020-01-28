@@ -311,7 +311,7 @@ public struct BERT: Module, Regularizable {
         // Add token type embeddings if needed, based on which BERT variant is being used.
         switch variant {
         case .bert, .albert: embeddings = embeddings + tokenTypeEmbeddings
-        case .roberta: ()
+        case .roberta: break
         }
 
         embeddings = embeddingLayerNorm(embeddings)
@@ -334,7 +334,7 @@ public struct BERT: Module, Regularizable {
         // Run the stacked transformer.
         switch variant {
         case .bert, .roberta:
-            for layerIndex in 0..<withoutDerivative(at: encoderLayers) { $0.count } {
+            for layerIndex in 0..<(withoutDerivative(at: encoderLayers) { $0.count }) {
                 transformerInput = encoderLayers[layerIndex](TransformerInput(
                 sequence: transformerInput,
                 attentionMask: attentionMask,
