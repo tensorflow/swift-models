@@ -151,7 +151,7 @@ public struct ResNet: Layer {
             }
         }
 
-        classifier = Dense(inputSize: 2048, outputSize: classCount)
+        classifier = Dense(inputSize: depth.usesBasicBlocks ? 512 : 2048, outputSize: classCount)
     }
 
     @differentiable
