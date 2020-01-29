@@ -80,7 +80,7 @@ public struct ResidualBlock: Layer {
                     ConvBN(filterShape: (1, 1, inputFilters, filters), strides: strides))
                 earlyConvs.append(ConvBN(filterShape: (3, 3, filters, filters), padding: .same))
             }
-            lastConv = ConvBN(filterShape: (1, 1, filters, outFilter))
+            lastConv = ConvBN(filterShape: (1, 1, filters, outFilters))
         }
     }
 
