@@ -292,16 +292,16 @@ public struct BERT: Module, Regularizable {
     @differentiable(wrt: self)
     public func callAsFunction(_ input: TextBatch) -> Tensor<Scalar> {
         let sequenceLength = input.tokenIds.shape[1]
+        let variant = withoutDerivative(at: self.variant)
 
         // Compute the input embeddings and apply layer normalization and dropout on them.
         let tokenEmbeddings = tokenEmbedding(input.tokenIds)
         let tokenTypeEmbeddings = tokenTypeEmbedding(input.tokenTypeIds)
-        let positionPaddingIndex = withoutDerivative(at: { () -> Int in
-            switch variant {
-            case .bert, .albert: return 0
-            case .roberta: return 2
-            }
-        }())
+        let positionPaddingIndex: Int
+        switch variant {
+        case .bert, .albert: positionPaddingIndex = 0
+        case .roberta: positionPaddingIndex = 2
+        }
         let positionEmbeddings = positionEmbedding.embeddings.slice(
             lowerBounds: [positionPaddingIndex, 0],
             upperBounds: [positionPaddingIndex + sequenceLength, -1]
