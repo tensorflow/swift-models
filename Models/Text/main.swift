@@ -8,8 +8,11 @@ var bertClassifier = BERTClassifier(bert: bert, classCount: 2)
 
 var colaTask = try CoLA(for: bertClassifier, taskDirectoryURL: workspaceURL, maxSequenceLength: 50, batchSize: 32)
 
-let learningRate = FixedParameter<Float>(0.01)
-var optimizer = WeightDecayedAdam(for: bertClassifier, learningRate: learningRate, maxGradientGlobalNorm: 0.1)
+let lr = FixedParameter<Float>(2e-5)
+let pivotStepCount: UInt64 = 1000
+let lr2 = LinearlyWarmedUpParameter(baseParameter: lr, warmUpStepCount: pivotStepCount, warmUpOffset: 0)
+let lr3 =  LinearlyDecayedParameter(baseParameter: lr2, slope: 3, startStep: pivotStepCount)
+var optimizer = WeightDecayedAdam(for: bertClassifier, learningRate: lr3, maxGradientGlobalNorm: 1)
 
 print("Training BERT for the CoLA task!")
 let epochCount = 1000
