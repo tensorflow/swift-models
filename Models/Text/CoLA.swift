@@ -32,12 +32,12 @@ public struct CoLA {
     using optimizer: inout O
   ) -> Float where O.Model == BERTClassifier {
     let batch = withDevice(.cpu) { trainDataIterator.next()! }
-    let input = ArchitectureInput(text: batch.inputs)
-    let labels = Tensor<Float>(oneHotAtIndices: batch.labels!, depth: 2)
+    let input = batch.inputs
+    let labels = batch.labels!
     return withLearningPhase(.training) {
       let (loss, gradient) = valueWithGradient(at: architecture) {
-        sigmoidCrossEntropy(
-          logits: $0(input.text!),
+        softmaxCrossEntropy(
+          logits: $0(input),
           labels: labels,
           reduction: { $0.mean() })
       }

@@ -4,7 +4,7 @@ import Foundation
 let bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
 let workspaceURL = URL(fileURLWithPath: "/tmp/bert_models", isDirectory: true)
 let bert = try BERT.PreTrainedModel.load(bertPretrained)(from: workspaceURL)
-var bertClassifier = BERTClassifier(bert: bert, classCount: 1)
+var bertClassifier = BERTClassifier(bert: bert, classCount: 2)
 
 var colaTask = try CoLA(
   for: bertClassifier,
