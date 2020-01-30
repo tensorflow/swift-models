@@ -46,7 +46,6 @@ public struct CoLA {
     }
   }
 
-#if false
   // NOTE: Does not compile.
   // Missing `NCA.matthewsCorrelationCoefficient`: https://github.com/eaplatanios/nca
   public func evaluate(using architecture: BERTClassifier) -> [String: Float] {
@@ -55,17 +54,16 @@ public struct CoLA {
     var devGroundTruth = [Bool]()
     while let batch = withDevice(.cpu, perform: { devDataIterator.next() }) {
       let input = ArchitectureInput(text: batch.inputs)
-      let predictions = architecture.classify(input, problem: problem, concepts: concepts)
+      let predictions = architecture(input.text!)
       let predictedLabels = predictions.argmax(squeezingAxis: -1) .== 1
       devPredictedLabels.append(contentsOf: predictedLabels.scalars)
       devGroundTruth.append(contentsOf: batch.labels!.scalars.map { $0 == 1 })
     }
     return [
-      "matthewsCorrelationCoefficient": NCA.matthewsCorrelationCoefficient(
+      "matthewsCorrelationCoefficient": matthewsCorrelationCoefficient(
         predictions: devPredictedLabels,
         groundTruth: devGroundTruth)]
   }
-#endif
 }
 
 extension CoLA {

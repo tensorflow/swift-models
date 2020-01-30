@@ -25,4 +25,8 @@ let stepCount = 1000
 for step in 0..<stepCount {
   let loss = colaTask.update(architecture: &bertClassifier, using: &optimizer)
   print("[Step: \(step)]\tLoss: \(loss)")
+  if step > 0 && step.isMultiple(of: 10) {
+    print("Evaluate BERT for the CoLA task:")
+    dump(colaTask.evaluate(using: bertClassifier))
+  }
 }
