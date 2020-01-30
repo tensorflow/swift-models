@@ -33,7 +33,7 @@ let package = Package(
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "Datasets", dependencies: ["ModelSupport"], path: "Datasets"),
         .target(name: "ModelSupport", path: "Support"),
-        .target(name: "TextModels", dependencies: ["SwiftProtobuf"], path: "Models/Text"),
+        .target(name: "TextModels", dependencies: ["SwiftProtobuf", "Datasets"], path: "Models/Text"),
         .target(
             name: "Autoencoder", dependencies: ["Datasets", "ModelSupport"], path: "Autoencoder"),
         .target(name: "Catch", path: "Catch"),

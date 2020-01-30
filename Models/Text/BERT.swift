@@ -14,6 +14,8 @@
 
 import Foundation
 import TensorFlow
+import Datasets
+import ModelSupport
 
 // TODO: [AD] Avoid using token type embeddings for RoBERTa once optionals are supported in AD.
 // TODO: [AD] Similarly for the embedding projection used in ALBERT.
@@ -646,7 +648,6 @@ extension BERT {
                 case .bertBase, .bertLarge:
                     let vocabularyURL = directory
                         .appendingPathComponent(subDirectory)
-                        .appendingPathComponent(subDirectory)
                         .appendingPathComponent("vocab.txt")
                     return try! Vocabulary(fromFile: vocabularyURL)
                 case .robertaBase, .robertaLarge:
@@ -728,7 +729,6 @@ extension BERT {
             case .bertBase, .bertLarge:
                 model.load(fromTensorFlowCheckpoint: directory
                     .appendingPathComponent(subDirectory)
-                    .appendingPathComponent(subDirectory)
                     .appendingPathComponent("bert_model.ckpt"))
             case .robertaBase, .robertaLarge:
                 model.load(fromTensorFlowCheckpoint: directory
@@ -747,15 +747,34 @@ extension BERT {
         public func maybeDownload(to directory: URL) throws {
             switch self {
             case .bertBase, .bertLarge, .robertaBase, .robertaLarge:
+                DatasetUtilities.downloadResource(filename: "\(subDirectory)", fileExtension: "zip",
+                                                  remoteRoot: url.deletingLastPathComponent(),
+                                                  localStorageDirectory: directory)
+                /*
                 // Download the model, if necessary.
                 let compressedFileURL = directory.appendingPathComponent("\(subDirectory).zip")
-                try TextModels.maybeDownload(from: url, to: compressedFileURL)
+                print("compressedFileURL", compressedFileURL)
+                print("directory", directory)
+                print("url", url)
+                try TextModels.maybeDownload(from: url, to: directory)
 
                 // Extract the data, if necessary.
                 let extractedDirectoryURL = compressedFileURL.deletingPathExtension()
+                print("extractedDirectoryURL", extractedDirectoryURL)
                 if !FileManager.default.fileExists(atPath: extractedDirectoryURL.path) {
                     try extract(zipFileAt: compressedFileURL, to: extractedDirectoryURL)
                 }
+                /*
+                print("maybeDownload target directory: \(directory)")
+                try TextModels.maybeDownload(from: url, to: directory)
+
+                // Extract the data, if necessary.
+                let compressedFileURL = directory.appendingPathComponent("\(subDirectory).zip")
+                if !FileManager.default.fileExists(atPath: directory.path) {
+                    try extract(zipFileAt: compressedFileURL, to: directory)
+                }
+                */
+                */
             case .albertBase, .albertLarge, .albertXLarge, .albertXXLarge:
                 // Download the model, if necessary.
                 let compressedFileURL = directory.appendingPathComponent("\(subDirectory).tar.gz")

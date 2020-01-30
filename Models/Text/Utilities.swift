@@ -14,6 +14,7 @@
 
 import Foundation
 import TensorFlow
+import ModelSupport
 
 #if os(Linux)
 import FoundationNetworking
@@ -69,6 +70,9 @@ extension Tensor {
 /// - Returns: Boolean value indicating whether a download was
 ///     performed (as opposed to not needed).
 internal func maybeDownload(from url: URL, to destination: URL) throws {
+#if false
+    try ModelSupport.download(from: url, to: destination)
+#endif
     if !FileManager.default.fileExists(atPath: destination.path) {
         // Create any potentially missing directories.
         try FileManager.default.createDirectory(

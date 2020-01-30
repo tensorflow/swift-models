@@ -26,13 +26,14 @@ public struct CoLA {
   private var devDataIterator: DevDataIterator
   private var testDataIterator: TestDataIterator
 
+  @discardableResult
   public mutating func update<O: Optimizer>(
     architecture: inout BERTClassifier,
     using optimizer: inout O
   ) -> Float where O.Model == BERTClassifier {
     let batch = withDevice(.cpu) { trainDataIterator.next()! }
     let input = ArchitectureInput(text: batch.inputs)
-    let labels = Tensor<Float>(batch.labels!)
+    let labels = Tensor<Float>(oneHotAtIndices: batch.labels!, depth: 2)
     return withLearningPhase(.training) {
       let (loss, gradient) = valueWithGradient(at: architecture) {
         sigmoidCrossEntropy(
@@ -75,7 +76,6 @@ extension CoLA {
     batchSize: Int
   ) throws {
     self.directoryURL = taskDirectoryURL.appendingPathComponent("CoLA")
-
     let dataURL = directoryURL.appendingPathComponent("data")
     let compressedDataURL = dataURL.appendingPathComponent("downloaded-data.zip")
 
@@ -87,6 +87,15 @@ extension CoLA {
     if !FileManager.default.fileExists(atPath: extractedDirectoryURL.path) {
       try extract(zipFileAt: compressedDataURL, to: extractedDirectoryURL)
     }
+
+#if false
+    // FIXME: Need to generalize `DatasetUtilities.downloadResource` to accept
+    // arbitrary full URLs instead of constructing full URL from filename and
+    // file extension.
+    DatasetUtilities.downloadResource(filename: "\(subDirectory)", fileExtension: "zip",
+                                      remoteRoot: url.deletingLastPathComponent(),
+                                      localStorageDirectory: directory)
+#endif
 
     // Load the data files into arrays of examples.
     let dataFilesURL = extractedDirectoryURL.appendingPathComponent("CoLA")
