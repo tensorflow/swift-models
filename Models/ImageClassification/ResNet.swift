@@ -53,10 +53,11 @@ public struct ResidualBlock: Layer {
     public init(
         inputFilters: Int, filters: Int, strides: (Int, Int), useLaterStride: Bool, isBasic: Bool
     ) {
-        self.needsProjection = (inputFilters != (filters * 4)) || (strides.0 != 1)
+        let outFilters = filters * (isBasic ? 1 : 4)
+        self.needsProjection = (inputFilters != outFilters) || (strides.0 != 1)
         // TODO: Replace the following, so as to not waste memory for non-projection cases.
         if needsProjection {
-            projection = ConvBN(filterShape: (1, 1, inputFilters, filters * 4), strides: strides)
+            projection = ConvBN(filterShape: (1, 1, inputFilters, outFilters), strides: strides)
         } else {
             projection = ConvBN(filterShape: (1, 1, 1, 1))
         }
@@ -66,7 +67,7 @@ public struct ResidualBlock: Layer {
                 (ConvBN(
                     filterShape: (3, 3, inputFilters, filters), strides: strides, padding: .same)),
             ]
-            lastConv = ConvBN(filterShape: (3, 3, filters, filters * 4), padding: .same)
+            lastConv = ConvBN(filterShape: (3, 3, filters, outFilters), padding: .same)
         } else {
             if useLaterStride {
                 // Configure for ResNet V1.5 (the more common implementation).
@@ -79,7 +80,7 @@ public struct ResidualBlock: Layer {
                     ConvBN(filterShape: (1, 1, inputFilters, filters), strides: strides))
                 earlyConvs.append(ConvBN(filterShape: (3, 3, filters, filters), padding: .same))
             }
-            lastConv = ConvBN(filterShape: (1, 1, filters, filters * 4))
+            lastConv = ConvBN(filterShape: (1, 1, filters, outFilters))
         }
     }
 
@@ -146,12 +147,12 @@ public struct ResNet: Layer {
                 let residualBlock = ResidualBlock(
                     inputFilters: lastInputFilterCount, filters: filters, strides: strides,
                     useLaterStride: useLaterStride, isBasic: depth.usesBasicBlocks)
-                lastInputFilterCount = filters * 4
+                lastInputFilterCount = filters * (depth.usesBasicBlocks ? 1 : 4)
                 residualBlocks.append(residualBlock)
             }
         }
 
-        classifier = Dense(inputSize: 2048, outputSize: classCount)
+        classifier = Dense(inputSize: depth.usesBasicBlocks ? 512 : 2048, outputSize: classCount)
     }
 
     @differentiable
