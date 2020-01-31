@@ -22,13 +22,14 @@ let dataset = Imagewoof(inputSize: .full, outputSize: 224)
 let testBatches = dataset.testDataset.batched(batchSize)
 
 var model = VGG16(classCount: 10)
-let optimizer = SGD(for: model, learningRate: 0.01, momentum: 0.9, decay: 0.0005)
+let optimizer = SGD(for: model, learningRate: 0.02, momentum: 0.9, decay: 0.0005)
 
 print("Starting training...")
 
-for epoch in 1...50 {
-	if epoch > 30 { optimizer.learningRate = 0.001 }
-	
+for epoch in 1...90 {
+    if epoch > 30 { optimizer.learningRate = 0.002 }
+    if epoch > 60 { optimizer.learningRate = 0.0002 }
+
     Context.local.learningPhase = .training
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
