@@ -23,6 +23,7 @@ public func matthewsCorrelationCoefficient(predictions: [Bool], groundTruth: [Bo
     }
   }
   // NOTE: Consider removing these debug print statements later.
+  print("Total predictions: \(predictions.count)")
   print("True positives: \(tp)")
   print("True negatives: \(tn)")
   print("False positives: \(fp)")

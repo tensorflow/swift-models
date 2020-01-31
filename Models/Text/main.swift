@@ -11,8 +11,8 @@ var bertClassifier = BERTClassifier(bert: bert, classCount: 1)
 // second 11 to 20, etc.). We then keep processing examples in the input data pipeline until a 
 // bucket contains enough sequences to form a batch. The batch size specified in the task
 // constructor specifies the *total number of tokens in the batch* and not the total number of 
-// sequences. So, if the batch size is set to 128 * 32, the first bucket (i.e., lengths 1 to 10)
-// will need 128 * 32 / 10 = 409 examples to form a batch (every sentence in the bucket is padded
+// sequences. So, if the batch size is set to 1024, the first bucket (i.e., lengths 1 to 10)
+// will need 1024 / 10 = 102 examples to form a batch (every sentence in the bucket is padded
 // to the max length of the bucket). This kind of bucketing is common practice with NLP models and
 // it is done to improve memory usage and computational efficiency when dealing with sequences of
 // varied lengths. Note that this is not used in the original BERT implementation released by
@@ -21,17 +21,22 @@ var colaTask = try CoLA(
   for: bertClassifier,
   taskDirectoryURL: workspaceURL,
   maxSequenceLength: 128,
-  batchSize: 128 * 32)
+  batchSize: 1024)
 
+// var optimizer = WeightDecayedAdam(
+//   for: bertClassifier,
+//   learningRate: LinearlyDecayedParameter(
+//     baseParameter: LinearlyWarmedUpParameter(
+//       baseParameter: FixedParameter<Float>(2e-5),
+//       warmUpStepCount: 10,
+//       warmUpOffset: 0),
+//     slope: -5e-7, // The LR decays linearly to zero in 100 steps.
+//     startStep: 10),
+//   weightDecayRate: 0.01,
+//   maxGradientGlobalNorm: 1)
 var optimizer = WeightDecayedAdam(
   for: bertClassifier,
-  learningRate: LinearlyDecayedParameter(
-    baseParameter: LinearlyWarmedUpParameter(
-      baseParameter: FixedParameter<Float>(2e-5),
-      warmUpStepCount: 10,
-      warmUpOffset: 0),
-    slope: -5e-7, // The LR decays linearly to zero in 100 steps.
-    startStep: 10),
+  learningRate: FixedParameter<Float>(2e-5),
   weightDecayRate: 0.01,
   maxGradientGlobalNorm: 1)
 
