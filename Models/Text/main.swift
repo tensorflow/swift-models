@@ -23,20 +23,15 @@ var colaTask = try CoLA(
   maxSequenceLength: 128,
   batchSize: 1024)
 
-// var optimizer = WeightDecayedAdam(
-//   for: bertClassifier,
-//   learningRate: LinearlyDecayedParameter(
-//     baseParameter: LinearlyWarmedUpParameter(
-//       baseParameter: FixedParameter<Float>(2e-5),
-//       warmUpStepCount: 10,
-//       warmUpOffset: 0),
-//     slope: -5e-7, // The LR decays linearly to zero in 100 steps.
-//     startStep: 10),
-//   weightDecayRate: 0.01,
-//   maxGradientGlobalNorm: 1)
 var optimizer = WeightDecayedAdam(
   for: bertClassifier,
-  learningRate: FixedParameter<Float>(2e-5),
+  learningRate: LinearlyDecayedParameter(
+    baseParameter: LinearlyWarmedUpParameter(
+      baseParameter: FixedParameter<Float>(2e-5),
+      warmUpStepCount: 10,
+      warmUpOffset: 0),
+    slope: -5e-7, // The LR decays linearly to zero in 100 steps.
+    startStep: 10),
   weightDecayRate: 0.01,
   maxGradientGlobalNorm: 1)
 
