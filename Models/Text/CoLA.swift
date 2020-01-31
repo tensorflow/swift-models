@@ -46,7 +46,6 @@ public struct CoLA {
     }
   }
 
-  // Missing `NCA.matthewsCorrelationCoefficient`: https://github.com/eaplatanios/nca
   public func evaluate(using classifier: BERTClassifier) -> [String: Float] {
     var devDataIterator = self.devDataIterator
     var devPredictedLabels = [Bool]()

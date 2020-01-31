@@ -8,9 +8,9 @@ var bertClassifier = BERTClassifier(bert: bert, classCount: 1)
 
 // Regarding the batch size, note that the way batching is performed currently is that we bucket
 // input sequences based on their length (e.g., first bucket contains sequences of length 1 to 10,
-// second 11 to 20, etc.). We then keep processing examples in the input data pipeline until a 
+// second 11 to 20, etc.). We then keep processing examples in the input data pipeline until a
 // bucket contains enough sequences to form a batch. The batch size specified in the task
-// constructor specifies the *total number of tokens in the batch* and not the total number of 
+// constructor specifies the *total number of tokens in the batch* and not the total number of
 // sequences. So, if the batch size is set to 1024, the first bucket (i.e., lengths 1 to 10)
 // will need 1024 / 10 = 102 examples to form a batch (every sentence in the bucket is padded
 // to the max length of the bucket). This kind of bucketing is common practice with NLP models and
@@ -41,6 +41,6 @@ for step in 0... {
   print("[Step: \(step)]\tLoss: \(loss)")
   if step > 0 && step.isMultiple(of: 10) {
     print("Evaluate BERT for the CoLA task:")
-    dump(colaTask.evaluate(using: bertClassifier))
+    print(colaTask.evaluate(using: bertClassifier))
   }
 }
