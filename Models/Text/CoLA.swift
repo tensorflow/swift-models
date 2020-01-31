@@ -19,7 +19,7 @@ public struct CoLA {
   private typealias ExampleIterator = IndexingIterator<Array<Example>>
   private typealias RepeatExampleIterator = ShuffleIterator<RepeatIterator<ExampleIterator>>
   private typealias TrainDataIterator = PrefetchIterator<GroupedIterator<MapIterator<RepeatExampleIterator, DataBatch>>>
-  private typealias DevDataIterator = PrefetchIterator<GroupedIterator<MapIterator<ExampleIterator, DataBatch>>>
+  private typealias DevDataIterator = GroupedIterator<MapIterator<ExampleIterator, DataBatch>>
   private typealias TestDataIterator = DevDataIterator
 
   private var trainDataIterator: TrainDataIterator
@@ -28,33 +28,32 @@ public struct CoLA {
 
   @discardableResult
   public mutating func update<O: Optimizer>(
-    architecture: inout BERTClassifier,
+    classifier: inout BERTClassifier,
     using optimizer: inout O
   ) -> Float where O.Model == BERTClassifier {
     let batch = withDevice(.cpu) { trainDataIterator.next()! }
     let input = batch.inputs
-    let labels = batch.labels!
+    let labels = Tensor<Float>(batch.labels!)
     return withLearningPhase(.training) {
-      let (loss, gradient) = valueWithGradient(at: architecture) {
-        softmaxCrossEntropy(
-          logits: $0(input),
+      let (loss, gradient) = valueWithGradient(at: classifier) {
+        sigmoidCrossEntropy(
+          logits: $0(input).squeezingShape(at: -1),
           labels: labels,
           reduction: { $0.mean() })
       }
-      optimizer.update(&architecture, along: gradient)
+      optimizer.update(&classifier, along: gradient)
       return loss.scalarized()
     }
   }
 
   // Missing `NCA.matthewsCorrelationCoefficient`: https://github.com/eaplatanios/nca
-  public func evaluate(using architecture: BERTClassifier) -> [String: Float] {
-    var devDataIterator = self.devDataIterator.copy()
+  public func evaluate(using classifier: BERTClassifier) -> [String: Float] {
+    var devDataIterator = self.devDataIterator
     var devPredictedLabels = [Bool]()
     var devGroundTruth = [Bool]()
     while let batch = withDevice(.cpu, perform: { devDataIterator.next() }) {
-      let input = ArchitectureInput(text: batch.inputs)
-      let predictions = architecture(input.text!)
-      let predictedLabels = predictions.argmax(squeezingAxis: -1) .== 1
+      let predictions = classifier(batch.inputs)
+      let predictedLabels = sigmoid(predictions.squeezingShape(at: -1)) .>= 0.5
       devPredictedLabels.append(contentsOf: predictedLabels.scalars)
       devGroundTruth.append(contentsOf: batch.labels!.scalars.map { $0 == 1 })
     }
@@ -139,7 +138,6 @@ extension CoLA {
           inputs: padAndBatch(textBatches: $0.map { $0.inputs }),
           labels: Tensor.batch($0.map { $0.labels! }))
         })
-      .prefetched(count: 2)
     self.testDataIterator = testExamples.makeIterator()
       .map(exampleMapFn)
       .grouped(
@@ -149,7 +147,6 @@ extension CoLA {
           inputs: padAndBatch(textBatches: $0.map { $0.inputs }),
           labels: nil)
         })
-      .prefetched(count: 2)
   }
 }
 
