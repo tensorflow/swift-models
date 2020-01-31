@@ -121,29 +121,29 @@ extension CoLA {
       .shuffled(bufferSize: 1000)
       .map(exampleMapFn)
       .grouped(
-        keyFn: { $0.inputs.tokenIds.shape[1] / 10 },
-        sizeFn: { key in batchSize / ((key + 1) * 10) },
+        keyFn: { _ in 0 },
+        sizeFn: { _ in batchSize / maxSequenceLength },
         reduceFn: { DataBatch(
-          inputs: padAndBatch(textBatches: $0.map { $0.inputs }),
+          inputs: padAndBatch(textBatches: $0.map { $0.inputs }, maxLength: maxSequenceLength),
           labels: Tensor.batch($0.map { $0.labels! }))
         })
       .prefetched(count: 2)
     self.devDataIterator = devExamples.makeIterator()
       .map(exampleMapFn)
       .grouped(
-        keyFn: { $0.inputs.tokenIds.shape[1] / 10 },
-        sizeFn: { key in batchSize / ((key + 1) * 10) },
+        keyFn: { _ in 0 },
+        sizeFn: { _ in batchSize / maxSequenceLength },
         reduceFn: { DataBatch(
-          inputs: padAndBatch(textBatches: $0.map { $0.inputs }),
+          inputs: padAndBatch(textBatches: $0.map { $0.inputs }, maxLength: maxSequenceLength),
           labels: Tensor.batch($0.map { $0.labels! }))
         })
     self.testDataIterator = testExamples.makeIterator()
       .map(exampleMapFn)
       .grouped(
-        keyFn: { $0.inputs.tokenIds.shape[1] / 10 },
-        sizeFn: { key in batchSize / ((key + 1) * 10) },
+        keyFn: { _ in 0 },
+        sizeFn: { _ in batchSize / maxSequenceLength },
         reduceFn: { DataBatch(
-          inputs: padAndBatch(textBatches: $0.map { $0.inputs }),
+          inputs: padAndBatch(textBatches: $0.map { $0.inputs }, maxLength: maxSequenceLength),
           labels: nil)
         })
   }
