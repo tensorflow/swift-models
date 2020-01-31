@@ -37,7 +37,7 @@ public struct CoLA {
     return withLearningPhase(.training) {
       let (loss, gradient) = valueWithGradient(at: classifier) {
         sigmoidCrossEntropy(
-          logits: $0(input),
+          logits: $0(input).squeezingShape(at: -1),
           labels: labels,
           reduction: { $0.mean() })
       }
