@@ -20,6 +20,6 @@ public struct BERTClassifier: Module, Regularizable {
   /// Returns: logits with shape `[batchSize, classCount]`.
   @differentiable(wrt: self)
   public func callAsFunction(_ input: TextBatch) -> Tensor<Float> {
-    dense(bert(input)[0..., 0])
+    dense(bert(input)[0])
   }
 }
