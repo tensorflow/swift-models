@@ -19,7 +19,7 @@ public struct CoLA {
   private typealias ExampleIterator = IndexingIterator<Array<Example>>
   private typealias RepeatExampleIterator = ShuffleIterator<RepeatIterator<ExampleIterator>>
   private typealias TrainDataIterator = PrefetchIterator<GroupedIterator<MapIterator<RepeatExampleIterator, DataBatch>>>
-  private typealias DevDataIterator = PrefetchIterator<GroupedIterator<MapIterator<ExampleIterator, DataBatch>>>
+  private typealias DevDataIterator = GroupedIterator<MapIterator<ExampleIterator, DataBatch>>
   private typealias TestDataIterator = DevDataIterator
 
   private var trainDataIterator: TrainDataIterator
@@ -48,7 +48,7 @@ public struct CoLA {
 
   // Missing `NCA.matthewsCorrelationCoefficient`: https://github.com/eaplatanios/nca
   public func evaluate(using classifier: BERTClassifier) -> [String: Float] {
-    var devDataIterator = self.devDataIterator.copy()
+    var devDataIterator = self.devDataIterator
     var devPredictedLabels = [Bool]()
     var devGroundTruth = [Bool]()
     while let batch = withDevice(.cpu, perform: { devDataIterator.next() }) {
@@ -138,7 +138,6 @@ extension CoLA {
           inputs: padAndBatch(textBatches: $0.map { $0.inputs }),
           labels: Tensor.batch($0.map { $0.labels! }))
         })
-      .prefetched(count: 2)
     self.testDataIterator = testExamples.makeIterator()
       .map(exampleMapFn)
       .grouped(
@@ -148,7 +147,6 @@ extension CoLA {
           inputs: padAndBatch(textBatches: $0.map { $0.inputs }),
           labels: nil)
         })
-      .prefetched(count: 2)
   }
 }
 
