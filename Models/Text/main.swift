@@ -21,8 +21,11 @@ var optimizer = WeightDecayedAdam(
   maxGradientGlobalNorm: 1)
 
 print("Training BERT for the CoLA task!")
-let epochCount = 1000
-for epoch in 0..<epochCount {
+for step in 0... {
   let loss = colaTask.update(architecture: &bertClassifier, using: &optimizer)
-  print("[Epoch: \(epoch)]\tLoss: \(loss)")
+  print("[Step: \(step)]\tLoss: \(loss)")
+  if step > 0 && step.isMultiple(of: 10) {
+    print("Evaluate BERT for the CoLA task:")
+    dump(colaTask.evaluate(using: bertClassifier))
+  }
 }
