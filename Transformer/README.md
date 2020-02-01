@@ -2,29 +2,17 @@
 
 This is an implementation of [OpenAI's GPT-2 Transformer language model](https://github.com/openai/gpt-2) using [Swift for TensorFlow](https://github.com/tensorflow/swift).
 
-In order to run this code, first download a pre-trained checkpoint from OpenAI
-using the included `download_model.sh` script. Script needs one parameter - model name.
+Currently, the model must be run from the root of the swift-models project directory. You can run 
+the model by sampling either unconditionally:
 
 ```sh
-bash download_model.sh 117M
-```
-
-Then, compile using `swiftc`:
-
-```sh
-swiftc -O -ltensorflow -o main Operators.swift Model.swift PythonCheckpointReader.swift main.swift
-```
-
-You can now sample from the model either unconditionally:
-
-```sh
-./main [temperature]
+swift run -c release Transformer [temperature]
 ```
 
 or conditionally:
 
 ```sh
-./main [temperature] "conditioning text"
+swift run -c release Transformer [temperature] "conditioning text"
 ```
 
 In either case, a "temperature" of 0 means "always output the same text, but it'll be fairly boring,"
@@ -51,5 +39,4 @@ To get a toolchain, you can:
 
 It also currently requires Python 3.x.
 
-Both the tokenizer (`encoder.py`) and the model download script (`download_model.sh`) are
-from the OpenAI implementation and are licensed under MIT.
+The tokenizer (`encoder.py`) is from the OpenAI implementation and is under the MIT license.

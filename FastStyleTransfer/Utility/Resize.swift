@@ -3,7 +3,7 @@ import TensorFlow
 /// Resizes input images according to `scaleFactor`.
 ///
 /// Expected input layout: BxHxWxC.
-@differentiable(wrt: input, vjp: _vjpResizeNearestNeighbor(input:scaleFactor:))
+@differentiable(wrt: input)
 public func resizeNearestNeighbor<Scalar: TensorFlowFloatingPoint>(
     _ input: Tensor<Scalar>, scaleFactor: Float
 ) -> Tensor<Scalar> {
@@ -15,9 +15,10 @@ public func resizeNearestNeighbor<Scalar: TensorFlowFloatingPoint>(
 }
 
 @usableFromInline
+@derivative(of: resizeNearestNeighbor, wrt: input)
 internal func _vjpResizeNearestNeighbor<Scalar: TensorFlowFloatingPoint>(
     input: Tensor<Scalar>, scaleFactor: Float
-) -> (Tensor<Scalar>, (Tensor<Scalar>) -> Tensor<Scalar>) {
+) -> (value: Tensor<Scalar>, pullback: (Tensor<Scalar>) -> Tensor<Scalar>) {
     let result = resizeNearestNeighbor(input, scaleFactor: scaleFactor)
     return (result, { v in
         let size = Tensor<Int32>(

@@ -54,20 +54,32 @@ public struct Image {
         }
     }
 
-    public func save(to url: URL, quality: Int64 = 95) {
-        // This currently only saves in grayscale.
+    public func save(to url: URL, format: _Raw.Format = .grayscale, quality: Int64 = 95) {
         let outputImageData: Tensor<UInt8>
-        switch self.imageData {
-        case let .uint8(data): outputImageData = data
-        case let .float(data):
-            let lowerBound = data.min(alongAxes: [0, 1])
-            let upperBound = data.max(alongAxes: [0, 1])
-            let adjustedData = (data - lowerBound) * (255.0 / (upperBound - lowerBound))
-            outputImageData = Tensor<UInt8>(adjustedData)
+        switch format {
+        case .grayscale:
+            switch self.imageData {
+            case let .uint8(data): outputImageData = data
+            case let .float(data):
+                let lowerBound = data.min(alongAxes: [0, 1])
+                let upperBound = data.max(alongAxes: [0, 1])
+                let adjustedData = (data - lowerBound) * (255.0 / (upperBound - lowerBound))
+                outputImageData = Tensor<UInt8>(adjustedData)
+            }
+        case .rgb:
+            switch self.imageData {
+            case let .uint8(data): outputImageData = data
+            case let .float(data):
+                outputImageData = Tensor<UInt8>(
+                    _Raw.clipByValue(t: data, clipValueMin: Tensor(0), clipValueMax: Tensor(255)))
+            }
+        default:
+            print("Image saving isn't supported for the format \(format).")
+            exit(-1)
         }
 
         let encodedJpeg = _Raw.encodeJpeg(
-            image: outputImageData, format: .grayscale, quality: quality, xmpMetadata: "")
+            image: outputImageData, format: format, quality: quality, xmpMetadata: "")
         _Raw.writeFile(filename: StringTensor(url.absoluteString), contents: encodedJpeg)
     }
 

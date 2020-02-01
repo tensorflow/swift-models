@@ -15,17 +15,6 @@
 import Python
 import TensorFlow
 
-// Initialize Python. This comment is a hook for internal use, do not remove.
-
-let np = Python.import("numpy")
-let gym = Python.import("gym")
-
-/// Model parameters and hyperparameters.
-let hiddenSize = 128
-let batchSize = 16
-/// Controls the amount of good/long episodes to retain for training.
-let percentile = 70
-
 // Force unwrapping with `!` does not provide source location when unwrapping `nil`, so we instead
 // make a utility function for debuggability.
 fileprivate extension Optional {
@@ -36,6 +25,17 @@ fileprivate extension Optional {
         return unwrapped
     }
 }
+
+// Initialize Python. This comment is a hook for internal use, do not remove.
+
+let np = Python.import("numpy")
+let gym = Python.import("gym")
+
+/// Model parameters and hyperparameters.
+let hiddenSize = 128
+let batchSize = 16
+/// Controls the amount of good/long episodes to retain for training.
+let percentile = 70
 
 /// A simple two layer dense net.
 struct Net: Layer {

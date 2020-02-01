@@ -60,27 +60,18 @@ fileprivate func fetchDataset(
     flattening: Bool,
     normalizing: Bool
 ) -> LabeledExample {
-    guard let remoteRoot = URL(string: "http://yann.lecun.com/exdb/mnist") else {
-        fatalError("Failed to create MNIST root url: http://yann.lecun.com/exdb/mnist")
-    }
-
-    if !FileManager.default.fileExists(atPath: localStorageDirectory.path) {
-        do {
-            try FileManager.default.createDirectory(
-                at: localStorageDirectory, withIntermediateDirectories: false)
-        } catch {
-            fatalError(
-                "Failed to create storage directory: \(localStorageDirectory.path), error: \(error)"
-            )
-        }
+    guard let remoteRoot = URL(string: "https://storage.googleapis.com/cvdf-datasets/mnist") else {
+        fatalError("Failed to create MNIST root url: https://storage.googleapis.com/cvdf-datasets/mnist")
     }
 
     let imagesData = DatasetUtilities.fetchResource(
         filename: imagesFilename,
+        fileExtension: "gz",
         remoteRoot: remoteRoot,
         localStorageDirectory: localStorageDirectory)
     let labelsData = DatasetUtilities.fetchResource(
         filename: labelsFilename,
+        fileExtension: "gz",
         remoteRoot: remoteRoot,
         localStorageDirectory: localStorageDirectory)
 
