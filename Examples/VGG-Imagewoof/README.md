@@ -6,7 +6,7 @@ A VGG-16 network is instantiated from the ImageClassificationModels library of s
 
 As a note: the current implementation of the Imagewoof dataset loads all images into memory as floats, which can lead to memory exhaustion on machines with less than 16 GB of available RAM.
 
-# Learning rate schedules
+## Learning rate schedules
 
 VGG, as a network, is extremely sensitive to training tweaks and batch size.  This code sample demonstrates using a custom decreasing learning rate schedule, similar to that employed in the original paper.
 
