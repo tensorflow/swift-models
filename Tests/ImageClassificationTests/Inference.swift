@@ -137,25 +137,25 @@ final class ImageClassificationInferenceTests: XCTestCase {
             randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
             standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
         
-        let resNet18ImageNet = ResNet(classCount: 1000, depth: .resNet18)
-        let resNet18ImageNetResult = resNet18ImageNet(inputImageNet)
-        XCTAssertEqual(resNet18ImageNetResult.shape, [1, 1000])
+        let resNet18 = ResNet(classCount: 1000, depth: .resNet18)
+        let resNet18Result = resNet18(input)
+        XCTAssertEqual(resNet18Result.shape, [1, 1000])
 
-        let resNet34ImageNet = ResNet(classCount: 1000, depth: .resNet34)
-        let resNet34ImageNetResult = resNet34ImageNet(inputImageNet)
-        XCTAssertEqual(resNet34ImageNetResult.shape, [1, 1000])
+        let resNet34 = ResNet(classCount: 1000, depth: .resNet34)
+        let resNet34Result = resNet34(input)
+        XCTAssertEqual(resNet34Result.shape, [1, 1000])
         
-        let resNet50ImageNet = ResNet(classCount: 1000, depth: .resNet50)
-        let resNet50ImageNetResult = resNet50ImageNet(inputImageNet)
-        XCTAssertEqual(resNet50ImageNetResult.shape, [1, 1000])
+        let resNet50 = ResNet(classCount: 1000, depth: .resNet50)
+        let resNet50Result = resNet50(input)
+        XCTAssertEqual(resNet50Result.shape, [1, 1000])
         
-        let resNet101ImageNet = ResNet(classCount: 1000, depth: .resNet101)
-        let resNet101ImageNetResult = resNet101ImageNet(inputImageNet)
-        XCTAssertEqual(resNet101ImageNetResult.shape, [1, 1000])
+        let resNet101 = ResNet(classCount: 1000, depth: .resNet101)
+        let resNet101Result = resNet101(input)
+        XCTAssertEqual(resNet101Result.shape, [1, 1000])
         
-        let resNet152ImageNet = ResNet(classCount: 1000, depth: .resNet152)
-        let resNet152ImageNetResult = resNet152ImageNet(inputImageNet)
-        XCTAssertEqual(resNet18ImageNetResult.shape, [1, 1000])
+        let resNet152 = ResNet(classCount: 1000, depth: .resNet152)
+        let resNet152Result = resNet152(input)
+        XCTAssertEqual(resNet152Result.shape, [1, 1000])
     }
 
     func testSqueezeNetV1_0() {

@@ -24,7 +24,7 @@ import TensorFlow
 // https://arxiv.org/abs/1812.01187
 
 // A convolution and batchnorm layer
-public struct ConvBN: Layer {
+public struct ConvBNV2: Layer {
     public var conv: Conv2D<Float>
     public var norm: BatchNorm<Float>
     @noDerivative public let useRelu: Bool
@@ -57,7 +57,7 @@ public struct ConvBN: Layer {
 // Workaround optionals not being differentiable, can be simplified when it's the case
 // Resnet-D trick: use average pooling instead of stride 2 conv for the shortcut
 public struct Shortcut: Layer {
-    public var projection: ConvBN
+    public var projection: ConvBNV2
     public var avgPool: AvgPool2D<Float>
     @noDerivative public let needsProjection: Bool
     @noDerivative public let needsPool: Bool
@@ -66,7 +66,7 @@ public struct Shortcut: Layer {
         avgPool = AvgPool2D<Float>(poolSize: (2, 2), strides: (stride, stride))
         needsPool = (stride != 1)
         needsProjection = (inFilters != outFilters)
-        projection = ConvBN(
+        projection = ConvBNV2(
             inFilters:  needsProjection ? inFilters  : 1, 
             outFilters: needsProjection ? outFilters : 1
         )
@@ -83,21 +83,21 @@ public struct Shortcut: Layer {
 
 // Residual block for a ResNet V2
 // Resnet-B trick: stride on the inside conv
-public struct ResidualBlock: Layer {
+public struct ResidualBlockV2: Layer {
     public var shortcut: Shortcut
-    public var convs: [ConvBN]
+    public var convs: [ConvBNV2]
 
     public init(inFilters: Int, outFilters: Int, stride: Int, expansion: Int){
         if expansion == 1 {
             convs = [
-                ConvBN(inFilters: inFilters,  outFilters: outFilters, kernelSize: 3, stride: stride),
-                ConvBN(inFilters: outFilters, outFilters: outFilters, kernelSize: 3, useRelu: false)
+                ConvBNV2(inFilters: inFilters,  outFilters: outFilters, kernelSize: 3, stride: stride),
+                ConvBNV2(inFilters: outFilters, outFilters: outFilters, kernelSize: 3, useRelu: false)
             ]
         } else {
             convs = [
-                ConvBN(inFilters: inFilters,    outFilters: outFilters/4),
-                ConvBN(inFilters: outFilters/4, outFilters: outFilters/4, kernelSize: 3, stride: stride),
-                ConvBN(inFilters: outFilters/4, outFilters: outFilters, useRelu: false)
+                ConvBNV2(inFilters: inFilters,    outFilters: outFilters/4),
+                ConvBNV2(inFilters: outFilters/4, outFilters: outFilters/4, kernelSize: 3, stride: stride),
+                ConvBNV2(inFilters: outFilters/4, outFilters: outFilters, useRelu: false)
             ]
         }
         shortcut = Shortcut(inFilters: inFilters, outFilters: outFilters, stride: stride)
@@ -112,9 +112,9 @@ public struct ResidualBlock: Layer {
 
 /// An implementation of the ResNet v2 architectures, at various depths.
 public struct ResNetV2: Layer {
-    public var inputStem: [ConvBN]
+    public var inputStem: [ConvBNV2]
     public var maxPool: MaxPool2D<Float>
-    public var residualBlocks: [ResidualBlock] = []
+    public var residualBlocks: [ResidualBlockV2] = []
     public var avgPool = GlobalAvgPool2D<Float>()
     public var flatten = Flatten<Float>()
     public var classifier: Dense<Float>
@@ -136,14 +136,14 @@ public struct ResNetV2: Layer {
     ) {
         let filters = [inputChannels] + stemFilters
         inputStem = Array(0..<3).map { i in
-            ConvBN(inFilters: filters[i], outFilters: filters[i+1], kernelSize: 3, stride: i==0 ? 2 : 1)
+            ConvBNV2(inFilters: filters[i], outFilters: filters[i+1], kernelSize: 3, stride: i==0 ? 2 : 1)
         }
         maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2), padding: .same)
         let sizes = [64 / depth.expansion, 64, 128, 256, 512]
         for (iBlock, nBlocks) in depth.layerBlockSizes.enumerated() {
             let (nIn, nOut) = (sizes[iBlock] * depth.expansion, sizes[iBlock+1] * depth.expansion)
             for j in 0..<nBlocks {
-                residualBlocks.append(ResidualBlock(
+                residualBlocks.append(ResidualBlockV2(
                     inFilters: j==0 ? nIn : nOut,  
                     outFilters: nOut, 
                     stride: (iBlock != 0) && (j == 0) ? 2 : 1, 
