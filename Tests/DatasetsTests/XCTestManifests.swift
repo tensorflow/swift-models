@@ -19,6 +19,7 @@ public func allTests() -> [XCTestCaseEntry] {
     return [
         testCase(CIFAR10Tests.allTests),
         testCase(MNISTTests.allTests),
+        testCase(ImagenetteTests.allTests),
     ]
 }
 #endif
