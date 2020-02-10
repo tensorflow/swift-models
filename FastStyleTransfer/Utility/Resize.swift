@@ -9,7 +9,7 @@ public func resizeNearestNeighbor<Scalar: TensorFlowFloatingPoint>(
 ) -> Tensor<Scalar> {
     let size = Tensor<Int32>(
         shape: [2],
-        scalars: [input.shape[1], input.shape[2]].map { Int32(round(Float($0) * scaleFactor)) }
+        scalars: [input.shape[1], input.shape[2]].map { Int32(roundf(Float($0) * scaleFactor)) }
     )
     return _Raw.resizeNearestNeighbor(images: input, size: size)
 }
