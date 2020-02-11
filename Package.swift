@@ -18,6 +18,7 @@ let package = Package(
         .executable(name: "LeNet-MNIST", targets: ["LeNet-MNIST"]),
         .executable(name: "MobileNet-Imagenette", targets: ["MobileNet-Imagenette"]),
         .executable(name: "MiniGoDemo", targets: ["MiniGoDemo"]),
+        .executable(name: "Transformer", targets: ["Transformer"]),
         .library(name: "MiniGo", targets: ["MiniGo"]),
         .executable(name: "GAN", targets: ["GAN"]),
         .executable(name: "DCGAN", targets: ["DCGAN"]),
