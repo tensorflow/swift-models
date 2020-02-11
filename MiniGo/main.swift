@@ -32,7 +32,7 @@ var model = GoModel(configuration: modelConfig)
 
 let remoteCheckpoint = URL(
     string: "https://storage.googleapis.com/s4tf-hosted-binaries/checkpoints/MiniGo/000939-heron")!
-let reader = MiniGoCheckpointReader(checkpointLocation: remoteCheckpoint, modelName: "MiniGo")
+let reader = try MiniGoCheckpointReader(checkpointLocation: remoteCheckpoint, modelName: "MiniGo")
 model.load(from: reader)
 
 let predictor = MCTSModelBasedPredictor(boardSize: boardSize, model: model)

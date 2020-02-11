@@ -49,7 +49,7 @@ func importWeights(_ model: inout TransformerNet, for style: String) throws {
         exit(-1)
     }
 
-    let reader = CheckpointReader(checkpointLocation: remoteCheckpoint, modelName: modelName)
+    let reader = try CheckpointReader(checkpointLocation: remoteCheckpoint, modelName: modelName)
 
     // Names don't match exactly, and axes in filters need to be reversed.
     let map = [

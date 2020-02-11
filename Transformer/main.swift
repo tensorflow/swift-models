@@ -21,7 +21,8 @@ let modelName = "117M"
 
 let remoteCheckpoint = URL(
     string: "https://storage.googleapis.com/gpt-2/models/\(modelName)/model.ckpt")!
-let reader = CheckpointReader(
+
+let reader = try CheckpointReader(
     checkpointLocation: remoteCheckpoint, modelName: "Transformer",
     additionalFiles: ["checkpoint", "encoder.json", "hparams.json", "model.ckpt.meta", "vocab.bpe"])
 

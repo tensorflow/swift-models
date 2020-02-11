@@ -25,12 +25,13 @@ let package = Package(
         .executable(name: "Benchmarks", targets: ["Benchmarks"]),
     ],
     dependencies: [
+        .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
         .package(url: "https://github.com/kylef/Commander.git", from: "0.9.1"),
     ],
     targets: [
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "Datasets", dependencies: ["ModelSupport"], path: "Datasets"),
-        .target(name: "ModelSupport", path: "Support"),
+        .target(name: "ModelSupport", dependencies: ["SwiftProtobuf"], path: "Support"),
         .target(
             name: "Autoencoder", dependencies: ["Datasets", "ModelSupport"], path: "Autoencoder"),
         .target(name: "Catch", path: "Catch"),
@@ -70,5 +71,6 @@ let package = Package(
             name: "Benchmarks",
             dependencies: ["Datasets", "ModelSupport", "ImageClassificationModels", "Commander"],
             path: "Benchmarks"),
+        .testTarget(name: "CheckpointTests", dependencies: ["ModelSupport"]),
     ]
 )
