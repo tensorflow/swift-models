@@ -17,13 +17,13 @@ Use Swift Package Manager to develop Swift for TensorFlow models.
 ### Build
 
 ```bash
-swift build -Xlinker -ltensorflow
+swift build
 ```
 
 ### Test
 
 ```bash
-swift test -Xlinker -ltensorflow
+swift test
 ```
 
 ## Bugs

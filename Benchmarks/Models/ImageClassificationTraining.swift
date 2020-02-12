@@ -20,12 +20,13 @@ where
     Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == Float,
     ClassificationDataset: ImageClassificationDataset
 {
-    // TODO: (https://github.com/tensorflow/swift-models/issues/206) Datasets should have a common
-    // interface to allow for them to be interchangeable in these benchmark cases.
     let dataset: ClassificationDataset
-
     let epochs: Int
     let batchSize: Int
+
+    var exampleCount: Int {
+        return epochs * dataset.trainingExampleCount
+    }
 
     init(settings: BenchmarkSettings) {
         self.epochs = settings.epochs
@@ -44,7 +45,7 @@ where
                 sampleCount: dataset.trainingExampleCount, randomSeed: Int64(epoch))
             for batch in trainingShuffled.batched(batchSize) {
                 let (labels, images) = (batch.label, batch.data)
-                let 𝛁model = model.gradient { model -> Tensor<Float> in
+                let 𝛁model = TensorFlow.gradient(at: model) { model -> Tensor<Float> in
                     let logits = model(images)
                     return softmaxCrossEntropy(logits: logits, labels: labels)
                 }

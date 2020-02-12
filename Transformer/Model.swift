@@ -56,14 +56,16 @@ struct AttentionInput: Differentiable {
     var value: Tensor<Float>
 }
 
-@differentiable(wrt: (query, key, value), vjp: _vjpMakeAttentionInput)
+@differentiable(wrt: (query, key, value))
 func makeAttentionInput(query: Tensor<Float>, key: Tensor<Float>, value: Tensor<Float>)
     -> AttentionInput {
     return AttentionInput(query: query, key: key, value: value)
 }
 
+@derivative(of: makeAttentionInput, wrt: (query, key, value))
 func _vjpMakeAttentionInput(query: Tensor<Float>, key: Tensor<Float>, value: Tensor<Float>)
-    -> (AttentionInput, (AttentionInput.TangentVector) -> (Tensor<Float>, Tensor<Float>, Tensor<Float>)) {
+    -> (value: AttentionInput, pullback: (AttentionInput.TangentVector) 
+    -> (Tensor<Float>, Tensor<Float>, Tensor<Float>)) {
     let result = AttentionInput(query: query, key: key, value: value)
     return (result, { seed in (seed.query, seed.key, seed.value) })
 }
@@ -73,35 +75,35 @@ struct AttentionContext: Differentiable {
     var value: Tensor<Float>
 }
 
-@differentiable(wrt: (key, value), vjp: _vjpMakeAttentionContext)
+@differentiable(wrt: (key, value))
 func makeAttentionContext(key: Tensor<Float>, value: Tensor<Float>)
     -> AttentionContext {
     return AttentionContext(key: key, value: value)
 }
 
+@derivative(of: makeAttentionContext, wrt: (key, value))
 func _vjpMakeAttentionContext(key: Tensor<Float>, value: Tensor<Float>)
-    -> (AttentionContext, (AttentionContext.TangentVector) -> (Tensor<Float>, Tensor<Float>)) {
+    -> (value: AttentionContext, pullback: (AttentionContext.TangentVector) 
+    -> (Tensor<Float>, Tensor<Float>)) {
     let result = AttentionContext(key: key, value: value)
     return (result, { seed in (seed.key, seed.value) })
 }
 
-@differentiable(wrt: dotProducts, vjp: _vjpCausallyMasked)
+@differentiable(wrt: dotProducts)
 func causallyMasked(_ dotProducts: Tensor<Float>, enable: Bool = false) -> Tensor<Float> {
     if !enable {
         return dotProducts
     }
     let (queryTimeSteps, keyTimeSteps) = (dotProducts.shape[1], dotProducts.shape[2])
     let ones = Tensor<Float>(ones: [1, queryTimeSteps, keyTimeSteps])
-    let mask = _Raw.matrixBandPart(
-        ones,
-        numLower: Tensor(Int32(-1)),
-        numUpper: Tensor(Int32(queryTimeSteps - keyTimeSteps)))
+    let mask = ones.bandPart(subdiagonalCount: -1, superdiagonalCount: queryTimeSteps - keyTimeSteps)
     return dotProducts * mask - 1e10 * (1 - mask)
 }
 
 // causal mask is intentionally invisible to differentiation
+@derivative(of: causallyMasked, wrt: dotProducts)
 func _vjpCausallyMasked(_ dotProducts: Tensor<Float>, enable: Bool)
-    -> (Tensor<Float>, (Tensor<Float>) -> Tensor<Float>) {
+    -> (value: Tensor<Float>, pullback: (Tensor<Float>) -> Tensor<Float>) {
     return (causallyMasked(dotProducts, enable: enable), identity)
 }
 
@@ -153,7 +155,7 @@ func joinHeads(_ input: Tensor<Float>, headCount: Int) -> Tensor<Float> {
     return movedToBack.reshaped(to: [batchSize, timeSteps, features])
 }
 
-@differentiable(wrt: input, vjp: _vjpSplitQKV)
+@differentiable(wrt: input)
 func splitQKV(_ input: Tensor<Float>) -> AttentionInput {
     let (generalizedBatch, timeSteps, featuresPerHead) = (
         input.shape[0], input.shape[1], input.shape[2] / 3)
@@ -169,11 +171,12 @@ func splitQKV(_ input: Tensor<Float>) -> AttentionInput {
     return makeAttentionInput(query: query, key: key, value: value)
 }
 
+@derivative(of: splitQKV, wrt: input)
 func _vjpSplitQKV(_ input: Tensor<Float>)
-    -> (AttentionInput, (AttentionInput.TangentVector) -> Tensor<Float>) {
+    -> (value: AttentionInput, pullback: (AttentionInput.TangentVector) -> Tensor<Float>) {
     let value = splitQKV(input)
     return (value, { seed in
-        return _Raw.concatV2([seed.query, seed.key, seed.value], axis: Tensor<Int32>(2))
+        return Tensor(concatenating: [seed.query, seed.key, seed.value], alongAxis: 2)
     })
 }
 

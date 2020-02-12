@@ -15,6 +15,7 @@
 import Foundation
 
 protocol Benchmark {
+    var exampleCount: Int { get }
     func run()
 }
 
@@ -29,7 +30,8 @@ func measure(
         timings.append(timing)
     }
 
-    return BenchmarkResults(configuration: configuration, timings: timings)
+    return BenchmarkResults(
+        configuration: configuration, timings: timings, exampleCount: benchmark.exampleCount)
 }
 
 /// Returns the time elapsed while running `body` in milliseconds.

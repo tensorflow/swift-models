@@ -13,8 +13,9 @@
 // limitations under the License.
 
 import Foundation
-import TensorFlow
 import MiniGo
+import ModelSupport
+import TensorFlow
 
 let boardSize = 19
 let simulationCountForOneMove = 40
@@ -29,12 +30,9 @@ print("Loading checkpoint into GoModel. Might take a while.")
 let modelConfig = ModelConfiguration(boardSize: boardSize)
 var model = GoModel(configuration: modelConfig)
 
-guard FileManager.default.fileExists(atPath: "./MiniGoCheckpoint/000939-heron.data-00000-of-00001")
-else {
-    print("Please download the MiniGo checkpoint according to the README.md.")
-    exit(-1)
-}
-let reader = PythonCheckpointReader(path: "./MiniGoCheckpoint/000939-heron")
+let remoteCheckpoint = URL(
+    string: "https://storage.googleapis.com/s4tf-hosted-binaries/checkpoints/MiniGo/000939-heron")!
+let reader = try MiniGoCheckpointReader(checkpointLocation: remoteCheckpoint, modelName: "MiniGo")
 model.load(from: reader)
 
 let predictor = MCTSModelBasedPredictor(boardSize: boardSize, model: model)
@@ -51,8 +49,10 @@ let mctsConfiguration = MCTSConfiguration(
 try playOneGame(
     gameConfiguration: gameConfiguration,
     participants: [
-        MCTSPolicy(participantName: "black", predictor: predictor,
-                   configuration: mctsConfiguration),
-        MCTSPolicy(participantName: "white", predictor: predictor,
-                   configuration: mctsConfiguration),
+        MCTSPolicy(
+            participantName: "black", predictor: predictor,
+            configuration: mctsConfiguration),
+        MCTSPolicy(
+            participantName: "white", predictor: predictor,
+            configuration: mctsConfiguration),
     ])

@@ -21,74 +21,49 @@ import Foundation
 import ModelSupport
 import TensorFlow
 
-#if canImport(FoundationNetworking)
-    import FoundationNetworking
-#endif
-
 public struct CIFAR10: ImageClassificationDataset {
     public let trainingDataset: Dataset<LabeledExample>
     public let testDataset: Dataset<LabeledExample>
     public let trainingExampleCount = 50000
+    public let testExampleCount = 10000
 
     public init() {
-        self.trainingDataset = Dataset<LabeledExample>(elements: loadCIFARTrainingFiles())
-        self.testDataset = Dataset<LabeledExample>(elements: loadCIFARTestFile())
+        self.init(
+            remoteBinaryArchiveLocation: URL(
+                string: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz")!)
+    }
+
+    public init(remoteBinaryArchiveLocation: URL) {
+        self.init(
+            remoteBinaryArchiveLocation: remoteBinaryArchiveLocation,
+            localStorageDirectory: FileManager.default.temporaryDirectory.appendingPathComponent(
+                "CIFAR10"))
+    }
+
+    public init(remoteBinaryArchiveLocation: URL, localStorageDirectory: URL) {
+        downloadCIFAR10IfNotPresent(from: remoteBinaryArchiveLocation, to: localStorageDirectory)
+        self.trainingDataset = Dataset<LabeledExample>(
+            elements: loadCIFARTrainingFiles(localStorageDirectory: localStorageDirectory))
+        self.testDataset = Dataset<LabeledExample>(
+            elements: loadCIFARTestFile(localStorageDirectory: localStorageDirectory))
     }
 }
 
-func downloadCIFAR10IfNotPresent(to directory: String = ".") {
-    let downloadPath = "\(directory)/cifar-10-batches-bin"
+func downloadCIFAR10IfNotPresent(from location: URL, to directory: URL) {
+    let downloadPath = directory.appendingPathComponent("cifar-10-batches-bin").path
     let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
+    let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: downloadPath)
+    let directoryEmpty = (contentsOfDir == nil) || (contentsOfDir!.isEmpty)
 
-    guard !directoryExists else { return }
+    guard !directoryExists || directoryEmpty else { return }
 
-    printError("Downloading CIFAR dataset...")
-    let archivePath = "\(directory)/cifar-10-binary.tar.gz"
-    let archiveExists = FileManager.default.fileExists(atPath: archivePath)
-    if !archiveExists {
-        printError("Archive missing, downloading...")
-        do {
-            let downloadedFile = try Data(
-                contentsOf: URL(
-                    string: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz")!)
-            try downloadedFile.write(to: URL(fileURLWithPath: archivePath))
-        } catch {
-            printError("Could not download CIFAR dataset, error: \(error)")
-            exit(-1)
-        }
-    }
-
-    printError("Archive downloaded, processing...")
-
-    #if os(macOS)
-        let tarLocation = "/usr/bin/tar"
-    #else
-        let tarLocation = "/bin/tar"
-    #endif
-
-    let task = Process()
-    task.executableURL = URL(fileURLWithPath: tarLocation)
-    task.arguments = ["xzf", archivePath]
-    do {
-        try task.run()
-        task.waitUntilExit()
-    } catch {
-        printError("CIFAR extraction failed with error: \(error)")
-    }
-
-    do {
-        try FileManager.default.removeItem(atPath: archivePath)
-    } catch {
-        printError("Could not remove archive, error: \(error)")
-        exit(-1)
-    }
-
-    printError("Unarchiving completed")
+    let _ = DatasetUtilities.downloadResource(
+        filename: "cifar-10-binary", fileExtension: "tar.gz",
+        remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
 }
 
-func loadCIFARFile(named name: String, in directory: String = ".") -> LabeledExample {
-    downloadCIFAR10IfNotPresent(to: directory)
-    let path = "\(directory)/cifar-10-batches-bin/\(name)"
+func loadCIFARFile(named name: String, in directory: URL) -> LabeledExample {
+    let path = directory.appendingPathComponent("cifar-10-batches-bin/\(name)").path
 
     let imageCount = 10000
     guard let fileContents = try? Data(contentsOf: URL(fileURLWithPath: path)) else {
@@ -124,14 +99,16 @@ func loadCIFARFile(named name: String, in directory: String = ".") -> LabeledExa
     return LabeledExample(label: Tensor<Int32>(labelTensor), data: imagesNormalized)
 }
 
-func loadCIFARTrainingFiles() -> LabeledExample {
-    let data = (1..<6).map { loadCIFARFile(named: "data_batch_\($0).bin") }
+func loadCIFARTrainingFiles(localStorageDirectory: URL) -> LabeledExample {
+    let data = (1..<6).map {
+        loadCIFARFile(named: "data_batch_\($0).bin", in: localStorageDirectory)
+    }
     return LabeledExample(
-        label: _Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.label }),
-        data: _Raw.concat(concatDim: Tensor<Int32>(0), data.map { $0.data })
+        label: Tensor(concatenating: data.map { $0.label }, alongAxis: 0),
+        data: Tensor(concatenating: data.map { $0.data }, alongAxis: 0)
     )
 }
 
-func loadCIFARTestFile() -> LabeledExample {
-    return loadCIFARFile(named: "test_batch.bin")
+func loadCIFARTestFile(localStorageDirectory: URL) -> LabeledExample {
+    return loadCIFARFile(named: "test_batch.bin", in: localStorageDirectory)
 }

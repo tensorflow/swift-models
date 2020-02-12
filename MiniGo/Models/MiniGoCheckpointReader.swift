@@ -13,24 +13,16 @@
 // limitations under the License.
 
 import TensorFlow
+import ModelSupport
 
-public class PythonCheckpointReader {
-    private let path: String
+public class MiniGoCheckpointReader: CheckpointReader {
     private var layerCounts: [String: Int] = [:]
 
-    public init(path: String) {
-        self.path = path
-    }
-
-    // Currently returns an `Optional` in order to support the case where the variable might not
-    // exist, but this is not implemented (see b/124126672).
     func readTensor(layerName: String, weightName: String) -> Tensor<Float>? {
         let countSuffix = layerCounts[layerName] == nil ? "" : "_\(layerCounts[layerName]!)"
         let tensorName = layerName + countSuffix + "/" + weightName
-        // TODO(jekbradbury): support variadic dtype attrs in RawOpsGenerated
-        return _Raw.restoreV2(prefix: StringTensor(path),
-                             tensorNames: StringTensor([tensorName]),
-                             shapeAndSlices: StringTensor([""]))
+        guard containsTensor(named: tensorName) else { return nil}
+        return Tensor<Float>(loadTensor(named: tensorName))
     }
 
     /// Increments a per-layer counter for variable names in the checkpoint file.
@@ -49,11 +41,11 @@ private func checkShapes(_ tensor1: Tensor<Float>, _ tensor2: Tensor<Float>) {
 }
 
 protocol LoadableFromPythonCheckpoint {
-    mutating func load(from reader: PythonCheckpointReader)
+    mutating func load(from reader: MiniGoCheckpointReader)
 }
 
 extension Dense: LoadableFromPythonCheckpoint where Scalar == Float {
-    mutating func load(from reader: PythonCheckpointReader) {
+    mutating func load(from reader: MiniGoCheckpointReader) {
         let newWeight = reader.readTensor(layerName: "dense", weightName: "kernel")!
         checkShapes(weight, newWeight)
         weight = newWeight
@@ -67,7 +59,7 @@ extension Dense: LoadableFromPythonCheckpoint where Scalar == Float {
 }
 
 extension Conv2D: LoadableFromPythonCheckpoint where Scalar == Float {
-    mutating func load(from reader: PythonCheckpointReader) {
+    mutating func load(from reader: MiniGoCheckpointReader) {
         let newFilter = reader.readTensor(layerName: "conv2d", weightName: "kernel")!
         checkShapes(filter, newFilter)
         filter = newFilter
@@ -85,7 +77,7 @@ extension Conv2D: LoadableFromPythonCheckpoint where Scalar == Float {
 }
 
 extension BatchNorm: LoadableFromPythonCheckpoint where Scalar == Float {
-    mutating func load(from reader: PythonCheckpointReader) {
+    mutating func load(from reader: MiniGoCheckpointReader) {
         if let newOffset = reader.readTensor(layerName: "batch_normalization", weightName: "beta") {
             checkShapes(offset, newOffset)
             offset = newOffset

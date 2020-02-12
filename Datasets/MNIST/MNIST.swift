@@ -24,6 +24,7 @@ public struct MNIST: ImageClassificationDataset {
     public let trainingDataset: Dataset<LabeledExample>
     public let testDataset: Dataset<LabeledExample>
     public let trainingExampleCount = 60000
+    public let testExampleCount = 10000
 
     public init() {
         self.init(flattening: false, normalizing: false)
@@ -31,7 +32,8 @@ public struct MNIST: ImageClassificationDataset {
 
     public init(
         flattening: Bool = false, normalizing: Bool = false,
-        localStorageDirectory: URL = DatasetUtilities.currentWorkingDirectoryURL
+        localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
+            "MNIST")
     ) {
         self.trainingDataset = Dataset<LabeledExample>(
             elements: fetchDataset(
@@ -58,16 +60,18 @@ fileprivate func fetchDataset(
     flattening: Bool,
     normalizing: Bool
 ) -> LabeledExample {
-    guard let remoteRoot:URL = URL(string: "http://yann.lecun.com/exdb/mnist") else {
-        fatalError("Failed to create MNST root url: http://yann.lecun.com/exdb/mnist")
+    guard let remoteRoot = URL(string: "https://storage.googleapis.com/cvdf-datasets/mnist") else {
+        fatalError("Failed to create MNIST root url: https://storage.googleapis.com/cvdf-datasets/mnist")
     }
 
     let imagesData = DatasetUtilities.fetchResource(
         filename: imagesFilename,
+        fileExtension: "gz",
         remoteRoot: remoteRoot,
         localStorageDirectory: localStorageDirectory)
     let labelsData = DatasetUtilities.fetchResource(
         filename: labelsFilename,
+        fileExtension: "gz",
         remoteRoot: remoteRoot,
         localStorageDirectory: localStorageDirectory)
 
@@ -78,7 +82,8 @@ fileprivate func fetchDataset(
     let (imageWidth, imageHeight) = (28, 28)
 
     if flattening {
-        var flattenedImages = Tensor(shape: [rowCount, imageHeight * imageWidth], scalars: images)
+        var flattenedImages =
+            Tensor(shape: [rowCount, imageHeight * imageWidth], scalars: images)
             / 255.0
         if normalizing {
             flattenedImages = flattenedImages * 2.0 - 1.0

@@ -14,10 +14,24 @@
 
 import Foundation
 
+#if canImport(FoundationNetworking)
+    import FoundationNetworking
+#endif
+
 public func createDirectoryIfMissing(at path: String) throws {
     guard !FileManager.default.fileExists(atPath: path) else { return }
     try FileManager.default.createDirectory(
         atPath: path,
-        withIntermediateDirectories: false,
+        withIntermediateDirectories: true,
         attributes: nil)
+}
+
+public func download(from source: URL, to destinationDirectory: URL) throws {
+    try createDirectoryIfMissing(at: destinationDirectory.path)
+
+    let fileName = source.lastPathComponent
+    let destinationFile = destinationDirectory.appendingPathComponent(fileName).path
+
+    let downloadedFile = try Data(contentsOf: source)
+    try downloadedFile.write(to: URL(fileURLWithPath: destinationFile))
 }

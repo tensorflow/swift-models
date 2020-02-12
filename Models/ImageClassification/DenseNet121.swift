@@ -42,7 +42,7 @@ public struct DenseNet121: Layer {
     public var dense: Dense<Float>
 
     public init(classCount: Int) {
-        dense = Dense(inputSize: 1024, outputSize: classCount, activation: softmax)
+        dense = Dense(inputSize: 1024, outputSize: classCount)
     }
 
     @differentiable
