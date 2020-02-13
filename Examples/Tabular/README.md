@@ -1,27 +1,26 @@
-# Tabular
+# Regression with tabular Boston housing price dataset
 
-This directory contains a regression model trains a Boston house prices dataset.
+This example demonstrates how to train a regression model against the [Boston 
+housing price dataset](https://archive.ics.uci.edu/ml/machine-learning-databases/housing/).
 
-This is a very small dataset with only 506 data points and 13 numeric/categorical features.  Median Value (last column) is usually the target.
-
-:Creator: Harrison, D. and Rubinfeld, D.L.
-This is a copy of UCI ML housing dataset. https://archive.ics.uci.edu/ml/machine-learning-databases/housing/
+There are 506 data points. Samples contain 13 attributes of houses at different 
+locations around the Boston suburbs in the late 1970s. Targets are the median 
+values of the houses at a location (in k$).
 
 ## Setup
 
-You'll need [the latest version][INSTALL] of Swift for TensorFlow
+To begin, you'll need the [latest version of Swift for
+TensorFlow](https://github.com/tensorflow/swift/blob/master/Installation.md)
 installed and added to your path. Additionally, the data loader requires Python
-3.x (rather than Python 2.7), `wget`, and `numpy`.
+3.x, `wget`, and `numpy`.
 
 > Note: For macOS, you need to set up the `PYTHON_LIBRARY` to help the Swift for
 > TensorFlow find the `libpython3.<minor-version>.dylib` file, e.g., in
 > `homebrew`.
 
-To train the model on the Boston house prices dataset, run:
+To train the model, run:
 
-```
+```sh
 cd swift-models
 swift run Tabular
 ```
-
-[INSTALL]: (https://github.com/tensorflow/swift/blob/master/Installation.md)
