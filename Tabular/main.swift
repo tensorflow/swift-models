@@ -41,13 +41,13 @@ let batchSize = 32
 let numberOfBatch = Int(ceil(Double(dataset.numTrainRecords) / Double(batchSize)))
 let shuffle = true
 
-func mae(predictions: Tensor<Float>, truths: Tensor<Float>) -> Float {
+func meanAbsoluteError(predictions: Tensor<Float>, truths: Tensor<Float>) -> Float {
     return abs(Tensor<Float>(predictions - truths)).mean().scalarized()
 }
 
 print("Starting training...")
 
-for _ in 1...epochCount {
+for epoch in 1...epochCount {
     var epochLoss: Float = 0
     var epochMAE: Float = 0
     var batchCount: Int = 0
@@ -73,13 +73,27 @@ for _ in 1...epochCount {
         optimizer.update(&model, along: grad)
         
         let logits = model(dataset.xTrain[batchStart..<batchEnd])
-        epochMAE += mae(predictions: logits, truths: dataset.yTrain[batchStart..<batchEnd])
+        epochMAE += meanAbsoluteError(predictions: logits, truths: dataset.yTrain[batchStart..<batchEnd])
         epochLoss += loss.scalarized()
         batchCount += 1
     }
     epochMAE /= Float(batchCount)
     epochLoss /= Float(batchCount)
 
-    // print("Epoch \(epoch): MSE: \(epochLoss), MAE: \(epochMAE)")
+    if epoch == epochCount-1 {
+        print("MSE: \(epochLoss), MAE: \(epochMAE), Epoch: \(epoch+1)")
+    }
 }
 
+//Evaluate Model
+
+print("Evaluating model...")
+
+Context.local.learningPhase = .inference
+
+let prediction = model(dataset.xTest)
+
+let evalMse = meanSquaredError(predicted: prediction, expected: dataset.yTest).scalarized()/Float(dataset.numTestRecords)
+let evalMae = meanAbsoluteError(predictions: prediction, truths: dataset.yTest)/Float(dataset.numTestRecords)
+
+print("MSE: \(evalMse), MAE: \(evalMae)")
