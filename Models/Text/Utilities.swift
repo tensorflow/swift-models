@@ -14,6 +14,7 @@
 
 import Foundation
 import TensorFlow
+import ModelSupport
 
 #if os(Linux)
 import FoundationNetworking

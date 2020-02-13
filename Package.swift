@@ -30,13 +30,12 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
         .package(url: "https://github.com/kylef/Commander.git", from: "0.9.1"),
-        .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.6.0")
     ],
     targets: [
         .target(name: "Datasets", dependencies: ["ModelSupport"], path: "Datasets"),
         .target(name: "ModelSupport", dependencies: ["SwiftProtobuf"], path: "Support"),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
-        .target(name: "TextModels", dependencies: ["SwiftProtobuf"], path: "Models/Text"),
+        .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),
         .target(
             name: "Autoencoder", dependencies: ["Datasets", "ModelSupport"], path: "Autoencoder"),
         .target(name: "Catch", path: "Catch"),

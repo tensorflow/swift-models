@@ -14,6 +14,8 @@
 
 import Foundation
 import TensorFlow
+import Datasets
+import ModelSupport
 
 // TODO: [AD] Avoid using token type embeddings for RoBERTa once optionals are supported in AD.
 // TODO: [AD] Similarly for the embedding projection used in ALBERT.
@@ -292,16 +294,16 @@ public struct BERT: Module, Regularizable {
     @differentiable(wrt: self)
     public func callAsFunction(_ input: TextBatch) -> Tensor<Scalar> {
         let sequenceLength = input.tokenIds.shape[1]
+        let variant = withoutDerivative(at: self.variant)
 
         // Compute the input embeddings and apply layer normalization and dropout on them.
         let tokenEmbeddings = tokenEmbedding(input.tokenIds)
         let tokenTypeEmbeddings = tokenTypeEmbedding(input.tokenTypeIds)
-        let positionPaddingIndex = withoutDerivative(at: { () -> Int in
-            switch variant {
-            case .bert, .albert: return 0
-            case .roberta: return 2
-            }
-        }())
+        let positionPaddingIndex: Int
+        switch variant {
+        case .bert, .albert: positionPaddingIndex = 0
+        case .roberta: positionPaddingIndex = 2
+        }
         let positionEmbeddings = positionEmbedding.embeddings.slice(
             lowerBounds: [positionPaddingIndex, 0],
             upperBounds: [positionPaddingIndex + sequenceLength, -1]
@@ -311,7 +313,7 @@ public struct BERT: Module, Regularizable {
         // Add token type embeddings if needed, based on which BERT variant is being used.
         switch variant {
         case .bert, .albert: embeddings = embeddings + tokenTypeEmbeddings
-        case .roberta: ()
+        case .roberta: break
         }
 
         embeddings = embeddingLayerNorm(embeddings)
@@ -334,7 +336,7 @@ public struct BERT: Module, Regularizable {
         // Run the stacked transformer.
         switch variant {
         case .bert, .roberta:
-            for layerIndex in 0..<withoutDerivative(at: encoderLayers) { $0.count } {
+            for layerIndex in 0..<(withoutDerivative(at: encoderLayers) { $0.count }) {
                 transformerInput = encoderLayers[layerIndex](TransformerInput(
                 sequence: transformerInput,
                 attentionMask: attentionMask,
@@ -646,7 +648,6 @@ extension BERT {
                 case .bertBase, .bertLarge:
                     let vocabularyURL = directory
                         .appendingPathComponent(subDirectory)
-                        .appendingPathComponent(subDirectory)
                         .appendingPathComponent("vocab.txt")
                     return try! Vocabulary(fromFile: vocabularyURL)
                 case .robertaBase, .robertaLarge:
@@ -728,7 +729,6 @@ extension BERT {
             case .bertBase, .bertLarge:
                 model.load(fromTensorFlowCheckpoint: directory
                     .appendingPathComponent(subDirectory)
-                    .appendingPathComponent(subDirectory)
                     .appendingPathComponent("bert_model.ckpt"))
             case .robertaBase, .robertaLarge:
                 model.load(fromTensorFlowCheckpoint: directory
@@ -747,15 +747,10 @@ extension BERT {
         public func maybeDownload(to directory: URL) throws {
             switch self {
             case .bertBase, .bertLarge, .robertaBase, .robertaLarge:
-                // Download the model, if necessary.
-                let compressedFileURL = directory.appendingPathComponent("\(subDirectory).zip")
-                try TextModels.maybeDownload(from: url, to: compressedFileURL)
-
-                // Extract the data, if necessary.
-                let extractedDirectoryURL = compressedFileURL.deletingPathExtension()
-                if !FileManager.default.fileExists(atPath: extractedDirectoryURL.path) {
-                    try extract(zipFileAt: compressedFileURL, to: extractedDirectoryURL)
-                }
+                // Download and extract the pretrained model, if necessary.
+                DatasetUtilities.downloadResource(filename: "\(subDirectory)", fileExtension: "zip",
+                                                  remoteRoot: url.deletingLastPathComponent(),
+                                                  localStorageDirectory: directory)
             case .albertBase, .albertLarge, .albertXLarge, .albertXXLarge:
                 // Download the model, if necessary.
                 let compressedFileURL = directory.appendingPathComponent("\(subDirectory).tar.gz")

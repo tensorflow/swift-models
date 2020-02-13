@@ -1,0 +1,67 @@
+diff --git a/Models/Text/CoLA.swift b/Models/Text/CoLA.swift
+index 49a8d41..b19853b 100644
+--- a/Models/Text/CoLA.swift
++++ b/Models/Text/CoLA.swift
+@@ -124,8 +124,8 @@ extension CoLA {
+       .shuffled(bufferSize: 1000)
+       .map(exampleMapFn)
+       .grouped(
+-        keyFn: { $0.inputs.tokenIds.shape[1] / (maxSequenceLength + 1) },
+-        sizeFn: { key in batchSize / ((key + 1) * (maxSequenceLength + 1)) },
++        keyFn: { _ in 0 },
++        sizeFn: { _ in batchSize / maxSequenceLength },
+         reduceFn: { DataBatch(
+           inputs: padAndBatch(textBatches: $0.map { $0.inputs }),
+           labels: Tensor.batch($0.map { $0.labels! }))
+@@ -134,8 +134,8 @@ extension CoLA {
+     self.devDataIterator = devExamples.makeIterator()
+       .map(exampleMapFn)
+       .grouped(
+-        keyFn: { $0.inputs.tokenIds.shape[1] / (maxSequenceLength + 1) },
+-        sizeFn: { key in batchSize / ((key + 1) * (maxSequenceLength + 1)) },
++        keyFn: { _ in 0 },
++        sizeFn: { _ in batchSize / maxSequenceLength },
+         reduceFn: { DataBatch(
+           inputs: padAndBatch(textBatches: $0.map { $0.inputs }),
+           labels: Tensor.batch($0.map { $0.labels! }))
+@@ -143,8 +143,8 @@ extension CoLA {
+     self.testDataIterator = testExamples.makeIterator()
+       .map(exampleMapFn)
+       .grouped(
+-        keyFn: { $0.inputs.tokenIds.shape[1] / (maxSequenceLength + 1) },
+-        sizeFn: { key in batchSize / ((key + 1) * (maxSequenceLength + 1)) },
++        keyFn: { _ in 0 },
++        sizeFn: { _ in batchSize / maxSequenceLength },
+         reduceFn: { DataBatch(
+           inputs: padAndBatch(textBatches: $0.map { $0.inputs }),
+           labels: nil)
+diff --git a/Models/Text/Tokenization.swift b/Models/Text/Tokenization.swift
+index f018b9f..eb4e3e0 100644
+--- a/Models/Text/Tokenization.swift
++++ b/Models/Text/Tokenization.swift
+@@ -56,7 +56,7 @@ internal func padAndBatch(textBatches: [TextBatch]) -> TextBatch {
+     if textBatches.count == 1 { return textBatches.first! }
+     let maxLength = textBatches.map { $0.tokenIds.shape[1] }.max()!
+     let paddedBatches = textBatches.map { batch -> TextBatch in
+-        let paddingSize = maxLength - batch.tokenIds.shape[1]
++        let paddingSize = maxSequenceLength - batch.tokenIds.shape[1]
+         return TextBatch(
+             tokenIds: batch.tokenIds.padded(forSizes: [
+                 (before: 0, after: 0),
+diff --git a/Models/Text/main.swift b/Models/Text/main.swift
+index 032f269..4f66f1a 100644
+--- a/Models/Text/main.swift
++++ b/Models/Text/main.swift
+@@ -17,10 +17,11 @@ var bertClassifier = BERTClassifier(bert: bert, classCount: 1)
+ // it is done to improve memory usage and computational efficiency when dealing with sequences of
+ // varied lengths. Note that this is not used in the original BERT implementation released by
+ // Google and so the batch size setting here is expected to differ from that one.
++let maxSequenceLength = 128
+ var colaTask = try CoLA(
+   for: bertClassifier,
+   taskDirectoryURL: workspaceURL,
+-  maxSequenceLength: 128,
++  maxSequenceLength: maxSequenceLength,
+   batchSize: 1024)
+ 
+ var optimizer = WeightDecayedAdam(

@@ -24,14 +24,12 @@ public protocol Regularizable: Differentiable {
 
 extension Dense: Regularizable {
     public var regularizationValue: TangentVector {
-        // TODO: This initializer is currently internal.
         TangentVector(weight: weight, bias: Tensor(Scalar(0)))
     }
 }
 
 extension LayerNorm: Regularizable {
     public var regularizationValue: TangentVector {
-        // TODO: This initializer is currently internal.
         TangentVector(offset: Tensor(Scalar(0)), scale: Tensor(Scalar(0)))
     }
 }
