@@ -20,4 +20,4 @@ imagenette
 imagenette-160
 imagenette-320
 Transformer/__pycache__
-tabular-batches-bin/
+regression-bostonHousing-batches-bin/

@@ -1,4 +1,4 @@
-# Tabular
+# Regression-BostonHousing
 
 This directory contains a regression model trains a Boston house prices dataset.
 
@@ -21,7 +21,7 @@ To train the model on the Boston house prices dataset, run:
 
 ```
 cd swift-models
-swift run Tabular
+swift run Regression-BostonHousing
 ```
 
 [INSTALL]: (https://github.com/tensorflow/swift/blob/master/Installation.md)

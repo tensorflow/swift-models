@@ -3,7 +3,7 @@ import Foundation
 import TensorFlow
 import XCTest
 
-final class TabularTests: XCTestCase {
+final class BostonHousingTests: XCTestCase {
     func testCreateBostonHousing() {
         let dataset = BostonHousing()
         XCTAssertEqual(dataset.numRecords, 506)
@@ -12,7 +12,7 @@ final class TabularTests: XCTestCase {
     }
 }
 
-extension TabularTests {
+extension BostonHousingTests {
     static var allTests = [
         ("testCreateBostonHousing", testCreateBostonHousing),
     ]

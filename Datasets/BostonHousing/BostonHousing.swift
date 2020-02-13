@@ -34,13 +34,13 @@ public struct BostonHousing {
 
     static func downloadBostonHousingIfNotPresent() -> String {
         let remoteURL = URL(string: "https://archive.ics.uci.edu/ml/machine-learning-databases/housing/")!
-        let localURL = URL(fileURLWithPath: "./tabular-batches-bin")
+        let localURL = URL(fileURLWithPath: "./regression-bostonHousing-batches-bin")
         let _ = DatasetUtilities.downloadResource(
             filename: "housing", fileExtension: "data",
             remoteRoot: remoteURL, localStorageDirectory: localURL,
             extract: false)
 
-        return try! String(contentsOfFile:"./tabular-batches-bin/housing.data", encoding: String.Encoding.utf8)
+        return try! String(contentsOfFile:"./regression-bostonHousing-batches-bin/housing.data", encoding: String.Encoding.utf8)
     }
     
     public init() {
