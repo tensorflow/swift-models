@@ -15,16 +15,16 @@
 import Python
 import TensorFlow
 
-struct BostonHousingDataset {
-    let trainPercentage:Float = 0.8
-    let numRecords: Int
-    let numColumns: Int
-    let numTrainRecords: Int
-    let numTestRecords: Int
-    let xTrain: Tensor<Float>
-    let yTrain: Tensor<Float>
-    let xTest: Tensor<Float>
-    let yTest: Tensor<Float>
+public struct BostonHousing {
+    public let trainPercentage:Float = 0.8
+    public let numRecords: Int
+    public let numColumns: Int
+    public let numTrainRecords: Int
+    public let numTestRecords: Int
+    public let xTrain: Tensor<Float>
+    public let yTrain: Tensor<Float>
+    public let xTest: Tensor<Float>
+    public let yTest: Tensor<Float>
 
     /// Use Python and shell calls to download and extract the Boston Housing dataset if not already done
     /// This can fail for many reasons (e.g. lack of `wget` or an Internet connection)
@@ -46,8 +46,8 @@ struct BostonHousingDataset {
         return try! String(contentsOfFile:"./tabular-batches-py/housing.data", encoding: String.Encoding.utf8)
     }
     
-    init() {
-        let data = BostonHousingDataset.downloadBostonHousingIfNotPresent()
+    public init() {
+        let data = BostonHousing.downloadBostonHousingIfNotPresent()
 
         // Convert Space Separated CSV with no Header
         let dataRecords: [[Float]] = data.split(separator: "\n").map{ String($0).split(separator: " ").compactMap{ Float(String($0)) } }

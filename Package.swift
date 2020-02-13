@@ -13,6 +13,7 @@ let package = Package(
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
         .executable(name: "VGG-Imagewoof", targets: ["VGG-Imagewoof"]),
+        .executable(name: "Tabular", targets: ["Tabular"]),
         .executable(name: "Custom-CIFAR10", targets: ["Custom-CIFAR10"]),
         .executable(name: "ResNet-CIFAR10", targets: ["ResNet-CIFAR10"]),
         .executable(name: "LeNet-MNIST", targets: ["LeNet-MNIST"]),
@@ -20,7 +21,6 @@ let package = Package(
         .executable(name: "MiniGoDemo", targets: ["MiniGoDemo"]),
         .executable(name: "Transformer", targets: ["Transformer"]),
         .library(name: "MiniGo", targets: ["MiniGo"]),
-        .executable(name: "Tabular", targets: ["Tabular"]),
         .executable(name: "GAN", targets: ["GAN"]),
         .executable(name: "DCGAN", targets: ["DCGAN"]),
         .executable(name: "FastStyleTransferDemo", targets: ["FastStyleTransferDemo"]),
@@ -45,6 +45,9 @@ let package = Package(
             name: "VGG-Imagewoof", dependencies: ["ImageClassificationModels", "Datasets"],
             path: "Examples/VGG-Imagewoof"),
         .target(
+            name: "Tabular", dependencies: ["Datasets"],
+            path: "Examples/Tabular"),
+        .target(
             name: "Custom-CIFAR10", dependencies: ["Datasets"],
             path: "Examples/Custom-CIFAR10"),
         .target(
@@ -61,9 +64,6 @@ let package = Package(
         .target(
             name: "MiniGoDemo", dependencies: ["MiniGo"], path: "MiniGo", sources: ["main.swift"]),
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
-        .target(name: "ResNet", path: "ResNet"),
-        .target(name: "Transformer", path: "Transformer"),
-        .target(name: "Tabular", path: "Tabular"),
         .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
         .testTarget(name: "DatasetsTests", dependencies: ["Datasets"]),
         .target(name: "Transformer", dependencies: ["ModelSupport"], path: "Transformer"),
