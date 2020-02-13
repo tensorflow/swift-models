@@ -11,6 +11,7 @@ let package = Package(
         .executable(name: "ResNet", targets: ["ResNet"]),
         .executable(name: "MiniGoDemo", targets: ["MiniGoDemo"]),
         .library(name: "MiniGo", targets: ["MiniGo"]),
+        .executable(name: "Tabular", targets: ["Tabular"]),
     ],
     targets: [
         .target(name: "Autoencoder", path: "Autoencoder"),
@@ -26,5 +27,6 @@ let package = Package(
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
         .target(name: "ResNet", path: "ResNet"),
         .target(name: "Transformer", path: "Transformer"),
+        .target(name: "Tabular", path: "Tabular"),
     ]
 )
