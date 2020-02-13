@@ -12,7 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Python
+// Original source:
+// "The Boston Housing dataset"
+// Harrison, D. and Rubinfeld, D.L..
+// https://archive.ics.uci.edu/ml/machine-learning-databases/housing/
+
+import Foundation
+import ModelSupport
 import TensorFlow
 
 public struct BostonHousing {
@@ -26,24 +32,15 @@ public struct BostonHousing {
     public let xTest: Tensor<Float>
     public let yTest: Tensor<Float>
 
-    /// Use Python and shell calls to download and extract the Boston Housing dataset if not already done
-    /// This can fail for many reasons (e.g. lack of `wget` or an Internet connection)
     static func downloadBostonHousingIfNotPresent() -> String {
-        let subprocess = Python.import("subprocess")
-        let path = Python.import("os.path")
-        let filepath = "./tabular-batches-py"
-        let isdir = Bool(path.isdir(filepath))!
-        if !isdir {
-            print("Downloading Boston Housing data...")
-            let command = """
-                mkdir tabular-batches-py
-                cd tabular-batches-py
-                wget -nv -O housing.data https://archive.ics.uci.edu/ml/machine-learning-databases/housing/housing.data
-                """
-            subprocess.call(command, shell: true)
-        }
+        let remoteURL = URL(string: "https://archive.ics.uci.edu/ml/machine-learning-databases/housing/")!
+        let localURL = URL(fileURLWithPath: "./tabular-batches-bin")
+        let _ = DatasetUtilities.downloadResource(
+            filename: "housing", fileExtension: "data",
+            remoteRoot: remoteURL, localStorageDirectory: localURL,
+            extract: false)
 
-        return try! String(contentsOfFile:"./tabular-batches-py/housing.data", encoding: String.Encoding.utf8)
+        return try! String(contentsOfFile:"./tabular-batches-bin/housing.data", encoding: String.Encoding.utf8)
     }
     
     public init() {
