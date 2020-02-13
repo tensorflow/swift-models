@@ -12,126 +12,70 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Datasets
 import Foundation
+import ModelSupport
 import TensorFlow
-import Python
 
-// Import Python modules
-let matplotlib = Python.import("matplotlib")
-let np = Python.import("numpy")
-let plt = Python.import("matplotlib.pyplot")
-
-// Turn off using display on server / linux
-matplotlib.use("Agg")
-
-// Some globals
 let epochCount = 10
 let batchSize = 100
+let imageHeight = 28
+let imageWidth = 28
+
 let outputFolder = "./output/"
-let imageHeight = 28, imageWidth = 28
-
-func plot(image: [Float], name: String) {
-    // Create figure
-    let ax = plt.gca()
-    let array = np.array([image])
-    let pixels = array.reshape([imageHeight, imageWidth])
-    if !FileManager.default.fileExists(atPath: outputFolder) {
-        try! FileManager.default.createDirectory(atPath: outputFolder,
-                            withIntermediateDirectories: false,
-                                             attributes: nil)
-    }
-    ax.imshow(pixels, cmap: "gray")
-    plt.savefig("\(outputFolder)\(name).png", dpi: 300)
-    plt.close()
+let dataset = MNIST(flattening: true)
+// An autoencoder.
+var autoencoder = Sequential {
+    // The encoder.
+    Dense<Float>(inputSize: imageHeight * imageWidth, outputSize: 128, activation: relu)
+    Dense<Float>(inputSize: 128, outputSize: 64, activation: relu)
+    Dense<Float>(inputSize: 64, outputSize: 12, activation: relu)
+    Dense<Float>(inputSize: 12, outputSize: 3, activation: relu)
+    // The decoder.
+    Dense<Float>(inputSize: 3, outputSize: 12, activation: relu)
+    Dense<Float>(inputSize: 12, outputSize: 64, activation: relu)
+    Dense<Float>(inputSize: 64, outputSize: 128, activation: relu)
+    Dense<Float>(inputSize: 128, outputSize: imageHeight * imageWidth, activation: tanh)
 }
-
-/// Reads a file into an array of bytes.
-func readFile(_ filename: String) -> [UInt8] {
-    let possibleFolders = [".", "Resources", "Autoencoder/Resources"]
-    for folder in possibleFolders {
-        let parent = URL(fileURLWithPath: folder)
-        let filePath = parent.appendingPathComponent(filename).path
-        guard FileManager.default.fileExists(atPath: filePath) else {
-            continue
-        }
-        let d = Python.open(filePath, "rb").read()
-        return Array(numpy: np.frombuffer(d, dtype: np.uint8))!
-    }
-    print("Failed to find file with name \(filename) in the following folders: \(possibleFolders).")
-    exit(-1)
-}
-
-/// Reads MNIST images and labels from specified file paths.
-func readMNIST(imagesFile: String, labelsFile: String) -> (images: Tensor<Float>,
-                                                           labels: Tensor<Int32>) {
-    print("Reading data.")
-    let images = readFile(imagesFile).dropFirst(16).map { Float($0) }
-    let labels = readFile(labelsFile).dropFirst(8).map { Int32($0) }
-    let rowCount = labels.count
-
-    print("Constructing data tensors.")
-    return (
-        images: Tensor(shape: [rowCount, imageHeight * imageWidth], scalars: images) / 255.0,
-        labels: Tensor(labels)
-    )
-}
-
-/// An autoencoder.
-struct Autoencoder: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
-
-    var encoder1 = Dense<Float>(inputSize: imageHeight * imageWidth, outputSize: 128,
-        activation: relu)
-    var encoder2 = Dense<Float>(inputSize: 128, outputSize: 64, activation: relu)
-    var encoder3 = Dense<Float>(inputSize: 64, outputSize: 12, activation: relu)
-    var encoder4 = Dense<Float>(inputSize: 12, outputSize: 3, activation: relu)
-
-    var decoder1 = Dense<Float>(inputSize: 3, outputSize: 12, activation: relu)
-    var decoder2 = Dense<Float>(inputSize: 12, outputSize: 64, activation: relu)
-    var decoder3 = Dense<Float>(inputSize: 64, outputSize: 128, activation: relu)
-    var decoder4 = Dense<Float>(inputSize: 128, outputSize: imageHeight * imageWidth,
-        activation: tanh)
-
-    @differentiable
-    func callAsFunction(_ input: Input) -> Output {
-        let encoder = input.sequenced(through: encoder1, encoder2, encoder3, encoder4)
-        return encoder.sequenced(through: decoder1, decoder2, decoder3, decoder4)
-    }
-}
-
-// MNIST data logic
-func minibatch<Scalar>(in x: Tensor<Scalar>, at index: Int) -> Tensor<Scalar> {
-    let start = index * batchSize
-    return x[start..<start+batchSize]
-}
-
-let (images, numericLabels) = readMNIST(imagesFile: "train-images-idx3-ubyte",
-                                        labelsFile: "train-labels-idx1-ubyte")
-let labels = Tensor<Float>(oneHotAtIndices: numericLabels, depth: 10)
-
-var autoencoder = Autoencoder()
 let optimizer = RMSProp(for: autoencoder)
+
+let individualTestImages = dataset.testDataset.batched(1)
+var testImageIterator = individualTestImages.makeIterator()
 
 // Training loop
 for epoch in 1...epochCount {
-    let sampleImage = Tensor(shape: [1, imageHeight * imageWidth], scalars: images[epoch].scalars)
-    let testImage = autoencoder(sampleImage)
+    if let nextIndividualImage = testImageIterator.next() {
+        let sampleTensor = nextIndividualImage.data
+        let sampleImage = Tensor(
+            shape: [1, imageHeight * imageWidth], scalars: sampleTensor.scalars)
 
-    plot(image: sampleImage.scalars, name: "epoch-\(epoch)-input")
-    plot(image: testImage.scalars, name: "epoch-\(epoch)-output")
+        let testImage = autoencoder(sampleImage)
 
-    let sampleLoss = meanSquaredError(predicted: testImage, expected: sampleImage)
-    print("[Epoch: \(epoch)] Loss: \(sampleLoss)")
+        do {
+            try saveImage(
+                sampleImage, size: (imageWidth, imageHeight), directory: outputFolder,
+                name: "epoch-\(epoch)-input")
+            try saveImage(
+                testImage, size: (imageWidth, imageHeight), directory: outputFolder,
+                name: "epoch-\(epoch)-output")
+        } catch {
+            print("Could not save image with error: \(error)")
+        }
 
-    for i in 0 ..< Int(labels.shape[0]) / batchSize {
-        let x = minibatch(in: images, at: i)
+        let sampleLoss = meanSquaredError(predicted: testImage, expected: sampleImage)
+        print("[Epoch: \(epoch)] Loss: \(sampleLoss)")
+    }
 
-        let 𝛁model = autoencoder.gradient { autoencoder -> Tensor<Float> in
+    let trainingShuffled = dataset.trainingDataset.shuffled(
+        sampleCount: dataset.trainingExampleCount, randomSeed: Int64(epoch))
+    for batch in trainingShuffled.batched(batchSize) {
+        let x = batch.data
+
+        let 𝛁model = TensorFlow.gradient(at: autoencoder) { autoencoder -> Tensor<Float> in
             let image = autoencoder(x)
             return meanSquaredError(predicted: image, expected: x)
         }
 
-        optimizer.update(&autoencoder.allDifferentiableVariables, along: 𝛁model)
+        optimizer.update(&autoencoder, along: 𝛁model)
     }
 }

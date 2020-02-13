@@ -54,10 +54,7 @@ struct ConvBN: Layer {
         // TODO(jekbradbury): thread through bias and affine boolean arguments
         // (behavior is correct for inference but this should be changed for training)
         self.conv = Conv2D(filterShape: filterShape, strides: strides, padding: padding)
-        self.norm = BatchNorm(
-            featureCount: filterShape.3,
-            momentum: Tensor<Float>(0.95),
-            epsilon: Tensor<Float>(1e-5))
+        self.norm = BatchNorm(featureCount: filterShape.3, momentum: 0.95, epsilon: 1e-5)
     }
 
     @differentiable
@@ -67,7 +64,7 @@ struct ConvBN: Layer {
 }
 
 extension ConvBN: LoadableFromPythonCheckpoint {
-    mutating func load(from reader: PythonCheckpointReader) {
+    mutating func load(from reader: MiniGoCheckpointReader) {
         conv.load(from: reader)
         norm.load(from: reader)
     }
@@ -98,7 +95,7 @@ struct ResidualIdentityBlock: Layer {
 }
 
 extension ResidualIdentityBlock: LoadableFromPythonCheckpoint {
-    mutating func load(from reader: PythonCheckpointReader) {
+    mutating func load(from reader: MiniGoCheckpointReader) {
         layer1.load(from: reader)
         layer2.load(from: reader)
     }
@@ -157,7 +154,7 @@ public struct GoModel: Layer {
             activation: tanh)
     }
   
-    @differentiable(wrt: (self, input), vjp: _vjpCall)
+    @differentiable(wrt: (self, input))
     public func callAsFunction(_ input: Tensor<Float>) -> GoModelOutput {
         let batchSize = input.shape[0]
         var output = relu(initialConv(input))
@@ -182,8 +179,9 @@ public struct GoModel: Layer {
     }
 
     @usableFromInline
+    @derivative(of: callAsFunction, wrt: (self, input))
     func _vjpCall(_ input: Tensor<Float>)
-        -> (GoModelOutput, (GoModelOutput.TangentVector)
+        -> (value: GoModelOutput, pullback: (GoModelOutput.TangentVector)
         -> (GoModel.TangentVector, Tensor<Float>)) {
         // TODO(jekbradbury): add a real VJP
         // (we're only interested in inference for now and have control flow in our `call(_:)` method)
@@ -200,7 +198,7 @@ extension GoModel: InferenceModel {
 }
 
 extension GoModel: LoadableFromPythonCheckpoint {
-    public mutating func load(from reader: PythonCheckpointReader) {
+    public mutating func load(from reader: MiniGoCheckpointReader) {
         initialConv.load(from: reader)
         for i in 0..<configuration.boardSize {
             residualBlocks[i].load(from: reader)

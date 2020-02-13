@@ -56,14 +56,16 @@ struct AttentionInput: Differentiable {
     var value: Tensor<Float>
 }
 
-@differentiable(wrt: (query, key, value), vjp: _vjpMakeAttentionInput)
+@differentiable(wrt: (query, key, value))
 func makeAttentionInput(query: Tensor<Float>, key: Tensor<Float>, value: Tensor<Float>)
     -> AttentionInput {
     return AttentionInput(query: query, key: key, value: value)
 }
 
+@derivative(of: makeAttentionInput, wrt: (query, key, value))
 func _vjpMakeAttentionInput(query: Tensor<Float>, key: Tensor<Float>, value: Tensor<Float>)
-    -> (AttentionInput, (AttentionInput.TangentVector) -> (Tensor<Float>, Tensor<Float>, Tensor<Float>)) {
+    -> (value: AttentionInput, pullback: (AttentionInput.TangentVector) 
+    -> (Tensor<Float>, Tensor<Float>, Tensor<Float>)) {
     let result = AttentionInput(query: query, key: key, value: value)
     return (result, { seed in (seed.query, seed.key, seed.value) })
 }
@@ -73,39 +75,39 @@ struct AttentionContext: Differentiable {
     var value: Tensor<Float>
 }
 
-@differentiable(wrt: (key, value), vjp: _vjpMakeAttentionContext)
+@differentiable(wrt: (key, value))
 func makeAttentionContext(key: Tensor<Float>, value: Tensor<Float>)
     -> AttentionContext {
     return AttentionContext(key: key, value: value)
 }
 
+@derivative(of: makeAttentionContext, wrt: (key, value))
 func _vjpMakeAttentionContext(key: Tensor<Float>, value: Tensor<Float>)
-    -> (AttentionContext, (AttentionContext.TangentVector) -> (Tensor<Float>, Tensor<Float>)) {
+    -> (value: AttentionContext, pullback: (AttentionContext.TangentVector) 
+    -> (Tensor<Float>, Tensor<Float>)) {
     let result = AttentionContext(key: key, value: value)
     return (result, { seed in (seed.key, seed.value) })
 }
 
-@differentiable(wrt: dotProducts, vjp: _vjpCausallyMasked)
+@differentiable(wrt: dotProducts)
 func causallyMasked(_ dotProducts: Tensor<Float>, enable: Bool = false) -> Tensor<Float> {
     if !enable {
         return dotProducts
     }
     let (queryTimeSteps, keyTimeSteps) = (dotProducts.shape[1], dotProducts.shape[2])
     let ones = Tensor<Float>(ones: [1, queryTimeSteps, keyTimeSteps])
-    let mask = Raw.matrixBandPart(
-        ones,
-        numLower: Tensor(Int32(-1)),
-        numUpper: Tensor(Int32(queryTimeSteps - keyTimeSteps)))
+    let mask = ones.bandPart(subdiagonalCount: -1, superdiagonalCount: queryTimeSteps - keyTimeSteps)
     return dotProducts * mask - 1e10 * (1 - mask)
 }
 
 // causal mask is intentionally invisible to differentiation
+@derivative(of: causallyMasked, wrt: dotProducts)
 func _vjpCausallyMasked(_ dotProducts: Tensor<Float>, enable: Bool)
-    -> (Tensor<Float>, (Tensor<Float>) -> Tensor<Float>) {
-    return (causallyMasked(dotProducts), identity)
+    -> (value: Tensor<Float>, pullback: (Tensor<Float>) -> Tensor<Float>) {
+    return (causallyMasked(dotProducts, enable: enable), identity)
 }
 
-struct Attention: Layer {
+struct Attention: ParameterlessLayer {
     @noDerivative let dropout: Dropout<Float>
     @noDerivative let scale: Tensor<Float>
     @noDerivative let causal: Bool
@@ -138,7 +140,7 @@ func splitHeads(_ input: Tensor<Float>, headCount: Int) -> Tensor<Float> {
     let (batchSize, timeSteps, features) = (input.shape[0], input.shape[1], input.shape[2])
     let featuresPerHead = features / headCount
     let splitLastDim = input.reshaped(to: [batchSize, timeSteps, headCount, featuresPerHead])
-    let movedToFront = splitLastDim.transposed(withPermutations: 0, 2, 1, 3)
+    let movedToFront = splitLastDim.transposed(permutation: 0, 2, 1, 3)
     return movedToFront.reshaped(to: [batchSize * headCount, timeSteps, featuresPerHead])
 }
 
@@ -149,11 +151,11 @@ func joinHeads(_ input: Tensor<Float>, headCount: Int) -> Tensor<Float> {
     let batchSize = generalizedBatch / headCount
     let features = featuresPerHead * headCount
     let splitFirstDim = input.reshaped(to: [batchSize, headCount, timeSteps, featuresPerHead])
-    let movedToBack = splitFirstDim.transposed(withPermutations: 0, 2, 1, 3)
+    let movedToBack = splitFirstDim.transposed(permutation: 0, 2, 1, 3)
     return movedToBack.reshaped(to: [batchSize, timeSteps, features])
 }
 
-@differentiable(wrt: input, vjp: _vjpSplitQKV)
+@differentiable(wrt: input)
 func splitQKV(_ input: Tensor<Float>) -> AttentionInput {
     let (generalizedBatch, timeSteps, featuresPerHead) = (
         input.shape[0], input.shape[1], input.shape[2] / 3)
@@ -169,11 +171,12 @@ func splitQKV(_ input: Tensor<Float>) -> AttentionInput {
     return makeAttentionInput(query: query, key: key, value: value)
 }
 
+@derivative(of: splitQKV, wrt: input)
 func _vjpSplitQKV(_ input: Tensor<Float>)
-    -> (AttentionInput, (AttentionInput.TangentVector) -> Tensor<Float>) {
+    -> (value: AttentionInput, pullback: (AttentionInput.TangentVector) -> Tensor<Float>) {
     let value = splitQKV(input)
     return (value, { seed in
-        return Raw.concatV2([seed.query, seed.key, seed.value], axis: Tensor<Int32>(2))
+        return Tensor(concatenating: [seed.query, seed.key, seed.value], alongAxis: 2)
     })
 }
 
@@ -227,10 +230,10 @@ struct EncoderLayer: Layer {
             size: size,
             headCount: headCount)
         selfAttentionDropout = Dropout(probability: dropProbability)
-        selfAttentionNorm = LayerNorm(featureCount: size, axis: 2, epsilon: Tensor<Float>(1e-5))
+        selfAttentionNorm = LayerNorm(featureCount: size, axis: 2, epsilon: 1e-5)
         feedForward = FeedForward(size: size, hidden: 4 * size, dropProbability: dropProbability)
         feedForwardDropout = Dropout(probability: dropProbability)
-        feedForwardNorm = LayerNorm(featureCount: size, axis: 2, epsilon: Tensor<Float>(1e-5))
+        feedForwardNorm = LayerNorm(featureCount: size, axis: 2, epsilon: 1e-5)
     }
 
     @differentiable(wrt: (self, input))

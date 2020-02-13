@@ -43,30 +43,20 @@ protocol Agent: AnyObject {
     func step(observation: Observation, reward: Reward) -> Action
 }
 
-struct Model: Layer {
-    typealias Input = Tensor<Float>
-    typealias Output = Tensor<Float>
-
-    var layer1 = Dense<Float>(inputSize: 3, outputSize: 50, activation: sigmoid,
-                              generator: &rng)
-    var layer2 = Dense<Float>(inputSize: 50, outputSize: 3, activation: sigmoid,
-                              generator: &rng)
-
-    @differentiable
-    func callAsFunction(_ input: Input) -> Output {
-        return input.sequenced(through: layer1, layer2)
-    }
-}
-
 class CatchAgent: Agent {
     typealias Action = CatchAction
 
-    var model: Model = Model()
-    let optimizer: Adam<Model>
+    var model = Sequential {
+        Dense<Float>(inputSize: 3, outputSize: 50, activation: sigmoid)
+        Dense<Float>(inputSize: 50, outputSize: 3, activation: sigmoid)
+    }
+
+    var learningRate: Float
+    lazy var optimizer = Adam(for: self.model, learningRate: self.learningRate)
     var previousReward: Reward
 
     init(initialReward: Reward, learningRate: Float) {
-        optimizer = Adam(for: model, learningRate: learningRate)
+        self.learningRate = learningRate
         previousReward = initialReward
     }
 }
@@ -85,7 +75,7 @@ extension CatchAgent {
 
         let 𝛁loss = -log(Tensor<Float>(ŷ.max())).broadcasted(like: ŷ) * previousReward
         let (𝛁model, _) = backprop(𝛁loss)
-        optimizer.update(&model.allDifferentiableVariables, along: 𝛁model)
+        optimizer.update(&model, along: 𝛁model)
 
         return CatchAction(rawValue: Int(maxIndex))!
     }
@@ -99,12 +89,11 @@ extension CatchAgent {
     func perfectAction(for observation: Observation) -> Action {
         let paddleX = observation.scalars[0]
         let ballX = observation.scalars[1]
-        if paddleX > ballX {
-            return .right
-        } else if paddleX < ballX {
-            return .left
+        switch paddleX {
+        case ballX:    return .none
+        case ..<ballX: return .left
+        default:       return .right
         }
-        return .none
     }
 
     /// Returns a random action.
