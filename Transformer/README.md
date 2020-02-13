@@ -39,4 +39,10 @@ To get a toolchain, you can:
 
 It also currently requires Python 3.x.
 
+The `regex` module is also required for Python.  If this is not available, you can install it via:
+
+```
+python -m pip install --user regex
+```
+
 The tokenizer (`encoder.py`) is from the OpenAI implementation and is under the MIT license.
