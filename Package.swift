@@ -80,6 +80,7 @@ let package = Package(
             dependencies: ["Datasets", "ModelSupport", "ImageClassificationModels", "Commander"],
             path: "Benchmarks"),
         .testTarget(name: "CheckpointTests", dependencies: ["ModelSupport"]),
-        .target(name: "BERT-CoLA", dependencies: ["TextModels", "Datasets"], path: "Examples/BERT-CoLA"),
+        .target(
+            name: "BERT-CoLA", dependencies: ["TextModels", "Datasets"], path: "Examples/BERT-CoLA"),
     ]
 )
