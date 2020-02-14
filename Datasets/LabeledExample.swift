@@ -13,8 +13,9 @@
 // limitations under the License.
 
 import TensorFlow
+import Batcher
 
-public struct LabeledExample: TensorGroup {
+public struct LabeledExample: TensorGroup, KeyPathIterable, Collatable {
     public var label: Tensor<Int32>
     public var data: Tensor<Float>
 
