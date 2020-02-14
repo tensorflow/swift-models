@@ -16,10 +16,6 @@ import Foundation
 import TensorFlow
 import ModelSupport
 
-#if os(Linux)
-import FoundationNetworking
-#endif
-
 public typealias Activation<Scalar: TensorFlowFloatingPoint> =
     @differentiable (Tensor<Scalar>) -> Tensor<Scalar>
 
@@ -58,100 +54,5 @@ extension Tensor {
             originalShape[0..<originalShape.shape[0] - 1],
             Tensor<Int32>([Int32(shape[rank - 1])])
         ]))
-    }
-}
-
-/// Downloads the file at `url` to `path`, if `path` does not exist.
-///
-/// - Parameters:
-///   - from: URL to download data from.
-///   - to: Destination file path.
-///
-/// - Returns: Boolean value indicating whether a download was
-///     performed (as opposed to not needed).
-internal func maybeDownload(from url: URL, to destination: URL) throws {
-    if !FileManager.default.fileExists(atPath: destination.path) {
-        // Create any potentially missing directories.
-        try FileManager.default.createDirectory(
-            atPath: destination.deletingLastPathComponent().path,
-            withIntermediateDirectories: true)
-
-        // Create the URL session that will be used to download the dataset.
-        let semaphore = DispatchSemaphore(value: 0)
-        let delegate = DataDownloadDelegate(destinationFileUrl: destination, semaphore: semaphore)
-        let session = URLSession(configuration: .ephemeral, delegate: delegate, delegateQueue: nil)
-
-        // Download the data to a temporary file and then copy that file to
-        // the destination path.
-        print("Downloading \(url).")
-        let task = session.downloadTask(with: url)
-        task.resume()
-
-        // Wait for the download to finish.
-        semaphore.wait()
-    }
-}
-
-internal class DataDownloadDelegate: NSObject, URLSessionDownloadDelegate {
-    let destinationFileUrl: URL
-    let semaphore: DispatchSemaphore
-    let numBytesFrequency: Int64
-
-    internal var logCount: Int64 = 0
-
-    init(
-        destinationFileUrl: URL,
-        semaphore: DispatchSemaphore,
-        numBytesFrequency: Int64 = 1024 * 1024
-    ) {
-        self.destinationFileUrl = destinationFileUrl
-        self.semaphore = semaphore
-        self.numBytesFrequency = numBytesFrequency
-    }
-
-    internal func urlSession(
-        _ session: URLSession,
-        downloadTask: URLSessionDownloadTask,
-        didFinishDownloadingTo location: URL
-    ) -> Void {
-        do {
-            try FileManager.default.moveItem(at: location, to: destinationFileUrl)
-        } catch (let writeError) {
-            print("Error writing file \(location.path) : \(writeError)")
-        }
-        print("Downloaded successfully to \(location.path).")
-        semaphore.signal()
-    }
-}
-
-internal func extract(zipFileAt source: URL, to destination: URL) throws {
-    print("Extracting file at '\(source.path)'.")
-    let process = Process()
-    process.environment = ProcessInfo.processInfo.environment
-    process.executableURL = URL(fileURLWithPath: "/bin/bash")
-    process.arguments = ["-c", "unzip -d \(destination.path) \(source.path)"]
-    try process.run()
-    process.waitUntilExit()
-}
-
-internal func extract(tarGZippedFileAt source: URL, to destination: URL) throws {
-    print("Extracting file at '\(source.path)'.")
-    try FileManager.default.createDirectory(
-        at: destination,
-        withIntermediateDirectories: false)
-    let process = Process()
-    process.environment = ProcessInfo.processInfo.environment
-    process.executableURL = URL(fileURLWithPath: "/bin/bash")
-    process.arguments = ["-c", "tar -C \(destination.path) -xzf \(source.path)"]
-    try process.run()
-    process.waitUntilExit()
-}
-
-internal func parse(tsvFileAt fileURL: URL) throws -> [[String]] {
-    try Data(contentsOf: fileURL).withUnsafeBytes {
-        $0.split(separator: UInt8(ascii: "\n")).map {
-            $0.split(separator: UInt8(ascii: "\t"), omittingEmptySubsequences: false)
-                .map { String(decoding: UnsafeRawBufferPointer(rebasing: $0), as: UTF8.self) }
-        }
     }
 }

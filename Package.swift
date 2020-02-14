@@ -26,6 +26,7 @@ let package = Package(
         .executable(name: "FastStyleTransferDemo", targets: ["FastStyleTransferDemo"]),
         .library(name: "FastStyleTransfer", targets: ["FastStyleTransfer"]),
         .executable(name: "Benchmarks", targets: ["Benchmarks"]),
+        .executable(name: "BERT-CoLA", targets: ["BERT-CoLA"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
@@ -79,5 +80,6 @@ let package = Package(
             dependencies: ["Datasets", "ModelSupport", "ImageClassificationModels", "Commander"],
             path: "Benchmarks"),
         .testTarget(name: "CheckpointTests", dependencies: ["ModelSupport"]),
+        .target(name: "BERT-CoLA", dependencies: ["TextModels", "Datasets"], path: "Examples/BERT-CoLA"),
     ]
 )
