@@ -1,3 +1,4 @@
+# -*- encoding: utf-8 -*-
 # Tokenizer utilities from github.com/openai/gpt-2
 # licensed under MIT (https://github.com/openai/gpt-2/blob/master/LICENSE)
 # TODO: port these to Swift
