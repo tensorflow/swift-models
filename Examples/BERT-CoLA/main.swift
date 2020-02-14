@@ -1,5 +1,21 @@
-import TensorFlow
+// Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import Datasets
 import Foundation
+import TensorFlow
+import TextModels
 
 let bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
 let workspaceURL = URL(fileURLWithPath: "/tmp/bert_models", isDirectory: true)
@@ -18,29 +34,29 @@ var bertClassifier = BERTClassifier(bert: bert, classCount: 1)
 // varied lengths. Note that this is not used in the original BERT implementation released by
 // Google and so the batch size setting here is expected to differ from that one.
 var colaTask = try CoLA(
-  for: bertClassifier,
-  taskDirectoryURL: workspaceURL,
-  maxSequenceLength: 128,
-  batchSize: 1024)
+    for: bertClassifier,
+    taskDirectoryURL: workspaceURL,
+    maxSequenceLength: 128,
+    batchSize: 1024)
 
 var optimizer = WeightDecayedAdam(
-  for: bertClassifier,
-  learningRate: LinearlyDecayedParameter(
-    baseParameter: LinearlyWarmedUpParameter(
-      baseParameter: FixedParameter<Float>(2e-5),
-      warmUpStepCount: 10,
-      warmUpOffset: 0),
-    slope: -5e-7, // The LR decays linearly to zero in 100 steps.
-    startStep: 10),
-  weightDecayRate: 0.01,
-  maxGradientGlobalNorm: 1)
+    for: bertClassifier,
+    learningRate: LinearlyDecayedParameter(
+        baseParameter: LinearlyWarmedUpParameter(
+            baseParameter: FixedParameter<Float>(2e-5),
+            warmUpStepCount: 10,
+            warmUpOffset: 0),
+        slope: -5e-7,  // The LR decays linearly to zero in 100 steps.
+        startStep: 10),
+    weightDecayRate: 0.01,
+    maxGradientGlobalNorm: 1)
 
 print("Training BERT for the CoLA task!")
 for step in 0... {
-  let loss = colaTask.update(classifier: &bertClassifier, using: &optimizer)
-  print("[Step: \(step)]\tLoss: \(loss)")
-  if step > 0 && step.isMultiple(of: 10) {
-    print("Evaluate BERT for the CoLA task:")
-    print(colaTask.evaluate(using: bertClassifier))
-  }
+    let loss = colaTask.update(classifier: &bertClassifier, using: &optimizer)
+    print("[Step: \(step)]\tLoss: \(loss)")
+    if step > 0 && step.isMultiple(of: 10) {
+        print("Evaluate BERT for the CoLA task:")
+        print(colaTask.evaluate(using: bertClassifier))
+    }
 }

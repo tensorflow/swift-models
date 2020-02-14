@@ -1,6 +1,24 @@
+// Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // Adapted from: https://gist.github.com/eaplatanios/5004c5857ec3140651ccef6766123ac2
 
 import Foundation
+
+#if os(Linux)
+import FoundationNetworking
+#endif
 
 extension IteratorProtocol {
   /// Returns an iterator that maps elements of this iterator using the provided function.
@@ -300,4 +318,90 @@ extension PrefetchIterator {
       return element
     }
   }
+}
+
+/// Downloads the file at `url` to `path`, if `path` does not exist.
+///
+/// - Parameters:
+///   - from: URL to download data from.
+///   - to: Destination file path.
+///
+/// - Returns: Boolean value indicating whether a download was
+///     performed (as opposed to not needed).
+public func maybeDownload(from url: URL, to destination: URL) throws {
+    if !FileManager.default.fileExists(atPath: destination.path) {
+        // Create any potentially missing directories.
+        try FileManager.default.createDirectory(
+            atPath: destination.deletingLastPathComponent().path,
+            withIntermediateDirectories: true)
+
+        // Create the URL session that will be used to download the dataset.
+        let semaphore = DispatchSemaphore(value: 0)
+        let delegate = DataDownloadDelegate(destinationFileUrl: destination, semaphore: semaphore)
+        let session = URLSession(configuration: .ephemeral, delegate: delegate, delegateQueue: nil)
+
+        // Download the data to a temporary file and then copy that file to
+        // the destination path.
+        print("Downloading \(url).")
+        let task = session.downloadTask(with: url)
+        task.resume()
+
+        // Wait for the download to finish.
+        semaphore.wait()
+    }
+}
+
+internal class DataDownloadDelegate: NSObject, URLSessionDownloadDelegate {
+    let destinationFileUrl: URL
+    let semaphore: DispatchSemaphore
+    let numBytesFrequency: Int64
+
+    internal var logCount: Int64 = 0
+
+    init(
+        destinationFileUrl: URL,
+        semaphore: DispatchSemaphore,
+        numBytesFrequency: Int64 = 1024 * 1024
+    ) {
+        self.destinationFileUrl = destinationFileUrl
+        self.semaphore = semaphore
+        self.numBytesFrequency = numBytesFrequency
+    }
+
+    internal func urlSession(
+        _ session: URLSession,
+        downloadTask: URLSessionDownloadTask,
+        didFinishDownloadingTo location: URL
+    ) -> Void {
+        do {
+            try FileManager.default.moveItem(at: location, to: destinationFileUrl)
+        } catch (let writeError) {
+            print("Error writing file \(location.path) : \(writeError)")
+        }
+        print("Downloaded successfully to \(location.path).")
+        semaphore.signal()
+    }
+}
+
+public func extract(zipFileAt source: URL, to destination: URL) throws {
+    print("Extracting file at '\(source.path)'.")
+    let process = Process()
+    process.environment = ProcessInfo.processInfo.environment
+    process.executableURL = URL(fileURLWithPath: "/bin/bash")
+    process.arguments = ["-c", "unzip -d \(destination.path) \(source.path)"]
+    try process.run()
+    process.waitUntilExit()
+}
+
+public func extract(tarGZippedFileAt source: URL, to destination: URL) throws {
+    print("Extracting file at '\(source.path)'.")
+    try FileManager.default.createDirectory(
+        at: destination,
+        withIntermediateDirectories: false)
+    let process = Process()
+    process.environment = ProcessInfo.processInfo.environment
+    process.executableURL = URL(fileURLWithPath: "/bin/bash")
+    process.arguments = ["-c", "tar -C \(destination.path) -xzf \(source.path)"]
+    try process.run()
+    process.waitUntilExit()
 }

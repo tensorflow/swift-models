@@ -12,23 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Datasets
 import Foundation
 import TensorFlow
-
-/// Tokenized text passage.
-public struct TextBatch: KeyPathIterable {
-    /// IDs that correspond to the vocabulary used while tokenizing.
-    /// The shape of this tensor is `[batchSize, maxSequenceLength]`.
-    public var tokenIds: Tensor<Int32> // TODO: !!! Mutable in order to allow for batching.
-
-    /// IDs of the token types (e.g., sentence A and sentence B in BERT).
-    /// The shape of this tensor is `[batchSize, maxSequenceLength]`.
-    public var tokenTypeIds: Tensor<Int32> // TODO: !!! Mutable in order to allow for batching.
-
-    /// Mask over the sequence of tokens specifying which ones are "real" as opposed to "padding".
-    /// The shape of this tensor is `[batchSize, maxSequenceLength]`.
-    public var mask: Tensor<Int32> // TODO: !!! Mutable in order to allow for batching.
-}
 
 /// Returns a 3-D attention mask that correspond to the 2-D mask of the provided text batch.
 ///
@@ -49,32 +35,6 @@ internal func createAttentionMask(forTextBatch text: TextBatch) -> Tensor<Float>
 
     // We broadcast along two dimensions to create the mask.
     return broadcastOnes * reshapedMask
-}
-
-// TODO: Add documentation.
-internal func padAndBatch(textBatches: [TextBatch], maxLength: Int? = nil) -> TextBatch {
-    if textBatches.count == 1 { return textBatches.first! }
-    let maxLength = maxLength ?? textBatches.map { $0.tokenIds.shape[1] }.max()!
-    let paddedBatches = textBatches.map { batch -> TextBatch in
-        let paddingSize = maxLength - batch.tokenIds.shape[1]
-        return TextBatch(
-            tokenIds: batch.tokenIds.padded(forSizes: [
-                (before: 0, after: 0),
-                (before: 0, after: paddingSize)]),
-            tokenTypeIds: batch.tokenTypeIds.padded(forSizes: [
-                (before: 0, after: 0),
-                (before: 0, after: paddingSize)]),
-            mask: batch.mask.padded(forSizes: [
-                (before: 0, after: 0),
-                (before: 0, after: paddingSize)]))
-    }
-    return TextBatch(
-        tokenIds: Tensor<Int32>(
-            concatenating: paddedBatches.map { $0.tokenIds }, alongAxis: 0),
-        tokenTypeIds: Tensor<Int32>(
-            concatenating: paddedBatches.map { $0.tokenTypeIds }, alongAxis: 0),
-        mask: Tensor<Int32>(
-            concatenating: paddedBatches.map { $0.mask }, alongAxis: 0))
 }
 
 /// Vocabulary that can be used for tokenizing strings.
