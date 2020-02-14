@@ -1,5 +1,6 @@
 import TensorFlow
 import Foundation
+import TextModels
 
 let bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
 let workspaceURL = URL(fileURLWithPath: "/tmp/bert_models", isDirectory: true)
