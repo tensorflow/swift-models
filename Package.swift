@@ -13,6 +13,7 @@ let package = Package(
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
         .library(name: "TextModels", targets: ["TextModels"]),
+        .executable(name: "BERT-CoLa", targets: ["BERT-CoLa"]),
         .executable(name: "VGG-Imagewoof", targets: ["VGG-Imagewoof"]),
         .executable(name: "Custom-CIFAR10", targets: ["Custom-CIFAR10"]),
         .executable(name: "ResNet-CIFAR10", targets: ["ResNet-CIFAR10"]),
@@ -36,7 +37,7 @@ let package = Package(
         .target(name: "ModelSupport", dependencies: ["SwiftProtobuf"], path: "Support"),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),
-        .target(name: "Bert-CoLA", dependencies: ["TextModels"], path: "Examples/Bert-CoLA"),
+        .target(name: "BERT-CoLa", dependencies: ["TextModels"], path: "Examples/BERT-CoLa"),
         .target(
             name: "Autoencoder", dependencies: ["Datasets", "ModelSupport"], path: "Autoencoder"),
         .target(name: "Catch", path: "Catch"),
