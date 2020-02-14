@@ -1,5 +1,12 @@
 add_library(ModelSupport
+  Checkpoints/CheckpointIndexReader.swift
   Checkpoints/CheckpointReader.swift
+  Checkpoints/Protobufs/tensor_bundle.pb.swift
+  Checkpoints/Protobufs/tensor_shape.pb.swift
+  Checkpoints/Protobufs/tensor_slice.pb.swift
+  Checkpoints/Protobufs/types.pb.swift
+  Checkpoints/Protobufs/versions.pb.swift
+  Checkpoints/SnappyDecompression.swift
   FileManagement.swift
   Image.swift
   Stderr.swift)
