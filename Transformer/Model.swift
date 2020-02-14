@@ -113,7 +113,7 @@ struct Attention: ParameterlessLayer {
     @noDerivative let causal: Bool
     
     init(size: Int, causal: Bool = false, dropProbability: Double) {
-        scale = Tensor(sqrt(Float(size)))
+        scale = Tensor(sqrtf(Float(size)))
         dropout = Dropout<Float>(probability: dropProbability)
         self.causal = causal
     }
