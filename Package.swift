@@ -34,7 +34,6 @@ let package = Package(
     ],
     targets: [
         .target(name: "Batcher", path: "Batcher"),
-        .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "Datasets", dependencies: ["ModelSupport", "Batcher"], path: "Datasets"),
         .target(name: "ModelSupport", dependencies: ["SwiftProtobuf"], path: "Support"),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
