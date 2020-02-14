@@ -109,9 +109,9 @@ public enum DatasetUtilities {
         let archivePath = resource.archiveURL.path
 
         #if os(macOS)
-            let binaryLocation = "/usr/bin/"
+            var binaryLocation = "/usr/bin/"
         #else
-            let binaryLocation = "/bin/"
+            var binaryLocation = "/bin/"
         #endif
 
         let toolName: String
@@ -124,6 +124,7 @@ public enum DatasetUtilities {
             toolName = "tar"
             arguments = ["xzf", archivePath, "-C", resource.localStorageDirectory.path]
         case "zip":
+            binaryLocation = "/usr/bin/"
             toolName = "unzip"
             arguments = [archivePath, "-d", resource.localStorageDirectory.path]
         default:
