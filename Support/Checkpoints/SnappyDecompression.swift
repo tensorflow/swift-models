@@ -65,7 +65,6 @@ public extension Data {
         guard index < self.count else { return nil }
         
         let uncompressedLength = readVarint32(at: &index)
-        let startingIndex = index
 
         var uncompressedData = Data()
         while uncompressedData.count < uncompressedLength {

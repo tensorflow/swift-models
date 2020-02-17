@@ -16,5 +16,8 @@ RUN echo 'deb https://apt.kitware.com/ubuntu/ bionic main' >> /etc/apt/sources.l
 RUN apt-get update
 RUN apt-get -yq install --no-install-recommends cmake ninja-build
 
+# Dependencies
+RUN git clone git://github.com/apple/swift-protobuf /swift-protobuf
+
 WORKDIR /swift-models
 COPY . .

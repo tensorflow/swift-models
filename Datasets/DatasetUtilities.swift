@@ -23,6 +23,7 @@ public enum DatasetUtilities {
     public static let currentWorkingDirectoryURL = URL(
         fileURLWithPath: FileManager.default.currentDirectoryPath)
 
+    @discardableResult
     public static func downloadResource(
         filename: String,
         fileExtension: String,
@@ -50,6 +51,7 @@ public enum DatasetUtilities {
         return localURL
     }
 
+    @discardableResult
     public static func fetchResource(
         filename: String,
         fileExtension: String,
@@ -110,9 +112,9 @@ public enum DatasetUtilities {
         let archivePath = resource.archiveURL.path
 
         #if os(macOS)
-            let binaryLocation = "/usr/bin/"
+            var binaryLocation = "/usr/bin/"
         #else
-            let binaryLocation = "/bin/"
+            var binaryLocation = "/bin/"
         #endif
 
         let toolName: String
@@ -124,6 +126,10 @@ public enum DatasetUtilities {
         case "tar.gz", "tgz":
             toolName = "tar"
             arguments = ["xzf", archivePath, "-C", resource.localStorageDirectory.path]
+        case "zip":
+            binaryLocation = "/usr/bin/"
+            toolName = "unzip"
+            arguments = [archivePath, "-d", resource.localStorageDirectory.path]
         default:
             printError("Unable to find archiver for extension \(resource.fileExtension).")
             exit(-1)
