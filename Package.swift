@@ -46,6 +46,7 @@ let package = Package(
         .target(
             name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport"],
             path: "Autoencoder/Autoencoder1D"),
+        .target(name: "TranslationModels", path: "Models/Translation"),
         .target(
             name: "Autoencoder2D", dependencies: ["Datasets", "ModelSupport"],
             path: "Autoencoder/Autoencoder2D"),
