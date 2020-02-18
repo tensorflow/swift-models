@@ -44,8 +44,8 @@ public struct Image {
     }
     
     public init(jpeg url: URL, byteOrdering: ByteOrdering = .rgb) {
-        let loadedData = _Raw.readFile(filename: StringTensor(url.absoluteString))
-        let loadedJpeg = _Raw.decodeJpeg(contents: loadedData, channels: 3, dctMethod: "")
+        let loadedFile = _Raw.readFile(filename: StringTensor(url.absoluteString))
+        let loadedJpeg = _Raw.decodeJpeg(contents: loadedFile, channels: 3, dctMethod: "")
         if byteOrdering == .bgr {
             self.imageData = .uint8(
                 data: _Raw.reverse(loadedJpeg, dims: Tensor<Bool>([false, false, false, true])))
