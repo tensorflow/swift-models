@@ -101,11 +101,12 @@ public struct BatchIterator<C: Collection>: IteratorProtocol, Sequence where C.I
     public mutating func next() -> C.Element? {
         guard pos < samplesCount else { return nil }
         let end = Swift.min(pos + b.batchSize, samplesCount)
+        print(pos,end)
         if (end - pos) < b.batchSize && b.dropLast { return nil }
         // The idea is to have samples processed and collated on the CPU before moving to the host.
         // This part has not been optimized yet
         return withDevice(.cpu) { () -> C.Element in
-            let samples = Array(pos..<end).concurrentMap(nthreads: b.numWorkers) {
+            let samples = Array(pos..<end).concurrentMap(nthreads: Swift.min(b.numWorkers, end-pos)) {
                 b.dataset[indices[$0]]
             }
             pos = end
