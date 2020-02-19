@@ -12,6 +12,6 @@ install(TARGETS Batcher
   RUNTIME DESTINATION bin)
 get_swift_host_arch(swift_arch)
 install(FILES
-  $<TARGET_PROPERTY:ModelSupport,Swift_MODULE_DIRECTORY>/ModelSupport.swiftdoc
-  $<TARGET_PROPERTY:ModelSupport,Swift_MODULE_DIRECTORY>/ModelSupport.swiftmodule
+  $<TARGET_PROPERTY:Batcher,Swift_MODULE_DIRECTORY>/Batcher.swiftdoc
+  $<TARGET_PROPERTY:Batcher,Swift_MODULE_DIRECTORY>/Batcher.swiftmodule
   DESTINATION lib/swift$<$<NOT:$<BOOL:${BUILD_SHARED_LIBS}>>:_static>/$<LOWER_CASE:${CMAKE_SYSTEM_NAME}>/${swift_arch})
