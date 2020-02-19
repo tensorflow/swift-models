@@ -100,12 +100,12 @@ public struct Image {
     }
 }
 
-public func saveImage(_ tensor: Tensor<Float>, size: (Int?, Int?) = (nil, nil),
+public func saveImage(_ tensor: Tensor<Float>, size: (Int, Int)? = nil,
                       format: _Raw.Format = .rgb, directory: String, name: String,
                       quality: Int64 = 95) throws {
     try createDirectoryIfMissing(at: directory)
     let image = Image(tensor: tensor)
-    let resizedImage = size.0 != nil && size.1 != nil ? image.resized(to: (size.0!, size.1!)) : image
+    let resizedImage = size != nil ? image.resized(to: (size!.0, size!.1)) : image
     let outputURL = URL(fileURLWithPath: "\(directory)\(name).jpg")
     resizedImage.save(to: outputURL, format: format, quality: quality)
 }
