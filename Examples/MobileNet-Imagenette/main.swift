@@ -19,13 +19,13 @@ import TensorFlow
 let batchers = ImagenetteBatchers(
     inputSize: .resized320, 
     outputSize: 224, 
-    batchSize: 16,
-    numWorkers: 4
+    batchSize: 128,
+    numWorkers: 8
 )
 
 var model = MobileNetV1(classCount: 10)
 
-let optimizer = SGD(for: model, learningRate: 0.002, momentum: 0.9)
+let optimizer = SGD(for: model, learningRate: 0.02, momentum: 0.9)
 
 print("Starting training...")
 

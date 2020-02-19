@@ -9,6 +9,7 @@ set(CMAKE_Swift_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/swift)
 include(SwiftSupport)
 
 add_subdirectory(Support)
+add_subdirectory(Batcher)
 add_subdirectory(Datasets)
 add_subdirectory(Models)
 add_subdirectory(MiniGo)

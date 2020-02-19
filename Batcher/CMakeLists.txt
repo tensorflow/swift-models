@@ -1,20 +1,12 @@
-add_library(ModelSupport
-  Checkpoints/CheckpointIndexReader.swift
-  Checkpoints/CheckpointReader.swift
-  Checkpoints/Protobufs/tensor_bundle.pb.swift
-  Checkpoints/Protobufs/tensor_shape.pb.swift
-  Checkpoints/Protobufs/tensor_slice.pb.swift
-  Checkpoints/Protobufs/types.pb.swift
-  Checkpoints/Protobufs/versions.pb.swift
-  Checkpoints/SnappyDecompression.swift
-  FileManagement.swift
-  Image.swift
-  Stderr.swift)
-set_target_properties(ModelSupport PROPERTIES
+add_library(Batcher
+  Backends.swift
+  Batcher.swift
+  Collatable.swift)
+set_target_properties(Batcher PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
 
 
-install(TARGETS ModelSupport
+install(TARGETS Batcher
   ARCHIVE DESTINATION lib/swift/$<LOWER_CASE:${CMAKE_SYSTEM_NAME}>
   LIBRARY DESTINATION lib/swift/$<LOWER_CASE:${CMAKE_SYSTEM_NAME}>
   RUNTIME DESTINATION bin)
