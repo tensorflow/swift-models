@@ -40,7 +40,7 @@ public struct BostonHousing {
             remoteRoot: remoteURL, localStorageDirectory: localURL,
             extract: false)
 
-        return try! String(contentsOf: localURL.appendingPathComponent("housing.data"), encoding: String.Encoding.utf8)
+        return try! String(contentsOf: localURL, encoding: String.Encoding.utf8)
     }
     
     public init() {
