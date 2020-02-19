@@ -1,5 +1,5 @@
 add_library(Batcher
-  Backends.swift
+  Backend.swift
   Batcher.swift
   Collatable.swift)
 set_target_properties(Batcher PROPERTIES
