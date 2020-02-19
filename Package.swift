@@ -9,6 +9,7 @@ let package = Package(
         .macOS(.v10_13),
     ],
     products: [
+        .library( name: "Batcher", targets: ["Batcher"]),
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
@@ -34,7 +35,8 @@ let package = Package(
         .package(url: "https://github.com/kylef/Commander.git", from: "0.9.1"),
     ],
     targets: [
-        .target(name: "Datasets", dependencies: ["ModelSupport"], path: "Datasets"),
+        .target(name: "Batcher", path: "Batcher"),
+        .target(name: "Datasets", dependencies: ["ModelSupport", "Batcher"], path: "Datasets"),
         .target(name: "ModelSupport", dependencies: ["SwiftProtobuf"], path: "Support"),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),
