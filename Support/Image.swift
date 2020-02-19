@@ -20,29 +20,29 @@ public struct Image {
         case bgr
         case rgb
     }
-    
+
     enum ImageTensor {
         case float(data: Tensor<Float>)
         case uint8(data: Tensor<UInt8>)
     }
-    
+
     let imageData: ImageTensor
-    
+
     public var tensor: Tensor<Float> {
         switch self.imageData {
         case let .float(data): return data
         case let .uint8(data): return Tensor<Float>(data)
         }
     }
-    
+
     public init(tensor: Tensor<UInt8>) {
         self.imageData = .uint8(data: tensor)
     }
-    
+
     public init(tensor: Tensor<Float>) {
         self.imageData = .float(data: tensor)
     }
-    
+
     public init(jpeg url: URL, byteOrdering: ByteOrdering = .rgb) {
         let loadedFile = _Raw.readFile(filename: StringTensor(url.absoluteString))
         let loadedJpeg = _Raw.decodeJpeg(contents: loadedFile, channels: 3, dctMethod: "")
@@ -53,7 +53,7 @@ public struct Image {
             self.imageData = .uint8(data: loadedJpeg)
         }
     }
-    
+
     public func save(to url: URL, format: _Raw.Format = .rgb, quality: Int64 = 95) {
         let outputImageData: Tensor<UInt8>
         switch format {
@@ -77,12 +77,12 @@ public struct Image {
             print("Image saving isn't supported for the format \(format).")
             exit(-1)
         }
-        
+
         let encodedJpeg = _Raw.encodeJpeg(
             image: outputImageData, format: format, quality: quality, xmpMetadata: "")
         _Raw.writeFile(filename: StringTensor(url.absoluteString), contents: encodedJpeg)
     }
-    
+
     public func resized(to size: (Int, Int)) -> Image {
         switch self.imageData {
         case let .uint8(data):
