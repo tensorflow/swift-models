@@ -9,10 +9,9 @@ values of the houses at a location (in k$).
 
 ## Setup
 
-To begin, you'll need the [latest version of Swift for
+You'll need the [latest version of Swift for
 TensorFlow](https://github.com/tensorflow/swift/blob/master/Installation.md)
-installed and added to your path. Additionally, the data loader requires Python
-3.x, `wget`, and `numpy`.
+installed and added to your path.
 
 > Note: For macOS, you need to set up the `PYTHON_LIBRARY` to help the Swift for
 > TensorFlow find the `libpython3.<minor-version>.dylib` file, e.g., in

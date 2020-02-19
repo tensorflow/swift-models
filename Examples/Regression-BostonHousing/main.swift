@@ -32,7 +32,7 @@ struct RegressionModel: Layer {
 
 var model = RegressionModel()
 
-//Train Model
+// Train Model
 let optimizer = RMSProp(for: model, learningRate: 0.001)
 Context.local.learningPhase = .training
 
@@ -85,7 +85,7 @@ for epoch in 1...epochCount {
     }
 }
 
-//Evaluate Model
+// Evaluate Model
 
 print("Evaluating model...")
 
