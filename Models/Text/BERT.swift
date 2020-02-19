@@ -754,7 +754,7 @@ extension BERT {
             case .albertBase, .albertLarge, .albertXLarge, .albertXXLarge:
                 // Download the model, if necessary.
                 let compressedFileURL = directory.appendingPathComponent("\(subDirectory).tar.gz")
-                try Datasets.maybeDownload(from: url, to: compressedFileURL)
+                try download(from: url, to: compressedFileURL)
 
                 // Extract the data, if necessary.
                 let extractedDirectoryURL = directory.appendingPathComponent(subDirectory)

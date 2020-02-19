@@ -48,7 +48,7 @@ public struct Imagenette: ImageClassificationDataset {
     public init(
         inputSize: ImageSize, outputSize: Int,
         localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
-            "Imagenette")
+            "Imagenette", isDirectory: true)
     ) {
         do {
             self.trainingDataset = Dataset<LabeledExample>(

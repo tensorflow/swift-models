@@ -20,6 +20,7 @@
 //   - Change `softmaxCrossEntropy` to `sigmoidCrossEntropy`.
 
 import Foundation
+import ModelSupport
 import TensorFlow
 
 public struct CoLA {
@@ -121,7 +122,7 @@ extension CoLA {
         let compressedDataURL = dataURL.appendingPathComponent("downloaded-data.zip")
 
         // Download the data, if necessary.
-        try maybeDownload(from: CoLA.url, to: compressedDataURL)
+        try download(from: CoLA.url, to: compressedDataURL)
 
         // Extract the data, if necessary.
         let extractedDirectoryURL = compressedDataURL.deletingPathExtension()
