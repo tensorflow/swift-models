@@ -26,11 +26,16 @@ public func createDirectoryIfMissing(at path: String) throws {
         attributes: nil)
 }
 
-public func download(from source: URL, to destinationDirectory: URL) throws {
-    try createDirectoryIfMissing(at: destinationDirectory.path)
-
-    let fileName = source.lastPathComponent
-    let destinationFile = destinationDirectory.appendingPathComponent(fileName).path
+public func download(from source: URL, to destination: URL) throws {
+    let destinationFile: String
+    if destination.hasDirectoryPath {
+        try createDirectoryIfMissing(at: destination.path)
+        let fileName = source.lastPathComponent
+        destinationFile = destination.appendingPathComponent(fileName).path
+    } else {
+        try createDirectoryIfMissing(at: destination.deletingLastPathComponent().path)
+        destinationFile = destination.path
+    }
 
     let downloadedFile = try Data(contentsOf: source)
     try downloadedFile.write(to: URL(fileURLWithPath: destinationFile))
