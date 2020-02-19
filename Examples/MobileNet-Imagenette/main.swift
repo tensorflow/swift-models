@@ -19,7 +19,7 @@ import TensorFlow
 let batchers = ImagenetteBatchers(
     inputSize: .resized320, 
     outputSize: 224, 
-    batchSize: 128,
+    batchSize: 64,
     numWorkers: 8
 )
 

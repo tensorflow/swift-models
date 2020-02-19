@@ -7,6 +7,7 @@ add_library(Datasets
   LabeledExample.swift
   MNIST/MNIST.swift)
 target_link_libraries(Datasets PUBLIC
+  Batcher
   ModelSupport)
 set_target_properties(Datasets PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
