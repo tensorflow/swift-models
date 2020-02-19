@@ -190,7 +190,7 @@ public struct MultiHeadAttention: Layer, Regularizable {
 
         // Take the dot product between the query and the key to get the raw attention scores.
         var attentionScores = matmul(q, transposed: false, k, transposed: true) // [B, N, F, T]
-        attentionScores = attentionScores / sqrt(Scalar(headSize))
+        attentionScores = attentionScores / sqrtf(Scalar(headSize))
 
         // Since the attention mask is set to 1.0 for positions we want to attend to and 0.0 for
         // masked positions, we create a tensor which is 0.0 for positions we want to attend to and 
