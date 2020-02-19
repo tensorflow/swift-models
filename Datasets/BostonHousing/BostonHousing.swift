@@ -34,13 +34,13 @@ public struct BostonHousing {
 
     static func downloadBostonHousingIfNotPresent() -> String {
         let remoteURL = URL(string: "https://archive.ics.uci.edu/ml/machine-learning-databases/housing/")!
-        let localURL = FileManager.default.temporaryDirectory.appendingPathComponent("BostonHousing")
+        let localURL = FileManager.default.temporaryDirectory.appendingPathComponent("BostonHousing", isDirectory: true)
         let _ = DatasetUtilities.downloadResource(
             filename: "housing", fileExtension: "data",
             remoteRoot: remoteURL, localStorageDirectory: localURL,
             extract: false)
 
-        return try! String(contentsOf: localURL, encoding: String.Encoding.utf8)
+        return try! String(contentsOf: localURL.appendingPathComponent("housing.data"), encoding: String.Encoding.utf8)
     }
     
     public init() {
