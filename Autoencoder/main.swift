@@ -53,11 +53,11 @@ for epoch in 1...epochCount {
 
         do {
             try saveImage(
-                sampleImage, size: (imageWidth, imageHeight), directory: outputFolder,
-                name: "epoch-\(epoch)-input")
+                sampleImage, shape: (imageWidth, imageHeight), format: .grayscale,
+                directory: outputFolder, name: "epoch-\(epoch)-input")
             try saveImage(
-                testImage, size: (imageWidth, imageHeight), directory: outputFolder,
-                name: "epoch-\(epoch)-output")
+                testImage, shape: (imageWidth, imageHeight), format: .grayscale,
+                directory: outputFolder, name: "epoch-\(epoch)-output")
         } catch {
             print("Could not save image with error: \(error)")
         }
