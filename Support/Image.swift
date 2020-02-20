@@ -100,11 +100,20 @@ public struct Image {
     }
 }
 
-public func saveImage(_ tensor: Tensor<Float>, size: (Int, Int)? = nil,
+public func saveImage(_ tensor: Tensor<Float>, shape: (Int, Int), size: (Int, Int)? = nil,
                       format: _Raw.Format = .rgb, directory: String, name: String,
                       quality: Int64 = 95) throws {
     try createDirectoryIfMissing(at: directory)
-    let image = Image(tensor: tensor)
+    let channels: Int
+    switch format {
+    case .rgb: channels = 3
+    case .grayscale: channels = 1
+    default:
+        print("\(format) is not supported yet.")
+        exit(-1)
+    }
+    let reshapedTensor = tensor.reshaped(to: [shape.0, shape.1, channels])
+    let image = Image(tensor: reshapedTensor)
     let resizedImage = size != nil ? image.resized(to: (size!.0, size!.1)) : image
     let outputURL = URL(fileURLWithPath: "\(directory)\(name).jpg")
     resizedImage.save(to: outputURL, format: format, quality: quality)
