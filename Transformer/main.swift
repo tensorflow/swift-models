@@ -14,8 +14,8 @@
 
 import Foundation
 import ModelSupport
-import Python
 import TensorFlow
+import TextModels
 
 let modelName = "117M"
 
@@ -28,16 +28,41 @@ let reader = try CheckpointReader(
 
 let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
     "Transformer")
-let sys = Python.import("sys")
-sys.path = sys.path + ["./Transformer"]
-let encoder = Python.import("encoder").get_encoder(temporaryDirectory.path)
+
+let vocabularyFile = temporaryDirectory.appendingPathComponent("vocab.bpe")
+let vocabulary = try(Vocabulary(fromFile: vocabularyFile))
+let mergePairs = [BytePairEncoder.Pair: Int](
+    uniqueKeysWithValues:
+       (try String(contentsOfFile: vocabularyFile.path, encoding: .utf8))
+            .components(separatedBy: .newlines)
+            .dropFirst()
+            .enumerated()
+            .compactMap { (index, line) -> (BytePairEncoder.Pair, Int)? in
+                let lineParts = line.split(separator: " ")
+                if lineParts.count < 2 { return nil }
+                    return (
+                       BytePairEncoder.Pair(
+                           String(lineParts[0]),
+                           String(lineParts[1])),
+                       index)
+            })
+let bytePairEncoder = BytePairEncoder(vocabulary: vocabulary, mergePairs: mergePairs)
 
 let configFile = temporaryDirectory.appendingPathComponent("hparams.json")
 let configData = try Data(contentsOf: configFile)
 let config = try JSONDecoder().decode(TransformerLMConfig.self, from: configData)
 let model = TransformerLM(reader: reader, config: config, scope: "model")
 
-let start_token = Int32(encoder.encoder["<|endoftext|>"])!
+let encoderFile = temporaryDirectory.appendingPathComponent("encoder.json")
+let encoderData = try Data(contentsOf: encoderFile)
+let tokenToID: [String: Int32] = try JSONDecoder().decode([String: Int32].self, from: encoderData)
+// let IDToToken: [Int32: String] = tokenToID.map{ [$1, $0] }
+var IDToToken = [Int32: String]()
+for (key, value) in tokenToID {
+    IDToToken[value] = key
+}
+
+let start_token = tokenToID["<|endoftext|>"]!
 var tokens = Tensor(shape: [1, 1], scalars: [start_token])
 var temperature = Float(1.0)
 
@@ -48,8 +73,8 @@ if CommandLine.arguments.count >= 2 {
 if CommandLine.arguments.count == 3 {
     let seed = CommandLine.arguments[2]
     print(seed, terminator: "")
-    let pytok = encoder.encode(seed)
-    let tokarr: [Int32] = [Int](pytok)!.map { Int32($0) }
+    let pytok = bytePairEncoder.encode(token: seed)
+    let tokarr: [Int32] = pytok.map { tokenToID[$0]! }
     tokens = Tensor(shape: [1, tokarr.count], scalars: tokarr)
 }
 
@@ -64,6 +89,14 @@ for _ in 0..<100 {
             lowerBounds: [0, timeSteps - 1, 0],
             upperBounds: [batchSize, timeSteps, vocabSize]) / temperature
     tokens = Tensor(randomCategorialLogits: lastLogit.squeezingShape(at: 1), sampleCount: 1)
-    print(encoder.decode(tokens[0].makeNumpyArray()), terminator: "")
+
+    var decodedToken: String
+    let ID: Int32 = Int32(tokens[0].makeNumpyArray()[0])!
+    if let token: String = IDToToken[ID] {
+        decodedToken = bytePairEncoder.decode(token: token)
+    } else {
+        decodedToken = "ID \(ID) not found."
+    }
+    print(decodedToken, terminator: "")
 }
 print()

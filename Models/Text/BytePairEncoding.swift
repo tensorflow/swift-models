@@ -68,6 +68,21 @@ public struct BytePairEncoder {
         // if useCache { cache[token] = encoded }
         return encoded
     }
+
+    /// Decodes the provided BPE-coded token to a sequence of tokens.
+    ///
+    /// - Parameters:
+    ///   - token: BPE-coded token to decode.
+    /// - Returns: Array containing the decoded tokens.
+    public func decode(token: String) -> String {
+        var buffer = [UInt8]()
+
+        for scalar in token.unicodeScalars {
+            buffer.append(BytePairEncoder.unicodeToBytes[scalar]!)
+        }
+
+        return String(bytes: buffer, encoding: .utf8)!
+    }
 }
 
 extension BytePairEncoder {
@@ -103,6 +118,15 @@ extension BytePairEncoder {
         }
         return [UInt8: UnicodeScalar](
             uniqueKeysWithValues: zip(bytes, characters.map { UnicodeScalar($0)! }))
+    }()
+
+    // The inverse of bytesToUnicode.
+    internal static let unicodeToBytes: [UnicodeScalar: UInt8] = {
+        var dict = [UnicodeScalar: UInt8]()
+        for (key, value) in BytePairEncoder.bytesToUnicode {
+            dict[value] = key
+        }
+        return dict
     }()
 
     /// Recursively splits `token` into smaller units (by reversing BPE merges) until all units
