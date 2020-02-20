@@ -122,11 +122,7 @@ extension BytePairEncoder {
 
     // The inverse of bytesToUnicode.
     internal static let unicodeToBytes: [UnicodeScalar: UInt8] = {
-        var dict = [UnicodeScalar: UInt8]()
-        for (key, value) in BytePairEncoder.bytesToUnicode {
-            dict[value] = key
-        }
-        return dict
+        [UnicodeScalar: UInt8](uniqueKeysWithValues: BytePairEncoder.bytesToUnicode.map{ ($1, $0) })
     }()
 
     /// Recursively splits `token` into smaller units (by reversing BPE merges) until all units

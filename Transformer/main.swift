@@ -56,11 +56,7 @@ let model = TransformerLM(reader: reader, config: config, scope: "model")
 let encoderFile = temporaryDirectory.appendingPathComponent("encoder.json")
 let encoderData = try Data(contentsOf: encoderFile)
 let tokenToID: [String: Int32] = try JSONDecoder().decode([String: Int32].self, from: encoderData)
-// let IDToToken: [Int32: String] = tokenToID.map{ [$1, $0] }
-var IDToToken = [Int32: String]()
-for (key, value) in tokenToID {
-    IDToToken[value] = key
-}
+let IDToToken = [Int32: String](uniqueKeysWithValues: tokenToID.map{ ($1, $0) })
 
 let start_token = tokenToID["<|endoftext|>"]!
 var tokens = Tensor(shape: [1, 1], scalars: [start_token])
@@ -91,7 +87,7 @@ for _ in 0..<100 {
     tokens = Tensor(randomCategorialLogits: lastLogit.squeezingShape(at: 1), sampleCount: 1)
 
     var decodedToken: String
-    let ID: Int32 = Int32(tokens[0].makeNumpyArray()[0])!
+    let ID: Int32 = Int32(tokens[0][0])!
     if let token: String = IDToToken[ID] {
         decodedToken = bytePairEncoder.decode(token: token)
     } else {
