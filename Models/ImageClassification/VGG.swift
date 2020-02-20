@@ -9,10 +9,12 @@
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
+// See the License fsor the specific language governing permissions and
 // limitations under the License.
 
 import TensorFlow
+import Foundation
+import ModelSupport
 
 // Original Paper:
 // "Very Deep Convolutional Networks for Large-Scale Image Recognition"
@@ -93,5 +95,76 @@ public struct VGG19: Layer {
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let backbone = input.sequenced(through: layer1, layer2, layer3, layer4, layer5)
         return backbone.sequenced(through: flatten, dense1, dense2, output)
+    }
+}
+
+public func extract(tarGZippedFileAt source: URL, to destination: URL) throws {
+    print("Extracting file at '\(source.path)'.")
+    try FileManager.default.createDirectory(
+        at: destination,
+        withIntermediateDirectories: false)
+    let process = Process()
+    process.environment = ProcessInfo.processInfo.environment
+    process.executableURL = URL(fileURLWithPath: "/bin/bash")
+    process.arguments = ["-c", "tar -C \(destination.path) -xzf \(source.path)"]
+    try process.run()
+    process.waitUntilExit()
+}
+
+extension VGG16 {
+    public func load(from directory:URL) throws -> VGG16 {
+        print("Loading VGG16 pre-trained model.")
+        var url = URL(string: "http://download.tensorflow.org/models/vgg_16_2016_08_28.tar.gz")!
+
+        let subDirectory = "vgg_16_2016_08_28"
+        let compressedFileURL = directory.appendingPathComponent("\(subDirectory).tar.gz")
+        try download(from: url, to:directory)
+        let extractedDirectoryURL = directory.appendingPathComponent(subDirectory)
+        if !FileManager.default.fileExists(atPath: extractedDirectoryURL.path) {
+            try extract(tarGZippedFileAt: compressedFileURL, to: extractedDirectoryURL)
+        }
+        var vgg16 = VGG16()
+        let path = extractedDirectoryURL.appendingPathComponent("vgg_16.ckpt")
+        let checkpointReader = TensorFlowCheckpointReader(checkpointPath: path.path)
+        
+        vgg16.layer1.blocks[0].filter = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv1/conv1_1/weights"))
+        vgg16.layer1.blocks[0].bias = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv1/conv1_1/biases"))
+        vgg16.layer1.blocks[1].filter = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv1/conv1_2/weights"))
+        vgg16.layer1.blocks[1].bias = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv1/conv1_2/biases"))
+
+        vgg16.layer2.blocks[0].filter = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv2/conv2_1/weights"))
+        vgg16.layer2.blocks[0].bias = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv2/conv2_1/biases"))
+        vgg16.layer2.blocks[1].filter = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv2/conv2_2/weights"))
+        vgg16.layer2.blocks[1].bias = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv2/conv2_2/biases"))
+
+        vgg16.layer3.blocks[0].filter = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv3/conv3_1/weights"))
+        vgg16.layer3.blocks[0].bias = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv3/conv3_1/biases"))
+        vgg16.layer3.blocks[1].filter = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv3/conv3_2/weights"))
+        vgg16.layer3.blocks[1].bias = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv3/conv3_2/biases"))
+        vgg16.layer3.blocks[2].filter = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv3/conv3_3/weights"))
+        vgg16.layer3.blocks[2].bias = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv3/conv3_3/biases"))
+
+        vgg16.layer4.blocks[0].filter = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv4/conv4_1/weights"))
+        vgg16.layer4.blocks[0].bias = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv4/conv4_1/biases"))
+        vgg16.layer4.blocks[1].filter = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv4/conv4_2/weights"))
+        vgg16.layer4.blocks[1].bias = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv4/conv4_2/biases"))
+        vgg16.layer4.blocks[2].filter = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv4/conv4_3/weights"))
+        vgg16.layer4.blocks[2].bias = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv4/conv4_3/biases"))
+
+        vgg16.layer5.blocks[0].filter = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv5/conv5_1/weights"))
+        vgg16.layer5.blocks[0].bias = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv5/conv5_1/biases"))
+        vgg16.layer5.blocks[1].filter = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv5/conv5_2/weights"))
+        vgg16.layer5.blocks[1].bias = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv5/conv5_2/biases"))
+        vgg16.layer5.blocks[2].filter = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv5/conv5_3/weights"))
+        vgg16.layer5.blocks[2].bias = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv5/conv5_3/biases"))
+
+        vgg16.dense1.weight = Tensor(checkpointReader.loadTensor(named: "vgg_16/fc6/weights"))
+        vgg16.dense1.bias = Tensor(checkpointReader.loadTensor(named: "vgg_16/fc6/weights"))
+        vgg16.dense2.weight = Tensor(checkpointReader.loadTensor(named: "vgg_16/fc7/weights"))
+        vgg16.dense2.bias = Tensor(checkpointReader.loadTensor(named: "vgg_16/fc7/weights"))
+        vgg16.output.weight = Tensor(checkpointReader.loadTensor(named: "vgg_16/fc8/weights"))
+        vgg16.output.bias = Tensor(checkpointReader.loadTensor(named: "vgg_16/fc8/weights"))
+        
+        return vgg16
     }
 }
