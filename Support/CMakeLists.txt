@@ -1,6 +1,8 @@
 add_library(ModelSupport
   Checkpoints/CheckpointIndexReader.swift
+  Checkpoints/CheckpointIndexWriter.swift
   Checkpoints/CheckpointReader.swift
+  Checkpoints/CheckpointWriter.swift
   Checkpoints/Protobufs/tensor_bundle.pb.swift
   Checkpoints/Protobufs/tensor_shape.pb.swift
   Checkpoints/Protobufs/tensor_slice.pb.swift

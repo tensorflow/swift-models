@@ -28,15 +28,23 @@ let reader = try CheckpointReader(
 
 let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
     "Transformer")
-let sys = Python.import("sys")
-sys.path = sys.path + ["./Transformer"]
-let encoder = Python.import("encoder").get_encoder(temporaryDirectory.path)
+// let sys = Python.import("sys")
+// sys.path = sys.path + ["./Transformer"]
+// let encoder = Python.import("encoder").get_encoder(temporaryDirectory.path)
 
 let configFile = temporaryDirectory.appendingPathComponent("hparams.json")
 let configData = try Data(contentsOf: configFile)
 let config = try JSONDecoder().decode(TransformerLMConfig.self, from: configData)
 let model = TransformerLM(reader: reader, config: config, scope: "model")
 
+
+var tensors = [String: Tensor<Float>]()
+recursivelyObtainTensors(model, scope: "model", tensors: &tensors, separator: "/")
+
+let writer = CheckpointWriter(tensors: tensors)
+try writer.write(to: temporaryDirectory, name: "model2.ckpt")
+
+/*
 let start_token = Int32(encoder.encoder["<|endoftext|>"])!
 var tokens = Tensor(shape: [1, 1], scalars: [start_token])
 var temperature = Float(1.0)
@@ -67,3 +75,4 @@ for _ in 0..<100 {
     print(encoder.decode(tokens[0].makeNumpyArray()), terminator: "")
 }
 print()
+*/
