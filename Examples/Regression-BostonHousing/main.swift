@@ -66,7 +66,7 @@ for epoch in 1...epochCount {
         
         let batchStart = r * batchSize
         let batchEnd = min(dataset.numTrainRecords, batchStart + batchSize)
-        let (loss, grad) = model.valueWithGradient { (model: RegressionModel) -> Tensor<Float> in
+        let (loss, grad) = valueWithGradient(at: model) { (model: RegressionModel) -> Tensor<Float> in
             let logits = model(dataset.xTrain[batchStart..<batchEnd])
             return meanSquaredError(predicted: logits, expected: dataset.yTrain[batchStart..<batchEnd])
         }
