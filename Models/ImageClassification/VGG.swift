@@ -112,8 +112,8 @@ public func extract(tarGZippedFileAt source: URL, to destination: URL) throws {
 }
 
 extension VGG16 {
-    public func load(from directory:URL) throws -> VGG16 {
-        print("Loading VGG16 pre-trained model.")
+    public func pretrained(from directory:URL) throws -> VGG16 {
+        print("Loading VGG16 pre-trained on Imagenet-2012.")
         var url = URL(string: "http://download.tensorflow.org/models/vgg_16_2016_08_28.tar.gz")!
 
         let subDirectory = "vgg_16_2016_08_28"
