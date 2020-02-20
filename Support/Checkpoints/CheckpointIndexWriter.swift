@@ -29,9 +29,16 @@ extension CheckpointIndexWriter {
         var outputBuffer = Data()
         // TODO: Calculate the number of shards required.
         outputBuffer.append(headerBlock(shards: 1))
-        // sort strings
-        // write each string key
-        // generate tensor protobuf
+        let sortedKeys = tensors.keys.sorted()
+        var lastString = ""
+        var offset: Int64 = 0
+        for key in sortedKeys {
+            outputBuffer.append(keyValueBlock(key: key, lastString: lastString, offset: &offset))
+            lastString = key
+        }
+
+        // TODO: Complete footer output, rather than just using these terminating zeroes.
+        outputBuffer.append(contentsOf: [0, 0, 0])
         return outputBuffer
     }
 
@@ -47,6 +54,38 @@ extension CheckpointIndexWriter {
             var outputBuffer = indexBytes(sharedKeyBytes: 0, newKeyBytes: 0, valueLength: headerValue.count)
             outputBuffer.append(headerValue)
 
+            return outputBuffer
+        } catch {
+            fatalError("Could not serialize header protobuf: \(error).")
+        }
+    }
+
+    func keyValueBlock(key: String, lastString: String, offset: inout Int64) -> Data {
+        var entryProtobuf = Tensorflow_BundleEntryProto()
+        var shape = Tensorflow_TensorShapeProto()
+        // var dim = Tensorflow_TensorShapeProto.Dim()
+        // Map the input shape array to dims, one per dimension
+        // dim.size = 
+        // shape.
+
+        guard let tensor = tensors[key] else { fatalError("Mismatch on tensor key: \(key).") }
+        // Reduce tensor to bytes
+        // Get tensor byte count
+        // Append tensor to shard
+        let tensorSize: Int64 = 10
+
+        // TODO: Support other datatypes.
+        entryProtobuf.dtype = .dtFloat
+        entryProtobuf.shape = shape
+        entryProtobuf.offset = offset
+        entryProtobuf.size = tensorSize
+        entryProtobuf.crc32C = 10
+
+        offset += tensorSize
+
+        do {
+            let entryValue = try entryProtobuf.serializedData()
+            var outputBuffer = indexBytes(sharedKeyBytes: 0, newKeyBytes: 0, valueLength: entryValue.count)
             return outputBuffer
         } catch {
             fatalError("Could not serialize header protobuf: \(error).")

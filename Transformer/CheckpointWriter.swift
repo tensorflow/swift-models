@@ -50,7 +50,10 @@ extension MultiHeadAttention: ExportableLayer {
 
 extension EncoderLayer: ExportableLayer {
     var nameMappings: [String: String] {
-        ["selfAttention": "attn", "selfAttentionNorm": "ln_1", "feedForward": "mlp", "feedForwardNorm": "ln_2"]
+        [
+            "selfAttention": "attn", "selfAttentionNorm": "ln_1", "feedForward": "mlp",
+            "feedForwardNorm": "ln_2",
+        ]
     }
 }
 
@@ -58,16 +61,17 @@ extension Array: ExportableLayer {
     var nameMappings: [String: String] { ["h": "h"] }
 }
 
-
-func recursivelyObtainTensors(_ obj: Any, scope: String? = nil, tensors: inout [String: Tensor<Float>], separator: String) {
+func recursivelyObtainTensors(
+    _ obj: Any, scope: String? = nil, tensors: inout [String: Tensor<Float>], separator: String
+) {
     let m = Mirror(reflecting: obj)
     let nameMappings: [String: String]
     if let exportableLayer = obj as? ExportableLayer {
         nameMappings = exportableLayer.nameMappings
     } else {
-        nameMappings = [ : ]
+        nameMappings = [:]
     }
-    
+
     var repeatedLabels: [String: Int] = [:]
     func suffix(for label: String) -> String {
         if let currentSuffix = repeatedLabels[label] {
@@ -78,9 +82,9 @@ func recursivelyObtainTensors(_ obj: Any, scope: String? = nil, tensors: inout [
             return "0"
         }
     }
-    
+
     let hasSuffix = (m.children.first?.label == nil)
-    
+
     var path = scope
     for child in m.children {
         let label = child.label ?? "h"
@@ -88,7 +92,7 @@ func recursivelyObtainTensors(_ obj: Any, scope: String? = nil, tensors: inout [
         if let remappedLabel = nameMappings[label] {
             let labelSuffix = hasSuffix ? suffix(for: remappedLabel) : ""
             let conditionalSeparator = remappedLabel == "" ? "" : separator
-            
+
             path = (scope != nil ? scope! + conditionalSeparator : "") + remappedLabel + labelSuffix
             if let tensor = child.value as? Tensor<Float> {
                 tensors[path!] = tensor
