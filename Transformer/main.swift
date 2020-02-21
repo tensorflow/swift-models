@@ -29,11 +29,24 @@ let reader = try CheckpointReader(
 let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
     "Transformer")
 
-let vocabularyFile = temporaryDirectory.appendingPathComponent("vocab.bpe")
-let vocabulary = try(Vocabulary(fromFile: vocabularyFile))
+// Load a model from config.
+let configFile = temporaryDirectory.appendingPathComponent("hparams.json")
+let configData = try Data(contentsOf: configFile)
+let config = try JSONDecoder().decode(TransformerLMConfig.self, from: configData)
+let model = TransformerLM(reader: reader, config: config, scope: "model")
+
+// Load existing token mappings.
+let encoderFile = temporaryDirectory.appendingPathComponent("encoder.json")
+let encoderData = try Data(contentsOf: encoderFile)
+let tokenToID: [String: Int32] = try JSONDecoder().decode([String: Int32].self, from: encoderData)
+let IDToToken = [Int32: String](uniqueKeysWithValues: tokenToID.map{ ($1, $0) })
+
+// Create a byte pair encoder with the loaded token mappings.
+let vocabulary = try(Vocabulary(fromJSONFile: encoderFile))
+// TODO(michellecasbon): Move this into BytePairEncoder.
 let mergePairs = [BytePairEncoder.Pair: Int](
     uniqueKeysWithValues:
-       (try String(contentsOfFile: vocabularyFile.path, encoding: .utf8))
+       (try String(contentsOfFile: encoderFile.path, encoding: .utf8))
             .components(separatedBy: .newlines)
             .dropFirst()
             .enumerated()
@@ -48,30 +61,26 @@ let mergePairs = [BytePairEncoder.Pair: Int](
             })
 let bytePairEncoder = BytePairEncoder(vocabulary: vocabulary, mergePairs: mergePairs)
 
-let configFile = temporaryDirectory.appendingPathComponent("hparams.json")
-let configData = try Data(contentsOf: configFile)
-let config = try JSONDecoder().decode(TransformerLMConfig.self, from: configData)
-let model = TransformerLM(reader: reader, config: config, scope: "model")
-
-let encoderFile = temporaryDirectory.appendingPathComponent("encoder.json")
-let encoderData = try Data(contentsOf: encoderFile)
-let tokenToID: [String: Int32] = try JSONDecoder().decode([String: Int32].self, from: encoderData)
-let IDToToken = [Int32: String](uniqueKeysWithValues: tokenToID.map{ ($1, $0) })
-
+// Initialize model parameters.
 let start_token = tokenToID["<|endoftext|>"]!
 var tokens = Tensor(shape: [1, 1], scalars: [start_token])
 var temperature = Float(1.0)
 
+// Set temperature.
 if CommandLine.arguments.count >= 2 {
     temperature = Float(CommandLine.arguments[1])!
 }
 
+// Use seed text.
 if CommandLine.arguments.count == 3 {
     let seed = CommandLine.arguments[2]
     print(seed, terminator: "")
-    let pytok = bytePairEncoder.encode(token: seed)
-    let tokarr: [Int32] = pytok.map { tokenToID[$0]! }
-    tokens = Tensor(shape: [1, tokarr.count], scalars: tokarr)
+    let bpeTokens = bytePairEncoder.encode_gpt2(token: seed)
+    // TODO(michellecasbon): Decide how to prevent OOV or choose a better ID (probably not 0).
+    let bpeTokenIDs: [Int32] = bpeTokens.map {
+        if let ID = tokenToID[$0] { return ID } else { return 0 }
+    }
+    tokens = Tensor(shape: [1, bpeTokenIDs.count], scalars: bpeTokenIDs)
 }
 
 let empty = Tensor<Float>(zeros: [config.headCount, 0, config.embeddingSize / config.headCount])

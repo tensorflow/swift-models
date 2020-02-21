@@ -69,6 +69,56 @@ public struct BytePairEncoder {
         return encoded
     }
 
+    /// Encodes the provided token to a sequence of BPE-coded tokens.
+    ///
+    /// - Parameters:
+    ///   - token: Token to encode.
+    /// - Returns: Array containing the BPE-coded tokens.
+    public func encode_gpt2(token: String) -> [String] {
+        // if let cached = cache[token] { return cached }
+        // let token = " " + token
+        var parts = BytePairEncoder.splitWithDelimiters_gpt2(
+            token: token,
+            glossaryRegex: BytePairEncoder.gpt2GlossaryRegex)
+        if parts.count < 2 {
+            // Encode each token.
+            let encoded = parts.map( {
+                String(String.UnicodeScalarView($0.utf8.map {
+                    BytePairEncoder.bytesToUnicode[$0]!
+                }))
+            } )
+            return encoded
+        }
+        var pairs = (0..<parts.count - 1).map { index in Pair(parts[index], parts[index + 1]) }
+        while !pairs.isEmpty {
+            let pair = pairs.min { mergePairs[$0] ?? Int.max < mergePairs[$1] ?? Int.max }!
+            if !mergePairs.keys.contains(pair) { break }
+            parts = BytePairEncoder.replacePair(pair: pair, tokenParts: parts)
+            if parts.count < 2 { break }
+            pairs = (0..<parts.count - 1).map { index in Pair(parts[index], parts[index + 1]) }
+        }
+
+        // Encode each token.
+        let encoded = parts.map( {
+            String(String.UnicodeScalarView($0.utf8.map {
+                BytePairEncoder.bytesToUnicode[$0]!
+            }))
+        } )
+
+        // Check if the new words parts are in the vocabulary, and backtrack if necessary.
+        let encoded2 = encoded.flatMap { part -> [String] in
+        if vocabulary.contains(part) { return [part] }
+            return splitRecursively(part)
+        }
+
+        // Update the cache and return.
+        // if useCache { cache[token] = encoded }
+        return encoded2
+    }
+
+
+
+
     /// Decodes the provided BPE-coded token to a sequence of tokens.
     ///
     /// - Parameters:
@@ -103,6 +153,18 @@ extension BytePairEncoder {
         let escapedGlossary = defaultGlossary.map { "\\Q\($0)\\E" }.joined(separator: "|")
         return try! NSRegularExpression(pattern: "(?:\(escapedGlossary))|(?!\(escapedGlossary))")
     }()
+
+    /// Regular expression matching the OpenAI GPT-2 implementation.
+    internal static let gpt2Glossary: [String] = [
+        "'s", "'t", "'re", "'ve", "'m", "'ll", "'d", " ?\\p{L}+", " ?\\p{N}+",
+        " ?[^\\s\\p{L}\\p{N}]+", "\\s+(?!\\S)", "\\s+"
+    ]
+
+    internal static let gpt2GlossaryRegex: NSRegularExpression = {
+        let escapedGlossary = gpt2Glossary.map { $0 }.joined(separator: "|")
+        return try! NSRegularExpression(pattern: "(?:\(escapedGlossary))")
+    }()
+
 
     // TODO: Add documentation.
     internal static let bytesToUnicode: [UInt8: UnicodeScalar] = {
@@ -160,6 +222,29 @@ extension BytePairEncoder {
         }
         if lastEnd != token.endIndex {
             parts.append(String(token[lastEnd...]))
+        }
+        return parts
+    }
+
+    /// Uses the given regex to split a token into individual glossary terms.
+    ///
+    /// - Parameters:
+    ///   - token: Full text.
+    ///   - glossaryRegex: Regular expression for segmenting the given token.
+    /// - Returns: Array of substrings that match the given regex.
+    internal static func splitWithDelimiters_gpt2(
+        token: String,
+        glossaryRegex: NSRegularExpression
+    ) -> [String] {
+        let matches = glossaryRegex.matches(
+            in: token,
+            range: NSRange(token.startIndex..., in: token))
+        var parts = [String]()
+        parts.reserveCapacity(token.count)
+        for match in matches {
+            let start = token.index(token.startIndex, offsetBy: match.range.lowerBound)
+            let end = token.index(token.startIndex, offsetBy: match.range.upperBound)
+            parts.append(String(token[start..<end]))
         }
         return parts
     }
