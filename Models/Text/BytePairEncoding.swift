@@ -80,7 +80,7 @@ public struct BytePairEncoder {
             glossaryRegex: BytePairEncoder.gpt2GlossaryRegex)
         if parts.count < 2 {
             // Encode the full token and return.
-            return parts.map({ BytePairEncoder.encodedToken($0) })
+            return parts.map { BytePairEncoder.encodedToken($0) }
         }
 
         // Create pairs of parts.
