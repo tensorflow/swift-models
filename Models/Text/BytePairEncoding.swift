@@ -148,7 +148,7 @@ extension BytePairEncoder {
     ]
 
     internal static let gpt2GlossaryRegex: NSRegularExpression = {
-        let escapedGlossary = gpt2Glossary.map { $0 }.joined(separator: "|")
+        let escapedGlossary = gpt2Glossary.joined(separator: "|")
         return try! NSRegularExpression(pattern: "(?:\(escapedGlossary))")
     }()
 
