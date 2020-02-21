@@ -36,7 +36,7 @@ public func download(from source: URL, to destinationDirectory: URL) throws {
     try downloadedFile.write(to: URL(fileURLWithPath: destinationFile))
 }
 
-/// Collect all filemanes URL under a folder `url`, potentially recursing throu all subfolders.
+/// Collect all file URLs under a folder `url`, potentially recursing through all subfolders.
 /// Optionally filters some extension (only jpeg or txt files for instance).
 ///
 /// - Parameters:
