@@ -96,7 +96,6 @@ func recursivelyObtainTensors(
             path = (scope != nil ? scope! + conditionalSeparator : "") + remappedLabel + labelSuffix
             if let tensor = child.value as? Tensor<Float> {
                 tensors[path!] = tensor
-                // print("- \(path!)")
             }
         }
         recursivelyObtainTensors(child.value, scope: path, tensors: &tensors, separator: separator)

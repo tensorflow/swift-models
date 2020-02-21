@@ -15,12 +15,18 @@
 import Foundation
 import TensorFlow
 
+
 class CheckpointIndexWriter {
     // TODO: Extend handling to different tensor types.
     let tensors: [String: Tensor<Float>]
+    let orderedTensors: [String]
+
+    // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/lib/io/table_options.h#L46
+    let blockRestartInterval = 16
 
     init(tensors: [String: Tensor<Float>]) {
         self.tensors = tensors
+        self.orderedTensors = tensors.keys.sorted()
     }
 }
 
@@ -29,16 +35,24 @@ extension CheckpointIndexWriter {
         var outputBuffer = Data()
         // TODO: Expand beyond using a single binary shard.
         outputBuffer.append(headerBlock(shards: 1))
-        let sortedKeys = tensors.keys.sorted()
         var lastString = ""
+        var intervalSinceLastRestart = 0
         var offset: Int64 = 0
-        for key in sortedKeys {
+        for key in orderedTensors {
             outputBuffer.append(keyValueBlock(key: key, lastString: lastString, offset: &offset))
-            lastString = key
+
+            // With prefix compression, the entire string is used as a restart at defined intervals.
+            if intervalSinceLastRestart < blockRestartInterval {
+                lastString = key
+                intervalSinceLastRestart += 1
+            } else {
+                lastString = ""
+                intervalSinceLastRestart = 0
+            }
         }
 
-        // TODO: Complete footer output, rather than just using these terminating zeroes.
-        outputBuffer.append(contentsOf: [0, 0, 0])
+        outputBuffer.append(footerBlock())
+
         return outputBuffer
     }
 
@@ -51,7 +65,8 @@ extension CheckpointIndexWriter {
         do {
             let headerValue = try headerProtobuf.serializedData()
 
-            var outputBuffer = indexBytes(sharedKeyBytes: 0, newKeyBytes: 0, valueLength: headerValue.count)
+            var outputBuffer = indexBytes(
+                sharedKeyBytes: 0, newKeyBytes: 0, valueLength: headerValue.count)
             outputBuffer.append(headerValue)
 
             return outputBuffer
@@ -62,7 +77,7 @@ extension CheckpointIndexWriter {
 
     func keyValueBlock(key: String, lastString: String, offset: inout Int64) -> Data {
         guard let tensor = tensors[key] else { fatalError("Mismatch on tensor key: \(key).") }
-        
+
         var entryProtobuf = Tensorflow_BundleEntryProto()
         var shape = Tensorflow_TensorShapeProto()
         shape.dim = tensor.shape.dimensions.map { size -> Tensorflow_TensorShapeProto.Dim in
@@ -70,14 +85,15 @@ extension CheckpointIndexWriter {
             dim.size = Int64(size)
             return dim
         }
-        
-        let tensorSize: Int64 = Int64(MemoryLayout<Float>.size * tensor.shape.dimensions.reduce(1) { $0 * $1 })
+
+        let tensorSize: Int64 = Int64(
+            MemoryLayout<Float>.size * tensor.shape.dimensions.reduce(1) { $0 * $1 })
 
         entryProtobuf.dtype = .dtFloat
         entryProtobuf.shape = shape
         entryProtobuf.offset = offset
         entryProtobuf.size = tensorSize
-        entryProtobuf.crc32C = 10
+        entryProtobuf.crc32C = 0
 
         offset += tensorSize
 
@@ -85,7 +101,9 @@ extension CheckpointIndexWriter {
             let entryValue = try entryProtobuf.serializedData()
             let commonPrefix = lastString.commonPrefix(with: key)
             let newCharacters = key.count - commonPrefix.count
-            var outputBuffer = indexBytes(sharedKeyBytes: commonPrefix.count, newKeyBytes: newCharacters, valueLength: entryValue.count)
+            var outputBuffer = indexBytes(
+                sharedKeyBytes: commonPrefix.count, newKeyBytes: newCharacters,
+                valueLength: entryValue.count)
             let suffix = key.suffix(newCharacters).utf8
             outputBuffer.append(contentsOf: suffix)
             outputBuffer.append(entryValue)
@@ -93,6 +111,11 @@ extension CheckpointIndexWriter {
         } catch {
             fatalError("Could not serialize header protobuf: \(error).")
         }
+    }
+
+    func footerBlock() -> Data {
+        // TODO: Complete footer output, rather than just using these terminating zeroes.
+        return Data(count: footerSize)
     }
 
     func indexBytes(sharedKeyBytes: Int, newKeyBytes: Int, valueLength: Int) -> Data {
@@ -106,7 +129,7 @@ extension CheckpointIndexWriter {
 
 extension Data {
     mutating func appendVarint32(_ value: Int) {
-        // TODO: Actual varint writing here
+        // TODO: Need actual varint writing here, this will fail for values > 128.
         self.append(contentsOf: [UInt8(value)])
     }
 }

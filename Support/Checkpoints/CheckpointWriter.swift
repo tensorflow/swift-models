@@ -46,6 +46,35 @@ open class CheckpointWriter {
         let headerLocation = directory.appendingPathComponent("\(name).index")
         try indexHeader.write(to: headerLocation)
 
-        // Write shards
+        // TODO: Handle splitting into multiple shards.
+        try writeShard(
+            to: directory.appendingPathComponent("\(name)"), shard: 0, numShards: 1,
+            tensorList: indexWriter.orderedTensors)
+    }
+
+    func writeShard(to location: URL, shard: Int, numShards: Int, tensorList: [String]) throws {
+        let shardFile = CheckpointReader.shardFile(
+            location: location, shard: shard, totalShards: numShards)
+
+        var outputBuffer = Data()
+        // TODO: Write this directly to disk, rather than accumulating it in memory.
+        for tensorName in tensorList {
+            guard let tensor = tensors[tensorName] else {
+                fatalError("Mismatch in sorted tensors at name: \(tensorName).")
+            }
+            let scalars = tensor.array.scalars
+            // scalars.withUnsafeBytes { pointer in
+            //     outputBuffer.append(pointer, count: pointer.count)
+            // }
+            scalars.withUnsafeBufferPointer { (ptr) in
+                ptr.baseAddress!.withMemoryRebound(
+                    to: UInt8.self, capacity: ptr.count * MemoryLayout<Float>.size
+                ) {
+                    return outputBuffer.append($0, count: ptr.count * MemoryLayout<Float>.size)
+                }
+            }
+        }
+
+        try outputBuffer.write(to: shardFile)
     }
 }
