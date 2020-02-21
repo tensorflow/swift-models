@@ -43,11 +43,7 @@ public struct BytePairEncoder {
     public func encode(token: String) -> [String] {
         // if let cached = cache[token] { return cached }
         // let token = " " + token
-        let encodedToken = String(
-            String.UnicodeScalarView(
-                token.utf8.map {
-                    BytePairEncoder.bytesToUnicode[$0]!
-                }))
+        let encodedToken = BytePairEncoder.encodedToken(token)
         var parts = BytePairEncoder.splitWithDelimiters(
             token: encodedToken,
             glossaryRegex: BytePairEncoder.defaultGlossaryRegex)
@@ -77,23 +73,17 @@ public struct BytePairEncoder {
     /// - Parameters:
     ///   - token: Token to encode.
     /// - Returns: Array containing the BPE-coded tokens.
-    public func encode_gpt2(token: String) -> [String] {
-        // if let cached = cache[token] { return cached }
-        // let token = " " + token
-        var parts = BytePairEncoder.splitWithDelimiters_gpt2(
+    public func encodeGpt2(token: String) -> [String] {
+        // Split into parts before encoding.
+        var parts = BytePairEncoder.splitWithDelimitersGpt2(
             token: token,
             glossaryRegex: BytePairEncoder.gpt2GlossaryRegex)
         if parts.count < 2 {
-            // Encode each token.
-            let encoded = parts.map({
-                String(
-                    String.UnicodeScalarView(
-                        $0.utf8.map {
-                            BytePairEncoder.bytesToUnicode[$0]!
-                        }))
-            })
-            return encoded
+            // Encode the full token and return.
+            return parts.map({ BytePairEncoder.encodedToken($0) })
         }
+
+        // Create pairs of parts.
         var pairs = (0..<parts.count - 1).map { index in Pair(parts[index], parts[index + 1]) }
         while !pairs.isEmpty {
             let pair = pairs.min { mergePairs[$0] ?? Int.max < mergePairs[$1] ?? Int.max }!
@@ -104,23 +94,15 @@ public struct BytePairEncoder {
         }
 
         // Encode each token.
-        let encoded = parts.map({
-            String(
-                String.UnicodeScalarView(
-                    $0.utf8.map {
-                        BytePairEncoder.bytesToUnicode[$0]!
-                    }))
-        })
+        let encoded = parts.map({ BytePairEncoder.encodedToken($0) })
 
-        // Check if the new words parts are in the vocabulary, and backtrack if necessary.
-        let encoded2 = encoded.flatMap { part -> [String] in
+        // Check if the new word parts are in the vocabulary, and backtrack if necessary.
+        let encodedTokens = encoded.flatMap { part -> [String] in
             if vocabulary.contains(part) { return [part] }
             return splitRecursively(part)
         }
 
-        // Update the cache and return.
-        // if useCache { cache[token] = encoded }
-        return encoded2
+        return encodedTokens
     }
 
     /// Decodes the provided BPE-coded token to a sequence of tokens.
@@ -235,7 +217,7 @@ extension BytePairEncoder {
     ///   - token: Full text.
     ///   - glossaryRegex: Regular expression for segmenting the given token.
     /// - Returns: Array of substrings that match the given regex.
-    internal static func splitWithDelimiters_gpt2(
+    internal static func splitWithDelimitersGpt2(
         token: String,
         glossaryRegex: NSRegularExpression
     ) -> [String] {
@@ -278,5 +260,9 @@ extension BytePairEncoder {
             newTokenParts.append(tokenParts[j])
         }
         return newTokenParts
+    }
+
+    internal static func encodedToken(_ token: String) -> String {
+        String(String.UnicodeScalarView(token.utf8.map {BytePairEncoder.bytesToUnicode[$0]!}))
     }
 }
