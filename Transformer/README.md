@@ -6,13 +6,13 @@ Currently, the model must be run from the root of the swift-models project direc
 the model by sampling either unconditionally:
 
 ```sh
-swift run -c release Transformer [temperature]
+swift run -c release TransformerDemo [temperature]
 ```
 
 or conditionally:
 
 ```sh
-swift run -c release Transformer [temperature] "conditioning text"
+swift run -c release TransformerDemo [temperature] "conditioning text"
 ```
 
 In either case, a "temperature" of 0 means "always output the same text, but it'll be fairly boring,"
@@ -22,8 +22,8 @@ to be best.
 
 Here's one output we got:
 
-```sh
-~/swift-models/Transformer$ ./main 0.5 "Introducing Swift for TensorFlow"
+```console
+$ swift run -c release 0.5 "Introducing Swift for TensorFlow"
 Introducing Swift for TensorFlow
 
 Swift has been around since the beginning. It was created by the Swift team to enable developers to write Swift code. It is a powerful language for developing many different types of data structures.
