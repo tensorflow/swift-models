@@ -9,7 +9,7 @@ let package = Package(
         .macOS(.v10_13),
     ],
     products: [
-        .library( name: "Batcher", targets: ["Batcher"]),
+        .library(name: "Batcher", targets: ["Batcher"]),
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
@@ -71,7 +71,8 @@ let package = Package(
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
         .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
         .testTarget(name: "DatasetsTests", dependencies: ["Datasets"]),
-        .target(name: "Transformer", dependencies: ["ModelSupport", "TextModels"], path: "Transformer"),
+        .target(
+            name: "Transformer", dependencies: ["ModelSupport", "TextModels"], path: "Transformer"),
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
         .target(name: "DCGAN", dependencies: ["Datasets", "ModelSupport"], path: "DCGAN"),
         .target(

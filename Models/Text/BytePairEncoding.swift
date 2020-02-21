@@ -27,9 +27,10 @@ public struct BytePairEncoder {
     public init(vocabulary: Vocabulary, mergePairs: [Pair: Int], useCache: Bool = true) {
         self.vocabulary = vocabulary
         self.mergePairs = mergePairs
-        self.reversedMergePairs = [String: Pair](uniqueKeysWithValues: mergePairs.map {
-        ($0.key.left + $0.key.right, $0.key)
-        })
+        self.reversedMergePairs = [String: Pair](
+            uniqueKeysWithValues: mergePairs.map {
+                ($0.key.left + $0.key.right, $0.key)
+            })
         self.useCache = useCache
         // self.cache = [:]
     }
@@ -42,9 +43,11 @@ public struct BytePairEncoder {
     public func encode(token: String) -> [String] {
         // if let cached = cache[token] { return cached }
         // let token = " " + token
-        let encodedToken = String(String.UnicodeScalarView(token.utf8.map {
-            BytePairEncoder.bytesToUnicode[$0]!
-        }))
+        let encodedToken = String(
+            String.UnicodeScalarView(
+                token.utf8.map {
+                    BytePairEncoder.bytesToUnicode[$0]!
+                }))
         var parts = BytePairEncoder.splitWithDelimiters(
             token: encodedToken,
             glossaryRegex: BytePairEncoder.defaultGlossaryRegex)
@@ -60,7 +63,7 @@ public struct BytePairEncoder {
 
         // Check if the new words parts are in the vocabulary, and backtrack if necessary.
         let encoded = parts.flatMap { part -> [String] in
-        if vocabulary.contains(part) { return [part] }
+            if vocabulary.contains(part) { return [part] }
             return splitRecursively(part)
         }
 
@@ -82,11 +85,13 @@ public struct BytePairEncoder {
             glossaryRegex: BytePairEncoder.gpt2GlossaryRegex)
         if parts.count < 2 {
             // Encode each token.
-            let encoded = parts.map( {
-                String(String.UnicodeScalarView($0.utf8.map {
-                    BytePairEncoder.bytesToUnicode[$0]!
-                }))
-            } )
+            let encoded = parts.map({
+                String(
+                    String.UnicodeScalarView(
+                        $0.utf8.map {
+                            BytePairEncoder.bytesToUnicode[$0]!
+                        }))
+            })
             return encoded
         }
         var pairs = (0..<parts.count - 1).map { index in Pair(parts[index], parts[index + 1]) }
@@ -99,15 +104,17 @@ public struct BytePairEncoder {
         }
 
         // Encode each token.
-        let encoded = parts.map( {
-            String(String.UnicodeScalarView($0.utf8.map {
-                BytePairEncoder.bytesToUnicode[$0]!
-            }))
-        } )
+        let encoded = parts.map({
+            String(
+                String.UnicodeScalarView(
+                    $0.utf8.map {
+                        BytePairEncoder.bytesToUnicode[$0]!
+                    }))
+        })
 
         // Check if the new words parts are in the vocabulary, and backtrack if necessary.
         let encoded2 = encoded.flatMap { part -> [String] in
-        if vocabulary.contains(part) { return [part] }
+            if vocabulary.contains(part) { return [part] }
             return splitRecursively(part)
         }
 
@@ -115,9 +122,6 @@ public struct BytePairEncoder {
         // if useCache { cache[token] = encoded }
         return encoded2
     }
-
-
-
 
     /// Decodes the provided BPE-coded token to a sequence of tokens.
     ///
@@ -147,7 +151,8 @@ extension BytePairEncoder {
     }
 
     internal static let defaultGlossary: [String] = [
-        "e.g", "i.e", "&amp;", "&#124;", "&lt;", "&gt;", "&apos;", "&quot;", "&#91;", "&#93;"]
+        "e.g", "i.e", "&amp;", "&#124;", "&lt;", "&gt;", "&apos;", "&quot;", "&#91;", "&#93;",
+    ]
 
     internal static let defaultGlossaryRegex: NSRegularExpression = {
         let escapedGlossary = defaultGlossary.map { "\\Q\($0)\\E" }.joined(separator: "|")
@@ -157,7 +162,7 @@ extension BytePairEncoder {
     /// Regular expression matching the OpenAI GPT-2 implementation.
     internal static let gpt2Glossary: [String] = [
         "'s", "'t", "'re", "'ve", "'m", "'ll", "'d", " ?\\p{L}+", " ?\\p{N}+",
-        " ?[^\\s\\p{L}\\p{N}]+", "\\s+(?!\\S)", "\\s+"
+        " ?[^\\s\\p{L}\\p{N}]+", "\\s+(?!\\S)", "\\s+",
     ]
 
     internal static let gpt2GlossaryRegex: NSRegularExpression = {
@@ -184,7 +189,8 @@ extension BytePairEncoder {
 
     // The inverse of bytesToUnicode.
     internal static let unicodeToBytes: [UnicodeScalar: UInt8] = {
-        [UnicodeScalar: UInt8](uniqueKeysWithValues: BytePairEncoder.bytesToUnicode.map{ ($1, $0) })
+        [UnicodeScalar: UInt8](
+            uniqueKeysWithValues: BytePairEncoder.bytesToUnicode.map { ($1, $0) })
     }()
 
     /// Recursively splits `token` into smaller units (by reversing BPE merges) until all units
@@ -194,12 +200,9 @@ extension BytePairEncoder {
     ///   - token: Token that needs to be split.
     internal func splitRecursively(_ token: String) -> [String] {
         guard let pair = reversedMergePairs[token] else { return [token] }
-        let leftParts = vocabulary.contains(pair.left) ?
-            [pair.left] :
-            splitRecursively(pair.left)
-        let rightParts = vocabulary.contains(pair.right) ?
-            [pair.right] :
-            splitRecursively(pair.right)
+        let leftParts = vocabulary.contains(pair.left) ? [pair.left] : splitRecursively(pair.left)
+        let rightParts =
+            vocabulary.contains(pair.right) ? [pair.right] : splitRecursively(pair.right)
         return leftParts + rightParts
     }
 

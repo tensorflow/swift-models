@@ -39,26 +39,26 @@ let model = TransformerLM(reader: reader, config: config, scope: "model")
 let encoderFile = temporaryDirectory.appendingPathComponent("encoder.json")
 let encoderData = try Data(contentsOf: encoderFile)
 let tokenToID: [String: Int32] = try JSONDecoder().decode([String: Int32].self, from: encoderData)
-let IDToToken = [Int32: String](uniqueKeysWithValues: tokenToID.map{ ($1, $0) })
+let IDToToken = [Int32: String](uniqueKeysWithValues: tokenToID.map { ($1, $0) })
 
 // Create a byte pair encoder with the loaded token mappings.
-let vocabulary = try(Vocabulary(fromJSONFile: encoderFile))
+let vocabulary = try (Vocabulary(fromJSONFile: encoderFile))
 // TODO(michellecasbon): Move this into BytePairEncoder.
 let mergePairs = [BytePairEncoder.Pair: Int](
-    uniqueKeysWithValues:
-       (try String(contentsOfFile: encoderFile.path, encoding: .utf8))
-            .components(separatedBy: .newlines)
-            .dropFirst()
-            .enumerated()
-            .compactMap { (index, line) -> (BytePairEncoder.Pair, Int)? in
-                let lineParts = line.split(separator: " ")
-                if lineParts.count < 2 { return nil }
-                    return (
-                       BytePairEncoder.Pair(
-                           String(lineParts[0]),
-                           String(lineParts[1])),
-                       index)
-            })
+    uniqueKeysWithValues: (try String(contentsOfFile: encoderFile.path, encoding: .utf8))
+        .components(separatedBy: .newlines)
+        .dropFirst()
+        .enumerated()
+        .compactMap { (index, line) -> (BytePairEncoder.Pair, Int)? in
+            let lineParts = line.split(separator: " ")
+            if lineParts.count < 2 { return nil }
+            return (
+                BytePairEncoder.Pair(
+                    String(lineParts[0]),
+                    String(lineParts[1])),
+                index
+            )
+        })
 let bytePairEncoder = BytePairEncoder(vocabulary: vocabulary, mergePairs: mergePairs)
 
 // Initialize model parameters.
