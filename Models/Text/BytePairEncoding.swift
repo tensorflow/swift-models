@@ -142,7 +142,7 @@ extension BytePairEncoder {
     }()
 
     /// Regular expression matching the OpenAI GPT-2 implementation.
-    internal static let gpt2Glossary: [String] = [
+    internal static let gpt2Glossary = [
         "'s", "'t", "'re", "'ve", "'m", "'ll", "'d", " ?\\p{L}+", " ?\\p{N}+",
         " ?[^\\s\\p{L}\\p{N}]+", "\\s+(?!\\S)", "\\s+",
     ]
