@@ -63,9 +63,6 @@ open class CheckpointWriter {
                 fatalError("Mismatch in sorted tensors at name: \(tensorName).")
             }
             let scalars = tensor.array.scalars
-            // scalars.withUnsafeBytes { pointer in
-            //     outputBuffer.append(pointer, count: pointer.count)
-            // }
             scalars.withUnsafeBufferPointer { (ptr) in
                 ptr.baseAddress!.withMemoryRebound(
                     to: UInt8.self, capacity: ptr.count * MemoryLayout<Float>.size
