@@ -46,4 +46,3 @@ python -m pip install --user regex
 python -m pip install --user numpy
 ```
 
-The tokenizer (`encoder.py`) is from the OpenAI implementation and is under the MIT license.
