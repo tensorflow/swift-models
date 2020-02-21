@@ -263,6 +263,6 @@ extension BytePairEncoder {
     }
 
     internal static func encodedToken(_ token: String) -> String {
-        String(String.UnicodeScalarView(token.utf8.map {BytePairEncoder.bytesToUnicode[$0]!}))
+        String(String.UnicodeScalarView(token.utf8.map { BytePairEncoder.bytesToUnicode[$0]! }))
     }
 }
