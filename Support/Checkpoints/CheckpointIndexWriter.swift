@@ -27,7 +27,7 @@ class CheckpointIndexWriter {
 extension CheckpointIndexWriter {
     func serializedHeader() -> Data {
         var outputBuffer = Data()
-        // TODO: Calculate the number of shards required.
+        // TODO: Expand beyond using a single binary shard.
         outputBuffer.append(headerBlock(shards: 1))
         let sortedKeys = tensors.keys.sorted()
         var lastString = ""
@@ -61,20 +61,18 @@ extension CheckpointIndexWriter {
     }
 
     func keyValueBlock(key: String, lastString: String, offset: inout Int64) -> Data {
+        guard let tensor = tensors[key] else { fatalError("Mismatch on tensor key: \(key).") }
+        
         var entryProtobuf = Tensorflow_BundleEntryProto()
         var shape = Tensorflow_TensorShapeProto()
-        // var dim = Tensorflow_TensorShapeProto.Dim()
-        // Map the input shape array to dims, one per dimension
-        // dim.size = 
-        // shape.
+        shape.dim = tensor.shape.dimensions.map { size -> Tensorflow_TensorShapeProto.Dim in
+            var dim = Tensorflow_TensorShapeProto.Dim()
+            dim.size = Int64(size)
+            return dim
+        }
+        
+        let tensorSize: Int64 = Int64(MemoryLayout<Float>.size * tensor.shape.dimensions.reduce(1) { $0 * $1 })
 
-        guard let tensor = tensors[key] else { fatalError("Mismatch on tensor key: \(key).") }
-        // Reduce tensor to bytes
-        // Get tensor byte count
-        // Append tensor to shard
-        let tensorSize: Int64 = 10
-
-        // TODO: Support other datatypes.
         entryProtobuf.dtype = .dtFloat
         entryProtobuf.shape = shape
         entryProtobuf.offset = offset
@@ -85,7 +83,12 @@ extension CheckpointIndexWriter {
 
         do {
             let entryValue = try entryProtobuf.serializedData()
-            var outputBuffer = indexBytes(sharedKeyBytes: 0, newKeyBytes: 0, valueLength: entryValue.count)
+            let commonPrefix = lastString.commonPrefix(with: key)
+            let newCharacters = key.count - commonPrefix.count
+            var outputBuffer = indexBytes(sharedKeyBytes: commonPrefix.count, newKeyBytes: newCharacters, valueLength: entryValue.count)
+            let suffix = key.suffix(newCharacters).utf8
+            outputBuffer.append(contentsOf: suffix)
+            outputBuffer.append(entryValue)
             return outputBuffer
         } catch {
             fatalError("Could not serialize header protobuf: \(error).")

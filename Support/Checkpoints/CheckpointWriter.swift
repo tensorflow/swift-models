@@ -21,10 +21,24 @@ open class CheckpointWriter {
     // TODO: Extend handling to different tensor types.
     let tensors: [String: Tensor<Float>]
 
+    /// Initializes the checkpoint reader from a dictionary of tensors, keyed on their string names.
+    ///
+    /// - Parameters:
+    ///   - tensors: A dictionary containing the tensors to be written, with the keys being the
+    ///     names of those tensors to write in the checkpoint.
     public init(tensors: [String: Tensor<Float>]) {
         self.tensors = tensors
     }
 
+    /// Writes the checkpoint to disk, in a specified directory. A TensorFlow v2 checkpoint consists
+    /// of a directory that contains a [name].index header file and one or more
+    /// [name].data-0000X-of-0000Y binary shard files with the tensor bytes within them.
+    ///
+    /// - Parameters:
+    ///   - directory: The directory to write the checkpoint into. If it doesn't exist, it will be
+    ///     created.
+    ///   - name: The base name of the checkpoint, which is what will have the .index and
+    ///     .data-0000X-of-0000Y extensions appended to it for files in the checkpoint directory.
     public func write(to directory: URL, name: String) throws {
         try createDirectoryIfMissing(at: directory.path)
         let indexWriter = CheckpointIndexWriter(tensors: tensors)
