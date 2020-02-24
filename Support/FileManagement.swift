@@ -44,26 +44,23 @@ public func download(from source: URL, to destinationDirectory: URL) throws {
 ///   - recurse: Will explore all subfolders if set to `true`.
 ///   - extensions: Only keeps URLs with extensions in that array if it's provided
 public func collectURLs(
-    under directory: URL, 
-    recurse: Bool = false, 
-    filtering extensions: [String]? = nil
+  under directory: URL, recurse: Bool = false, filtering extensions: [String]? = nil
 ) -> [URL] {
-    var files: [URL] = []
-    do {
-        let dirContents = try FileManager.default.contentsOfDirectory(
-            at: directory, 
-            includingPropertiesForKeys: [.isDirectoryKey], 
-            options: [.skipsHiddenFiles])
-        for content in dirContents {
-            if content.hasDirectoryPath && recurse {
-                files += collectURLs(under: content, recurse: recurse, filtering: extensions)
-            } else if content.isFileURL && (extensions == nil 
-                || extensions!.contains(dirContents[0].pathExtension.lowercased())) {
-                files.append(content)
-            }
-        }
-    } catch {
-        fatalError("Could not explore this folder: \(error)")
+  var files: [URL] = []
+  do {
+    let dirContents = try FileManager.default.contentsOfDirectory(
+      at: directory, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])
+    for content in dirContents {
+      if content.hasDirectoryPath && recurse {
+        files += collectURLs(under: content, recurse: recurse, filtering: extensions)
+      } else if content.isFileURL
+        && (extensions == nil || extensions!.contains(dirContents[0].pathExtension.lowercased()))
+      {
+        files.append(content)
+      }
     }
-    return files
+  } catch {
+    fatalError("Could not explore this folder: \(error)")
+  }
+  return files
 }
