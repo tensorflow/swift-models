@@ -23,11 +23,13 @@ public enum DatasetUtilities {
     public static let currentWorkingDirectoryURL = URL(
         fileURLWithPath: FileManager.default.currentDirectoryPath)
 
+    @discardableResult
     public static func downloadResource(
         filename: String,
         fileExtension: String,
         remoteRoot: URL,
-        localStorageDirectory: URL = currentWorkingDirectoryURL
+        localStorageDirectory: URL = currentWorkingDirectoryURL,
+        extract: Bool = true
     ) -> URL {
         printError("Loading resource: \(filename)")
 
@@ -43,12 +45,13 @@ public enum DatasetUtilities {
             printError(
                 "File does not exist locally at expected path: \(localURL.path) and must be fetched"
             )
-            fetchFromRemoteAndSave(resource)
+            fetchFromRemoteAndSave(resource, extract: extract)
         }
 
         return localURL
     }
 
+    @discardableResult
     public static func fetchResource(
         filename: String,
         fileExtension: String,
@@ -86,7 +89,7 @@ public enum DatasetUtilities {
         }
     }
 
-    static func fetchFromRemoteAndSave(_ resource: ResourceDefinition) {
+    static func fetchFromRemoteAndSave(_ resource: ResourceDefinition, extract: Bool) {
         let remoteLocation = resource.remoteURL
         let archiveLocation = resource.localStorageDirectory
 
@@ -98,7 +101,9 @@ public enum DatasetUtilities {
         }
         printError("Archive saved to: \(archiveLocation.path)")
 
-        extractArchive(for: resource)
+        if extract {
+            extractArchive(for: resource)
+        }
     }
 
     static func extractArchive(for resource: ResourceDefinition) {
@@ -107,9 +112,9 @@ public enum DatasetUtilities {
         let archivePath = resource.archiveURL.path
 
         #if os(macOS)
-            let binaryLocation = "/usr/bin/"
+            var binaryLocation = "/usr/bin/"
         #else
-            let binaryLocation = "/bin/"
+            var binaryLocation = "/bin/"
         #endif
 
         let toolName: String
@@ -121,6 +126,10 @@ public enum DatasetUtilities {
         case "tar.gz", "tgz":
             toolName = "tar"
             arguments = ["xzf", archivePath, "-C", resource.localStorageDirectory.path]
+        case "zip":
+            binaryLocation = "/usr/bin/"
+            toolName = "unzip"
+            arguments = [archivePath, "-d", resource.localStorageDirectory.path]
         default:
             printError("Unable to find archiver for extension \(resource.fileExtension).")
             exit(-1)

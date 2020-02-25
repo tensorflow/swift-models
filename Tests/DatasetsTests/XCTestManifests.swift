@@ -20,6 +20,7 @@ public func allTests() -> [XCTestCaseEntry] {
         testCase(CIFAR10Tests.allTests),
         testCase(MNISTTests.allTests),
         testCase(ImagenetteTests.allTests),
+        testCase(BostonHousingTests.allTests),
     ]
 }
 #endif

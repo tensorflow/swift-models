@@ -48,7 +48,7 @@ public struct Imagewoof: ImageClassificationDataset {
     public init(
         inputSize: ImageSize, outputSize: Int,
         localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
-            "Imagewoof")
+            "Imagewoof", isDirectory: true)
     ) {
         do {
             self.trainingDataset = Dataset<LabeledExample>(

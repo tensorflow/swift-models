@@ -18,6 +18,10 @@ import Foundation
     import FoundationNetworking
 #endif
 
+/// Creates a directory at a path, if missing. If the directory exists, this does nothing.
+///
+/// - Parameters:
+///   - path: The path of the desired directory.
 public func createDirectoryIfMissing(at path: String) throws {
     guard !FileManager.default.fileExists(atPath: path) else { return }
     try FileManager.default.createDirectory(
@@ -26,11 +30,26 @@ public func createDirectoryIfMissing(at path: String) throws {
         attributes: nil)
 }
 
-public func download(from source: URL, to destinationDirectory: URL) throws {
-    try createDirectoryIfMissing(at: destinationDirectory.path)
-
-    let fileName = source.lastPathComponent
-    let destinationFile = destinationDirectory.appendingPathComponent(fileName).path
+/// Downloads a remote file and places it either within a target directory or at a target file name.
+/// If `destination` has been explicitly specified as a directory (setting `isDirectory` to true
+/// when appending the last path component), the file retains its original name and is placed within
+/// this directory. If `destination` isn't marked in this fashion, the file is saved as a file named 
+/// after `destination` and its last path component. If the encompassing directory is missing in
+/// either case, it is created.
+/// 
+/// - Parameters:
+///   - source: The remote URL of the file to download.
+///   - destination: Either the local directory to place the file in, or the local filename.
+public func download(from source: URL, to destination: URL) throws {
+    let destinationFile: String
+    if destination.hasDirectoryPath {
+        try createDirectoryIfMissing(at: destination.path)
+        let fileName = source.lastPathComponent
+        destinationFile = destination.appendingPathComponent(fileName).path
+    } else {
+        try createDirectoryIfMissing(at: destination.deletingLastPathComponent().path)
+        destinationFile = destination.path
+    }
 
     let downloadedFile = try Data(contentsOf: source)
     try downloadedFile.write(to: URL(fileURLWithPath: destinationFile))

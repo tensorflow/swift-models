@@ -16,6 +16,7 @@ import Foundation
 import ModelSupport
 import Python
 import TensorFlow
+import Transformer
 
 let modelName = "117M"
 
