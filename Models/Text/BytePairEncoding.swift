@@ -51,9 +51,10 @@ public struct BytePairEncoder {
         switch variant {
             case .gpt2:
                 // Split into parts before encoding.
-                parts = BytePairEncoder.splitWithDelimitersGpt2(
+                parts = BytePairEncoder.splittingWithDelimiters(
                     token: token,
-                    glossaryRegex: BytePairEncoder.gpt2GlossaryRegex)
+                    glossaryRegex: BytePairEncoder.gpt2GlossaryRegex,
+                    variant: .gpt2)
                 if parts.count < 2 {
                     // Encode the full token and return.
                     return parts.map { BytePairEncoder.encodedToken($0) }
@@ -61,9 +62,10 @@ public struct BytePairEncoder {
             case .roberta, .none:
                 // Encode before splitting into parts.
                 let encodedToken = BytePairEncoder.encodedToken(token)
-                parts = BytePairEncoder.splitWithDelimiters(
+                parts = BytePairEncoder.splittingWithDelimiters(
                     token: encodedToken,
-                    glossaryRegex: BytePairEncoder.defaultGlossaryRegex)
+                    glossaryRegex: BytePairEncoder.defaultGlossaryRegex,
+                    variant: .roberta)
                 if parts.count < 2 { return parts }
         }
 
@@ -168,49 +170,43 @@ extension BytePairEncoder {
         return leftParts + rightParts
     }
 
-    // TODO: Add documentation.
-    internal static func splitWithDelimiters(
-        token: String,
-        glossaryRegex: NSRegularExpression,
-        keepEmpty: Bool = false
-    ) -> [String] {
-        let matches = glossaryRegex.matches(
-            in: token,
-            range: NSRange(token.startIndex..., in: token))
-        var parts = [String]()
-        parts.reserveCapacity(token.count)
-        var lastEnd = token.startIndex
-        for match in matches {
-            let start = token.index(token.startIndex, offsetBy: match.range.lowerBound)
-            if lastEnd != start { parts.append(String(token[lastEnd..<start])) }
-            lastEnd = token.index(token.startIndex, offsetBy: match.range.upperBound)
-        }
-        if lastEnd != token.endIndex {
-            parts.append(String(token[lastEnd...]))
-        }
-        return parts
-    }
-
     /// Uses the given regex to split a token into individual glossary terms.
     ///
     /// - Parameters:
     ///   - token: Full text.
     ///   - glossaryRegex: Regular expression for segmenting the given token.
+    ///   - variant: The type of model variant.
     /// - Returns: Array of substrings that match the given regex.
-    internal static func splitWithDelimitersGpt2(
+    internal static func splittingWithDelimiters(
         token: String,
-        glossaryRegex: NSRegularExpression
+        glossaryRegex: NSRegularExpression,
+        keepEmpty: Bool = false,
+        variant: Variant? = .roberta
     ) -> [String] {
         let matches = glossaryRegex.matches(
             in: token,
             range: NSRange(token.startIndex..., in: token))
         var parts = [String]()
         parts.reserveCapacity(token.count)
-        for match in matches {
-            let start = token.index(token.startIndex, offsetBy: match.range.lowerBound)
-            let end = token.index(token.startIndex, offsetBy: match.range.upperBound)
-            parts.append(String(token[start..<end]))
+        switch variant {
+            case .gpt2:
+                for match in matches {
+                    let start = token.index(token.startIndex, offsetBy: match.range.lowerBound)
+                    let end = token.index(token.startIndex, offsetBy: match.range.upperBound)
+                    parts.append(String(token[start..<end]))
+                }
+            case .roberta, .none:
+                var lastEnd = token.startIndex
+                for match in matches {
+                    let start = token.index(token.startIndex, offsetBy: match.range.lowerBound)
+                    if lastEnd != start { parts.append(String(token[lastEnd..<start])) }
+                    lastEnd = token.index(token.startIndex, offsetBy: match.range.upperBound)
+                }
+                if lastEnd != token.endIndex {
+                    parts.append(String(token[lastEnd...]))
+                }
         }
+
         return parts
     }
 
