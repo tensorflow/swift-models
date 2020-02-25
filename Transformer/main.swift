@@ -14,7 +14,11 @@
 
 import Foundation
 import ModelSupport
-import Python
+#if canImport(PythonKit)
+    import PythonKit
+#else
+    import Python
+#endif
 import TensorFlow
 import Transformer
 

@@ -12,7 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Python
+#if canImport(PythonKit)
+    import PythonKit
+#else
+    import Python
+#endif
 import TensorFlow
 
 // Force unwrapping with `!` does not provide source location when unwrapping `nil`, so we instead
