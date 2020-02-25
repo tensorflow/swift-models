@@ -13,7 +13,11 @@
 // limitations under the License.
 
 import TensorFlow
-import Python
+#if canImport(PythonKit)
+    import PythonKit
+#else
+    import Python
+#endif
 
 struct TimeDistributed: Layer {
     var dense: Dense<Float>
