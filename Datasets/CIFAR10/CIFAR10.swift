@@ -62,7 +62,7 @@ func downloadCIFAR10IfNotPresent(from location: URL, to directory: URL) {
         remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
 }
 
-func loadCIFARFile(named name: String, in directory: URL) -> LabeledExample {
+func loadCIFARFile(named name: String, in directory: URL, normalize: Bool = true) -> LabeledExample {
     let path = directory.appendingPathComponent("cifar-10-batches-bin/\(name)").path
 
     let imageCount = 10000
@@ -94,9 +94,16 @@ func loadCIFARFile(named name: String, in directory: URL) -> LabeledExample {
 
     let mean = Tensor<Float>([0.485, 0.456, 0.406])
     let std = Tensor<Float>([0.229, 0.224, 0.225])
-    let imagesNormalized = ((imageTensor / 255.0) - mean) / std
 
-    return LabeledExample(label: Tensor<Int32>(labelTensor), data: imagesNormalized)
+    // Normalize the images according to the input boolean flag passed (Default to 'true')
+    if normalize {
+        let imagesNormalized = ((imageTensor / 255.0) - mean) / std
+        return LabeledExample(label: Tensor<Int32>(labelTensor), data: imagesNormalized)
+    }
+    else {
+        return LabeledExample(label: Tensor<Int32>(labelTensor), data: imageTensor)
+    }
+        
 }
 
 func loadCIFARTrainingFiles(localStorageDirectory: URL) -> LabeledExample {
