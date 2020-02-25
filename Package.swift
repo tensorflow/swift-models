@@ -92,5 +92,6 @@ let package = Package(
         .testTarget(name: "CheckpointTests", dependencies: ["ModelSupport"]),
         .target(
             name: "BERT-CoLA", dependencies: ["TextModels", "Datasets"], path: "Examples/BERT-CoLA"),
+        .testTarget(name: "SupportTests", dependencies: ["ModelSupport"]),
     ]
 )
