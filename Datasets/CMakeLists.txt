@@ -1,13 +1,19 @@
 add_library(Datasets
   CIFAR10/CIFAR10.swift
   DatasetUtilities.swift
+  CoLA/Batchable.swift
+  CoLA/CoLA.swift
+  CoLA/DataUtilities.swift
+  CoLA/TextBatch.swift
   ImageClassificationDataset.swift
   Imagenette/Imagenette.swift
   Imagenette/Imagewoof.swift
   LabeledExample.swift
   LanguageModelDataset.swift
   MNIST/MNIST.swift)
+  BostonHousing/BostonHousing.swift)
 target_link_libraries(Datasets PUBLIC
+  Batcher
   ModelSupport)
 set_target_properties(Datasets PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})

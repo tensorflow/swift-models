@@ -26,6 +26,50 @@ swift build
 swift test
 ```
 
+### *Experimental* CMake Support
+
+There is experimental support for building with CMake.  This is required to build the models on Windows, and can also be used to cross-compile the models and the demo programs.
+
+**NOTE**: tests are currently not supported with the CMake based build.
+
+It is highly recommended that you use CMake 3.16 or newer to ensure that `-B` and parallel builds function properly in the example commands below.
+
+macOS:
+
+```
+cmake                                                              \
+  -B /BinaryCache/tensorflow-swift-models                          \
+  -D CMAKE_BUILD_TYPE=Release                                      \
+  -D CMAKE_Swift_COMPILER=$(TOOLCHAINS=tensorflow xcrun -f swiftc) \
+  -G Ninja                                                         \
+  -S /SourceCache/tensorflow-swift-models
+```
+
+Linux:
+
+```
+cmake                                     \
+  -B /BinaryCache/tensorflow-swift-models \
+  -D CMAKE_BUILD_TYPE=Release             \
+  -D CMAKE_Swift_COMPILER=$(which swiftc) \
+  -G Ninja                                \
+  -S /SourceCache/tensorflow-swift-models
+```
+
+Windows:
+
+```
+set SDKROOT=C:/Library/Developer/Platforms/Windows.platform/Developer/SDKs/Windows.sdk
+"%ProgramFiles%\CMake\bin\cmake.exe"                                                                                 ^
+  -B C:/BinaryCache/tensorflow-swift-models                                                                          ^
+  -D BUILD_SHARED_LIBS=YES                                                                                           ^
+  -D CMAKE_BUILD_TYPE=Release                                                                                        ^
+  -D CMAKE_Swift_COMPILER=C:/Library/Developer/Toolchains/unknown-Asserts-development.xctoolchain/usr/bin/swiftc.exe ^
+  -D CMAKE_Swift_FLAGS="-sdk %SDKROOT% -I %SDKROOT%/usr/lib/swift -L %SDKROOT%/usr/lib/swift/windows"                ^
+  -G Ninja                                                                                                           ^
+  -S C:/SourceCache/tensorflow-swift-models
+```
+
 ## Bugs
 
 Please report model-related bugs and feature requests using GitHub issues in

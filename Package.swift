@@ -9,31 +9,38 @@ let package = Package(
         .macOS(.v10_13),
     ],
     products: [
-        .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
+        .library( name: "Batcher", targets: ["Batcher"]),
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
+        .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
+        .library(name: "TextModels", targets: ["TextModels"]),
+        .executable(name: "Benchmarks", targets: ["Benchmarks"]),
         .executable(name: "VGG-Imagewoof", targets: ["VGG-Imagewoof"]),
+        .executable(name: "Regression-BostonHousing", targets: ["Regression-BostonHousing"]),
         .executable(name: "Custom-CIFAR10", targets: ["Custom-CIFAR10"]),
         .executable(name: "ResNet-CIFAR10", targets: ["ResNet-CIFAR10"]),
         .executable(name: "LeNet-MNIST", targets: ["LeNet-MNIST"]),
         .executable(name: "MobileNet-Imagenette", targets: ["MobileNet-Imagenette"]),
-        .executable(name: "MiniGoDemo", targets: ["MiniGoDemo"]),
-        .executable(name: "Transformer", targets: ["Transformer"]),
-        .library(name: "MiniGo", targets: ["MiniGo"]),
         .executable(name: "GAN", targets: ["GAN"]),
         .executable(name: "DCGAN", targets: ["DCGAN"]),
-        .executable(name: "FastStyleTransferDemo", targets: ["FastStyleTransferDemo"]),
+        .executable(name: "BERT-CoLA", targets: ["BERT-CoLA"]),
         .library(name: "FastStyleTransfer", targets: ["FastStyleTransfer"]),
-        .executable(name: "Benchmarks", targets: ["Benchmarks"]),
+        .executable(name: "FastStyleTransferDemo", targets: ["FastStyleTransferDemo"]),
+        .library(name: "MiniGo", targets: ["MiniGo"]),
+        .executable(name: "MiniGoDemo", targets: ["MiniGoDemo"]),
+        .library(name: "Transformer", targets: ["Transformer"]),
+        .executable(name: "TransformerDemo", targets: ["TransformerDemo"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
         .package(url: "https://github.com/kylef/Commander.git", from: "0.9.1"),
     ],
     targets: [
-        .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
-        .target(name: "Datasets", dependencies: ["ModelSupport"], path: "Datasets"),
+        .target(name: "Batcher", path: "Batcher"),
+        .target(name: "Datasets", dependencies: ["ModelSupport", "Batcher"], path: "Datasets"),
         .target(name: "ModelSupport", dependencies: ["SwiftProtobuf"], path: "Support"),
+        .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
+        .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),
         .target(
             name: "Autoencoder", dependencies: ["Datasets", "ModelSupport"], path: "Autoencoder"),
         .target(name: "Catch", path: "Catch"),
@@ -43,6 +50,9 @@ let package = Package(
         .target(
             name: "VGG-Imagewoof", dependencies: ["ImageClassificationModels", "Datasets"],
             path: "Examples/VGG-Imagewoof"),
+        .target(
+            name: "Regression-BostonHousing", dependencies: ["Datasets"],
+            path: "Examples/Regression-BostonHousing"),
         .target(
             name: "Custom-CIFAR10", dependencies: ["Datasets"],
             path: "Examples/Custom-CIFAR10"),
@@ -62,7 +72,10 @@ let package = Package(
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
         .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
         .testTarget(name: "DatasetsTests", dependencies: ["Datasets"]),
-        .target(name: "Transformer", dependencies: ["ModelSupport"], path: "Transformer"),
+        .target(
+            name: "Transformer", dependencies: ["ModelSupport"], path: "Transformer", exclude: ["main.swift"]),
+        .target(
+            name: "TransformerDemo", dependencies: ["Transformer"], path: "Transformer", sources: ["main.swift"]),
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
         .target(name: "DCGAN", dependencies: ["Datasets", "ModelSupport"], path: "DCGAN"),
         .target(
@@ -77,5 +90,7 @@ let package = Package(
             dependencies: ["Datasets", "ModelSupport", "ImageClassificationModels", "Commander"],
             path: "Benchmarks"),
         .testTarget(name: "CheckpointTests", dependencies: ["ModelSupport"]),
+        .target(
+            name: "BERT-CoLA", dependencies: ["TextModels", "Datasets"], path: "Examples/BERT-CoLA"),
     ]
 )
