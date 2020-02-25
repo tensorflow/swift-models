@@ -39,7 +39,7 @@ public struct BytePairEncoder {
     ///
     /// - Parameters:
     ///   - token: Token to encode.
-    ///   - modelType: Type of model (default: .roberta)
+    ///   - variant: Type of model (default: .roberta).
     /// - Returns: Array containing the BPE-coded tokens.
     public func encode(token: String, variant: Variant? = .roberta) -> [String] {
         // if let cached = cache[token] { return cached }
@@ -174,7 +174,7 @@ extension BytePairEncoder {
     /// - Parameters:
     ///   - token: Full text.
     ///   - glossaryRegex: Regular expression for segmenting the given token.
-    ///   - variant: The type of model variant.
+    ///   - variant: The type of model (default: .roberta).
     /// - Returns: Array of substrings that match the given regex.
     internal static func splittingWithDelimiters(
         token: String,
@@ -258,7 +258,7 @@ extension BytePairEncoder {
     ///
     /// - Parameters:
     ///   - token: BPE-coded token to decode.
-    /// - Returns: Array containing the decoded tokens.
+    /// - Returns: String containing the decoded tokens.
     public static func decode(token: String) -> String {
         var buffer = [UInt8]()
 
