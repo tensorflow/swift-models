@@ -5,6 +5,7 @@ add_library(Datasets
   Imagenette/Imagenette.swift
   Imagenette/Imagewoof.swift
   LabeledExample.swift
+  LanguageModelDataset.swift
   MNIST/MNIST.swift)
 target_link_libraries(Datasets PUBLIC
   ModelSupport)
