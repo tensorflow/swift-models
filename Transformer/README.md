@@ -37,3 +37,14 @@ To get a toolchain, you can:
 1. [Download a pre-built package](https://github.com/tensorflow/swift/blob/master/Installation.md).
 2. [Compile a toolchain from source](https://github.com/apple/swift/tree/tensorflow#building-swift-for-tensorflow).
 
+# Windows UI
+
+The Windows UI demo program relies on [Swift/Win32](https://github.com/compnerd/swift-win32).
+
+Follow the directions for building the swift-models repository.  The
+`TransformerUI` target can be built with `cmake` and `ninja` on Windows.  In
+order to build this, the `CMAKE_Swift_FLAGS` will need to have include and
+library search paths added (`-I` and `-L` with their respective values).
+
+Assuming that the generated DLLs are in the `PATH`, it should be possible to
+then execute the demo as `.\Transformer\TransformerUI.exe`.
