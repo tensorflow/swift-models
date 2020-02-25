@@ -13,8 +13,9 @@
 // limitations under the License.
 
 import TensorFlow
+import Batcher
 
-public struct LabeledExample: TensorGroup {
+public struct LabeledExample: TensorGroup, KeyPathIterable, Collatable {
     public var label: Tensor<Int32>
     public var data: Tensor<Float>
 
@@ -31,5 +32,15 @@ public struct LabeledExample: TensorGroup {
         let dataIndex = _handles.index(labelIndex, offsetBy: 1)
         label = Tensor<Int32>(handle: TensorHandle<Int32>(handle: _handles[labelIndex]))
         data = Tensor<Float>(handle: TensorHandle<Float>(handle: _handles[dataIndex]))
+    }
+}
+
+public struct TensorPair<S1: TensorFlowScalar, S2: TensorFlowScalar>: Collatable, KeyPathIterable {
+    public var input: Tensor<S1>
+    public var target: Tensor<S2>
+    
+    public init(input: Tensor<S1>, target: Tensor<S2>) {
+        self.input = input
+        self.target = target
     }
 }
