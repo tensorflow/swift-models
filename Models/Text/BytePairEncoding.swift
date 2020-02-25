@@ -49,26 +49,25 @@ public struct BytePairEncoder {
         var encoded: [String]
 
         switch variant {
-            case .gpt2:
-                // Split into parts before encoding.
-                parts = BytePairEncoder.splittingWithDelimiters(
-                    token: token,
-                    glossaryRegex: BytePairEncoder.gpt2GlossaryRegex,
-                    variant: .gpt2)
-                if parts.count < 2 {
-                    // Encode the full token and return.
-                    return parts.map { BytePairEncoder.encodedToken($0) }
-                }
-            case .roberta, .none:
-                // Encode before splitting into parts.
-                let encodedToken = BytePairEncoder.encodedToken(token)
-                parts = BytePairEncoder.splittingWithDelimiters(
-                    token: encodedToken,
-                    glossaryRegex: BytePairEncoder.defaultGlossaryRegex,
-                    variant: .roberta)
-                if parts.count < 2 { return parts }
+        case .gpt2:
+            // Split into parts before encoding.
+            parts = BytePairEncoder.splittingWithDelimiters(
+                token: token,
+                glossaryRegex: BytePairEncoder.gpt2GlossaryRegex,
+                variant: .gpt2)
+            if parts.count < 2 {
+                // Encode the full token and return.
+                return parts.map { BytePairEncoder.encodedToken($0) }
+            }
+        case .roberta, .none:
+            // Encode before splitting into parts.
+            let encodedToken = BytePairEncoder.encodedToken(token)
+            parts = BytePairEncoder.splittingWithDelimiters(
+                token: encodedToken,
+                glossaryRegex: BytePairEncoder.defaultGlossaryRegex,
+                variant: .roberta)
+            if parts.count < 2 { return parts }
         }
-
 
         // Create pairs of parts.
         var pairs = (0..<parts.count - 1).map { index in Pair(parts[index], parts[index + 1]) }
@@ -81,13 +80,13 @@ public struct BytePairEncoder {
         }
 
         switch variant {
-            case .gpt2:
-                // Encode each token.
-                encodedParts = parts.map({ BytePairEncoder.encodedToken($0) })
+        case .gpt2:
+            // Encode each token.
+            encodedParts = parts.map({ BytePairEncoder.encodedToken($0) })
 
-            case .roberta, .none:
-                // Encoding has already occurred.
-                encodedParts = parts
+        case .roberta, .none:
+            // Encoding has already occurred.
+            encodedParts = parts
 
         }
         // Check if the new word parts are in the vocabulary, and backtrack if necessary.
@@ -189,22 +188,22 @@ extension BytePairEncoder {
         var parts = [String]()
         parts.reserveCapacity(token.count)
         switch variant {
-            case .gpt2:
-                for match in matches {
-                    let start = token.index(token.startIndex, offsetBy: match.range.lowerBound)
-                    let end = token.index(token.startIndex, offsetBy: match.range.upperBound)
-                    parts.append(String(token[start..<end]))
-                }
-            case .roberta, .none:
-                var lastEnd = token.startIndex
-                for match in matches {
-                    let start = token.index(token.startIndex, offsetBy: match.range.lowerBound)
-                    if lastEnd != start { parts.append(String(token[lastEnd..<start])) }
-                    lastEnd = token.index(token.startIndex, offsetBy: match.range.upperBound)
-                }
-                if lastEnd != token.endIndex {
-                    parts.append(String(token[lastEnd...]))
-                }
+        case .gpt2:
+            for match in matches {
+                let start = token.index(token.startIndex, offsetBy: match.range.lowerBound)
+                let end = token.index(token.startIndex, offsetBy: match.range.upperBound)
+                parts.append(String(token[start..<end]))
+            }
+        case .roberta, .none:
+            var lastEnd = token.startIndex
+            for match in matches {
+                let start = token.index(token.startIndex, offsetBy: match.range.lowerBound)
+                if lastEnd != start { parts.append(String(token[lastEnd..<start])) }
+                lastEnd = token.index(token.startIndex, offsetBy: match.range.upperBound)
+            }
+            if lastEnd != token.endIndex {
+                parts.append(String(token[lastEnd...]))
+            }
         }
 
         return parts
@@ -248,11 +247,11 @@ extension BytePairEncoder {
         /// Default variant.
         /// - Source: [RoBERTa: A Robustly Optimized BERT Pretraining Approach](
         ///             https://arxiv.org/pdf/1907.11692.pdf).
-        case roberta;
+        case roberta
         /// - Source: [Language Models are Unsupervised Multitask Learners](
         ///             https://cdn.openai.com/better-language-models/
         ///             language_models_are_unsupervised_multitask_learners.pdf).
-        case gpt2;
+        case gpt2
     }
 
     /// Decodes the provided BPE-coded token to a sequence of tokens.
