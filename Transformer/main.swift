@@ -76,7 +76,7 @@ if CommandLine.arguments.count >= 2 {
 if CommandLine.arguments.count == 3 {
     let seed = CommandLine.arguments[2]
     print(seed, terminator: "")
-    let bpeTokens = bytePairEncoder.encodeGpt2(token: seed)
+    let bpeTokens = bytePairEncoder.encode(token: seed, variant: .gpt2)
     // TODO(michellecasbon): Decide how to prevent OOV or choose a better ID (probably not 0).
     let bpeTokenIDs: [Int32] = bpeTokens.map {
         if let ID = tokenToID[$0] { return ID } else { return 0 }
@@ -99,7 +99,7 @@ for _ in 0..<100 {
     var decodedToken: String
     let ID: Int32 = Int32(tokens[0][0])!
     if let token: String = IDToToken[ID] {
-        decodedToken = bytePairEncoder.decode(token: token)
+        decodedToken = BytePairEncoder.decode(token: token)
     } else {
         decodedToken = "ID \(ID) not found."
     }

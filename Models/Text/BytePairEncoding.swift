@@ -39,49 +39,34 @@ public struct BytePairEncoder {
     ///
     /// - Parameters:
     ///   - token: Token to encode.
+    ///   - modelType: Type of model (default: .roberta)
     /// - Returns: Array containing the BPE-coded tokens.
-    public func encode(token: String) -> [String] {
+    public func encode(token: String, variant: Variant? = .roberta) -> [String] {
         // if let cached = cache[token] { return cached }
         // let token = " " + token
-        let encodedToken = BytePairEncoder.encodedToken(token)
-        var parts = BytePairEncoder.splitWithDelimiters(
-            token: encodedToken,
-            glossaryRegex: BytePairEncoder.defaultGlossaryRegex)
-        if parts.count < 2 { return parts }
-        var pairs = (0..<parts.count - 1).map { index in Pair(parts[index], parts[index + 1]) }
-        while !pairs.isEmpty {
-            let pair = pairs.min { mergePairs[$0] ?? Int.max < mergePairs[$1] ?? Int.max }!
-            if !mergePairs.keys.contains(pair) { break }
-            parts = BytePairEncoder.replacePair(pair: pair, tokenParts: parts)
-            if parts.count < 2 { break }
-            pairs = (0..<parts.count - 1).map { index in Pair(parts[index], parts[index + 1]) }
+        var parts: [String]
+        var encodedParts: [String]
+        var encoded: [String]
+
+        switch variant {
+            case .gpt2:
+                // Split into parts before encoding.
+                parts = BytePairEncoder.splitWithDelimitersGpt2(
+                    token: token,
+                    glossaryRegex: BytePairEncoder.gpt2GlossaryRegex)
+                if parts.count < 2 {
+                    // Encode the full token and return.
+                    return parts.map { BytePairEncoder.encodedToken($0) }
+                }
+            case .roberta, .none:
+                // Encode before splitting into parts.
+                let encodedToken = BytePairEncoder.encodedToken(token)
+                parts = BytePairEncoder.splitWithDelimiters(
+                    token: encodedToken,
+                    glossaryRegex: BytePairEncoder.defaultGlossaryRegex)
+                if parts.count < 2 { return parts }
         }
 
-        // Check if the new words parts are in the vocabulary, and backtrack if necessary.
-        let encoded = parts.flatMap { part -> [String] in
-            if vocabulary.contains(part) { return [part] }
-            return splitRecursively(part)
-        }
-
-        // Update the cache and return.
-        // if useCache { cache[token] = encoded }
-        return encoded
-    }
-
-    /// Encodes the provided token to a sequence of BPE-coded tokens.
-    ///
-    /// - Parameters:
-    ///   - token: Token to encode.
-    /// - Returns: Array containing the BPE-coded tokens.
-    public func encodeGpt2(token: String) -> [String] {
-        // Split into parts before encoding.
-        var parts = BytePairEncoder.splitWithDelimitersGpt2(
-            token: token,
-            glossaryRegex: BytePairEncoder.gpt2GlossaryRegex)
-        if parts.count < 2 {
-            // Encode the full token and return.
-            return parts.map { BytePairEncoder.encodedToken($0) }
-        }
 
         // Create pairs of parts.
         var pairs = (0..<parts.count - 1).map { index in Pair(parts[index], parts[index + 1]) }
@@ -93,32 +78,27 @@ public struct BytePairEncoder {
             pairs = (0..<parts.count - 1).map { index in Pair(parts[index], parts[index + 1]) }
         }
 
-        // Encode each token.
-        let encoded = parts.map({ BytePairEncoder.encodedToken($0) })
+        switch variant {
+            case .gpt2:
+                // Encode each token.
+                encodedParts = parts.map({ BytePairEncoder.encodedToken($0) })
 
+            case .roberta, .none:
+                // Encoding has already occurred.
+                encodedParts = parts
+
+        }
         // Check if the new word parts are in the vocabulary, and backtrack if necessary.
-        let encodedTokens = encoded.flatMap { part -> [String] in
+        encoded = encodedParts.flatMap { part -> [String] in
             if vocabulary.contains(part) { return [part] }
             return splitRecursively(part)
         }
 
-        return encodedTokens
+        // Update the cache and return.
+        // if useCache { cache[token] = encoded }
+        return encoded
     }
 
-    /// Decodes the provided BPE-coded token to a sequence of tokens.
-    ///
-    /// - Parameters:
-    ///   - token: BPE-coded token to decode.
-    /// - Returns: Array containing the decoded tokens.
-    public func decode(token: String) -> String {
-        var buffer = [UInt8]()
-
-        for scalar in token.unicodeScalars {
-            buffer.append(BytePairEncoder.unicodeToBytes[scalar]!)
-        }
-
-        return String(bytes: buffer, encoding: .utf8)!
-    }
 }
 
 extension BytePairEncoder {
@@ -264,5 +244,33 @@ extension BytePairEncoder {
 
     internal static func encodedToken(_ token: String) -> String {
         String(String.UnicodeScalarView(token.utf8.map { BytePairEncoder.bytesToUnicode[$0]! }))
+    }
+}
+
+extension BytePairEncoder {
+    public enum Variant {
+        /// Default variant.
+        /// - Source: [RoBERTa: A Robustly Optimized BERT Pretraining Approach](
+        ///             https://arxiv.org/pdf/1907.11692.pdf).
+        case roberta;
+        /// - Source: [Language Models are Unsupervised Multitask Learners](
+        ///             https://cdn.openai.com/better-language-models/
+        ///             language_models_are_unsupervised_multitask_learners.pdf).
+        case gpt2;
+    }
+
+    /// Decodes the provided BPE-coded token to a sequence of tokens.
+    ///
+    /// - Parameters:
+    ///   - token: BPE-coded token to decode.
+    /// - Returns: Array containing the decoded tokens.
+    public static func decode(token: String) -> String {
+        var buffer = [UInt8]()
+
+        for scalar in token.unicodeScalars {
+            buffer.append(BytePairEncoder.unicodeToBytes[scalar]!)
+        }
+
+        return String(bytes: buffer, encoding: .utf8)!
     }
 }
