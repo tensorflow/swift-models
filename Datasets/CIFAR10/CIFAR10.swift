@@ -106,9 +106,9 @@ func loadCIFARFile(named name: String, in directory: URL, normalize: Bool = true
         
 }
 
-func loadCIFARTrainingFiles(localStorageDirectory: URL) -> LabeledExample {
+func loadCIFARTrainingFiles(localStorageDirectory: URL, normalize: Bool = true) -> LabeledExample {
     let data = (1..<6).map {
-        loadCIFARFile(named: "data_batch_\($0).bin", in: localStorageDirectory)
+        loadCIFARFile(named: "data_batch_\($0).bin", in: localStorageDirectory, normalize: normalize)
     }
     return LabeledExample(
         label: Tensor(concatenating: data.map { $0.label }, alongAxis: 0),
@@ -116,6 +116,6 @@ func loadCIFARTrainingFiles(localStorageDirectory: URL) -> LabeledExample {
     )
 }
 
-func loadCIFARTestFile(localStorageDirectory: URL) -> LabeledExample {
-    return loadCIFARFile(named: "test_batch.bin", in: localStorageDirectory)
+func loadCIFARTestFile(localStorageDirectory: URL, normalize: Bool = true) -> LabeledExample {
+    return loadCIFARFile(named: "test_batch.bin", in: localStorageDirectory, normalize: normalize)
 }
