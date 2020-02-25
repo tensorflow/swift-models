@@ -10,6 +10,7 @@ set_target_properties(Transformer PROPERTIES
 add_executable(TransformerDemo
   main.swift)
 target_link_libraries(TransformerDemo PRIVATE
+  TextModels
   Transformer)
 
 
