@@ -37,12 +37,3 @@ To get a toolchain, you can:
 1. [Download a pre-built package](https://github.com/tensorflow/swift/blob/master/Installation.md).
 2. [Compile a toolchain from source](https://github.com/apple/swift/tree/tensorflow#building-swift-for-tensorflow).
 
-It also currently requires Python 3.x.
-
-The `regex` and `numpy` module are also required for Python.  If this is not available, you can install it via:
-
-```
-python -m pip install --user regex
-python -m pip install --user numpy
-```
-
