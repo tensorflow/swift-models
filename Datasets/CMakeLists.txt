@@ -9,6 +9,7 @@ add_library(Datasets
   Imagenette/Imagenette.swift
   Imagenette/Imagewoof.swift
   LabeledExample.swift
+  MNIST/FashionMNIST.swift
   MNIST/MNIST.swift
   BostonHousing/BostonHousing.swift)
 target_link_libraries(Datasets PUBLIC
