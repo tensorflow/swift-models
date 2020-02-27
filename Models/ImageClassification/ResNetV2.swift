@@ -27,7 +27,7 @@ import TensorFlow
 public struct ConvBNV2: Layer {
     public var conv: Conv2D<Float>
     public var norm: BatchNorm<Float>
-    @noDerivative public let useRelu: Bool
+    @noDerivative public let isLast: Bool
 
     public init(
         inFilters: Int,
@@ -35,21 +35,33 @@ public struct ConvBNV2: Layer {
         kernelSize: Int = 1,
         stride: Int = 1,
         padding: Padding = .same,
-        useRelu: Bool = true
+        isLast: Bool = false
     ) {
-        //Should use no bias
         self.conv = Conv2D(
             filterShape: (kernelSize, kernelSize, inFilters, outFilters), 
             strides: (stride, stride), 
-            padding: padding)
-        self.norm = BatchNorm(featureCount: outFilters, momentum: 0.9, epsilon: 1e-5)
-        self.useRelu = useRelu
+            padding: padding,
+            useBias: false)
+        self.isLast = isLast
+        if isLast {
+            //Initialize the last BatchNorm layer to scale zero
+            self.norm = BatchNorm(
+                 axis: -1, 
+                 momentum: 0.9, 
+                 offset: Tensor(zeros: [outFilters]),
+                 scale: Tensor(zeros: [outFilters]),
+                 epsilon: 1e-5,
+                 runningMean: Tensor(0),
+                 runningVariance: Tensor(1))
+        } else {
+            self.norm = BatchNorm(featureCount: outFilters, momentum: 0.9, epsilon: 1e-5)
+        }
     }
 
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let convResult = input.sequenced(through: conv, norm)
-        return useRelu ? relu(convResult) : convResult
+        return isLast ? convResult : relu(convResult)
     }
 }
 
@@ -91,13 +103,13 @@ public struct ResidualBlockV2: Layer {
         if expansion == 1 {
             convs = [
                 ConvBNV2(inFilters: inFilters,  outFilters: outFilters, kernelSize: 3, stride: stride),
-                ConvBNV2(inFilters: outFilters, outFilters: outFilters, kernelSize: 3, useRelu: false)
+                ConvBNV2(inFilters: outFilters, outFilters: outFilters, kernelSize: 3, isLast: true)
             ]
         } else {
             convs = [
                 ConvBNV2(inFilters: inFilters,    outFilters: outFilters/4),
                 ConvBNV2(inFilters: outFilters/4, outFilters: outFilters/4, kernelSize: 3, stride: stride),
-                ConvBNV2(inFilters: outFilters/4, outFilters: outFilters, useRelu: false)
+                ConvBNV2(inFilters: outFilters/4, outFilters: outFilters, isLast: true)
             ]
         }
         shortcut = Shortcut(inFilters: inFilters, outFilters: outFilters, stride: stride)

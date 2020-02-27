@@ -9,7 +9,7 @@ let package = Package(
         .macOS(.v10_13),
     ],
     products: [
-        .library( name: "Batcher", targets: ["Batcher"]),
+        .library(name: "Batcher", targets: ["Batcher"]),
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
@@ -73,7 +73,7 @@ let package = Package(
         .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
         .testTarget(name: "DatasetsTests", dependencies: ["Datasets"]),
         .target(
-            name: "Transformer", dependencies: ["ModelSupport"], path: "Transformer", exclude: ["main.swift"]),
+            name: "Transformer", dependencies: ["ModelSupport", "TextModels"], path: "Transformer", exclude: ["main.swift"]),
         .target(
             name: "TransformerDemo", dependencies: ["Transformer"], path: "Transformer", sources: ["main.swift"]),
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),

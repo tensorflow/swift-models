@@ -12,6 +12,8 @@ add_library(ModelSupport
   Stderr.swift)
 set_target_properties(ModelSupport PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
+target_compile_options(ModelSupport PRIVATE
+  $<$<BOOL:${BUILD_TESTING}>:-enable-testing>)
 
 
 install(TARGETS ModelSupport
