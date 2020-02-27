@@ -24,7 +24,7 @@ public struct LanguageModelDataset<Item> {
   //Indices used to iterate through the dataset
   public var indices: [Int]
   //Cumulative lengths
-  private var cumLengths: [Int]
+  private var cumulativeLengths: [Int]
 
   public init(
     openItem: @escaping (Item) -> [Int],
@@ -38,8 +38,8 @@ public struct LanguageModelDataset<Item> {
     self.sequenceLength = sequenceLength
     self.items = items
     self.lengths = lengths
-    cumLengths = lengths.reduce(into: []) { $0.append(($0.last ?? 0) + $1) }
-    batchLength = (cumLengths.last! - 1) / batchSize
+    cumulativeLengths = lengths.reduce(into: []) { $0.append(($0.last ?? 0) + $1) }
+    batchLength = (cumulativeLengths.last! - 1) / batchSize
     batchCount = batchLength / sequenceLength + (batchLength % sequenceLength == 0 ? 0 : 1)
     lastLength = batchLength - (batchCount - 1) * sequenceLength
     indices = Array(0..<items.count)
@@ -62,9 +62,9 @@ public struct LanguageModelDataset<Item> {
   //Shuflle the dataset
   public mutating func shuffle() {
     indices = indices.shuffled()
-    cumLengths[0] = lengths[indices[0]]
+    cumulativeLengths[0] = lengths[indices[0]]
     for (i, j) in indices.suffix(from: 1).enumerated() {
-      cumLengths[i + 1] = cumLengths[i] + lengths[j]
+      cumulativeLengths[i + 1] = cumulativeLengths[i] + lengths[j]
     }
   }
 }
@@ -89,19 +89,19 @@ extension LanguageModelDataset: Collection {
   
   //Read a contiguous chunk of texts from start to end (may go through several items)
   private func readItems(from start: Int, to end: Int) -> [Int] {
-    var res: [Int] = []
-    var index = cumLengths.firstIndex { $0 >= start }!
-    var pos = start
-    while pos < end {
+    var text: [Int] = []
+    var index = cumulativeLengths.firstIndex { $0 >= start }!
+    var position = start
+    while position < end {
       let x = openItem(items[indices[index]])
-      let cumLen = ([0] + cumLengths)[index]
-      let readFrom = pos - cumLen
-      let readUntil = Swift.min(end - cumLen, x.count)
-      res = res + Array(x[readFrom..<readUntil])
-      pos = readUntil + cumLen
+      let cumulativeLength = ([0] + cumulativeLengths)[index]
+      let readFrom = position - cumulativeLength
+      let readUntil = Swift.min(end - cumulativeLength, x.count)
+      text = text + Array(x[readFrom..<readUntil])
+      position = readUntil + cumulativeLength
       index += 1
     }
-    return res
+    return text
   }
 }
 
