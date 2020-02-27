@@ -6,6 +6,7 @@ list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
 set(CMAKE_Swift_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/swift)
 
+include(CTest)
 include(SwiftSupport)
 
 add_subdirectory(Support)
@@ -18,3 +19,7 @@ add_subdirectory(DCGAN)
 add_subdirectory(FastStyleTransfer)
 add_subdirectory(Transformer)
 add_subdirectory(Examples)
+
+if(BUILD_TESTING)
+  add_subdirectory(Tests)
+endif()
