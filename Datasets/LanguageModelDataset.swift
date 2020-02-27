@@ -1,7 +1,7 @@
 import TensorFlow
 
 //Build a dataset suitable for language modeling from an array of texts
-public struct LanguageModelDataset<Item>: Collection {
+public struct LanguageModelDataset<Item> {
   public typealias Index = Int
   public typealias Element = TensorPair<Int32, Int32>
 
@@ -25,9 +25,6 @@ public struct LanguageModelDataset<Item>: Collection {
   public var indices: [Int]
   //Cumulative lengths
   private var cumLengths: [Int]
-  //To conform to Collection
-  public var startIndex: Int { return 0 }
-  public var endIndex: Int { return batchCount * batchSize }
 
   public init(
     openItem: @escaping (Item) -> [Int],
@@ -62,10 +59,22 @@ public struct LanguageModelDataset<Item>: Collection {
       lengths: items.map { openItem($0).count })
   }
 
-  // Method that returns the next index when iterating
-  public func index(after i: Int) -> Int { return i + 1 }
+  //Shuflle the dataset
+  public mutating func shuffle() {
+    indices = indices.shuffled()
+    cumLengths[0] = lengths[indices[0]]
+    for (i, j) in indices.suffix(from: 1).enumerated() {
+      cumLengths[i + 1] = cumLengths[i] + lengths[j]
+    }
+  }
+}
 
-  // Required subscript for Collection
+extension LanguageModelDataset: Collection {
+  public var startIndex: Int { return 0 }
+  public var endIndex: Int { return batchCount * batchSize }  
+  
+  public func index(after i: Int) -> Int { return i + 1 }
+    
   public subscript(index: Int) -> TensorPair<Int32, Int32> {
     get {
       let sampleLength = index / batchSize == batchCount - 1 ? lastLength : sequenceLength
@@ -73,12 +82,12 @@ public struct LanguageModelDataset<Item>: Collection {
       let sample = readItems(from: startIndex, to: startIndex + sampleLength + 1)
       let sample32 = sample.map { Int32($0) }
       return TensorPair(
-        input: Tensor<Int32>(sample32.prefix(upTo: sampleLength)),
-        target: Tensor<Int32>(sample32.suffix(from: 1)))
+        first: Tensor<Int32>(sample32.prefix(upTo: sampleLength)),
+        second: Tensor<Int32>(sample32.suffix(from: 1)))
     }
-  }
-
-  //Read a contiguous chunk of texts from start to end (may go througyh several items)
+  }  
+  
+  //Read a contiguous chunk of texts from start to end (may go through several items)
   private func readItems(from start: Int, to end: Int) -> [Int] {
     var res: [Int] = []
     var index = cumLengths.firstIndex { $0 >= start }!
@@ -93,15 +102,6 @@ public struct LanguageModelDataset<Item>: Collection {
       index += 1
     }
     return res
-  }
-
-  //Shuflle the dataset
-  public mutating func shuffle() {
-    indices = indices.shuffled()
-    cumLengths[0] = lengths[indices[0]]
-    for (i, j) in indices.suffix(from: 1).enumerated() {
-      cumLengths[i + 1] = cumLengths[i] + lengths[j]
-    }
   }
 }
 

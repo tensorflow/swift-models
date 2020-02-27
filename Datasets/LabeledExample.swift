@@ -35,12 +35,16 @@ public struct LabeledExample: TensorGroup, KeyPathIterable, Collatable {
     }
 }
 
+// A simple tuple of Tensor, useful for many deep learning tasks (one tensor of inputs,
+// one tensor of labels). Note that if your task is more elaborate, you should write your
+// own struct of Tensors. Automatic conformance to Collatable can be derived the same way as
+// here.
 public struct TensorPair<S1: TensorFlowScalar, S2: TensorFlowScalar>: Collatable, KeyPathIterable {
-    public var input: Tensor<S1>
-    public var target: Tensor<S2>
+    public var first: Tensor<S1>
+    public var second: Tensor<S2>
     
-    public init(input: Tensor<S1>, target: Tensor<S2>) {
-        self.input = input
-        self.target = target
+    public init(first: Tensor<S1>, second: Tensor<S2>) {
+        self.first = first
+        self.second = second
     }
 }
