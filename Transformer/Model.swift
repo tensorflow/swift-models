@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import TensorFlow
-import Python
 
 struct TimeDistributed: Layer {
     var dense: Dense<Float>
