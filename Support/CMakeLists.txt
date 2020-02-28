@@ -1,4 +1,5 @@
 add_library(ModelSupport
+  BijectiveDictionary.swift
   Checkpoints/CheckpointIndexReader.swift
   Checkpoints/CheckpointReader.swift
   Checkpoints/Protobufs/tensor_bundle.pb.swift
