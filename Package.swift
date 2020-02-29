@@ -73,9 +73,13 @@ let package = Package(
         .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
         .testTarget(name: "DatasetsTests", dependencies: ["Datasets"]),
         .target(
-            name: "Transformer", dependencies: ["ModelSupport", "TextModels"], path: "Transformer", exclude: ["main.swift"]),
+            name: "Transformer", dependencies: ["ModelSupport", "TextModels"],
+            path: "Transformer",
+            exclude: ["main.swift", "TransformerLoop.swift", "UI/Windows/main.swift"]),
         .target(
-            name: "TransformerDemo", dependencies: ["Transformer"], path: "Transformer", sources: ["main.swift"]),
+            name: "TransformerDemo", dependencies: ["Transformer"], path: "Transformer",
+            exclude: ["UI/Windows/main.swift"],
+            sources: ["main.swift", "TransformerLoop.swift"]),
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
         .target(name: "DCGAN", dependencies: ["Datasets", "ModelSupport"], path: "DCGAN"),
         .target(
