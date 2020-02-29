@@ -9,8 +9,9 @@ add_library(Datasets
   Imagenette/Imagenette.swift
   Imagenette/Imagewoof.swift
   LabeledExample.swift
-  MNIST/FashionMNIST.swift
+  LanguageModelDataset.swift
   MNIST/MNIST.swift
+  MNIST/FashionMNIST.swift
   BostonHousing/BostonHousing.swift)
 target_link_libraries(Datasets PUBLIC
   Batcher

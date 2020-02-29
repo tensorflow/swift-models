@@ -54,3 +54,32 @@ public func download(from source: URL, to destination: URL) throws {
     let downloadedFile = try Data(contentsOf: source)
     try downloadedFile.write(to: URL(fileURLWithPath: destinationFile))
 }
+
+/// Collect all file URLs under a folder `url`, potentially recursing through all subfolders.
+/// Optionally filters some extension (only jpeg or txt files for instance).
+///
+/// - Parameters:
+///   - url: The folder to explore.
+///   - recurse: Will explore all subfolders if set to `true`.
+///   - extensions: Only keeps URLs with extensions in that array if it's provided
+public func collectURLs(
+  under directory: URL, recurse: Bool = false, filtering extensions: [String]? = nil
+) -> [URL] {
+  var files: [URL] = []
+  do {
+    let dirContents = try FileManager.default.contentsOfDirectory(
+      at: directory, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])
+    for content in dirContents {
+      if content.hasDirectoryPath && recurse {
+        files += collectURLs(under: content, recurse: recurse, filtering: extensions)
+      } else if content.isFileURL
+        && (extensions == nil || extensions!.contains(dirContents[0].pathExtension.lowercased()))
+      {
+        files.append(content)
+      }
+    }
+  } catch {
+    fatalError("Could not explore this folder: \(error)")
+  }
+  return files
+}
