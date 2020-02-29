@@ -29,12 +29,14 @@ public struct CIFAR10: ImageClassificationDataset {
 
     public init() {
         self.init(
+            normalizing: true, 
             remoteBinaryArchiveLocation: URL(
                 string: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz")!)
     }
 
     public init(remoteBinaryArchiveLocation: URL) {
         self.init(
+            normalizing: Bool = true, 
             remoteBinaryArchiveLocation: remoteBinaryArchiveLocation,
             localStorageDirectory: FileManager.default.temporaryDirectory.appendingPathComponent(
                 "CIFAR10", isDirectory: true))
@@ -43,9 +45,9 @@ public struct CIFAR10: ImageClassificationDataset {
     public init(remoteBinaryArchiveLocation: URL, localStorageDirectory: URL) {
         downloadCIFAR10IfNotPresent(from: remoteBinaryArchiveLocation, to: localStorageDirectory)
         self.trainingDataset = Dataset<LabeledExample>(
-            elements: loadCIFARTrainingFiles(localStorageDirectory: localStorageDirectory))
+            elements: loadCIFARTrainingFiles(localStorageDirectory: localStorageDirectory, normalizing: normalizing))
         self.testDataset = Dataset<LabeledExample>(
-            elements: loadCIFARTestFile(localStorageDirectory: localStorageDirectory))
+            elements: loadCIFARTestFile(localStorageDirectory: localStorageDirectory, normalizing: normalizing))
     }
 }
 
@@ -62,7 +64,7 @@ func downloadCIFAR10IfNotPresent(from location: URL, to directory: URL) {
         remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
 }
 
-func loadCIFARFile(named name: String, in directory: URL, normalize: Bool = true) -> LabeledExample {
+func loadCIFARFile(named name: String, in directory: URL, normalizing: Bool = true) -> LabeledExample {
     let path = directory.appendingPathComponent("cifar-10-batches-bin/\(name)").path
 
     let imageCount = 10000
@@ -92,11 +94,9 @@ func loadCIFARFile(named name: String, in directory: URL, normalize: Bool = true
     // Transpose from the CIFAR-provided N(CHW) to TF's default NHWC.
     let imageTensor = Tensor<Float>(images.transposed(permutation: [0, 2, 3, 1]))
 
-    let mean = Tensor<Float>([0.485, 0.456, 0.406])
-    let std = Tensor<Float>([0.229, 0.224, 0.225])
-
-    // Normalize the images according to the input boolean flag passed (Default to 'true')
-    if normalize {
+    if normalizing {
+        let mean = Tensor<Float>([0.485, 0.456, 0.406])
+        let std = Tensor<Float>([0.229, 0.224, 0.225])
         let imagesNormalized = ((imageTensor / 255.0) - mean) / std
         return LabeledExample(label: Tensor<Int32>(labelTensor), data: imagesNormalized)
     }
@@ -106,9 +106,9 @@ func loadCIFARFile(named name: String, in directory: URL, normalize: Bool = true
         
 }
 
-func loadCIFARTrainingFiles(localStorageDirectory: URL, normalize: Bool = true) -> LabeledExample {
+func loadCIFARTrainingFiles(localStorageDirectory: URL, normalizing: Bool = true) -> LabeledExample {
     let data = (1..<6).map {
-        loadCIFARFile(named: "data_batch_\($0).bin", in: localStorageDirectory, normalize: normalize)
+        loadCIFARFile(named: "data_batch_\($0).bin", in: localStorageDirectory, normalizing: normalizing)
     }
     return LabeledExample(
         label: Tensor(concatenating: data.map { $0.label }, alongAxis: 0),
@@ -116,6 +116,6 @@ func loadCIFARTrainingFiles(localStorageDirectory: URL, normalize: Bool = true) 
     )
 }
 
-func loadCIFARTestFile(localStorageDirectory: URL, normalize: Bool = true) -> LabeledExample {
-    return loadCIFARFile(named: "test_batch.bin", in: localStorageDirectory, normalize: normalize)
+func loadCIFARTestFile(localStorageDirectory: URL, normalizing: Bool = true) -> LabeledExample {
+    return loadCIFARFile(named: "test_batch.bin", in: localStorageDirectory, normalizing: normalizing)
 }

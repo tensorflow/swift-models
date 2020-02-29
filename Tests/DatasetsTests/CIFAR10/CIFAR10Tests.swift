@@ -16,6 +16,7 @@ final class CIFAR10Tests: XCTestCase {
 
     func testCreateCIFAR10() {
         let dataset = CIFAR10(
+            normalizing: Bool = true, 
             remoteBinaryArchiveLocation:
                 URL(
                     string:
