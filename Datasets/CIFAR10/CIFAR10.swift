@@ -28,17 +28,16 @@ public struct CIFAR10: ImageClassificationDataset {
     public let testExampleCount = 10000
 
     public init() {
-        self.init(
-            normalizing: true, 
+        self.init( 
             remoteBinaryArchiveLocation: URL(
-                string: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz")!)
+                string: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz")!, normalizing: true)
     }
 
-    public init(remoteBinaryArchiveLocation: URL) {
+    public init(remoteBinaryArchiveLocation: URL, normalizing: Bool) {
         self.init(
             remoteBinaryArchiveLocation: remoteBinaryArchiveLocation,
             localStorageDirectory: FileManager.default.temporaryDirectory.appendingPathComponent(
-                "CIFAR10", isDirectory: true))
+                "CIFAR10", isDirectory: true), normalizing: normalizing)
     }
 
     public init(remoteBinaryArchiveLocation: URL, localStorageDirectory: URL, normalizing: Bool) {
