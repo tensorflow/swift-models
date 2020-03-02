@@ -30,6 +30,7 @@ let package = Package(
         .executable(name: "MiniGoDemo", targets: ["MiniGoDemo"]),
         .library(name: "Transformer", targets: ["Transformer"]),
         .executable(name: "TransformerDemo", targets: ["TransformerDemo"]),
+        .executable(name: "GPT2-WikiText2", targets: ["GPT2-WikiText2"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
@@ -80,6 +81,9 @@ let package = Package(
             name: "TransformerDemo", dependencies: ["Transformer"], path: "Transformer",
             exclude: ["UI/Windows/main.swift"],
             sources: ["main.swift", "TransformerLoop.swift"]),
+        .target(
+            name: "GPT2-WikiText2", dependencies: ["ImageClassificationModels", "Datasets"], path: "Examples/GPT2-WikiText2",
+            exclude: ["UI/Windows/main.swift"]),
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
         .target(name: "DCGAN", dependencies: ["Datasets", "ModelSupport"], path: "DCGAN"),
         .target(
