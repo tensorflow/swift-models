@@ -7,7 +7,7 @@ where Texts: Collection, Texts.Index==Int, Texts.Element==[Int] {
   public var batchSize: Int
   /// The length of a sequence.
   public var sequenceLength: Int
-  /// The array of raw items to use.
+  /// The collection of numericalized texts.
   public let numericalizedTexts: Texts
   /// The length of each processed item.
   public let lengths: [Int]
