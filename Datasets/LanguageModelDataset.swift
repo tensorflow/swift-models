@@ -1,6 +1,12 @@
 import TensorFlow
 
 /// A dataset suitable for language modeling.
+///
+/// - Note: This struct does not handle the preprocessing required in NLP
+/// and expects you have already tokenized and numericalized your raw texts
+/// (that is split them in tokens, then mapped those tokens to their ids in your
+/// vocabulary). Therefore the generic type Texts refers to a collection of
+/// numericalized texts.
 public struct LanguageModelDataset<Texts> 
 where Texts: Collection, Texts.Index==Int, Texts.Element==[Int] {
   /// The size of a batch.
