@@ -66,8 +66,8 @@ extension CheckpointIndexWriter {
         // The type of the block, with 0 signifying uncompressed.
         outputBuffer.append(contentsOf: [0])
         
-        // TODO: Write out the actual CRC32 for the block.
-        outputBuffer.append(contentsOf: [0x17, 0x87, 0x50, 0x11])
+        let crc32C = outputBuffer.maskedCRC32C()
+        outputBuffer.append(contentsOf: crc32C.littleEndianBuffer)
 
         outputBuffer.append(indexBlock(lastKey: lastString))
         outputBuffer.append(footerBlock())
@@ -126,7 +126,17 @@ extension CheckpointIndexWriter {
         entryProtobuf.shape = shape
         entryProtobuf.offset = offset
         entryProtobuf.size = tensorSize
-        entryProtobuf.crc32C = 0
+
+        // TODO: Find a more efficient way of calculating this without casting to bytes twice.
+        let scalars = tensor.array.scalars
+        scalars.withUnsafeBufferPointer { (ptr) in
+            ptr.baseAddress!.withMemoryRebound(
+                to: UInt8.self, capacity: ptr.count * MemoryLayout<Float>.size
+            ) {
+                let tensorData = Data(bytes: $0, count: ptr.count * MemoryLayout<Float>.size)
+                entryProtobuf.crc32C = tensorData.maskedCRC32C()
+            }
+        }
 
         offset += tensorSize
 
@@ -163,8 +173,8 @@ extension CheckpointIndexWriter {
         // The type of the block, with 0 signifying uncompressed.
         outputBuffer.append(contentsOf: [0])
         
-        // TODO: Write out the actual CRC32 for the block.
-        outputBuffer.append(contentsOf: [0x63, 0x87, 0x43, 0x16])
+        let crc32C = outputBuffer.maskedCRC32C()
+        outputBuffer.append(contentsOf: crc32C.littleEndianBuffer)
 
         return outputBuffer
     }
@@ -194,5 +204,17 @@ extension Data {
     mutating func appendVarint32(_ value: Int) {
         // TODO: Need actual varint writing here, this will fail for values > 128.
         self.append(contentsOf: [UInt8(value)])
+    }
+}
+
+extension UInt32 {
+    var littleEndianBuffer: [UInt8] {
+        let littleEndianBuffer = [self].withUnsafeBufferPointer { (ptr) in
+            ptr.baseAddress!.withMemoryRebound(
+                to: UInt8.self, capacity: 4
+            ) { $0 }
+        }
+
+        return [UInt8](UnsafeBufferPointer(start: littleEndianBuffer, count: 4))
     }
 }

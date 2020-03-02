@@ -182,6 +182,13 @@ open class CheckpointReader {
         let tensorData = shardBytes.subdata(
             in: Int(bundleEntry.offset)..<Int(bundleEntry.offset + bundleEntry.size))
 
+        let readCRC32C = bundleEntry.crc32C
+        let calculatedCRC32C = tensorData.maskedCRC32C()
+        guard readCRC32C == calculatedCRC32C else {
+            fatalError(
+                "Tensor \(name) had a bad CRC, expected: \(calculatedCRC32C), read: \(readCRC32C).")
+        }
+
         let scalarArray = tensorData.withUnsafeBytes { pointer in
             Array(pointer.bindMemory(to: Scalar.self))
         }
@@ -211,5 +218,35 @@ open class CheckpointReader {
 extension Tensorflow_TensorShapeProto {
     var shapeArray: [Int] {
         return self.dim.map { Int($0.size) }
+    }
+}
+
+extension Data {
+    static var crc32CLookupTable: [UInt32] = {
+        (0...255).map { index -> UInt32 in
+            var lookupValue = UInt32(index)
+            for _ in 0..<8 {
+                lookupValue =
+                    (lookupValue % 2 == 0) ? (lookupValue >> 1) : (0x82F6_3B78 ^ (lookupValue >> 1))
+            }
+            return lookupValue
+        }
+    }()
+
+    func crc32C() -> UInt32 {
+        var crc32: UInt32 = 0xFFFF_FFFF
+        let bytes = [UInt8](self)
+        for byte in bytes {
+            let lookupIndex = Int((crc32 ^ (UInt32(byte) & 0xFF)) & 0xFF)
+            crc32 = (crc32 >> 8) ^ Data.crc32CLookupTable[lookupIndex]
+        }
+        return crc32 ^ 0xFFFF_FFFF
+    }
+
+    // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/lib/hash/crc32c.h
+    func maskedCRC32C() -> UInt32 {
+        let crc32 = self.crc32C()
+        let maskDelta: UInt32 = 0xA282_EAD8
+        return ((crc32 &>> 15) | (crc32 &<< 17)) &+ maskDelta
     }
 }
