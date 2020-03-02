@@ -102,7 +102,7 @@ extension LanguageModelDataset: Collection {
 /// The sampleIndices function to use in conjunction with a `LanguageModelDataset` in a `Batcher`.
 /// Will shuffle the dataset in place instead of the indices (like the default function does).
 /// - Parameters:
-///   - dataset: The underlying `LanguageModelDataset`
+///   - dataset: The underlying `LanguageModelDataset`.
 ///   - shuffled: Shuffle or not the dataset.
 /// Returns: All the indices from the dataset in orer. 
 public func languageModelSample<C>(on dataset: inout LanguageModelDataset<C>, shuffled: Bool)
