@@ -67,7 +67,7 @@ open class CheckpointWriter {
                 ptr.baseAddress!.withMemoryRebound(
                     to: UInt8.self, capacity: ptr.count * MemoryLayout<Float>.size
                 ) {
-                    return outputBuffer.append($0, count: ptr.count * MemoryLayout<Float>.size)
+                    outputBuffer.append($0, count: ptr.count * MemoryLayout<Float>.size)
                 }
             }
         }

@@ -22,7 +22,7 @@ class CheckpointIndexWriter {
     let orderedTensors: [String]
 
     // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/lib/io/table_options.h#L46
-    let blockRestartInterval = 16
+    let blockRestartInterval = 15
 
     init(tensors: [String: Tensor<Float>]) {
         self.tensors = tensors
@@ -36,7 +36,8 @@ extension CheckpointIndexWriter {
         // TODO: Expand beyond using a single binary shard.
         outputBuffer.append(headerBlock(shards: 1))
         var lastString = ""
-        var intervalSinceLastRestart = 0
+        var intervalSinceLastRestart = 1
+        var restarts: [UInt32] = [0]
         var offset: Int64 = 0
         for key in orderedTensors {
             outputBuffer.append(keyValueBlock(key: key, lastString: lastString, offset: &offset))
@@ -48,14 +49,46 @@ extension CheckpointIndexWriter {
             } else {
                 lastString = ""
                 intervalSinceLastRestart = 0
+                restarts.append(UInt32(outputBuffer.count))
+            }
+        }
+        
+        restarts.append(UInt32(restarts.count))
+        // Write the restart offsets as a trailer to the data block.
+        restarts.withUnsafeBufferPointer { (ptr) in
+            ptr.baseAddress!.withMemoryRebound(
+                to: UInt8.self, capacity: ptr.count * MemoryLayout<UInt32>.size
+            ) {
+                outputBuffer.append($0, count: ptr.count * MemoryLayout<UInt32>.size)
             }
         }
 
-        outputBuffer.append(footerBlock())
+        // The type of the block, with 0 signifying uncompressed.
+        outputBuffer.append(contentsOf: [0])
+        
+        // TODO: Write out the actual CRC32 for the block.
+        outputBuffer.append(contentsOf: [0x17, 0x87, 0x50, 0x11])
 
+        outputBuffer.append(indexBlock(lastKey: lastString))
+        outputBuffer.append(footerBlock())
+        
         return outputBuffer
     }
-
+    
+    // Based on the LevelDB implementation of the same function.
+    func findShortestSuccessor(_ key: String) -> [UInt8] {
+        var newKeyBytes: [UInt8] = []
+        for byte in key.utf8 {
+            let castByte = UInt8(byte)
+            if castByte != 0xFF {
+                newKeyBytes.append(castByte + 1)
+                return newKeyBytes
+            }
+            newKeyBytes.append(castByte)
+        }
+        return newKeyBytes
+    }
+    
     func headerBlock(shards: Int) -> Data {
         var headerVersion = Tensorflow_VersionDef()
         headerVersion.producer = 1
@@ -113,9 +146,39 @@ extension CheckpointIndexWriter {
         }
     }
 
+    func indexBlock(lastKey: String) -> Data {
+        // TODO: Complete this.
+        let shortestSuccessor = findShortestSuccessor(lastKey)
+        let headerValue: [UInt8] = []
+        var outputBuffer = indexBytes(
+            sharedKeyBytes: 0, newKeyBytes: shortestSuccessor.count,
+            valueLength: headerValue.count)
+        outputBuffer.append(contentsOf: shortestSuccessor)
+        outputBuffer.append(contentsOf: headerValue)
+
+        // There were no restarts, but need to write out the buffer and count.
+        outputBuffer.append(contentsOf: [0, 0, 0, 0])
+        outputBuffer.append(contentsOf: [1, 0, 0, 0])
+
+        // The type of the block, with 0 signifying uncompressed.
+        outputBuffer.append(contentsOf: [0])
+        
+        // TODO: Write out the actual CRC32 for the block.
+        outputBuffer.append(contentsOf: [0x63, 0x87, 0x43, 0x16])
+
+        return outputBuffer
+    }
+    
     func footerBlock() -> Data {
-        // TODO: Complete footer output, rather than just using these terminating zeroes.
-        return Data(count: footerSize)
+        // Footer format, as defined in LevelDB:
+        // https://github.com/google/leveldb/blob/master/doc/table_format.md
+        // Currently, it's just zeroes for `footerSize` bytes, with a terminating magic number.
+        // TODO: Varint64 for index block offset.
+        // TODO: Varint64 for index block size.
+        var footerBytes = Data(count: footerSize - 8)
+        let magicNumber: [UInt8] = [0x57, 0xFB, 0x80, 0x8B, 0x24, 0x75, 0x47, 0xDB]
+        footerBytes.append(contentsOf: magicNumber)
+        return footerBytes
     }
 
     func indexBytes(sharedKeyBytes: Int, newKeyBytes: Int, valueLength: Int) -> Data {
