@@ -76,13 +76,15 @@ let package = Package(
         .target(
             name: "Transformer", dependencies: ["ModelSupport", "TextModels"],
             path: "Transformer",
-            exclude: ["main.swift", "TransformerLoop.swift", "UI/Windows/main.swift"]),
+            exclude: ["main.swift", "UI/Windows/main.swift"]),
         .target(
-            name: "TransformerDemo", dependencies: ["Transformer"], path: "Transformer",
+            name: "TransformerDemo", dependencies: ["Transformer", "TextModels"],
+            path: "Transformer",
             exclude: ["UI/Windows/main.swift"],
-            sources: ["main.swift", "TransformerLoop.swift"]),
+            sources: ["main.swift"]),
         .target(
-            name: "GPT2-WikiText2", dependencies: ["ImageClassificationModels", "Datasets"], path: "Examples/GPT2-WikiText2",
+            name: "GPT2-WikiText2", dependencies: ["ImageClassificationModels", "Datasets", "TextModels"],
+            path: "Examples/GPT2-WikiText2",
             exclude: ["UI/Windows/main.swift"]),
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
         .target(name: "DCGAN", dependencies: ["Datasets", "ModelSupport"], path: "DCGAN"),

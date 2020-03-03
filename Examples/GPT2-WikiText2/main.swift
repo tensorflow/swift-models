@@ -14,16 +14,21 @@
 
 import Batcher
 import Datasets
-import ImageClassificationModels
 import TensorFlow
+import TextModels
 
 let dataset = WikiText2()
 
 print("Dataset acquired.")
 
-let validationBatcher = Batcher(on: dataset.validationDataset, batchSize: 1000)
-for x in validationBatcher.sequenced() {
-    print(x)
-    break
+var gpt = try GPT2()
+
+for _ in 0..<100 {
+    do {
+      try print(gpt.generate(), terminator: "")
+    } catch {
+      continue
+    }
 }
+print()
 

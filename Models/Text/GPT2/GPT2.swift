@@ -14,11 +14,10 @@
 
 import Foundation
 import ModelSupport
-import TextModels
 import TensorFlow
-import Transformer
+// import Transformer
 
-internal class GPT2 {
+public class GPT2 {
   private let checkpoint: URL =
       URL(string: "https://storage.googleapis.com/gpt-2/models/117M/model.ckpt")!
   private let auxiliary: [String] = [
@@ -87,14 +86,14 @@ internal class GPT2 {
     }
   }
 
-  func embedding(for string: String) -> Tensor<Int32> {
+  public func embedding(for string: String) -> Tensor<Int32> {
     let tokens: [String] = bpe.encode(token: string, variant: .gpt2)
     // TODO(michellecasbon): Decide how to prevent OOV or choose a better ID (probably not 0).
     let ids: [Int32] = tokens.map { mapping[$0] ?? 0 }
     return Tensor(shape: [1, ids.count], scalars: ids)
   }
 
-  func generate() throws -> String {
+  public func generate() throws -> String {
     let result = model(seed, states: &states)
 
     let (batchSize, timesteps, vocabularySize) =
