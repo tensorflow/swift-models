@@ -22,10 +22,12 @@ add_library(MiniGo
   Strategies/MCTS/MCTSPredictor.swift
   Strategies/MCTS/MCTSRandomPredictor.swift
   Strategies/MCTS/MCTSTree.swift)
-target_link_libraries(MiniGo PUBLIC
-  ModelSupport)
 set_target_properties(MiniGo PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
+target_compile_options(MiniGo PRIVATE
+  $<$<BOOL:${BUILD_TESTING}>:-enable-testing>)
+target_link_libraries(MiniGo PUBLIC
+  ModelSupport)
 
 add_executable(MiniGoDemo
   main.swift)

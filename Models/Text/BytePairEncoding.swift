@@ -24,12 +24,31 @@ public struct BytePairEncoder {
     /// A cache used to store encoded tokens and thus speed up encoding.
     //  private var cache: [String: [String]]
 
+    public init(fromFileURL file: URL, encoding: String.Encoding = .utf8) throws {
+        let vocabulary: Vocabulary = try Vocabulary(fromJSONFile: file)
+
+        let lines: ArraySlice<String> =
+            try String(contentsOfFile: file.path, encoding: encoding)
+                .components(separatedBy: .newlines)
+                .dropFirst()
+
+        let pairs: [BytePairEncoder.Pair:Int] =
+            Dictionary<BytePairEncoder.Pair,Int>(uniqueKeysWithValues: lines.enumerated().compactMap { (index, line) -> (BytePairEncoder.Pair, Int)? in
+          let tokens = line.split(separator: " ")
+          guard tokens.count >= 2 else { return nil }
+          return (BytePairEncoder.Pair(String(tokens[0]), String(tokens[1])), index)
+        })
+
+        self.init(vocabulary: vocabulary, mergePairs: pairs)
+    }
+
     public init(vocabulary: Vocabulary, mergePairs: [Pair: Int], useCache: Bool = true) {
         self.vocabulary = vocabulary
         self.mergePairs = mergePairs
-        self.reversedMergePairs = [String: Pair](uniqueKeysWithValues: mergePairs.map {
-        ($0.key.left + $0.key.right, $0.key)
-        })
+        self.reversedMergePairs = [String: Pair](
+            uniqueKeysWithValues: mergePairs.map {
+                ($0.key.left + $0.key.right, $0.key)
+            })
         self.useCache = useCache
         // self.cache = [:]
     }
@@ -38,17 +57,37 @@ public struct BytePairEncoder {
     ///
     /// - Parameters:
     ///   - token: Token to encode.
+    ///   - variant: Type of model (default: .roberta).
     /// - Returns: Array containing the BPE-coded tokens.
-    public func encode(token: String) -> [String] {
+    public func encode(token: String, variant: Variant? = .roberta) -> [String] {
         // if let cached = cache[token] { return cached }
         // let token = " " + token
-        let encodedToken = String(String.UnicodeScalarView(token.utf8.map {
-            BytePairEncoder.bytesToUnicode[$0]!
-        }))
-        var parts = BytePairEncoder.splitWithDelimiters(
-            token: encodedToken,
-            glossaryRegex: BytePairEncoder.defaultGlossaryRegex)
-        if parts.count < 2 { return parts }
+        var parts: [String]
+        var encodedParts: [String]
+        var encoded: [String]
+
+        switch variant {
+        case .gpt2:
+            // Split into parts before encoding.
+            parts = BytePairEncoder.splittingWithDelimiters(
+                token: token,
+                glossaryRegex: BytePairEncoder.gpt2GlossaryRegex,
+                variant: .gpt2)
+            if parts.count < 2 {
+                // Encode the full token and return.
+                return parts.map { BytePairEncoder.encodedToken($0) }
+            }
+        case .roberta, .none:
+            // Encode before splitting into parts.
+            let encodedToken = BytePairEncoder.encodedToken(token)
+            parts = BytePairEncoder.splittingWithDelimiters(
+                token: encodedToken,
+                glossaryRegex: BytePairEncoder.defaultGlossaryRegex,
+                variant: .roberta)
+            if parts.count < 2 { return parts }
+        }
+
+        // Create pairs of parts.
         var pairs = (0..<parts.count - 1).map { index in Pair(parts[index], parts[index + 1]) }
         while !pairs.isEmpty {
             let pair = pairs.min { mergePairs[$0] ?? Int.max < mergePairs[$1] ?? Int.max }!
@@ -58,9 +97,19 @@ public struct BytePairEncoder {
             pairs = (0..<parts.count - 1).map { index in Pair(parts[index], parts[index + 1]) }
         }
 
-        // Check if the new words parts are in the vocabulary, and backtrack if necessary.
-        let encoded = parts.flatMap { part -> [String] in
-        if vocabulary.contains(part) { return [part] }
+        switch variant {
+        case .gpt2:
+            // Encode each token.
+            encodedParts = parts.map({ BytePairEncoder.encodedToken($0) })
+
+        case .roberta, .none:
+            // Encoding has already occurred.
+            encodedParts = parts
+
+        }
+        // Check if the new word parts are in the vocabulary, and backtrack if necessary.
+        encoded = encodedParts.flatMap { part -> [String] in
+            if vocabulary.contains(part) { return [part] }
             return splitRecursively(part)
         }
 
@@ -68,6 +117,7 @@ public struct BytePairEncoder {
         // if useCache { cache[token] = encoded }
         return encoded
     }
+
 }
 
 extension BytePairEncoder {
@@ -82,12 +132,25 @@ extension BytePairEncoder {
     }
 
     internal static let defaultGlossary: [String] = [
-        "e.g", "i.e", "&amp;", "&#124;", "&lt;", "&gt;", "&apos;", "&quot;", "&#91;", "&#93;"]
+        "e.g", "i.e", "&amp;", "&#124;", "&lt;", "&gt;", "&apos;", "&quot;", "&#91;", "&#93;",
+    ]
 
     internal static let defaultGlossaryRegex: NSRegularExpression = {
         let escapedGlossary = defaultGlossary.map { "\\Q\($0)\\E" }.joined(separator: "|")
         return try! NSRegularExpression(pattern: "(?:\(escapedGlossary))|(?!\(escapedGlossary))")
     }()
+
+    /// Regular expression matching the OpenAI GPT-2 implementation.
+    internal static let gpt2Glossary = [
+        "'s", "'t", "'re", "'ve", "'m", "'ll", "'d", " ?\\p{L}+", " ?\\p{N}+",
+        " ?[^\\s\\p{L}\\p{N}]+", "\\s+(?!\\S)", "\\s+",
+    ]
+
+    internal static let gpt2GlossaryRegex: NSRegularExpression = {
+        let escapedGlossary = gpt2Glossary.joined(separator: "|")
+        return try! NSRegularExpression(pattern: "(?:\(escapedGlossary))")
+    }()
+
 
     // TODO: Add documentation.
     internal static let bytesToUnicode: [UInt8: UnicodeScalar] = {
@@ -105,6 +168,12 @@ extension BytePairEncoder {
             uniqueKeysWithValues: zip(bytes, characters.map { UnicodeScalar($0)! }))
     }()
 
+    // The inverse of bytesToUnicode.
+    internal static let unicodeToBytes: [UnicodeScalar: UInt8] = {
+        [UnicodeScalar: UInt8](
+            uniqueKeysWithValues: BytePairEncoder.bytesToUnicode.map { ($1, $0) })
+    }()
+
     /// Recursively splits `token` into smaller units (by reversing BPE merges) until all units
     /// are either in the provided vocabulary, or cannot be split further.
     ///
@@ -112,35 +181,49 @@ extension BytePairEncoder {
     ///   - token: Token that needs to be split.
     internal func splitRecursively(_ token: String) -> [String] {
         guard let pair = reversedMergePairs[token] else { return [token] }
-        let leftParts = vocabulary.contains(pair.left) ?
-            [pair.left] :
-            splitRecursively(pair.left)
-        let rightParts = vocabulary.contains(pair.right) ?
-            [pair.right] :
-            splitRecursively(pair.right)
+        let leftParts = vocabulary.contains(pair.left) ? [pair.left] : splitRecursively(pair.left)
+        let rightParts =
+            vocabulary.contains(pair.right) ? [pair.right] : splitRecursively(pair.right)
         return leftParts + rightParts
     }
 
-    // TODO: Add documentation.
-    internal static func splitWithDelimiters(
+    /// Uses the given regex to split a token into individual glossary terms.
+    ///
+    /// - Parameters:
+    ///   - token: Full text.
+    ///   - glossaryRegex: Regular expression for segmenting the given token.
+    ///   - variant: The type of model (default: .roberta).
+    /// - Returns: Array of substrings that match the given regex.
+    internal static func splittingWithDelimiters(
         token: String,
         glossaryRegex: NSRegularExpression,
-        keepEmpty: Bool = false
+        keepEmpty: Bool = false,
+        variant: Variant? = .roberta
     ) -> [String] {
         let matches = glossaryRegex.matches(
             in: token,
             range: NSRange(token.startIndex..., in: token))
         var parts = [String]()
         parts.reserveCapacity(token.count)
-        var lastEnd = token.startIndex
-        for match in matches {
-            let start = token.index(token.startIndex, offsetBy: match.range.lowerBound)
-            if lastEnd != start { parts.append(String(token[lastEnd..<start])) }
-            lastEnd = token.index(token.startIndex, offsetBy: match.range.upperBound)
+        switch variant {
+        case .gpt2:
+            for match in matches {
+                let start = token.index(token.startIndex, offsetBy: match.range.lowerBound)
+                let end = token.index(token.startIndex, offsetBy: match.range.upperBound)
+                parts.append(String(token[start..<end]))
+            }
+        case .roberta, .none:
+            var lastEnd = token.startIndex
+            for match in matches {
+                let start = token.index(token.startIndex, offsetBy: match.range.lowerBound)
+                if lastEnd != start { parts.append(String(token[lastEnd..<start])) }
+                lastEnd = token.index(token.startIndex, offsetBy: match.range.upperBound)
+            }
+            if lastEnd != token.endIndex {
+                parts.append(String(token[lastEnd...]))
+            }
         }
-        if lastEnd != token.endIndex {
-            parts.append(String(token[lastEnd...]))
-        }
+
         return parts
     }
 
@@ -170,5 +253,37 @@ extension BytePairEncoder {
             newTokenParts.append(tokenParts[j])
         }
         return newTokenParts
+    }
+
+    internal static func encodedToken(_ token: String) -> String {
+        String(String.UnicodeScalarView(token.utf8.map { BytePairEncoder.bytesToUnicode[$0]! }))
+    }
+}
+
+extension BytePairEncoder {
+    public enum Variant {
+        /// Default variant.
+        /// - Source: [RoBERTa: A Robustly Optimized BERT Pretraining Approach](
+        ///             https://arxiv.org/pdf/1907.11692.pdf).
+        case roberta
+        /// - Source: [Language Models are Unsupervised Multitask Learners](
+        ///             https://cdn.openai.com/better-language-models/
+        ///             language_models_are_unsupervised_multitask_learners.pdf).
+        case gpt2
+    }
+
+    /// Decodes the provided BPE-coded token to a sequence of tokens.
+    ///
+    /// - Parameters:
+    ///   - token: BPE-coded token to decode.
+    /// - Returns: String containing the decoded tokens.
+    public static func decode(token: String) -> String {
+        var buffer = [UInt8]()
+
+        for scalar in token.unicodeScalars {
+            buffer.append(BytePairEncoder.unicodeToBytes[scalar]!)
+        }
+
+        return String(bytes: buffer, encoding: .utf8)!
     }
 }

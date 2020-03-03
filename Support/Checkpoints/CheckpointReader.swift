@@ -57,7 +57,7 @@ open class CheckpointReader {
             self.header = try indexReader.readHeader()
         } else {
             let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
-                modelName)
+                modelName, isDirectory: true)
             let temporaryCheckpointBase = temporaryDirectory.appendingPathComponent(checkpointBase)
             self.localCheckpointLocation = temporaryCheckpointBase
             let localIndexFileLocation = temporaryCheckpointBase.appendingPathExtension("index")

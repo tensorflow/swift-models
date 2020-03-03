@@ -28,7 +28,8 @@ public enum DatasetUtilities {
         filename: String,
         fileExtension: String,
         remoteRoot: URL,
-        localStorageDirectory: URL = currentWorkingDirectoryURL
+        localStorageDirectory: URL = currentWorkingDirectoryURL,
+        extract: Bool = true
     ) -> URL {
         printError("Loading resource: \(filename)")
 
@@ -44,7 +45,7 @@ public enum DatasetUtilities {
             printError(
                 "File does not exist locally at expected path: \(localURL.path) and must be fetched"
             )
-            fetchFromRemoteAndSave(resource)
+            fetchFromRemoteAndSave(resource, extract: extract)
         }
 
         return localURL
@@ -88,7 +89,7 @@ public enum DatasetUtilities {
         }
     }
 
-    static func fetchFromRemoteAndSave(_ resource: ResourceDefinition) {
+    static func fetchFromRemoteAndSave(_ resource: ResourceDefinition, extract: Bool) {
         let remoteLocation = resource.remoteURL
         let archiveLocation = resource.localStorageDirectory
 
@@ -100,7 +101,9 @@ public enum DatasetUtilities {
         }
         printError("Archive saved to: \(archiveLocation.path)")
 
-        extractArchive(for: resource)
+        if extract {
+            extractArchive(for: resource)
+        }
     }
 
     static func extractArchive(for resource: ResourceDefinition) {

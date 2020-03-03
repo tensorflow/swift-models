@@ -639,7 +639,7 @@ extension BERT {
         ///   - directory: Directory to load the pretrained model from.
         public func load(from directory: URL) throws -> BERT {
             print("Loading BERT pre-trained model '\(name)'.")
-            let directory = directory.appendingPathComponent(variant.description)
+            let directory = directory.appendingPathComponent(variant.description, isDirectory: true)
             try maybeDownload(to: directory)
 
             // Load the appropriate vocabulary file.
@@ -754,7 +754,7 @@ extension BERT {
             case .albertBase, .albertLarge, .albertXLarge, .albertXXLarge:
                 // Download the model, if necessary.
                 let compressedFileURL = directory.appendingPathComponent("\(subDirectory).tar.gz")
-                try Datasets.maybeDownload(from: url, to: compressedFileURL)
+                try download(from: url, to: compressedFileURL)
 
                 // Extract the data, if necessary.
                 let extractedDirectoryURL = directory.appendingPathComponent(subDirectory)

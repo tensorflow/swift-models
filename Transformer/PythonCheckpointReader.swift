@@ -15,12 +15,12 @@
 import ModelSupport
 import TensorFlow
 
-struct TransformerLMConfig: Codable {
-    let vocabSize: Int
-    let contextSize: Int
-    let embeddingSize: Int
-    let headCount: Int
-    let layerCount: Int
+public struct TransformerLMConfig: Codable {
+    public let vocabSize: Int
+    public let contextSize: Int
+    public let embeddingSize: Int
+    public let headCount: Int
+    public let layerCount: Int
 
     enum CodingKeys: String, CodingKey {
         case vocabSize = "n_vocab"
@@ -122,7 +122,7 @@ extension EncoderLayer: InitializableFromPythonCheckpoint {
 }
 
 extension TransformerLM: InitializableFromPythonCheckpoint {
-    init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
+    public init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
         embedding = Embedding(
             weight: reader.readTensor(name: scope + "/wte", scalarType: Float.self))
         positionalEmbeddings = reader.readTensor(

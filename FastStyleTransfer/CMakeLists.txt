@@ -6,10 +6,12 @@ add_library(FastStyleTransfer
 
   Utility/ImportableLayer.swift
   Utility/Resize.swift)
-target_link_libraries(FastStyleTransfer PUBLIC
-  ModelSupport)
 set_target_properties(FastStyleTransfer PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
+target_compile_options(FastStyleTransfer PRIVATE
+  $<$<BOOL:${BUILD_TESTING}>:-enable-testing>)
+target_link_libraries(FastStyleTransfer PUBLIC
+  ModelSupport)
 
 add_executable(FastStyleTransferDemo
   Demo/ColabDemo.ipynb

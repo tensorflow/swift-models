@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import TensorFlow
-import Python
 
 struct TimeDistributed: Layer {
     var dense: Dense<Float>
@@ -70,14 +69,18 @@ func _vjpMakeAttentionInput(query: Tensor<Float>, key: Tensor<Float>, value: Ten
     return (result, { seed in (seed.query, seed.key, seed.value) })
 }
 
-struct AttentionContext: Differentiable {
+public struct AttentionContext: Differentiable {
     var key: Tensor<Float>
     var value: Tensor<Float>
+
+    public init(key: Tensor<Float>, value: Tensor<Float>) {
+        self.key = key
+        self.value = value
+    }
 }
 
 @differentiable(wrt: (key, value))
-func makeAttentionContext(key: Tensor<Float>, value: Tensor<Float>)
-    -> AttentionContext {
+func makeAttentionContext(key: Tensor<Float>, value: Tensor<Float>) -> AttentionContext {
     return AttentionContext(key: key, value: value)
 }
 
@@ -216,7 +219,7 @@ struct MultiHeadAttention: Layer {
     }
 }
 
-struct EncoderLayer: Layer {
+public struct EncoderLayer: Layer {
     var selfAttention: MultiHeadAttention
     var selfAttentionDropout: Dropout<Float>
     var selfAttentionNorm: LayerNorm<Float>
@@ -237,7 +240,7 @@ struct EncoderLayer: Layer {
     }
 
     @differentiable(wrt: (self, input))
-    func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let attended = input + input.sequenced(
             through: selfAttentionNorm, selfAttention, selfAttentionDropout)
         return attended + attended.sequenced(
@@ -255,7 +258,7 @@ struct EncoderLayer: Layer {
     }
 }
 
-struct Embedding: Differentiable {
+public struct Embedding: Differentiable {
     var weight: Tensor<Float>
     
     init(weight: Tensor<Float>) {
@@ -272,13 +275,23 @@ struct Embedding: Differentiable {
     }
 }
 
-struct TransformerLM {
+public struct TransformerLM {
     var embedding: Embedding
     var positionalEmbeddings: Tensor<Float>
     var layers: [EncoderLayer]
     var norm: LayerNorm<Float>
 
-    func callAsFunction(_ tokens: Tensor<Int32>, states: inout [AttentionContext]) -> Tensor<Float> {
+    public init(
+        embedding: Embedding, positionalEmbeddings: Tensor<Float>,
+        layers: [EncoderLayer], norm: LayerNorm<Float>
+    ) {
+        self.embedding = embedding
+        self.positionalEmbeddings = positionalEmbeddings
+        self.layers = layers
+        self.norm = norm
+    }
+
+    public func callAsFunction(_ tokens: Tensor<Int32>, states: inout [AttentionContext]) -> Tensor<Float> {
         let positions = (0..<tokens.shape[1]).map { Int32($0 + states[0].key.shape[1]) }
         let positionsTensor = Tensor<Int32>(shape: [1, tokens.shape[1]], scalars: positions)
         var h = embedding(tokens)

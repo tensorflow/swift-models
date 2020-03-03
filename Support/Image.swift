@@ -1,4 +1,4 @@
-// Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+// Copyright 2020 The TensorFlow Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ public struct Image {
         }
     }
 
-    public func save(to url: URL, format: _Raw.Format = .grayscale, quality: Int64 = 95) {
+    public func save(to url: URL, format: _Raw.Format = .rgb, quality: Int64 = 95) {
         let outputImageData: Tensor<UInt8>
         switch format {
         case .grayscale:
@@ -100,12 +100,21 @@ public struct Image {
     }
 }
 
-public func saveImage(_ tensor: Tensor<Float>, size: (Int, Int), directory: String, name: String)
-    throws
-{
+public func saveImage(_ tensor: Tensor<Float>, shape: (Int, Int), size: (Int, Int)? = nil,
+                      format: _Raw.Format = .rgb, directory: String, name: String,
+                      quality: Int64 = 95) throws {
     try createDirectoryIfMissing(at: directory)
-    let reshapedTensor = tensor.reshaped(to: [size.0, size.1, 1])
+    let channels: Int
+    switch format {
+    case .rgb: channels = 3
+    case .grayscale: channels = 1
+    default:
+        print("\(format) is not supported yet.")
+        exit(-1)
+    }
+    let reshapedTensor = tensor.reshaped(to: [shape.0, shape.1, channels])
     let image = Image(tensor: reshapedTensor)
+    let resizedImage = size != nil ? image.resized(to: (size!.0, size!.1)) : image
     let outputURL = URL(fileURLWithPath: "\(directory)\(name).jpg")
-    image.save(to: outputURL)
+    resizedImage.save(to: outputURL, format: format, quality: quality)
 }
