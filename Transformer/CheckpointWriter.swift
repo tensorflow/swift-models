@@ -61,7 +61,7 @@ extension Array: ExportableLayer {
     var nameMappings: [String: String] { ["h": "h"] }
 }
 
-func recursivelyObtainTensors(
+public func recursivelyObtainTensors(
     _ obj: Any, scope: String? = nil, tensors: inout [String: Tensor<Float>], separator: String
 ) {
     let m = Mirror(reflecting: obj)

@@ -34,18 +34,11 @@ for _ in 0..<100 {
 }
 print()
 
-// The following illustrates how to write out a checkpoint from this model and load it back in.
+// The following illustrates how to write out a checkpoint from this model and read it back in.
 /*
-var tensors = [String: Tensor<Float>]()
-recursivelyObtainTensors(model, scope: "model", tensors: &tensors, separator: "/")
+import Foundation
+let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent("Transformer")
+try gpt.writeCheckpoint(to: temporaryDirectory, name: "model2.ckpt")
 
-let writer = CheckpointWriter(tensors: tensors)
-try writer.write(to: temporaryDirectory, name: "model2.ckpt")
-
-let reader2 = try CheckpointReader(
-    checkpointLocation: temporaryDirectory.appendingPathComponent("model2.ckpt"),
-    modelName: "Transformer",
-    additionalFiles: [])
-
-let recreatedmodel = TransformerLM(reader: reader2, config: config, scope: "model")
+let recreatedmodel = try GPT2(checkpoint: temporaryDirectory.appendingPathComponent("model2.ckpt"))
 */
