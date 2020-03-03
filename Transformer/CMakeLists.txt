@@ -9,6 +9,7 @@ set_target_properties(Transformer PROPERTIES
 
 add_executable(TransformerDemo
   main.swift
+  CheckpointWriter.swift
   TransformerLoop.swift)
 target_link_libraries(TransformerDemo PRIVATE
   TextModels
@@ -17,6 +18,7 @@ target_link_libraries(TransformerDemo PRIVATE
 if(CMAKE_SYSTEM_NAME STREQUAL Windows)
   add_executable(TransformerUI
     UI/Windows/main.swift
+    CheckpointWriter.swift
     TransformerLoop.swift)
   target_link_libraries(TransformerUI PRIVATE
     Foundation
