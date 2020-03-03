@@ -33,14 +33,12 @@ public struct CIFAR10: ImageClassificationDataset {
                 string: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz")!, normalizing: true)
     }
 
-    public init(remoteBinaryArchiveLocation: URL, normalizing: Bool) {
-        self.init(
-            remoteBinaryArchiveLocation: remoteBinaryArchiveLocation,
-            localStorageDirectory: FileManager.default.temporaryDirectory.appendingPathComponent(
-                "CIFAR10", isDirectory: true), normalizing: normalizing)
-    }
-
-    public init(remoteBinaryArchiveLocation: URL, localStorageDirectory: URL, normalizing: Bool) {
+    public init(
+        remoteBinaryArchiveLocation: URL, 
+        localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
+                "CIFAR10", isDirectory: true), 
+        normalizing: Bool) 
+    {
         downloadCIFAR10IfNotPresent(from: remoteBinaryArchiveLocation, to: localStorageDirectory)
         self.trainingDataset = Dataset<LabeledExample>(
             elements: loadCIFARTrainingFiles(localStorageDirectory: localStorageDirectory, normalizing: normalizing))
