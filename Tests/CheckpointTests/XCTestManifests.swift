@@ -18,6 +18,7 @@ import XCTest
 public func allTests() -> [XCTestCaseEntry] {
     return [
         testCase(CheckpointIndexReaderTests.allTests),
+        testCase(CheckpointWriterTests.allTests),
         testCase(SnappyDecompressionTests.allTests),
     ]
 }

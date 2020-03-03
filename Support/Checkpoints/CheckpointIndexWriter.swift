@@ -209,12 +209,10 @@ extension Data {
 
 extension UInt32 {
     var littleEndianBuffer: [UInt8] {
-        let littleEndianBuffer = [self].withUnsafeBufferPointer { (ptr) in
+        return [self].withUnsafeBufferPointer { (ptr) in
             ptr.baseAddress!.withMemoryRebound(
                 to: UInt8.self, capacity: 4
-            ) { $0 }
+            ) { [UInt8](UnsafeBufferPointer(start: $0, count: 4)) }
         }
-
-        return [UInt8](UnsafeBufferPointer(start: littleEndianBuffer, count: 4))
     }
 }
