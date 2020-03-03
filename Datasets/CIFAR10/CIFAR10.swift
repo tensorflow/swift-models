@@ -88,17 +88,15 @@ func loadCIFARFile(named name: String, in directory: URL, normalizing: Bool = tr
     let images = Tensor<UInt8>(shape: [imageCount, 3, 32, 32], scalars: bytes)
 
     // Transpose from the CIFAR-provided N(CHW) to TF's default NHWC.
-    let imageTensor = Tensor<Float>(images.transposed(permutation: [0, 2, 3, 1]))
+    var imageTensor = Tensor<Float>(images.transposed(permutation: [0, 2, 3, 1]))
 
     if normalizing {
         let mean = Tensor<Float>([0.485, 0.456, 0.406])
         let std = Tensor<Float>([0.229, 0.224, 0.225])
-        let imagesNormalized = ((imageTensor / 255.0) - mean) / std
-        return LabeledExample(label: Tensor<Int32>(labelTensor), data: imagesNormalized)
+        imageTensor = ((imageTensor / 255.0) - mean) / std
     }
-    else {
-        return LabeledExample(label: Tensor<Int32>(labelTensor), data: imageTensor)
-    }
+    
+    return LabeledExample(label: Tensor<Int32>(labelTensor), data: imageTensor)
         
 }
 
