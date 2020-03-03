@@ -28,24 +28,22 @@ public struct CIFAR10: ImageClassificationDataset {
     public let testExampleCount = 10000
 
     public init() {
-        self.init(
+        self.init( 
             remoteBinaryArchiveLocation: URL(
-                string: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz")!)
+                string: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz")!, normalizing: true)
     }
 
-    public init(remoteBinaryArchiveLocation: URL) {
-        self.init(
-            remoteBinaryArchiveLocation: remoteBinaryArchiveLocation,
-            localStorageDirectory: FileManager.default.temporaryDirectory.appendingPathComponent(
-                "CIFAR10", isDirectory: true))
-    }
-
-    public init(remoteBinaryArchiveLocation: URL, localStorageDirectory: URL) {
+    public init(
+        remoteBinaryArchiveLocation: URL, 
+        localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
+                "CIFAR10", isDirectory: true), 
+        normalizing: Bool) 
+    {
         downloadCIFAR10IfNotPresent(from: remoteBinaryArchiveLocation, to: localStorageDirectory)
         self.trainingDataset = Dataset<LabeledExample>(
-            elements: loadCIFARTrainingFiles(localStorageDirectory: localStorageDirectory))
+            elements: loadCIFARTrainingFiles(localStorageDirectory: localStorageDirectory, normalizing: normalizing))
         self.testDataset = Dataset<LabeledExample>(
-            elements: loadCIFARTestFile(localStorageDirectory: localStorageDirectory))
+            elements: loadCIFARTestFile(localStorageDirectory: localStorageDirectory, normalizing: normalizing))
     }
 }
 
@@ -62,7 +60,7 @@ func downloadCIFAR10IfNotPresent(from location: URL, to directory: URL) {
         remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
 }
 
-func loadCIFARFile(named name: String, in directory: URL) -> LabeledExample {
+func loadCIFARFile(named name: String, in directory: URL, normalizing: Bool = true) -> LabeledExample {
     let path = directory.appendingPathComponent("cifar-10-batches-bin/\(name)").path
 
     let imageCount = 10000
@@ -90,18 +88,21 @@ func loadCIFARFile(named name: String, in directory: URL) -> LabeledExample {
     let images = Tensor<UInt8>(shape: [imageCount, 3, 32, 32], scalars: bytes)
 
     // Transpose from the CIFAR-provided N(CHW) to TF's default NHWC.
-    let imageTensor = Tensor<Float>(images.transposed(permutation: [0, 2, 3, 1]))
+    var imageTensor = Tensor<Float>(images.transposed(permutation: [0, 2, 3, 1]))
 
-    let mean = Tensor<Float>([0.485, 0.456, 0.406])
-    let std = Tensor<Float>([0.229, 0.224, 0.225])
-    let imagesNormalized = ((imageTensor / 255.0) - mean) / std
-
-    return LabeledExample(label: Tensor<Int32>(labelTensor), data: imagesNormalized)
+    if normalizing {
+        let mean = Tensor<Float>([0.485, 0.456, 0.406])
+        let std = Tensor<Float>([0.229, 0.224, 0.225])
+        imageTensor = ((imageTensor / 255.0) - mean) / std
+    }
+    
+    return LabeledExample(label: Tensor<Int32>(labelTensor), data: imageTensor)
+        
 }
 
-func loadCIFARTrainingFiles(localStorageDirectory: URL) -> LabeledExample {
+func loadCIFARTrainingFiles(localStorageDirectory: URL, normalizing: Bool = true) -> LabeledExample {
     let data = (1..<6).map {
-        loadCIFARFile(named: "data_batch_\($0).bin", in: localStorageDirectory)
+        loadCIFARFile(named: "data_batch_\($0).bin", in: localStorageDirectory, normalizing: normalizing)
     }
     return LabeledExample(
         label: Tensor(concatenating: data.map { $0.label }, alongAxis: 0),
@@ -109,6 +110,6 @@ func loadCIFARTrainingFiles(localStorageDirectory: URL) -> LabeledExample {
     )
 }
 
-func loadCIFARTestFile(localStorageDirectory: URL) -> LabeledExample {
-    return loadCIFARFile(named: "test_batch.bin", in: localStorageDirectory)
+func loadCIFARTestFile(localStorageDirectory: URL, normalizing: Bool = true) -> LabeledExample {
+    return loadCIFARFile(named: "test_batch.bin", in: localStorageDirectory, normalizing: normalizing)
 }
