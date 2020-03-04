@@ -4,7 +4,6 @@ add_library(Datasets
   CoLA/Batchable.swift
   CoLA/CoLA.swift
   CoLA/DataUtilities.swift
-  CoLA/TextBatch.swift
   ImageClassificationDataset.swift
   Imagenette/Imagenette.swift
   Imagenette/Imagewoof.swift
