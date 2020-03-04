@@ -1,4 +1,5 @@
 add_library(Transformer
+  CheckpointWriter.swift
   Model.swift
   Operators.swift
   PythonCheckpointReader.swift)

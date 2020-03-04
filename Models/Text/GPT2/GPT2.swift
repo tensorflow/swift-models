@@ -17,7 +17,7 @@ import ModelSupport
 import TensorFlow
 
 public class GPT2 {
-  private let checkpoint: URL =
+  private static let remoteCheckpoint: URL =
       URL(string: "https://storage.googleapis.com/gpt-2/models/117M/model.ckpt")!
   private let auxiliary: [String] = [
     "checkpoint",
@@ -48,7 +48,7 @@ public class GPT2 {
 
   var states: [AttentionContext]
 
-  public init() throws {
+  public init(checkpoint: URL = GPT2.remoteCheckpoint) throws {
     storage = FS.temporaryDirectory.appendingPathComponent("Transformer")
 
     reader = try CheckpointReader(checkpointLocation: checkpoint,
@@ -109,6 +109,14 @@ public class GPT2 {
     }
 
     throw GPT2Error.invalidEncoding(id: id)
+  }
+
+  func writeCheckpoint(to location: URL, name: String) throws {
+    var tensors = [String: Tensor<Float>]()
+    recursivelyObtainTensors(model, scope: "model", tensors: &tensors, separator: "/")
+
+    let writer = CheckpointWriter(tensors: tensors)
+    try writer.write(to: location, name: name)
   }
 }
 

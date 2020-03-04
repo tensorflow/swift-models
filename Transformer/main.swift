@@ -35,3 +35,12 @@ for _ in 0..<100 {
     }
 }
 print()
+
+// The following illustrates how to write out a checkpoint from this model and read it back in.
+/*
+import Foundation
+let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent("Transformer")
+try gpt.writeCheckpoint(to: temporaryDirectory, name: "model2.ckpt")
+
+let recreatedmodel = try GPT2(checkpoint: temporaryDirectory.appendingPathComponent("model2.ckpt"))
+*/

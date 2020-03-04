@@ -13,14 +13,13 @@
 // limitations under the License.
 
 // Original source:
-// "Fashion-MNIST: a Novel Image Dataset for Benchmarking Machine Learning Algorithms"
-// Han Xiao and Kashif Rasul and Roland Vollgraf
-// https://arxiv.org/abs/1708.07747
+// "KMNIST Dataset" (created by CODH), https://arxiv.org/abs/1812.01718
+// adapted from "Kuzushiji Dataset" (created by NIJL and others), doi:10.20676/00000341
 
 import Foundation
 import TensorFlow
 
-public struct FashionMNIST: ImageClassificationDataset {
+public struct KuzushijiMNIST: ImageClassificationDataset {
     public let trainingDataset: Dataset<LabeledExample>
     public let testDataset: Dataset<LabeledExample>
     public let trainingExampleCount = 60000
@@ -33,12 +32,12 @@ public struct FashionMNIST: ImageClassificationDataset {
     public init(
         flattening: Bool = false, normalizing: Bool = false,
         localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
-            "FashionMNIST", isDirectory: true)
+            "KuzushijiMNIST", isDirectory: true)
     ) {
         self.trainingDataset = Dataset<LabeledExample>(
             elements: fetchMNISTDataset(
                 localStorageDirectory: localStorageDirectory,
-                remoteBaseDirectory: "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/",
+                remoteBaseDirectory: "http://codh.rois.ac.jp/kmnist/dataset/kmnist/",
                 imagesFilename: "train-images-idx3-ubyte",
                 labelsFilename: "train-labels-idx1-ubyte",
                 flattening: flattening,
@@ -47,7 +46,7 @@ public struct FashionMNIST: ImageClassificationDataset {
         self.testDataset = Dataset<LabeledExample>(
             elements: fetchMNISTDataset(
                 localStorageDirectory: localStorageDirectory,
-                remoteBaseDirectory: "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/",
+                remoteBaseDirectory: "http://codh.rois.ac.jp/kmnist/dataset/kmnist/",
                 imagesFilename: "t10k-images-idx3-ubyte",
                 labelsFilename: "t10k-labels-idx1-ubyte",
                 flattening: flattening,

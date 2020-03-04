@@ -1,4 +1,4 @@
-# Simple Autoencoder
+# Simple 1D Autoencoder
 
 This is an example of a simple 1-dimensional autoencoder model, using FashionMNIST as a training dataset. It should produce output similar to the following:
 
@@ -24,5 +24,5 @@ installed. Make sure you've added the correct version of `swift` to your path.
 To train the model, run:
 
 ```
-swift run -c release Autoencoder
+swift run -c release Autoencoder1D
 ```
