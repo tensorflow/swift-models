@@ -126,3 +126,17 @@ extension TransformerLM: InitializableFromPythonCheckpoint {
         norm = LayerNorm(reader: reader, config: config, scope: scope + "/ln_f")
     }
 }
+
+extension TransformerGPT2: InitializableFromPythonCheckpoint {
+    public init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
+        embedding = EmbeddingGPT2(
+            weight: reader.readTensor(name: scope + "/wte", scalarType: Float.self))
+        positionalEmbeddings = reader.readTensor(
+            name: scope + "/wpe",
+            scalarType: Float.self)
+        layers = (0..<config.layerCount).map { i in
+            EncoderLayer(reader: reader, config: config, scope: scope + "/h\(i)")
+        }
+        norm = LayerNorm(reader: reader, config: config, scope: scope + "/ln_f")
+    }
+}

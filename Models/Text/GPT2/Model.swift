@@ -276,28 +276,35 @@ public struct EmbeddingGPT2: Differentiable {
 }
 
 public struct TransformerGPT2: Differentiable {
-    var encoder1: EncoderLayer
-    var encoder2: EncoderLayer
-    var encoder3: EncoderLayer
-    var encoder4: EncoderLayer
-    var encoder5: EncoderLayer
-    var encoder6: EncoderLayer
+    var embedding: EmbeddingGPT2
+    var positionalEmbeddings: Tensor<Float>
+    var layers: [EncoderLayer]
+    var norm: LayerNorm<Float>
 
-    public init() {
-        encoder1 = EncoderLayer(size: 768, headCount: 12, dropProbability: 0.5)
-        encoder2 = EncoderLayer(size: 768, headCount: 12, dropProbability: 0.5)
-        encoder3 = EncoderLayer(size: 768, headCount: 12, dropProbability: 0.5)
-        encoder4 = EncoderLayer(size: 768, headCount: 12, dropProbability: 0.5)
-        encoder5 = EncoderLayer(size: 768, headCount: 12, dropProbability: 0.5)
-        encoder6 = EncoderLayer(size: 768, headCount: 12, dropProbability: 0.5)
+    public init(
+        embedding: EmbeddingGPT2, positionalEmbeddings: Tensor<Float>,
+        layers: [EncoderLayer], norm: LayerNorm<Float>
+    ) {
+        self.embedding = embedding
+        self.positionalEmbeddings = positionalEmbeddings
+        self.layers = layers
+        self.norm = norm
     }
 
     @differentiable
     public func callAsFunction(_ tokens: Tensor<Int32>) -> Tensor<Float> {
-        let firstHalf = Tensor<Float>(tokens).sequenced(
-            through: encoder1, encoder2, encoder3)
-        return firstHalf.sequenced(
-            through: encoder4, encoder5, encoder6)
+        let positions = { (0..<tokens.shape[1]).map { Int32($0) } }()
+        let positionsTensor = { Tensor<Int32>(shape: [1, tokens.shape[1]], scalars: positions) }()
+        var h = embedding(tokens)
+        h = h + positionalEmbeddings.gathering(atIndices: positionsTensor)
+        h = layers.differentiableReduce(h){ $1($0) }
+        h = norm(h)
+        // TODO: Add @differentiable to Dense init.
+        let tmp = { TimeDistributed( 
+            Dense(weight: embedding.weight.transposed(), bias: Tensor(0.0), activation: { $0 })) }()
+        let logits = tmp(h) // a somewhat hacky way to share weights
+        // let logits = h
+        return logits
     }
 }
 
@@ -317,25 +324,6 @@ public struct TransformerLM {
         self.norm = norm
     }
 
-/*
-    @differentiable(wrt: self)
-    public func callAsFunction(_ tokens: Tensor<Int32>) -> Tensor<Float> {
-        // let positions = (0..<tokens.shape[1]).map { Int32($0) }
-       //  let positionsTensor = Tensor<Int32>(shape: [1, tokens.shape[1]], scalars: positions)
-        var h = embedding(tokens)
-        // h = h + positionalEmbeddings.gathering(atIndices: positionsTensor)
-        for i in 0..<layers.count {
-            // Remove the .call when TF-516 is fixed.
-            h = layers[i].callAsFunction(h)
-        }
-        h = norm(h)
-        let tmp = TimeDistributed(
-            Dense(weight: embedding.weight.transposed(), bias: Tensor(0.0), activation: identity))
-        let logits = tmp(h) // a somewhat hacky way to share weights
-        return logits
-    }
-*/
-
     public func callAsFunction(_ tokens: Tensor<Int32>, states: inout [AttentionContext]) -> Tensor<Float> {
         let positions = (0..<tokens.shape[1]).map { Int32($0 + states[0].key.shape[1]) }
         let positionsTensor = Tensor<Int32>(shape: [1, tokens.shape[1]], scalars: positions)
@@ -345,6 +333,7 @@ public struct TransformerLM {
             // Remove the .call when TF-516 is fixed.
             h = layers[i].callAsFunction(h, state: &states[i])
         }
+        // layers.differentiableReduce(token) { var state = AttentionContext(); return $1($0, &state) }
         h = norm(h)
         let tmp = TimeDistributed(
             Dense(weight: embedding.weight.transposed(), bias: Tensor(0.0), activation: identity))

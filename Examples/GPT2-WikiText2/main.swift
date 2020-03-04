@@ -18,14 +18,34 @@ import TensorFlow
 import TextModels
 
 var gpt = try GPT2()
+var model = gpt.model
 
 let dataset = WikiText2()
+let trainingBatcher = Batcher(on: dataset.trainingDataset, batchSize: 4)
 
 print("Dataset acquired.")
 
-var optimizer = Adam(for: gpt.model, learningRate: 0.02)
+var optimizer = Adam(for: model, learningRate: 0.02)
 
 print("Starting training...")
+
+for epoch in 1...10 {
+    Context.local.learningPhase = .training
+    var trainingLossSum: Float = 0
+    var trainingBatchCount = 0
+    for batch in trainingBatcher.sequenced() {
+        let (labels, images) = (batch.first, batch.second)
+        // let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
+            let logits = model(images)
+            let loss = softmaxCrossEntropy(logits: logits, labels: labels)
+        // }
+        trainingLossSum += loss.scalarized()
+        trainingBatchCount += 1
+        // optimizer.update(&model, along: gradients)
+    }
+
+    print("[Epoch \(epoch)]")
+}
 
 /*
 for _ in 0..<100 {

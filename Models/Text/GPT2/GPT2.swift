@@ -63,7 +63,7 @@ public class GPT2 {
     parameters = try JSONDecoder().decode(TransformerLMConfig.self,
                                           from: configuration.data)
     // model = TransformerLM(reader: reader, config: parameters, scope: "model")
-    model = TransformerGPT2()
+    model = TransformerGPT2(reader: reader, config: parameters, scope: "model")
 
     // Load existing token mappings
     let encoder_json: URL = storage.appendingPathComponent("encoder.json")
@@ -95,7 +95,7 @@ public class GPT2 {
   }
 
   public func generate() throws -> String {
-    // let result = model(seed, states: &states)
+//     let result = model(seed, states: &states)
     let result = model(seed)
 
     let (batchSize, timesteps, vocabularySize) =
