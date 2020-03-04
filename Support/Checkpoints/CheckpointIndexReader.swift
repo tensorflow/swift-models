@@ -108,7 +108,9 @@ extension CheckpointIndexReader {
         let key = readKey(sharedBytes: sharedKeyBytes, unsharedBytes: unsharedKeyBytes)
         let value = binaryData.readDataBlock(at: &index, size: valueLength)
 
-        // TODO: Need to verify if these three being zero always indicates no more tensors to read.
+        // This relies on the fact that the first reset is at index 0, leading to four zeroes at the
+        // start of the reset block. We should be able to read the length of the data block from 
+        // the footer, when it is complete, but this should be viable for known checkpoints.
         if (sharedKeyBytes + unsharedKeyBytes + valueLength) == 0 { return nil }
 
         let bundleEntry = try Tensorflow_BundleEntryProto(serializedData: value)

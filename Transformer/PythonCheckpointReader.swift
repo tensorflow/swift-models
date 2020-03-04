@@ -46,9 +46,13 @@ protocol InitializableFromPythonCheckpoint {
 
 extension Dense: InitializableFromPythonCheckpoint {
     init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
-        let kernel = reader.readTensor(name: scope + "/w", scalarType: Scalar.self)
+        var kernel = reader.readTensor(name: scope + "/w", scalarType: Scalar.self)
+        if (kernel.shape.dimensions.count > 2) {
+            // The OpenAI checkpoints have a batch dimension, and our checkpoints do not.
+            kernel = kernel.squeezingShape(at: 0)
+        }
         self.init(
-            weight: kernel.squeezingShape(at: 0),
+            weight: kernel,
             bias: reader.readTensor(name: scope + "/b", scalarType: Scalar.self),
             activation: identity)
     }
@@ -59,9 +63,13 @@ extension Dense: InitializableFromPythonCheckpoint {
         scope: String,
         activation: String
     ) {
-        let kernel = reader.readTensor(name: scope + "/w", scalarType: Scalar.self)
+        var kernel = reader.readTensor(name: scope + "/w", scalarType: Scalar.self)
+        if (kernel.shape.dimensions.count > 2) {
+            // The OpenAI checkpoints have a batch dimension, and our checkpoints do not.
+            kernel = kernel.squeezingShape(at: 0)
+        }
         self.init(
-            weight: kernel.squeezingShape(at: 0),
+            weight: kernel,
             bias: reader.readTensor(name: scope + "/b", scalarType: Scalar.self),
             activation: gelu)
     }

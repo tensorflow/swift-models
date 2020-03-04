@@ -1,5 +1,6 @@
 add_library(CheckpointTests
   CheckpointIndexReaderTests.swift
+  CheckpointWriterTests.swift
   SnappyDecompressionTests.swift
   XCTestManifests.swift)
 set_target_properties(CheckpointTests PROPERTIES
