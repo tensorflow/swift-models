@@ -17,16 +17,14 @@
 // Einstein AI
 // https://blog.einstein.ai/the-wikitext-long-term-dependency-language-modeling-dataset/
 
+import Batcher
 import Foundation
 import ModelSupport
 import TensorFlow
-import Batcher
 
 public struct WikiText2 {
     public let trainingDataset: LanguageModelDataset<[Int]>
     public let validationDataset: LanguageModelDataset<[Int]>
-    // public let trainingExampleCount = 12894
-    // public let validationExampleCount = 500
 
     public init() {
         self.init(

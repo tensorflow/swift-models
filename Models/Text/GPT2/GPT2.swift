@@ -15,7 +15,6 @@
 import Foundation
 import ModelSupport
 import TensorFlow
-// import Transformer
 
 public class GPT2 {
   private let checkpoint: URL =
@@ -40,8 +39,9 @@ public class GPT2 {
 
   let reader: CheckpointReader
   let parameters: TransformerLMConfig
-  let model: TransformerLM
-  let bpe: BytePairEncoder
+  // public let model: TransformerLM
+  public let model: TransformerGPT2
+  public let bpe: BytePairEncoder
   let mapping: BijectiveDictionary<String, Int32>
 
   public var seed: Tensor<Int32>
@@ -62,7 +62,8 @@ public class GPT2 {
 
     parameters = try JSONDecoder().decode(TransformerLMConfig.self,
                                           from: configuration.data)
-    model = TransformerLM(reader: reader, config: parameters, scope: "model")
+    // model = TransformerLM(reader: reader, config: parameters, scope: "model")
+    model = TransformerGPT2()
 
     // Load existing token mappings
     let encoder_json: URL = storage.appendingPathComponent("encoder.json")
@@ -94,7 +95,8 @@ public class GPT2 {
   }
 
   public func generate() throws -> String {
-    let result = model(seed, states: &states)
+    // let result = model(seed, states: &states)
+    let result = model(seed)
 
     let (batchSize, timesteps, vocabularySize) =
         (result.shape[0], result.shape[1], result.shape[2])

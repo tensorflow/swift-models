@@ -17,12 +17,17 @@ import Datasets
 import TensorFlow
 import TextModels
 
+var gpt = try GPT2()
+
 let dataset = WikiText2()
 
 print("Dataset acquired.")
 
-var gpt = try GPT2()
+var optimizer = Adam(for: gpt.model, learningRate: 0.02)
 
+print("Starting training...")
+
+/*
 for _ in 0..<100 {
     do {
       try print(gpt.generate(), terminator: "")
@@ -31,4 +36,4 @@ for _ in 0..<100 {
     }
 }
 print()
-
+*/
