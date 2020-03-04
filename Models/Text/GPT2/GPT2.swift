@@ -39,8 +39,7 @@ public class GPT2 {
 
   let reader: CheckpointReader
   let parameters: TransformerLMConfig
-  // public let model: TransformerLM
-  public let model: TransformerGPT2
+  public let model: TransformerLM
   public let bpe: BytePairEncoder
   let mapping: BijectiveDictionary<String, Int32>
 
@@ -62,8 +61,7 @@ public class GPT2 {
 
     parameters = try JSONDecoder().decode(TransformerLMConfig.self,
                                           from: configuration.data)
-    // model = TransformerLM(reader: reader, config: parameters, scope: "model")
-    model = TransformerGPT2(reader: reader, config: parameters, scope: "model")
+    model = TransformerLM(reader: reader, config: parameters, scope: "model")
 
     // Load existing token mappings
     let encoder_json: URL = storage.appendingPathComponent("encoder.json")
@@ -95,8 +93,7 @@ public class GPT2 {
   }
 
   public func generate() throws -> String {
-//     let result = model(seed, states: &states)
-    let result = model(seed)
+    let result = model(seed, states: &states)
 
     let (batchSize, timesteps, vocabularySize) =
         (result.shape[0], result.shape[1], result.shape[2])

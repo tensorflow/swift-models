@@ -284,7 +284,7 @@ public struct EmbeddingGPT2: Differentiable {
     }
 }
 
-public struct TransformerGPT2: Differentiable {
+public struct TransformerLM: Differentiable {
     var embedding: EmbeddingGPT2
     var positionalEmbeddings: Tensor<Float>
     var layers: [EncoderLayer]
@@ -300,36 +300,7 @@ public struct TransformerGPT2: Differentiable {
         self.norm = norm
     }
 
-    @differentiable
-    public func callAsFunction(_ tokens: Tensor<Int32>) -> Tensor<Float> {
-        let positions = { (0..<tokens.shape[1]).map { Int32($0) } }()
-        let positionsTensor = Tensor<Int32>(shape: [1, tokens.shape[1]], scalars: positions)
-        var h = embedding(tokens)
-        h = h + positionalEmbeddings.gathering(atIndices: positionsTensor)
-        h = layers.differentiableReduce(h){ $1($0) }
-        h = norm(h)
-        // A somewhat hacky way to share weights.
-        let logits = timeDistributed(h, embedding.weight.transposed())
-        return logits
-    }
-}
-
-public struct TransformerLM {
-    var embedding: EmbeddingGPT2
-    var positionalEmbeddings: Tensor<Float>
-    var layers: [EncoderLayer]
-    var norm: LayerNorm<Float>
-
-    public init(
-        embedding: EmbeddingGPT2, positionalEmbeddings: Tensor<Float>,
-        layers: [EncoderLayer], norm: LayerNorm<Float>
-    ) {
-        self.embedding = embedding
-        self.positionalEmbeddings = positionalEmbeddings
-        self.layers = layers
-        self.norm = norm
-    }
-
+    // Used for generation, where state transference is important.
     public func callAsFunction(_ tokens: Tensor<Int32>, states: inout [AttentionContext]) -> Tensor<Float> {
         let positions = (0..<tokens.shape[1]).map { Int32($0 + states[0].key.shape[1]) }
         let positionsTensor = Tensor<Int32>(shape: [1, tokens.shape[1]], scalars: positions)
@@ -339,8 +310,22 @@ public struct TransformerLM {
             // Remove the .call when TF-516 is fixed.
             h = layers[i].callAsFunction(h, state: &states[i])
         }
-        // layers.differentiableReduce(token) { var state = AttentionContext(); return $1($0, &state) }
         h = norm(h)
+        // A somewhat hacky way to share weights.
+        let logits = timeDistributed(h, embedding.weight.transposed())
+        return logits
+    }
+
+    // Used for training, where examples are independent.
+    @differentiable
+    public func callAsFunction(_ tokens: Tensor<Int32>) -> Tensor<Float> {
+        let positions = { (0..<tokens.shape[1]).map { Int32($0) } }()
+        let positionsTensor = Tensor<Int32>(shape: [1, tokens.shape[1]], scalars: positions)
+        var h = embedding(tokens)
+        h = h + positionalEmbeddings.gathering(atIndices: positionsTensor)
+        h = layers.differentiableReduce(h){ $1($0) }
+        h = norm(h)
+        // A somewhat hacky way to share weights.
         let logits = timeDistributed(h, embedding.weight.transposed())
         return logits
     }
