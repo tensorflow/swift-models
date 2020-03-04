@@ -36,7 +36,7 @@ public struct TextBatch: KeyPathIterable {
 }
 
 // TODO: Add documentation.
-internal func padAndBatch(textBatches: [TextBatch], maxLength: Int? = nil) -> TextBatch {
+public func padAndBatch(textBatches: [TextBatch], maxLength: Int? = nil) -> TextBatch {
     if textBatches.count == 1 { return textBatches.first! }
     let maxLength = maxLength ?? textBatches.map { $0.tokenIds.shape[1] }.max()!
     let paddedBatches = textBatches.map { batch -> TextBatch in

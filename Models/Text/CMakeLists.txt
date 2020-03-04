@@ -1,13 +1,10 @@
 add_library(TextModels
-  SentencePiece/SentencePieceModel.pb.swift
   Attention.swift
   BERT.swift
   BERTClassifier.swift
-  BytePairEncoding.swift
   Embeddings.swift
   Evaluation.swift
   ScheduledParameters.swift
-  Tokenization.swift
   Transformer.swift
   Utilities.swift
   WeightDecayedAdam.swift)
