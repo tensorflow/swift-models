@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Original source:
-// "WIkiText-2"
+// "WikiText-2"
 // Einstein AI
 // https://blog.einstein.ai/the-wikitext-long-term-dependency-language-modeling-dataset/
 

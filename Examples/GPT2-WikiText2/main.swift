@@ -21,7 +21,8 @@ var gpt = try GPT2()
 var model = gpt.model
 
 let dataset = WikiText2()
-let trainingBatcher = Batcher(on: dataset.trainingDataset, batchSize: 4)
+let trainingBatcher = Batcher(on: dataset.trainingDataset, batchSize: 1)
+let validationBatcher = Batcher(on: dataset.validationDataset, batchSize: 1)
 
 print("Dataset acquired.")
 
@@ -34,17 +35,51 @@ for epoch in 1...10 {
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
     for batch in trainingBatcher.sequenced() {
-        let (labels, images) = (batch.first, batch.second)
-        // let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
-            let logits = model(images)
-            let loss = softmaxCrossEntropy(logits: logits, labels: labels)
-        // }
+        let (documents, labels) = (batch.first, batch.second)
+        let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
+            let logits = model(documents)
+            let shape = logits.shape
+            return softmaxCrossEntropy(logits:
+                logits.reshaped(to: [shape[0] * shape[1], shape[2]]),
+                labels: labels.reshaped(to: [shape[0] * shape[1]])
+            )
+        }
         trainingLossSum += loss.scalarized()
         trainingBatchCount += 1
-        // optimizer.update(&model, along: gradients)
+        optimizer.update(&model, along: gradients)
+        print(loss.scalarized())
     }
 
-    print("[Epoch \(epoch)]")
+    Context.local.learningPhase = .inference
+    var testLossSum: Float = 0
+    var testBatchCount = 0
+    var correctGuessCount = 0
+    var totalGuessCount = 0
+    for batch in validationBatcher.sequenced() {
+        let (labels, documents) = (batch.first, batch.second)
+        let logits = model(documents)
+        let shape = logits.shape
+        testLossSum += softmaxCrossEntropy(logits:
+                logits.reshaped(to: [shape[0] * shape[1], shape[2]]),
+                labels: labels.reshaped(to: [shape[0] * shape[1]])
+            ).scalarized()
+        testBatchCount += 1
+
+        let correctPredictions = logits.argmax(squeezingAxis: 1) .== labels
+        correctGuessCount = correctGuessCount
+            + Int(
+                Tensor<Int32>(correctPredictions).sum().scalarized())
+        totalGuessCount = totalGuessCount + documents.shape[0]
+    }
+
+    let accuracy = Float(correctGuessCount) / Float(totalGuessCount)
+    print(
+        """
+        [Epoch \(epoch)] \
+        Accuracy: \(correctGuessCount)/\(totalGuessCount) (\(accuracy)) \
+        Loss: \(testLossSum / Float(testBatchCount))
+        """
+    )
 }
 
 /*

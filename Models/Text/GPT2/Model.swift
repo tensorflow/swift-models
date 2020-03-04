@@ -31,6 +31,15 @@ struct TimeDistributed: Layer {
     }
 }
 
+@differentiable
+func timeDistributed(_ input: Tensor<Float>, _ weight: Tensor<Float>) -> Tensor<Float> {
+    let (batchSize, timeSteps, features) = (input.shape[0], input.shape[1], input.shape[2])
+    let reshaped = input.reshaped(to: [batchSize * timeSteps, features])
+    let output = matmul(reshaped, weight)
+    let outputFeatures = output.shape[1]
+    return output.reshaped(to: [batchSize, timeSteps, outputFeatures])
+}
+
 struct FeedForward: Layer {
     var dense1: TimeDistributed
     var dense2: TimeDistributed
@@ -294,16 +303,13 @@ public struct TransformerGPT2: Differentiable {
     @differentiable
     public func callAsFunction(_ tokens: Tensor<Int32>) -> Tensor<Float> {
         let positions = { (0..<tokens.shape[1]).map { Int32($0) } }()
-        let positionsTensor = { Tensor<Int32>(shape: [1, tokens.shape[1]], scalars: positions) }()
+        let positionsTensor = Tensor<Int32>(shape: [1, tokens.shape[1]], scalars: positions)
         var h = embedding(tokens)
         h = h + positionalEmbeddings.gathering(atIndices: positionsTensor)
         h = layers.differentiableReduce(h){ $1($0) }
         h = norm(h)
-        // TODO: Add @differentiable to Dense init.
-        let tmp = { TimeDistributed( 
-            Dense(weight: embedding.weight.transposed(), bias: Tensor(0.0), activation: { $0 })) }()
-        let logits = tmp(h) // a somewhat hacky way to share weights
-        // let logits = h
+        // A somewhat hacky way to share weights.
+        let logits = timeDistributed(h, embedding.weight.transposed())
         return logits
     }
 }
@@ -335,9 +341,7 @@ public struct TransformerLM {
         }
         // layers.differentiableReduce(token) { var state = AttentionContext(); return $1($0, &state) }
         h = norm(h)
-        let tmp = TimeDistributed(
-            Dense(weight: embedding.weight.transposed(), bias: Tensor(0.0), activation: identity))
-        let logits = tmp(h) // a somewhat hacky way to share weights
+        let logits = timeDistributed(h, embedding.weight.transposed())
         return logits
     }
 }
