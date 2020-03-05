@@ -43,7 +43,6 @@ internal class GPT2 {
   let parameters: TransformerLMConfig
   let model: TransformerLM
   let bpe: BytePairEncoder
-  let mapping: BijectiveDictionary<String, Int32>
 
   public var seed: Tensor<Int32>
   public var temperature: Float = 1.0
@@ -69,16 +68,12 @@ internal class GPT2 {
     let encoder_json: URL = storage.appendingPathComponent("encoder.json")
     encoder = try (encoder_json, Data(contentsOf: encoder_json))
 
-    let decoder: JSONDecoder = JSONDecoder()
-    mapping =
-        try BijectiveDictionary<String, Int32>(decoder.decode([String:Int32].self,
-                                                              from: encoder.data))
-
     // Create bytepair encoder with loaded token mappings
     bpe = try BytePairEncoder(fromFileURL: encoder.file)
 
     // ...
-    seed = Tensor(shape: [1, 1], scalars: [mapping["<|endoftext|>"]!])
+    let seedId: Int32 = Int32(bpe.vocabulary.id(forToken: "<|endoftext|>")!)
+    seed = Tensor(shape: [1, 1], scalars: [seedId])
     let empty: Tensor<Float> =
         Tensor<Float>(zeros: [parameters.headCount, 0,
                               parameters.embeddingSize / parameters.headCount])
@@ -90,7 +85,7 @@ internal class GPT2 {
   func embedding(for string: String) -> Tensor<Int32> {
     let tokens: [String] = bpe.encode(token: string, variant: .gpt2)
     // TODO(michellecasbon): Decide how to prevent OOV or choose a better ID (probably not 0).
-    let ids: [Int32] = tokens.map { mapping[$0] ?? 0 }
+    let ids: [Int32] = tokens.map { Int32(bpe.vocabulary.id(forToken: $0) ?? 0) }
     return Tensor(shape: [1, ids.count], scalars: ids)
   }
 
@@ -106,7 +101,7 @@ internal class GPT2 {
                   sampleCount: 1)
 
     let id: Int32 = Int32(seed[0][0])!
-    if let token: String = mapping.key(id) {
+    if let token: String = bpe.vocabulary.token(forId: Int(id)) {
       return BytePairEncoder.decode(token: token)
     }
 
