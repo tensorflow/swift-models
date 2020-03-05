@@ -20,6 +20,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Windows)
     UI/Windows/main.swift
     TransformerLoop.swift)
   target_link_libraries(TransformerUI PRIVATE
+    SwiftWin32
     Foundation
     TextModels
     Transformer
