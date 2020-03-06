@@ -24,21 +24,25 @@ public struct BytePairEncoder {
     /// A cache used to store encoded tokens and thus speed up encoding.
     //  private var cache: [String: [String]]
 
-    public init(fromVocabularyFileURL vocabularyFile: URL, fromMergesFileURL mergesFile: URL,
-        encoding: String.Encoding = .utf8) throws {
+    public init(
+        fromVocabularyFileURL vocabularyFile: URL, fromMergesFileURL mergesFile: URL,
+        encoding: String.Encoding = .utf8
+    ) throws {
         let vocabulary: Vocabulary = try Vocabulary(fromJSONFile: vocabularyFile)
 
         let lines: ArraySlice<String> =
             try String(contentsOfFile: mergesFile.path, encoding: encoding)
-                .components(separatedBy: .newlines)
-                .dropFirst()
+            .components(separatedBy: .newlines)
+            .dropFirst()
 
-        let pairs: [BytePairEncoder.Pair:Int] =
-            Dictionary<BytePairEncoder.Pair,Int>(uniqueKeysWithValues: lines.enumerated().compactMap { (index, line) -> (BytePairEncoder.Pair, Int)? in
-          let tokens = line.split(separator: " ")
-          guard tokens.count >= 2 else { return nil }
-          return (BytePairEncoder.Pair(String(tokens[0]), String(tokens[1])), index)
-        })
+        let pairs: [BytePairEncoder.Pair: Int] =
+            [BytePairEncoder.Pair: Int](
+                uniqueKeysWithValues: lines.enumerated().compactMap {
+                    (index, line) -> (BytePairEncoder.Pair, Int)? in
+                    let tokens = line.split(separator: " ")
+                    guard tokens.count >= 2 else { return nil }
+                    return (BytePairEncoder.Pair(String(tokens[0]), String(tokens[1])), index)
+                })
 
         self.init(vocabulary: vocabulary, mergePairs: pairs)
     }
