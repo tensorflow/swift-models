@@ -25,19 +25,21 @@ import TensorFlow
 public struct WikiText2 {
     public let trainingDataset: LanguageModelDataset<[Int]>
     public let validationDataset: LanguageModelDataset<[Int]>
+    let bpe: BytePairEncoder
 
-    public init() {
+    public init(bpe: BytePairEncoder) {
         self.init(
             localStorageDirectory: FileManager.default.temporaryDirectory.appendingPathComponent(
-            "WikiText2", isDirectory: true)
+            "WikiText2", isDirectory: true), bpe: bpe
     ) }
 
-    public init(localStorageDirectory: URL) {
+    public init(localStorageDirectory: URL, bpe: BytePairEncoder) {
         do {
             self.trainingDataset = try loadWikiText2Training(
-                    localStorageDirectory: localStorageDirectory)
+                    localStorageDirectory: localStorageDirectory, bpe: bpe)
             self.validationDataset = try loadWikiText2Validation(
-                    localStorageDirectory: localStorageDirectory)
+                    localStorageDirectory: localStorageDirectory, bpe: bpe)
+            self.bpe = bpe
         } catch {
             fatalError("Could not load WikiText2 dataset: \(error)")
         }
@@ -69,75 +71,45 @@ func readCSV(in file: URL) throws -> [String] {
     return rows
 }
 
-func easyTokenize(_ text: String) -> [String] {
-    return text.components(separatedBy: " ")
-}
-
-func countTokens(_ texts: [[String]]) -> ([Int], [String:Int]) {
-    var counts: [String:Int] = [:]
-    var lengths: [Int] = []
-    for tokens in texts {
-        lengths.append(tokens.count)
-        for token in tokens {
-            counts[token] = (counts[token] ?? 0) + 1
-        }
-    }
-    return (lengths,counts)
-}
-
-func makeVocabulary(
-    _ counts: [String:Int], 
-    minFrequency: Int = 2, 
-    maxCount: Int = 60000) 
--> (itos: [Int:String], stoi: [String:Int]) {
-    let withoutSpec = counts.filter { $0.0 != "xxunk" && $0.0 != "xxpad" }
-    let sorted = withoutSpec.sorted { $0.1 > $1.1 }
-    var itos: [Int:String] = [0:"xxunk", 1:"xxpad"]
-    var stoi: [String:Int] = ["xxunk":0, "xxpad":1]
-    for (i,x) in sorted.enumerated() {
-        if i+2 >= maxCount || x.1 < minFrequency { break }
-        itos[i+2] = (x.0)
-        stoi[x.0] = i+2
-    }
-    return (itos: itos, stoi: stoi)
-}
-
-func numericalize(_ tokens: [String], with stoi: [String:Int]) -> [Int] {
-    return tokens.map { stoi[$0] ?? 6 }
+func embedding(for string: String, bpe: BytePairEncoder) -> [Int] {
+    let tokens = bpe.encode(token: string, variant: .gpt2)
+    // TODO(michellecasbon): Decide how to prevent OOV or choose a better ID (probably not 0).
+    let ids = tokens.map { bpe.vocabulary.id(forToken: $0) ?? 0 }
+    return ids
 }
 
 func loadWikiText2Directory(
-    named name: String, in directory: URL) throws -> LanguageModelDataset<[Int]> {
+    named name: String, in directory: URL, bpe: BytePairEncoder) throws -> LanguageModelDataset<[Int]> {
     downloadWikiText2IfNotPresent(to: directory)
     let path = directory.appendingPathComponent("wikitext-2/\(name).csv")
 
-    let documents = try readCSV(in: path)
+    let documentsFull = try readCSV(in: path)
+    // TODO(michellecasbon): Process a larger number of documents.
+    let documents = Array(documentsFull[0..<1])
 
-    // TODO(michellecasbon): Replace with BytePairEncoder.
-    let documentsTokenized = documents.map(easyTokenize)
-    let (lengths, counts) = countTokens(documentsTokenized)
-    let vocabulary = makeVocabulary(counts)
-    let numericalizedTexts = documentsTokenized.map{ numericalize($0, with: vocabulary.stoi) }
+    let embeddings = documents.map{ embedding(for: $0, bpe: bpe) }
+    let lengths = embeddings.map{ $0.count }
 
+    // TODO(michellecasbon): Figure out reasonable values for batchSize and sequenceLength.
     return LanguageModelDataset(
         batchSize: 64, 
         sequenceLength: 72, 
-        items: numericalizedTexts, 
+        items: embeddings,
         lengths: lengths
     )
 }
 
-func loadWikiText2Training(localStorageDirectory: URL) throws
+func loadWikiText2Training(localStorageDirectory: URL, bpe: BytePairEncoder) throws
     -> LanguageModelDataset<[Int]>
 {
     return try loadWikiText2Directory(
-        named: "train", in: localStorageDirectory)
+        named: "train", in: localStorageDirectory, bpe: bpe)
 }
 
-func loadWikiText2Validation(localStorageDirectory: URL) throws
+func loadWikiText2Validation(localStorageDirectory: URL, bpe: BytePairEncoder) throws
     -> LanguageModelDataset<[Int]>
 {
     return try loadWikiText2Directory(
-        named: "test", in: localStorageDirectory)
+        named: "test", in: localStorageDirectory, bpe: bpe)
 }
 

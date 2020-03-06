@@ -20,7 +20,7 @@ import TextModels
 var gpt = try GPT2()
 var model = gpt.model
 
-let dataset = WikiText2()
+let dataset = WikiText2(bpe: gpt.bpe)
 let trainingBatcher = Batcher(on: dataset.trainingDataset, batchSize: 1)
 let validationBatcher = Batcher(on: dataset.validationDataset, batchSize: 1)
 
@@ -47,7 +47,7 @@ for epoch in 1...10 {
         trainingLossSum += loss.scalarized()
         trainingBatchCount += 1
         optimizer.update(&model, along: gradients)
-        print(loss.scalarized())
+        print("loss: \(loss.scalarized())")
     }
 
     Context.local.learningPhase = .inference
