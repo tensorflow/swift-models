@@ -90,10 +90,9 @@ func loadWikiText2Directory(
     let embeddings = documents.map{ embedding(for: $0, bpe: bpe) }
     let lengths = embeddings.map{ $0.count }
 
-    // TODO(michellecasbon): Figure out reasonable values for batchSize and sequenceLength.
     return LanguageModelDataset(
-        batchSize: 64, 
-        sequenceLength: 72, 
+        batchSize: 4,
+        sequenceLength: 64,
         items: embeddings,
         lengths: lengths
     )

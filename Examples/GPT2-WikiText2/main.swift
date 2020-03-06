@@ -21,8 +21,8 @@ var gpt = try GPT2()
 var model = gpt.model
 
 let dataset = WikiText2(bpe: gpt.bpe)
-let trainingBatcher = Batcher(on: dataset.trainingDataset, batchSize: 1)
-let validationBatcher = Batcher(on: dataset.validationDataset, batchSize: 1)
+let trainingBatcher = Batcher(on: dataset.trainingDataset, batchSize: 4, shuffle: true)
+let validationBatcher = Batcher(on: dataset.validationDataset, batchSize: 4)
 
 print("Dataset acquired.")
 
@@ -81,14 +81,3 @@ for epoch in 1...10 {
         """
     )
 }
-
-/*
-for _ in 0..<100 {
-    do {
-      try print(gpt.generate(), terminator: "")
-    } catch {
-      continue
-    }
-}
-print()
-*/
