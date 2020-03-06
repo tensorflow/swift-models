@@ -73,12 +73,12 @@ internal class GPT2 {
 
         // Create bytepair encoder with loaded token mappings
         bpe = try BytePairEncoder(
-            fromVocabularyFileURL: vocabulary.file, fromMergesFileURL: merges.file)
+            vocabularyFile: vocabulary.file, mergesFile: merges.file)
 
         // ...
-        let seedId: Int32 = Int32(bpe.vocabulary.id(forToken: "<|endoftext|>")!)
+        let seedId = Int32(bpe.vocabulary.id(forToken: "<|endoftext|>")!)
         seed = Tensor(shape: [1, 1], scalars: [seedId])
-        let empty: Tensor<Float> =
+        let empty =
             Tensor<Float>(zeros: [
                 parameters.headCount, 0,
                 parameters.embeddingSize / parameters.headCount,

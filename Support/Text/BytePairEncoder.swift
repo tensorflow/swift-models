@@ -24,8 +24,7 @@ public struct BytePairEncoder {
     /// A cache used to store encoded tokens and thus speed up encoding.
     //  private var cache: [String: [String]]
 
-    public init(
-        fromVocabularyFileURL vocabularyFile: URL, fromMergesFileURL mergesFile: URL,
+    public init(vocabularyFile: URL, mergesFile: URL,
         encoding: String.Encoding = .utf8
     ) throws {
         let vocabulary: Vocabulary = try Vocabulary(fromJSONFile: vocabularyFile)
