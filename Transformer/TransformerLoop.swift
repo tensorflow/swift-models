@@ -89,9 +89,9 @@ internal class GPT2 {
     }
 
     func embedding(for string: String) -> Tensor<Int32> {
-        let tokens: [String] = bpe.encode(token: string, variant: .gpt2)
+        let tokens = bpe.encode(token: string, variant: .gpt2)
         // TODO(michellecasbon): Decide how to prevent OOV or choose a better ID (probably not 0).
-        let ids: [Int32] = tokens.map { Int32(bpe.vocabulary.id(forToken: $0) ?? 0) }
+        let ids = tokens.map { Int32(bpe.vocabulary.id(forToken: $0) ?? 0) }
         return Tensor(shape: [1, ids.count], scalars: ids)
     }
 
@@ -108,7 +108,7 @@ internal class GPT2 {
             randomCategorialLogits: logits.squeezingShape(at: 1),
             sampleCount: 1)
 
-        let id: Int32 = Int32(seed[0][0])!
+        let id = Int32(seed[0][0])!
         if let token: String = bpe.vocabulary.token(forId: Int(id)) {
             return BytePairEncoder.decode(token: token)
         }

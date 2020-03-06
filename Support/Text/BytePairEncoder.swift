@@ -72,7 +72,7 @@ public struct BytePairEncoder {
         switch variant {
         case .gpt2:
             // Split into parts before encoding.
-            let unencodedTokens: [String] = BytePairEncoder.splittingWithDelimiters(
+            let unencodedTokens = BytePairEncoder.splittingWithDelimiters(
                 token: token,
                 glossaryRegex: BytePairEncoder.gpt2GlossaryRegex,
                 variant: .gpt2)
@@ -107,7 +107,7 @@ public struct BytePairEncoder {
         }
 
         // Check if the new word parts are in the vocabulary, and backtrack if necessary.
-        let encoded: [String] = parts.flatMap { part -> [String] in
+        let encoded = parts.flatMap { part -> [String] in
             if vocabulary.contains(part) { return [part] }
             return splitRecursively(part)
         }
