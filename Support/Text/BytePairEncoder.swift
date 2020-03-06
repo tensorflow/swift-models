@@ -24,11 +24,12 @@ public struct BytePairEncoder {
     /// A cache used to store encoded tokens and thus speed up encoding.
     //  private var cache: [String: [String]]
 
-    public init(fromFileURL file: URL, encoding: String.Encoding = .utf8) throws {
-        let vocabulary: Vocabulary = try Vocabulary(fromJSONFile: file)
+    public init(fromVocabularyFileURL vocabularyFile: URL, fromMergesFileURL mergesFile: URL,
+        encoding: String.Encoding = .utf8) throws {
+        let vocabulary: Vocabulary = try Vocabulary(fromJSONFile: vocabularyFile)
 
         let lines: ArraySlice<String> =
-            try String(contentsOfFile: file.path, encoding: encoding)
+            try String(contentsOfFile: mergesFile.path, encoding: encoding)
                 .components(separatedBy: .newlines)
                 .dropFirst()
 
@@ -62,21 +63,25 @@ public struct BytePairEncoder {
     public func encode(token: String, variant: Variant? = .roberta) -> [String] {
         // if let cached = cache[token] { return cached }
         // let token = " " + token
-        var parts: [String]
-        var encodedParts: [String]
-        var encoded: [String]
+        var parts = [String]()
 
         switch variant {
         case .gpt2:
             // Split into parts before encoding.
-            parts = BytePairEncoder.splittingWithDelimiters(
+            let unencodedTokens: [String] = BytePairEncoder.splittingWithDelimiters(
                 token: token,
                 glossaryRegex: BytePairEncoder.gpt2GlossaryRegex,
                 variant: .gpt2)
-            if parts.count < 2 {
-                // Encode the full token and return.
-                return parts.map { BytePairEncoder.encodedToken($0) }
+            // Encode each token.
+            let tokens = unencodedTokens.map({ BytePairEncoder.encodedToken($0) })
+            // Separate each character.
+            for token in tokens {
+                for i in (0..<token.count) {
+                    let index = token.index(token.startIndex, offsetBy: i)
+                    parts.append(String(token[index]))
+                }
             }
+            if parts.count < 2 { return parts }
         case .roberta, .none:
             // Encode before splitting into parts.
             let encodedToken = BytePairEncoder.encodedToken(token)
@@ -97,18 +102,8 @@ public struct BytePairEncoder {
             pairs = (0..<parts.count - 1).map { index in Pair(parts[index], parts[index + 1]) }
         }
 
-        switch variant {
-        case .gpt2:
-            // Encode each token.
-            encodedParts = parts.map({ BytePairEncoder.encodedToken($0) })
-
-        case .roberta, .none:
-            // Encoding has already occurred.
-            encodedParts = parts
-
-        }
         // Check if the new word parts are in the vocabulary, and backtrack if necessary.
-        encoded = encodedParts.flatMap { part -> [String] in
+        let encoded: [String] = parts.flatMap { part -> [String] in
             if vocabulary.contains(part) { return [part] }
             return splitRecursively(part)
         }

@@ -21,26 +21,11 @@ import Transformer
 internal class GPT2 {
   private static let remoteCheckpoint: URL =
       URL(string: "https://storage.googleapis.com/gpt-2/models/117M/model.ckpt")!
-  private let auxiliary: [String] = [
-    "checkpoint",
-    "encoder.json",
-    "hparams.json",
-    "model.ckpt.meta",
-    "vocab.bpe",
-  ]
-
-  private let FS: FileManager = FileManager.default
 
   enum GPT2Error: Error {
   case invalidEncoding(id: Int32)
   }
 
-  let storage: URL
-  let configuration: (file: URL, data: Data)
-  let encoder: (file: URL, data: Data)
-
-  let reader: CheckpointReader
-  let parameters: TransformerLMConfig
   let model: TransformerLM
   let bpe: BytePairEncoder
 
@@ -50,26 +35,38 @@ internal class GPT2 {
   var states: [AttentionContext]
 
   public init(checkpoint: URL = GPT2.remoteCheckpoint) throws {
-    storage = FS.temporaryDirectory.appendingPathComponent("Transformer")
+    let auxiliary: [String] = [
+        "checkpoint",
+        "encoder.json",
+        "hparams.json",
+        "model.ckpt.meta",
+        "vocab.bpe",
+    ]
+    let FS: FileManager = FileManager.default
+    let storage: URL = FS.temporaryDirectory.appendingPathComponent("Transformer")
 
-    reader = try CheckpointReader(checkpointLocation: checkpoint,
-                                  modelName: "Transformer",
-                                  additionalFiles: auxiliary)
+    let reader: CheckpointReader = try CheckpointReader(checkpointLocation: checkpoint,
+        modelName: "Transformer",
+        additionalFiles: auxiliary)
 
     // Load model from configuration
-    let hparams_json: URL = storage.appendingPathComponent("hparams.json")
-    configuration = try (hparams_json, Data(contentsOf: hparams_json))
+    let hparamsFile: URL = storage.appendingPathComponent("hparams.json")
+    let configuration: (file: URL, data: Data) = try (hparamsFile, Data(contentsOf: hparamsFile))
 
-    parameters = try JSONDecoder().decode(TransformerLMConfig.self,
-                                          from: configuration.data)
+    let parameters: TransformerLMConfig = try JSONDecoder().decode(TransformerLMConfig.self,
+        from: configuration.data)
     model = TransformerLM(reader: reader, config: parameters, scope: "model")
 
     // Load existing token mappings
-    let encoder_json: URL = storage.appendingPathComponent("encoder.json")
-    encoder = try (encoder_json, Data(contentsOf: encoder_json))
+    let vocabularyFileURL: URL = storage.appendingPathComponent("encoder.json")
+    let vocabulary: (file: URL, data: Data) = try (vocabularyFileURL, Data(contentsOf: vocabularyFileURL))
+
+    // Load existing merge pairs
+    let mergesFileURL: URL = storage.appendingPathComponent("vocab.bpe")
+    let merges: (file: URL, data: Data) = try (mergesFileURL, Data(contentsOf: mergesFileURL))
 
     // Create bytepair encoder with loaded token mappings
-    bpe = try BytePairEncoder(fromFileURL: encoder.file)
+    bpe = try BytePairEncoder(fromVocabularyFileURL: vocabulary.file, fromMergesFileURL: merges.file)
 
     // ...
     let seedId: Int32 = Int32(bpe.vocabulary.id(forToken: "<|endoftext|>")!)
