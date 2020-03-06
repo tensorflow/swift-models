@@ -17,103 +17,108 @@ import ModelSupport
 import TensorFlow
 
 public class GPT2 {
-  public static let remoteCheckpoint: URL =
-      URL(string: "https://storage.googleapis.com/gpt-2/models/117M/model.ckpt")!
-  private let auxiliary: [String] = [
-    "checkpoint",
-    "encoder.json",
-    "hparams.json",
-    "model.ckpt.meta",
-    "vocab.bpe",
-  ]
+    public static let remoteCheckpoint: URL =
+        URL(string: "https://storage.googleapis.com/gpt-2/models/117M/model.ckpt")!
 
-  private let FS: FileManager = FileManager.default
-
-  enum GPT2Error: Error {
-  case invalidEncoding(id: Int32)
-  }
-
-  let storage: URL
-  let configuration: (file: URL, data: Data)
-  let encoder: (file: URL, data: Data)
-
-  let reader: CheckpointReader
-  let parameters: TransformerLMConfig
-  public let model: TransformerLM
-  public let bpe: BytePairEncoder
-  let vocab: Vocabulary
-
-  public var seed: Tensor<Int32>
-  public var temperature: Float = 1.0
-
-  var states: [AttentionContext]
-
-  public init(checkpoint: URL = GPT2.remoteCheckpoint) throws {
-    storage = FS.temporaryDirectory.appendingPathComponent("Transformer")
-
-    reader = try CheckpointReader(checkpointLocation: checkpoint,
-                                  modelName: "Transformer",
-                                  additionalFiles: auxiliary)
-
-    // Load model from configuration
-    let hparams_json: URL = storage.appendingPathComponent("hparams.json")
-    configuration = try (hparams_json, Data(contentsOf: hparams_json))
-
-    parameters = try JSONDecoder().decode(TransformerLMConfig.self,
-                                          from: configuration.data)
-    model = TransformerLM(reader: reader, config: parameters, scope: "model")
-
-    // Load existing token mappings
-    let encoder_json: URL = storage.appendingPathComponent("encoder.json")
-    encoder = try (encoder_json, Data(contentsOf: encoder_json))
-
-    // Create bytepair encoder with loaded token mappings
-    bpe = try BytePairEncoder(fromFileURL: encoder.file)
-    vocab = bpe.vocabulary
-
-    // ...
-    let seedId: Int32 = Int32(vocab.id(forToken: "<|endoftext|>")!)
-    seed = Tensor(shape: [1, 1], scalars: [seedId])
-    let empty: Tensor<Float> =
-        Tensor<Float>(zeros: [parameters.headCount, 0,
-                              parameters.embeddingSize / parameters.headCount])
-    states = (0 ..< parameters.layerCount).map { _ in
-      AttentionContext(key: empty, value: empty)
-    }
-  }
-
-  public func embedding(for string: String) -> Tensor<Int32> {
-    let tokens: [String] = bpe.encode(token: string, variant: .gpt2)
-    // TODO(michellecasbon): Decide how to prevent OOV or choose a better ID (probably not 0).
-    let ids: [Int32] = tokens.map { Int32(vocab.id(forToken: $0) ?? 0) }
-    return Tensor(shape: [1, ids.count], scalars: ids)
-  }
-
-  public func generate() throws -> String {
-    let result = model(seed, states: &states)
-
-    let (batchSize, timesteps, vocabularySize) =
-        (result.shape[0], result.shape[1], result.shape[2])
-    let logits =
-        result.slice(lowerBounds: [0, timesteps - 1, 0],
-                     upperBounds: [batchSize, timesteps, vocabularySize]) / temperature
-    seed = Tensor(randomCategorialLogits: logits.squeezingShape(at: 1),
-                  sampleCount: 1)
-
-    let id: Int32 = Int32(seed[0][0])!
-    if let token: String = vocab.token(forId: Int(id)) {
-      return BytePairEncoder.decode(token: token)
+    enum GPT2Error: Error {
+        case invalidEncoding(id: Int32)
     }
 
-    throw GPT2Error.invalidEncoding(id: id)
-  }
+    public let model: TransformerLM
+    public let bpe: BytePairEncoder
 
-  func writeCheckpoint(to location: URL, name: String) throws {
-    var tensors = [String: Tensor<Float>]()
-    recursivelyObtainTensors(model, scope: "model", tensors: &tensors, separator: "/")
+    public var seed: Tensor<Int32>
+    public var temperature: Float = 1.0
 
-    let writer = CheckpointWriter(tensors: tensors)
-    try writer.write(to: location, name: name)
-  }
+    var states: [AttentionContext]
+
+    public init(checkpoint: URL = GPT2.remoteCheckpoint) throws {
+        let auxiliary: [String] = [
+            "checkpoint",
+            "encoder.json",
+            "hparams.json",
+            "model.ckpt.meta",
+            "vocab.bpe",
+        ]
+        let FS: FileManager = FileManager.default
+        let storage: URL = FS.temporaryDirectory.appendingPathComponent("Transformer")
+
+        let reader: CheckpointReader = try CheckpointReader(
+            checkpointLocation: checkpoint,
+            modelName: "Transformer",
+            additionalFiles: auxiliary)
+
+        // Load model from configuration
+        let hparamsFile: URL = storage.appendingPathComponent("hparams.json")
+        let configuration: (file: URL, data: Data) = try (
+            hparamsFile, Data(contentsOf: hparamsFile)
+        )
+
+        let parameters: TransformerLMConfig = try JSONDecoder().decode(
+            TransformerLMConfig.self,
+            from: configuration.data)
+        model = TransformerLM(reader: reader, config: parameters, scope: "model")
+
+        // Load existing token mappings
+        let vocabularyFileURL: URL = storage.appendingPathComponent("encoder.json")
+        let vocabulary: (file: URL, data: Data) = try (
+            vocabularyFileURL, Data(contentsOf: vocabularyFileURL)
+        )
+
+        // Load existing merge pairs
+        let mergesFileURL: URL = storage.appendingPathComponent("vocab.bpe")
+        let merges: (file: URL, data: Data) = try (mergesFileURL, Data(contentsOf: mergesFileURL))
+
+        // Create bytepair encoder with loaded token mappings
+        bpe = try BytePairEncoder(
+            vocabularyFile: vocabulary.file, mergesFile: merges.file)
+
+        // ...
+        let seedId = Int32(bpe.vocabulary.id(forToken: "<|endoftext|>")!)
+        seed = Tensor(shape: [1, 1], scalars: [seedId])
+        let empty =
+            Tensor<Float>(zeros: [
+                parameters.headCount, 0,
+                parameters.embeddingSize / parameters.headCount,
+            ])
+        states = (0..<parameters.layerCount).map { _ in
+            AttentionContext(key: empty, value: empty)
+        }
+    }
+
+    public func embedding(for string: String) -> Tensor<Int32> {
+        let tokens = bpe.encode(token: string, variant: .gpt2)
+        // TODO(michellecasbon): Decide how to prevent OOV or choose a better ID (probably not 0).
+        let ids = tokens.map { Int32(bpe.vocabulary.id(forToken: $0) ?? 0) }
+        return Tensor(shape: [1, ids.count], scalars: ids)
+    }
+
+    public func generate() throws -> String {
+        let result = model(seed, states: &states)
+
+        let (batchSize, timesteps, vocabularySize) =
+            (result.shape[0], result.shape[1], result.shape[2])
+        let logits =
+            result.slice(
+                lowerBounds: [0, timesteps - 1, 0],
+                upperBounds: [batchSize, timesteps, vocabularySize]) / temperature
+        seed = Tensor(
+            randomCategorialLogits: logits.squeezingShape(at: 1),
+            sampleCount: 1)
+
+        let id = Int32(seed[0][0])!
+        if let token: String = bpe.vocabulary.token(forId: Int(id)) {
+            return BytePairEncoder.decode(token: token)
+        }
+
+        throw GPT2Error.invalidEncoding(id: id)
+    }
+
+    func writeCheckpoint(to location: URL, name: String) throws {
+        var tensors = [String: Tensor<Float>]()
+        recursivelyObtainTensors(model, scope: "model", tensors: &tensors, separator: "/")
+
+        let writer = CheckpointWriter(tensors: tensors)
+        try writer.write(to: location, name: name)
+    }
 }
-

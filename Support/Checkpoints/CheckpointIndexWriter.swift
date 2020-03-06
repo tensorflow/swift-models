@@ -15,13 +15,12 @@
 import Foundation
 import TensorFlow
 
-
 class CheckpointIndexWriter {
     // TODO: Extend handling to different tensor types.
     let tensors: [String: Tensor<Float>]
     let orderedTensors: [String]
 
-    // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/lib/io/table_options.h#L46
+    // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/lib/io/table_options.h#L48
     let blockRestartInterval = 15
 
     init(tensors: [String: Tensor<Float>]) {
@@ -52,7 +51,7 @@ extension CheckpointIndexWriter {
                 restarts.append(UInt32(outputBuffer.count))
             }
         }
-        
+
         restarts.append(UInt32(restarts.count))
         // Write the restart offsets as a trailer to the data block.
         restarts.withUnsafeBufferPointer { (ptr) in
@@ -65,16 +64,30 @@ extension CheckpointIndexWriter {
 
         // The type of the block, with 0 signifying uncompressed.
         outputBuffer.append(contentsOf: [0])
-        
+
         let crc32C = outputBuffer.maskedCRC32C()
         outputBuffer.append(contentsOf: crc32C.littleEndianBuffer)
+        let headerSize = outputBuffer.count - 5
 
-        outputBuffer.append(indexBlock(lastKey: lastString))
-        outputBuffer.append(footerBlock())
-        
+        // Data block is finished, terminate the file with meta index, index, and footer blocks.
+        let metaIndex = metaIndexBlock()
+        let metaIndexSize = metaIndex.count - 5
+        let metaIndexOffset = outputBuffer.count
+        outputBuffer.append(metaIndex)
+
+        let index = indexBlock(lastKey: lastString, headerSize: headerSize)
+        let indexSize = index.count - 5
+        let indexOffset = outputBuffer.count
+        outputBuffer.append(index)
+
+        outputBuffer.append(
+            footerBlock(
+                metaIndexHandle: (metaIndexOffset, metaIndexSize),
+                indexHandle: (indexOffset, indexSize)))
+
         return outputBuffer
     }
-    
+
     // Based on the LevelDB implementation of the same function.
     func findShortestSuccessor(_ key: String) -> [UInt8] {
         var newKeyBytes: [UInt8] = []
@@ -88,7 +101,7 @@ extension CheckpointIndexWriter {
         }
         return newKeyBytes
     }
-    
+
     func headerBlock(shards: Int) -> Data {
         var headerVersion = Tensorflow_VersionDef()
         headerVersion.producer = 1
@@ -156,15 +169,17 @@ extension CheckpointIndexWriter {
         }
     }
 
-    func indexBlock(lastKey: String) -> Data {
-        // TODO: Complete this.
+    func indexBlock(lastKey: String, headerSize: Int) -> Data {
+        var headerHandle = Data()
+        headerHandle.appendVarint(0)
+        headerHandle.appendVarint(headerSize)
+
         let shortestSuccessor = findShortestSuccessor(lastKey)
-        let headerValue: [UInt8] = []
         var outputBuffer = indexBytes(
             sharedKeyBytes: 0, newKeyBytes: shortestSuccessor.count,
-            valueLength: headerValue.count)
+            valueLength: headerHandle.count)
         outputBuffer.append(contentsOf: shortestSuccessor)
-        outputBuffer.append(contentsOf: headerValue)
+        outputBuffer.append(headerHandle)
 
         // There were no restarts, but need to write out the buffer and count.
         outputBuffer.append(contentsOf: [0, 0, 0, 0])
@@ -172,20 +187,37 @@ extension CheckpointIndexWriter {
 
         // The type of the block, with 0 signifying uncompressed.
         outputBuffer.append(contentsOf: [0])
-        
+
         let crc32C = outputBuffer.maskedCRC32C()
         outputBuffer.append(contentsOf: crc32C.littleEndianBuffer)
 
         return outputBuffer
     }
-    
-    func footerBlock() -> Data {
+
+    func metaIndexBlock() -> Data {
+        // The meta index block is unused, but is still written.
+        var outputBuffer = Data()
+        outputBuffer.append(contentsOf: [0, 0, 0, 0])
+        outputBuffer.append(contentsOf: [1, 0, 0, 0, 0])
+
+        let crc32C = outputBuffer.maskedCRC32C()
+        outputBuffer.append(contentsOf: crc32C.littleEndianBuffer)
+
+        return outputBuffer
+    }
+
+    func footerBlock(metaIndexHandle: (Int, Int), indexHandle: (Int, Int)) -> Data {
         // Footer format, as defined in LevelDB:
         // https://github.com/google/leveldb/blob/master/doc/table_format.md
-        // Currently, it's just zeroes for `footerSize` bytes, with a terminating magic number.
-        // TODO: Varint64 for index block offset.
-        // TODO: Varint64 for index block size.
-        var footerBytes = Data(count: footerSize - 8)
+        // Two handles (offset, size varint pairs) for the meta index and index blocks are followed
+        // by zeroes to pad out to `footerSize - 8` bytes, with an 8-byte terminating magic number.
+        var footerBytes = Data()
+        footerBytes.appendVarint(metaIndexHandle.0)
+        footerBytes.appendVarint(metaIndexHandle.1)
+        footerBytes.appendVarint(indexHandle.0)
+        footerBytes.appendVarint(indexHandle.1)
+
+        footerBytes.append(Data(count: footerSize - 8 - footerBytes.count))
         let magicNumber: [UInt8] = [0x57, 0xFB, 0x80, 0x8B, 0x24, 0x75, 0x47, 0xDB]
         footerBytes.append(contentsOf: magicNumber)
         return footerBytes
@@ -193,17 +225,22 @@ extension CheckpointIndexWriter {
 
     func indexBytes(sharedKeyBytes: Int, newKeyBytes: Int, valueLength: Int) -> Data {
         var outputBuffer = Data()
-        outputBuffer.appendVarint32(sharedKeyBytes)
-        outputBuffer.appendVarint32(newKeyBytes)
-        outputBuffer.appendVarint32(valueLength)
+        outputBuffer.appendVarint(sharedKeyBytes)
+        outputBuffer.appendVarint(newKeyBytes)
+        outputBuffer.appendVarint(valueLength)
         return outputBuffer
     }
 }
 
 extension Data {
-    mutating func appendVarint32(_ value: Int) {
-        // TODO: Need actual varint writing here, this will fail for values > 128.
-        self.append(contentsOf: [UInt8(value)])
+    // Logic from https://github.com/apple/swift-protobuf/blob/master/Sources/SwiftProtobuf/BinaryEncoder.swift#L68
+    mutating func appendVarint(_ value: Int) {
+        var v = value
+        while v > 127 {
+            self.append(contentsOf: [UInt8(v & 0x7f | 0x80)])
+            v >>= 7
+        }
+        self.append(contentsOf: [UInt8(v)])
     }
 }
 
