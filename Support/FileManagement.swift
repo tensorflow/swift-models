@@ -111,7 +111,13 @@ public func extractArchive(
 
     let toolName: String
     let arguments: [String]
-    switch fileExtension ?? archive.pathExtension {
+    let adjustedPathExtension: String
+    if archive.path.hasSuffix(".tar.gz") {
+        adjustedPathExtension = "tar.gz"
+    } else {
+        adjustedPathExtension = archive.pathExtension
+    }
+    switch fileExtension ?? adjustedPathExtension {
     case "gz":
         toolName = "gunzip"
         arguments = [archivePath]
@@ -124,7 +130,7 @@ public func extractArchive(
         arguments = [archivePath, "-d", localStorageDirectory.path]
     default:
         printError(
-            "Unable to find archiver for extension \(fileExtension ?? archive.pathExtension).")
+            "Unable to find archiver for extension \(fileExtension ?? adjustedPathExtension).")
         exit(-1)
     }
     let toolLocation = "\(binaryLocation)\(toolName)"

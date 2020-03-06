@@ -43,21 +43,34 @@ open class CheckpointReader {
     /// automatically downloads the checkpoint files into a temporary directory.
     ///
     /// - Parameters:
-    ///   - checkpointLocation: A URL to the checkpoint files, where the last component is the file 
-    ///     base of the checkpoint files.
+    ///   - checkpointLocation: Either a URL to the checkpoint files, where the last component is the file 
+    ///     base of the checkpoint files, or a URL to an archive containing the checkpoint files.
     ///   - modelName: A distinct name for the model, to ensure that checkpoints with the same base 
     ///     name but for different models don't collide when downloaded.
     public init(checkpointLocation: URL, modelName: String, additionalFiles: [String] = []) throws {
-        let checkpointBase = checkpointLocation.lastPathComponent
+        let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
+            modelName, isDirectory: true)
+
+        // If this is an archive, download if necessary and point to the locally extracted files.
+        let finalCheckpointLocation: URL
+        if checkpointLocation.isArchive {
+            finalCheckpointLocation = try CheckpointReader.downloadAndExtractArchive(
+                from: checkpointLocation, to: temporaryDirectory)
+        } else {
+            finalCheckpointLocation = checkpointLocation
+        }
+
+        // If URL that was passed in was a file, or if an archive was downloaded and extracted,
+        // read the local checkpoint from the filesystem. Otherwise, download the index first and 
+        // determine what other files to download.
+        let checkpointBase = finalCheckpointLocation.lastPathComponent
         let indexReader: CheckpointIndexReader
-        if checkpointLocation.isFileURL {
-            self.localCheckpointLocation = checkpointLocation
+        if finalCheckpointLocation.isFileURL {
+            self.localCheckpointLocation = finalCheckpointLocation
             indexReader = try CheckpointIndexReader(
-                file: checkpointLocation.appendingPathExtension("index"))
+                file: finalCheckpointLocation.appendingPathExtension("index"))
             self.header = try indexReader.readHeader()
         } else {
-            let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
-                modelName, isDirectory: true)
             let temporaryCheckpointBase = temporaryDirectory.appendingPathComponent(checkpointBase)
             self.localCheckpointLocation = temporaryCheckpointBase
             let localIndexFileLocation = temporaryCheckpointBase.appendingPathExtension("index")
@@ -67,17 +80,66 @@ open class CheckpointReader {
             } else {
                 // The index file contains the number of shards, so obtain that first.
                 try CheckpointReader.downloadIndexFile(
-                    from: checkpointLocation, to: temporaryDirectory)
+                    from: finalCheckpointLocation, to: temporaryDirectory)
                 indexReader = try CheckpointIndexReader(file: localIndexFileLocation)
                 self.header = try indexReader.readHeader()
 
                 try CheckpointReader.downloadCheckpointFiles(
-                    from: checkpointLocation, to: temporaryDirectory,
+                    from: finalCheckpointLocation, to: temporaryDirectory,
                     shards: Int(self.header.numShards), additionalFiles: additionalFiles)
             }
         }
 
         self.metadata = try indexReader.readAllKeysAndValues()
+    }
+
+    /// Downloads an archive file, if necessary, and then extracts it and finds the name of the
+    /// index file. The returned URL contains the path and the base name for the checkpoint.
+    static func downloadAndExtractArchive(from checkpointLocation: URL, to temporaryDirectory: URL)
+        throws -> URL
+    {
+        func findCheckpointBase() throws -> URL? {
+            if FileManager.default.fileExists(atPath: temporaryDirectory.path) {
+                let dirContents = try FileManager.default.contentsOfDirectory(
+                    at: temporaryDirectory, includingPropertiesForKeys: [.isDirectoryKey],
+                    options: [.skipsHiddenFiles])
+                for location in dirContents {
+                    let resourceValues = try location.resourceValues(forKeys: [.isDirectoryKey])
+                    if resourceValues.isDirectory ?? false {
+                        let subdirContents = try FileManager.default.contentsOfDirectory(
+                            at: location, includingPropertiesForKeys: [.isDirectoryKey],
+                            options: [.skipsHiddenFiles])
+                        for file in subdirContents {
+                            if file.path.hasSuffix(".index") {
+                                return URL(
+                                    fileURLWithPath: String(file.path.prefix(file.path.count - 6)))
+                            }
+                        }
+                    }
+                }
+            }
+
+            return nil
+        }
+
+        if let checkpointBase = try findCheckpointBase() { return checkpointBase }
+
+        let archiveLocation: URL
+        if checkpointLocation.isFileURL {
+            archiveLocation = checkpointLocation
+        } else {
+            try download(from: checkpointLocation, to: temporaryDirectory)
+            archiveLocation = temporaryDirectory.appendingPathComponent(
+                checkpointLocation.lastPathComponent)
+        }
+
+        extractArchive(at: archiveLocation, to: temporaryDirectory, deleteArchiveWhenDone: false)
+
+        guard let checkpointBase = try findCheckpointBase() else {
+            fatalError("Unable to find checkpoint index in downloaded archive.")
+        }
+
+        return checkpointBase
     }
 
     /// Constructs the file names for checkpoint components from a base URL and downloads them to a
@@ -248,5 +310,14 @@ extension Data {
         let crc32 = self.crc32C()
         let maskDelta: UInt32 = 0xA282_EAD8
         return ((crc32 &>> 15) | (crc32 &<< 17)) &+ maskDelta
+    }
+}
+
+extension URL {
+    var isArchive: Bool {
+        switch self.pathExtension {
+        case "gz", "zip", "tar.gz", "tgz": return true
+        default: return false
+        }
     }
 }
