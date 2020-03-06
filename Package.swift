@@ -28,7 +28,6 @@ let package = Package(
         .executable(name: "FastStyleTransferDemo", targets: ["FastStyleTransferDemo"]),
         .library(name: "MiniGo", targets: ["MiniGo"]),
         .executable(name: "MiniGoDemo", targets: ["MiniGoDemo"]),
-        .library(name: "Transformer", targets: ["Transformer"]),
         .executable(name: "TransformerDemo", targets: ["TransformerDemo"]),
         .executable(name: "GPT2-WikiText2", targets: ["GPT2-WikiText2"]),
     ],
@@ -76,11 +75,7 @@ let package = Package(
         .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
         .testTarget(name: "DatasetsTests", dependencies: ["Datasets"]),
         .target(
-            name: "Transformer", dependencies: ["ModelSupport", "TextModels"],
-            path: "Transformer",
-            exclude: ["main.swift", "UI/Windows/main.swift"]),
-        .target(
-            name: "TransformerDemo", dependencies: ["Transformer", "TextModels"],
+            name: "TransformerDemo", dependencies: ["TextModels"],
             path: "Transformer",
             exclude: ["UI/Windows/main.swift"],
             sources: ["main.swift"]),
