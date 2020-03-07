@@ -4,8 +4,12 @@ add_library(TextModels
   BERTClassifier.swift
   Embeddings.swift
   Evaluation.swift
+  GPT2/CheckpointWriter.swift
+  GPT2/GPT2.swift
+  GPT2/Model.swift
+  GPT2/Operators.swift
+  GPT2/PythonCheckpointReader.swift
   ScheduledParameters.swift
-  Transformer.swift
   Utilities.swift
   WeightDecayedAdam.swift)
 set_target_properties(TextModels PROPERTIES
