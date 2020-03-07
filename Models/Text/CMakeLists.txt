@@ -10,6 +10,7 @@ add_library(TextModels
   GPT2/Operators.swift
   GPT2/PythonCheckpointReader.swift
   ScheduledParameters.swift
+  TransformerBERT.swift
   Utilities.swift
   WeightDecayedAdam.swift)
 set_target_properties(TextModels PROPERTIES
