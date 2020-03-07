@@ -30,15 +30,16 @@ public struct WikiText2 {
     public init(bpe: BytePairEncoder) {
         self.init(
             localStorageDirectory: FileManager.default.temporaryDirectory.appendingPathComponent(
-            "WikiText2", isDirectory: true), bpe: bpe
-    ) }
+                "WikiText2", isDirectory: true), bpe: bpe
+        )
+    }
 
     public init(localStorageDirectory: URL, bpe: BytePairEncoder) {
         do {
             self.trainingDataset = try WikiText2.loadWikiText2Training(
-                    localStorageDirectory: localStorageDirectory, bpe: bpe)
+                localStorageDirectory: localStorageDirectory, bpe: bpe)
             self.validationDataset = try WikiText2.loadWikiText2Validation(
-                    localStorageDirectory: localStorageDirectory, bpe: bpe)
+                localStorageDirectory: localStorageDirectory, bpe: bpe)
             self.bpe = bpe
         } catch {
             fatalError("Could not load WikiText2 dataset: \(error)")
@@ -66,7 +67,8 @@ public struct WikiText2 {
         //Removing the initial "
         rows[0] = String(rows[0].dropFirst())
         //Removing the last "\n
-        rows[rows.count-1] = String(rows[rows.count-1].substring(to: rows[rows.count-1].count-2))
+        rows[rows.count - 1] = String(
+            rows[rows.count - 1].substring(to: rows[rows.count - 1].count - 2))
         return rows
     }
 
@@ -79,7 +81,8 @@ public struct WikiText2 {
 
     private static func loadWikiText2Directory(
         named name: String, in directory: URL,
-        bpe: BytePairEncoder) throws -> LanguageModelDataset<[Int]> {
+        bpe: BytePairEncoder
+    ) throws -> LanguageModelDataset<[Int]> {
         downloadWikiText2IfNotPresent(to: directory)
         let path = directory.appendingPathComponent("wikitext-2/\(name).csv")
 
@@ -87,8 +90,8 @@ public struct WikiText2 {
         // TODO(michellecasbon): Process a larger number of documents.
         let documents = Array(documentsFull[0..<1])
 
-        let embeddings = documents.map{ embedding(for: $0, bpe: bpe) }
-        let lengths = embeddings.map{ $0.count }
+        let embeddings = documents.map { embedding(for: $0, bpe: bpe) }
+        let lengths = embeddings.map { $0.count }
 
         return LanguageModelDataset(
             batchSize: 64,
@@ -98,14 +101,16 @@ public struct WikiText2 {
         )
     }
 
-    private static func loadWikiText2Training(localStorageDirectory: URL, bpe: BytePairEncoder) throws
+    private static func loadWikiText2Training(localStorageDirectory: URL, bpe: BytePairEncoder)
+        throws
         -> LanguageModelDataset<[Int]>
     {
         return try loadWikiText2Directory(
             named: "train", in: localStorageDirectory, bpe: bpe)
     }
 
-    private static func loadWikiText2Validation(localStorageDirectory: URL, bpe: BytePairEncoder) throws
+    private static func loadWikiText2Validation(localStorageDirectory: URL, bpe: BytePairEncoder)
+        throws
         -> LanguageModelDataset<[Int]>
     {
         return try loadWikiText2Directory(

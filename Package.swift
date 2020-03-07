@@ -41,10 +41,12 @@ let package = Package(
         .target(name: "ModelSupport", dependencies: ["SwiftProtobuf"], path: "Support"),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),
-        .target(name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport"],
-		    path: "Autoencoder/Autoencoder1D"),
-        .target(name: "Autoencoder2D", dependencies: ["Datasets", "ModelSupport"],
-		    path: "Autoencoder/Autoencoder2D"),
+        .target(
+            name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport"],
+            path: "Autoencoder/Autoencoder1D"),
+        .target(
+            name: "Autoencoder2D", dependencies: ["Datasets", "ModelSupport"],
+            path: "Autoencoder/Autoencoder2D"),
         .target(name: "Catch", path: "Catch"),
         .target(name: "Gym-FrozenLake", path: "Gym/FrozenLake"),
         .target(name: "Gym-CartPole", path: "Gym/CartPole"),
@@ -80,7 +82,8 @@ let package = Package(
             exclude: ["UI/Windows/main.swift"],
             sources: ["main.swift"]),
         .target(
-            name: "GPT2-WikiText2", dependencies: ["ImageClassificationModels", "Datasets", "TextModels"],
+            name: "GPT2-WikiText2",
+            dependencies: ["ImageClassificationModels", "Datasets", "TextModels"],
             path: "Examples/GPT2-WikiText2",
             exclude: ["UI/Windows/main.swift"]),
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),

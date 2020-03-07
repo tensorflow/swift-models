@@ -17,9 +17,10 @@ import TextModels
 let gpt: GPT2 = try GPT2()
 
 // Set temperature.
-gpt.temperature = CommandLine.arguments.count >= 2
-                      ? Float(CommandLine.arguments[1])!
-                      : Float(1.0)
+gpt.temperature =
+    CommandLine.arguments.count >= 2
+    ? Float(CommandLine.arguments[1])!
+    : Float(1.0)
 
 // Use seed text.
 if CommandLine.arguments.count == 3 {
@@ -29,9 +30,9 @@ if CommandLine.arguments.count == 3 {
 
 for _ in 0..<100 {
     do {
-      try print(gpt.generate(), terminator: "")
+        try print(gpt.generate(), terminator: "")
     } catch {
-      continue
+        continue
     }
 }
 print()

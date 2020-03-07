@@ -21,7 +21,8 @@ var gpt = try GPT2()
 var model = gpt.model
 
 let dataset = WikiText2(bpe: gpt.bpe)
-let trainingBatcher = Batcher(on: dataset.trainingDataset, batchSize: 4, numWorkers: 4, shuffle: true)
+let trainingBatcher = Batcher(
+    on: dataset.trainingDataset, batchSize: 4, numWorkers: 4, shuffle: true)
 let validationBatcher = Batcher(on: dataset.validationDataset, batchSize: 4, numWorkers: 4)
 
 print("Dataset acquired.")
@@ -39,8 +40,8 @@ for epoch in 1...10 {
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
             let logits = model(documents)
             let shape = logits.shape
-            return softmaxCrossEntropy(logits:
-                logits.reshaped(to: [shape[0] * shape[1], shape[2]]),
+            return softmaxCrossEntropy(
+                logits: logits.reshaped(to: [shape[0] * shape[1], shape[2]]),
                 labels: labels.reshaped(to: [shape[0] * shape[1]])
             )
         }
@@ -59,14 +60,15 @@ for epoch in 1...10 {
         let (documents, labels) = (batch.first, batch.second)
         let logits = model(documents)
         let shape = logits.shape
-        testLossSum += softmaxCrossEntropy(logits:
-                logits.reshaped(to: [shape[0] * shape[1], shape[2]]),
-                labels: labels.reshaped(to: [shape[0] * shape[1]])
-            ).scalarized()
+        testLossSum += softmaxCrossEntropy(
+            logits: logits.reshaped(to: [shape[0] * shape[1], shape[2]]),
+            labels: labels.reshaped(to: [shape[0] * shape[1]])
+        ).scalarized()
         testBatchCount += 1
 
         let correctPredictions = logits.argmax(squeezingAxis: 2) .== labels
-        correctGuessCount = correctGuessCount
+        correctGuessCount =
+            correctGuessCount
             + Int(
                 Tensor<Int32>(correctPredictions).sum().scalarized())
         totalGuessCount = totalGuessCount + documents.shape[0]
