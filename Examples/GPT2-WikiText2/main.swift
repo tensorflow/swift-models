@@ -21,8 +21,8 @@ var gpt = try GPT2()
 var model = gpt.model
 
 let dataset = WikiText2(bpe: gpt.bpe)
-let trainingBatcher = Batcher(on: dataset.trainingDataset, batchSize: 4, shuffle: true)
-let validationBatcher = Batcher(on: dataset.validationDataset, batchSize: 4)
+let trainingBatcher = Batcher(on: dataset.trainingDataset, batchSize: 4, numWorkers: 4, shuffle: true)
+let validationBatcher = Batcher(on: dataset.validationDataset, batchSize: 4, numWorkers: 4)
 
 print("Dataset acquired.")
 
@@ -56,7 +56,7 @@ for epoch in 1...10 {
     var correctGuessCount = 0
     var totalGuessCount = 0
     for batch in validationBatcher.sequenced() {
-        let (labels, documents) = (batch.first, batch.second)
+        let (documents, labels) = (batch.first, batch.second)
         let logits = model(documents)
         let shape = logits.shape
         testLossSum += softmaxCrossEntropy(logits:
@@ -65,7 +65,7 @@ for epoch in 1...10 {
             ).scalarized()
         testBatchCount += 1
 
-        let correctPredictions = logits.argmax(squeezingAxis: 1) .== labels
+        let correctPredictions = logits.argmax(squeezingAxis: 2) .== labels
         correctGuessCount = correctGuessCount
             + Int(
                 Tensor<Int32>(correctPredictions).sum().scalarized())

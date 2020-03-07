@@ -91,8 +91,8 @@ public struct WikiText2 {
         let lengths = embeddings.map{ $0.count }
 
         return LanguageModelDataset(
-            batchSize: 4,
-            sequenceLength: 64,
+            batchSize: 64,
+            sequenceLength: 72,
             items: embeddings,
             lengths: lengths
         )
