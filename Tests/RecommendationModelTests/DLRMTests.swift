@@ -17,7 +17,7 @@ import XCTest
 
 @testable import RecommendationModels
 
-final class RecommendationModelInferenceTests: XCTestCase {
+final class DLRMTests: XCTestCase {
     override class func setUp() {
         Context.local.learningPhase = .inference
     }
@@ -36,7 +36,7 @@ final class RecommendationModelInferenceTests: XCTestCase {
             lnBot: bottomMLPSize,
             lnTop: topMLPSize)
 
-        let result = model(Tensor(ones: [batchSize, nDense]),
+        let result = model(denseInput: Tensor(ones: [batchSize, nDense]),
                            sparseInput: [Tensor([7, 3, 1, 3, 1, 6, 7, 8, 9, 2]),
                                           Tensor([17, 13, 19, 0, 1, 6, 7, 8, 9, 10])])
         XCTAssertEqual([batchSize], result.shape)
@@ -68,7 +68,7 @@ final class RecommendationModelInferenceTests: XCTestCase {
                                                Tensor([17, 13, 19, 0, 1, 6, 7, 8, 9, 10])])
         let labels = Tensor<Float>([1,0,0,1,1,1,0,1,0,1])
 
-        let optimizer = SGD(for: model, learningRate: 0.002)
+        let optimizer = SGD(for: model, learningRate: 0.0015)
 
         for step in 1...trainingSteps {
             let (loss, grads) = valueWithGradient(at: model) { model in
@@ -86,7 +86,7 @@ final class RecommendationModelInferenceTests: XCTestCase {
      }
 }
 
-extension RecommendationModelInferenceTests {
+extension DLRMTests {
     static var allTests = [
         ("testDLRM", testDLRM),
         ("testDLRMTraining", testDLRMTraining)

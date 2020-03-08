@@ -40,11 +40,11 @@ public struct DLRM: Module {
 
     @differentiable
     public func callAsFunction(_ input: DLRMInput) -> Tensor<Float> {
-        callAsFunction(input.dense, sparseInput: input.sparse)
+        callAsFunction(denseInput: input.dense, sparseInput: input.sparse)
     }
 
     @differentiable(wrt: self)
-    public func callAsFunction(_ denseInput: Tensor<Float>, sparseInput: [Tensor<Int32>]) -> Tensor<Float> {
+    public func callAsFunction(denseInput: Tensor<Float>, sparseInput: [Tensor<Int32>]) -> Tensor<Float> {
         precondition(denseInput.shape.last! == nDense)
         assert(sparseInput.count == latentFactors.count)
         let denseEmbVec = mlpBottom(denseInput)
@@ -73,7 +73,6 @@ public struct DLRMInput {
 }
 
 // Work-around for lack of inout support
-@differentiable(wrt: latentFactors, vjp: computeEmbeddingsVJP)
 fileprivate func computeEmbeddings(
     sparseInputs: [Tensor<Int32>],
     latentFactors: [Embedding<Float>]
@@ -86,6 +85,7 @@ fileprivate func computeEmbeddings(
 }
 
 // TODO: remove computeEmbeddingsVJP once inout differentiation is supported!
+@derivative(of: computeEmbeddings)
 fileprivate func computeEmbeddingsVJP(
     sparseInput: [Tensor<Int32>],
     latentFactors: [Embedding<Float>]
