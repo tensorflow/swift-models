@@ -86,6 +86,7 @@ let package = Package(
             dependencies: ["ImageClassificationModels", "Datasets", "TextModels"],
             path: "Examples/GPT2-WikiText2",
             exclude: ["UI/Windows/main.swift"]),
+        .testTarget(name: "TextTests", dependencies: ["TextModels"]),
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
         .target(name: "DCGAN", dependencies: ["Datasets", "ModelSupport"], path: "DCGAN"),
         .target(

@@ -24,7 +24,7 @@ public class GPT2 {
         case invalidEncoding(id: Int32)
     }
 
-    public let model: TransformerLM
+    public var model: TransformerLM
     public let bpe: BytePairEncoder
 
     public var seed: Tensor<Int32>
@@ -33,49 +33,79 @@ public class GPT2 {
     var states: [AttentionContext]
 
     public init(checkpoint: URL = GPT2.remoteCheckpoint) throws {
-        let auxiliary: [String] = [
-            "checkpoint",
-            "encoder.json",
-            "hparams.json",
-            "model.ckpt.meta",
-            "vocab.bpe",
-        ]
-        let FS: FileManager = FileManager.default
-        let storage: URL = FS.temporaryDirectory.appendingPathComponent("Transformer")
+        var parameters = TransformerLMConfig(vocabSize: 1, contextSize: 1024,
+            embeddingSize: 768, headCount: 12, layerCount: 12)
 
-        let reader: CheckpointReader = try CheckpointReader(
-            checkpointLocation: checkpoint,
-            modelName: "Transformer",
-            additionalFiles: auxiliary)
+        // Try loading from the given checkpoint.
+        do {
+            let auxiliary: [String] = [
+                "checkpoint",
+                "encoder.json",
+                "hparams.json",
+                "model.ckpt.meta",
+                "vocab.bpe",
+            ]
+            let FS: FileManager = FileManager.default
+            let storage: URL = FS.temporaryDirectory.appendingPathComponent("Transformer")
 
-        // Load model from configuration
-        let hparamsFile: URL = storage.appendingPathComponent("hparams.json")
-        let configuration: (file: URL, data: Data) = try (
-            hparamsFile, Data(contentsOf: hparamsFile)
-        )
+            let reader: CheckpointReader = try CheckpointReader(
+                checkpointLocation: checkpoint,
+                modelName: "Transformer",
+                additionalFiles: auxiliary)
 
-        let parameters: TransformerLMConfig = try JSONDecoder().decode(
-            TransformerLMConfig.self,
-            from: configuration.data)
-        model = TransformerLM(reader: reader, config: parameters, scope: "model")
+            // Load model configuration.
+            let hparamsFile: URL = storage.appendingPathComponent("hparams.json")
+            let configuration: (file: URL, data: Data) = try (
+                hparamsFile, Data(contentsOf: hparamsFile)
+            )
+            parameters = try JSONDecoder().decode(
+                TransformerLMConfig.self,
+                from: configuration.data)
 
-        // Load existing token mappings
-        let vocabularyFileURL: URL = storage.appendingPathComponent("encoder.json")
-        let vocabulary: (file: URL, data: Data) = try (
-            vocabularyFileURL, Data(contentsOf: vocabularyFileURL)
-        )
+            // Initialize a model with the given config.
+            model = TransformerLM(reader: reader, config: parameters, scope: "model")
 
-        // Load existing merge pairs
-        let mergesFileURL: URL = storage.appendingPathComponent("vocab.bpe")
-        let merges: (file: URL, data: Data) = try (mergesFileURL, Data(contentsOf: mergesFileURL))
+            // Load existing token mappings.
+            let vocabularyFileURL: URL = storage.appendingPathComponent("encoder.json")
+            let vocabulary: (file: URL, data: Data) = try (
+                vocabularyFileURL, Data(contentsOf: vocabularyFileURL)
+            )
 
-        // Create bytepair encoder with loaded token mappings
-        bpe = try BytePairEncoder(
-            vocabularyFile: vocabulary.file, mergesFile: merges.file)
+            // Load existing merge pairs.
+            let mergesFileURL: URL = storage.appendingPathComponent("vocab.bpe")
+            let merges: (file: URL, data: Data) = try (mergesFileURL, Data(contentsOf: mergesFileURL))
 
-        // ...
+            // Create a bytepair encoder with loaded token mappings.
+            bpe = try BytePairEncoder(
+                vocabularyFile: vocabulary.file, mergesFile: merges.file)
+
+            print("GPT-2 loaded from checkpoint successfully.")
+        } catch {
+            // If checkpoint is invalid, load an untrained model.
+            print("Initializing empty GPT-2 from scratch.")
+
+            let embedding = EmbeddingGPT2(vocabSize: parameters.vocabSize,
+                size: parameters.embeddingSize)
+            let positionalEmbeddings = Tensor<Float>(zeros: [parameters.embeddingSize / parameters.headCount])
+            let layers = (0..<parameters.layerCount).map { _ in
+                EncoderLayer(size: parameters.embeddingSize,
+                    headCount: parameters.headCount, dropProbability: 0.1)
+            }
+            let layerNorm = LayerNorm<Float>(featureCount: parameters.embeddingSize, axis: -1)
+            model = TransformerLM(embedding: embedding,
+                positionalEmbeddings: positionalEmbeddings, layers: layers, norm: layerNorm)
+
+            // Empty vocab and merges.
+            let vocabulary = Vocabulary(tokensToIds: ["<|endoftext|>": 0])
+            let mergePairs = [BytePairEncoder.Pair: Int]()
+            bpe = BytePairEncoder(vocabulary: vocabulary, mergePairs: mergePairs)
+        }
+
+        // TODO: Add argument that controls this.
         let seedId = Int32(bpe.vocabulary.id(forToken: "<|endoftext|>")!)
         seed = Tensor(shape: [1, 1], scalars: [seedId])
+
+        // Reset attention context for each layer.
         let empty =
             Tensor<Float>(zeros: [
                 parameters.headCount, 0,
@@ -84,6 +114,8 @@ public class GPT2 {
         states = (0..<parameters.layerCount).map { _ in
             AttentionContext(key: empty, value: empty)
         }
+
+        print("GPT-2 init complete.")
     }
 
     public func embedding(for string: String) -> Tensor<Int32> {

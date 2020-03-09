@@ -18,7 +18,6 @@ import TensorFlow
 import TextModels
 
 var gpt = try GPT2()
-var model = gpt.model
 
 let dataset = WikiText2(bpe: gpt.bpe)
 let trainingBatcher = Batcher(
@@ -27,7 +26,7 @@ let validationBatcher = Batcher(on: dataset.validationDataset, batchSize: 4, num
 
 print("Dataset acquired.")
 
-var optimizer = Adam(for: model, learningRate: 0.02)
+var optimizer = Adam(for: gpt.model, learningRate: 0.02)
 
 print("Starting training...")
 
@@ -37,7 +36,7 @@ for epoch in 1...10 {
     var trainingBatchCount = 0
     for batch in trainingBatcher.sequenced() {
         let (documents, labels) = (batch.first, batch.second)
-        let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
+        let (loss, gradients) = valueWithGradient(at: gpt.model) { model -> Tensor<Float> in
             let logits = model(documents)
             let shape = logits.shape
             return softmaxCrossEntropy(
@@ -47,7 +46,8 @@ for epoch in 1...10 {
         }
         trainingLossSum += loss.scalarized()
         trainingBatchCount += 1
-        optimizer.update(&model, along: gradients)
+        optimizer.update(&gpt.model, along: gradients)
+
         print("loss: \(loss.scalarized())")
     }
 
@@ -58,7 +58,7 @@ for epoch in 1...10 {
     var totalGuessCount = 0
     for batch in validationBatcher.sequenced() {
         let (documents, labels) = (batch.first, batch.second)
-        let logits = model(documents)
+        let logits = gpt.model(documents)
         let shape = logits.shape
         testLossSum += softmaxCrossEntropy(
             logits: logits.reshaped(to: [shape[0] * shape[1], shape[2]]),

@@ -182,12 +182,14 @@ open class CheckpointReader {
         let tensorData = shardBytes.subdata(
             in: Int(bundleEntry.offset)..<Int(bundleEntry.offset + bundleEntry.size))
 
+/*
         let readCRC32C = bundleEntry.crc32C
         let calculatedCRC32C = tensorData.maskedCRC32C()
         guard readCRC32C == calculatedCRC32C else {
             fatalError(
                 "Tensor \(name) had a bad CRC, expected: \(calculatedCRC32C), read: \(readCRC32C).")
         }
+*/
 
         let scalarArray = tensorData.withUnsafeBytes { pointer in
             Array(pointer.bindMemory(to: Scalar.self))
