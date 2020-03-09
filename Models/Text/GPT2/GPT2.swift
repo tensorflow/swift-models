@@ -33,7 +33,8 @@ public class GPT2 {
     var states: [AttentionContext]
 
     public init(checkpoint: URL = GPT2.remoteCheckpoint) throws {
-        var parameters = TransformerLMConfig(vocabSize: 1, contextSize: 1024,
+        var parameters = TransformerLMConfig(
+            vocabSize: 1, contextSize: 1024,
             embeddingSize: 768, headCount: 12, layerCount: 12)
 
         // Try loading from the given checkpoint.
@@ -73,7 +74,9 @@ public class GPT2 {
 
             // Load existing merge pairs.
             let mergesFileURL: URL = storage.appendingPathComponent("vocab.bpe")
-            let merges: (file: URL, data: Data) = try (mergesFileURL, Data(contentsOf: mergesFileURL))
+            let merges: (file: URL, data: Data) = try (
+                mergesFileURL, Data(contentsOf: mergesFileURL)
+            )
 
             // Create a bytepair encoder with loaded token mappings.
             bpe = try BytePairEncoder(
@@ -84,15 +87,20 @@ public class GPT2 {
             // If checkpoint is invalid, load an untrained model.
             print("Initializing empty GPT-2 from scratch.")
 
-            let embedding = EmbeddingGPT2(vocabSize: parameters.vocabSize,
+            let embedding = EmbeddingGPT2(
+                vocabSize: parameters.vocabSize,
                 size: parameters.embeddingSize)
-            let positionalEmbeddings = Tensor<Float>(zeros: [parameters.embeddingSize / parameters.headCount])
+            let positionalEmbeddings = Tensor<Float>(zeros: [
+                parameters.embeddingSize / parameters.headCount
+            ])
             let layers = (0..<parameters.layerCount).map { _ in
-                EncoderLayer(size: parameters.embeddingSize,
+                EncoderLayer(
+                    size: parameters.embeddingSize,
                     headCount: parameters.headCount, dropProbability: 0.1)
             }
             let layerNorm = LayerNorm<Float>(featureCount: parameters.embeddingSize, axis: -1)
-            model = TransformerLM(embedding: embedding,
+            model = TransformerLM(
+                embedding: embedding,
                 positionalEmbeddings: positionalEmbeddings, layers: layers, norm: layerNorm)
 
             // Empty vocab and merges.
