@@ -64,9 +64,9 @@ public struct WikiText2 {
     private static func readCSV(in file: URL) throws -> [String] {
         let rawText = try! String(contentsOf: file, encoding: .utf8)
         var rows = rawText.components(separatedBy: "\"\n\"")
-        //Removing the initial "
+        // Removing the initial '"'.
         rows[0] = String(rows[0].dropFirst())
-        //Removing the last "\n
+        // Removing the last '"\n'.
         rows[rows.count - 1] = String(
             rows[rows.count - 1].substring(to: rows[rows.count - 1].count - 2))
         return rows
