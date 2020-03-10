@@ -79,7 +79,7 @@ let package = Package(
         .target(
             name: "TransformerDemo", dependencies: ["TextModels"],
             path: "Transformer",
-            exclude: ["UI/Windows/main.swift"],
+            exclude: ["UI/Windows/main.swift", "UI/macOS/main.swift"],
             sources: ["main.swift"]),
         .target(
             name: "GPT2-WikiText2",
