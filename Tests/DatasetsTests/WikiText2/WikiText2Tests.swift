@@ -25,26 +25,20 @@ import XCTest
 
 final class WikiText2Tests: XCTestCase {
     func testCreateWikiText2WithBpe() {
-        var dataset: WikiText2
         do {
             let gpt2 = try GPT2()
-            dataset = WikiText2(bpe: gpt2.bpe)
+            let dataset = WikiText2(bpe: gpt2.bpe)
+
+            var totalCount = 0
+            for example in dataset.trainingDataset {
+                XCTAssert(example.first.shape[0] > 70)
+                XCTAssert(example.second.shape[0] > 70)
+                totalCount += 1
+            }
+            XCTAssertEqual(totalCount, 64)
         } catch {
-            // Vocab with one token and empty merge pairs.
-            let vocabulary = Vocabulary(tokensToIds: ["<|endoftext|>": 0])
-            let mergePairs = [BytePairEncoder.Pair: Int]()
-            let bpe = BytePairEncoder(vocabulary: vocabulary, mergePairs: mergePairs)
-
-            dataset = WikiText2(bpe: bpe)
+            XCTFail(error.localizedDescription)
         }
-
-        var totalCount = 0
-        for example in dataset.trainingDataset {
-            XCTAssert(example.first.shape[0] > 70)
-            XCTAssert(example.second.shape[0] > 70)
-            totalCount += 1
-        }
-        XCTAssertEqual(totalCount, 64)
     }
 
     func testCreateWikiText2WithoutBpe() {
