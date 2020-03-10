@@ -19,7 +19,8 @@ import TextModels
 
 var gpt = try GPT2()
 
-let dataset = WikiText2(bpe: gpt.bpe)
+// Use default WikiText2 dataset.
+let dataset = TextUnsupervised(bpe: gpt.bpe, variant: .wikiText2)
 let trainingBatcher = Batcher(
     on: dataset.trainingDataset, batchSize: 4, numWorkers: 4, shuffle: true)
 let validationBatcher = Batcher(on: dataset.validationDataset, batchSize: 4, numWorkers: 4)

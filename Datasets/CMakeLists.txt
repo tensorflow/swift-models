@@ -14,7 +14,7 @@ add_library(Datasets
   MNIST/FashionMNIST.swift
   MNIST/KuzushijiMNIST.swift
   BostonHousing/BostonHousing.swift
-  WikiText2/WikiText2.swift)
+  TextUnsupervised/TextUnsupervised.swift)
 target_link_libraries(Datasets PUBLIC
   Batcher
   ModelSupport)

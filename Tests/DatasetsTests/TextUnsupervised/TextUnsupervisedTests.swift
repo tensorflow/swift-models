@@ -12,22 +12,53 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Original source:
-// "WikiText-2"
-// Einstein AI
-// https://blog.einstein.ai/the-wikitext-long-term-dependency-language-modeling-dataset/
-
 import Datasets
 import ModelSupport
 import TensorFlow
 import TextModels
 import XCTest
 
-final class WikiText2Tests: XCTestCase {
+final class TextUnsupervisedTests: XCTestCase {
+    func testCreateWikiText103WithBpe() {
+        do {
+            let gpt2 = try GPT2()
+            let dataset = TextUnsupervised(bpe: gpt2.bpe, variant: .wikiText103)
+
+            var totalCount = 0
+            for example in dataset.trainingDataset {
+                XCTAssertEqual(example.first.shape[0], 43)
+                XCTAssertEqual(example.second.shape[0], 43)
+                // print(example.first.shape)
+                // print(example.second.shape)
+                totalCount += 1
+            }
+            XCTAssertEqual(totalCount, 64)
+        } catch {
+            XCTFail(error.localizedDescription)
+        }
+    }
+
+    func testCreateWikiText103WithoutBpe() {
+        // Vocab with one token and empty merge pairs.
+        let vocabulary = Vocabulary(tokensToIds: ["<|endoftext|>": 0])
+        let mergePairs = [BytePairEncoder.Pair: Int]()
+        let bpe = BytePairEncoder(vocabulary: vocabulary, mergePairs: mergePairs)
+
+        let dataset = TextUnsupervised(bpe: bpe, variant: .wikiText103)
+
+        var totalCount = 0
+        for example in dataset.trainingDataset {
+            XCTAssert(example.first.shape[0] > 38)
+            XCTAssert(example.second.shape[0] > 38)
+            totalCount += 1
+        }
+        XCTAssertEqual(totalCount, 192)
+    }
+
     func testCreateWikiText2WithBpe() {
         do {
             let gpt2 = try GPT2()
-            let dataset = WikiText2(bpe: gpt2.bpe)
+            let dataset = TextUnsupervised(bpe: gpt2.bpe, variant: .wikiText2)
 
             var totalCount = 0
             for example in dataset.trainingDataset {
@@ -47,7 +78,7 @@ final class WikiText2Tests: XCTestCase {
         let mergePairs = [BytePairEncoder.Pair: Int]()
         let bpe = BytePairEncoder(vocabulary: vocabulary, mergePairs: mergePairs)
 
-        let dataset = WikiText2(bpe: bpe)
+        let dataset = TextUnsupervised(bpe: bpe, variant: .wikiText2)
 
         var totalCount = 0
         for example in dataset.trainingDataset {
@@ -59,8 +90,13 @@ final class WikiText2Tests: XCTestCase {
     }
 }
 
-extension WikiText2Tests {
+extension TextUnsupervisedTests {
     static var allTests = [
+        // The WikiText103 dataset is large and should not run in kokoro.
+        // Uncomment the following 2 lines to run individually.
+        // ("testCreateWikiText103WithBpe", testCreateWikiText103WithBpe),
+        // ("testCreateWikiText103WithoutBpe", testCreateWikiText103WithoutBpe),
+
         ("testCreateWikiText2WithBpe", testCreateWikiText2WithBpe),
         ("testCreateWikiText2WithoutBpe", testCreateWikiText2WithoutBpe),
     ]
