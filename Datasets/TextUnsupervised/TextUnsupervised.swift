@@ -35,7 +35,7 @@ private protocol TextUnsupervisedVariantDetails {
     var trainingDirectoryName: String { get set }
     var validationDirectoryName: String { get set }
     var filename: String { get set }
-    var fileExtension: String{ get set }
+    var fileExtension: String { get set }
 }
 
 public struct TextUnsupervised {
@@ -63,15 +63,19 @@ public struct TextUnsupervised {
     public let variant: TextUnsupervisedVariant
     private let variantDetails: TextUnsupervisedVariantDetails
 
-    public init(bpe: BytePairEncoder, variant: TextUnsupervisedVariant = TextUnsupervisedVariant.wikiText2) {
+    public init(
+        bpe: BytePairEncoder, variant: TextUnsupervisedVariant = TextUnsupervisedVariant.wikiText2
+    ) {
         self.init(
             localStorageDirectory: FileManager.default.temporaryDirectory.appendingPathComponent(
                 variant.rawValue, isDirectory: true), bpe: bpe, variant: variant
         )
     }
 
-    public init(localStorageDirectory: URL, bpe: BytePairEncoder,
-        variant: TextUnsupervisedVariant = TextUnsupervisedVariant.wikiText2) {
+    public init(
+        localStorageDirectory: URL, bpe: BytePairEncoder,
+        variant: TextUnsupervisedVariant = TextUnsupervisedVariant.wikiText2
+    ) {
         do {
             self.bpe = bpe
 
@@ -86,15 +90,19 @@ public struct TextUnsupervised {
             }
 
             self.trainingDataset = try TextUnsupervised.loadTraining(
-                localStorageDirectory: localStorageDirectory, bpe: bpe, variantDetails: variantDetails)
+                localStorageDirectory: localStorageDirectory, bpe: bpe,
+                variantDetails: variantDetails)
             self.validationDataset = try TextUnsupervised.loadValidation(
-                localStorageDirectory: localStorageDirectory, bpe: bpe, variantDetails: variantDetails)
+                localStorageDirectory: localStorageDirectory, bpe: bpe,
+                variantDetails: variantDetails)
         } catch {
             fatalError("Could not load dataset for \(variant): \(error)")
         }
     }
 
-    private static func downloadIfNotPresent(to directory: URL, variantDetails: TextUnsupervisedVariantDetails) {
+    private static func downloadIfNotPresent(
+        to directory: URL, variantDetails: TextUnsupervisedVariantDetails
+    ) {
         let downloadPath = directory.appendingPathComponent(variantDetails.variant.rawValue).path
         let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
         let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: downloadPath)
@@ -149,19 +157,27 @@ public struct TextUnsupervised {
         )
     }
 
-    private static func loadTraining(localStorageDirectory: URL, bpe: BytePairEncoder, variantDetails: TextUnsupervisedVariantDetails)
+    private static func loadTraining(
+        localStorageDirectory: URL, bpe: BytePairEncoder,
+        variantDetails: TextUnsupervisedVariantDetails
+    )
         throws
         -> LanguageModelDataset<[Int]>
     {
         return try loadDirectory(
-            named: variantDetails.trainingDirectoryName, in: localStorageDirectory, bpe: bpe, variantDetails: variantDetails)
+            named: variantDetails.trainingDirectoryName, in: localStorageDirectory, bpe: bpe,
+            variantDetails: variantDetails)
     }
 
-    private static func loadValidation(localStorageDirectory: URL, bpe: BytePairEncoder, variantDetails: TextUnsupervisedVariantDetails)
+    private static func loadValidation(
+        localStorageDirectory: URL, bpe: BytePairEncoder,
+        variantDetails: TextUnsupervisedVariantDetails
+    )
         throws
         -> LanguageModelDataset<[Int]>
     {
         return try loadDirectory(
-            named: variantDetails.validationDirectoryName, in: localStorageDirectory, bpe: bpe, variantDetails: variantDetails)
+            named: variantDetails.validationDirectoryName, in: localStorageDirectory, bpe: bpe,
+            variantDetails: variantDetails)
     }
 }
