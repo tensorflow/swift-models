@@ -37,6 +37,10 @@ and parallel builds function properly in the example commands below. To install
 this version on Ubuntu, we recommend following the instructions at
 [Kitware's apt repo](https://apt.kitware.com/).
 
+**Prerequisite:** [Ninja build tool](https://ninja-build.org/). Find
+installation commands for your favorite package manager
+[here](https://github.com/ninja-build/ninja/wiki/Pre-built-Ninja-packages).
+
 macOS:
 
 ```
