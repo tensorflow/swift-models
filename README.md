@@ -32,7 +32,10 @@ There is experimental support for building with CMake.  This is required to buil
 
 **NOTE**: tests are currently not supported with the CMake based build.
 
-It is highly recommended that you use CMake 3.16 or newer to ensure that `-B` and parallel builds function properly in the example commands below.
+It is highly recommended that you use CMake 3.16 or newer to ensure that `-B`
+and parallel builds function properly in the example commands below. To install
+this version on Ubuntu, we recommend following the instructions at
+[Kitware's apt repo](https://apt.kitware.com/).
 
 macOS:
 
