@@ -39,8 +39,9 @@ open class CheckpointReader {
     /// The names of the tensors stored in the checkpoint.
     public var tensorNames: [String] { [String](metadata.keys) }
 
-    /// A flag to disable CRC verification when loading, primarily for use in debug builds.
-    public var disableCRCVerification: Bool = false
+    /// CRC verification during checkpoint loading is enabled by default, but can be selectively
+    /// disabled to speed up reads in debug builds or test cases.
+    public var isCRCVerificationEnabled: Bool = true
     
     /// Initializes the checkpoint reader from either a local or remote directory. If remote, 
     /// automatically downloads the checkpoint files into a temporary directory.
@@ -185,7 +186,7 @@ open class CheckpointReader {
         let tensorData = shardBytes.subdata(
             in: Int(bundleEntry.offset)..<Int(bundleEntry.offset + bundleEntry.size))
 
-        if !disableCRCVerification {
+        if isCRCVerificationEnabled {
             let readCRC32C = bundleEntry.crc32C
             let calculatedCRC32C = tensorData.maskedCRC32C()
             guard readCRC32C == calculatedCRC32C else {
