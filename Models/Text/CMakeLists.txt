@@ -15,8 +15,8 @@ add_library(TextModels
   WeightDecayedAdam.swift)
 set_target_properties(TextModels PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
-target_link_libraries(TextModels PUBLIC
-  Datasets)
+target_compile_options(TextModels PRIVATE
+  $<$<BOOL:${BUILD_TESTING}>:-enable-testing>)
 
 install(TARGETS TextModels
   ARCHIVE DESTINATION lib/swift/$<LOWER_CASE:${CMAKE_SYSTEM_NAME}>
