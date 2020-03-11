@@ -131,7 +131,7 @@ public struct TextUnsupervised {
         rows[0] = String(rows[0].dropFirst())
         // Removing the last '"\n'.
         rows[rows.count - 1] = String(
-            rows[rows.count - 1].substring(to: rows[rows.count - 1].count - 2))
+            rows[rows.count - 1].substring(to: rows[rows.count - 1].index(rows[rows.count - 1].endIndex, offsetBy: -2)))
         return rows
     }
 
