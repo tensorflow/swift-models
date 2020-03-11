@@ -19,11 +19,16 @@ import TextModels
 
 var gpt = try GPT2()
 
+let sequenceLength = gpt.contextSize
+let batchSize = 64
+let numWorkers = 4
 // Use default WikiText2 dataset.
-let dataset = TextUnsupervised(bpe: gpt.bpe, variant: .wikiText2)
+let dataset = TextUnsupervised(bpe: gpt.bpe, variant: .wikiText2, batchSize: batchSize,
+    sequenceLength: sequenceLength)
 let trainingBatcher = Batcher(
-    on: dataset.trainingDataset, batchSize: 4, numWorkers: 4, shuffle: true)
-let validationBatcher = Batcher(on: dataset.validationDataset, batchSize: 4, numWorkers: 4)
+    on: dataset.trainingDataset, batchSize: batchSize, numWorkers: numWorkers, shuffle: true)
+let validationBatcher = Batcher(
+    on: dataset.validationDataset, batchSize: batchSize, numWorkers: numWorkers)
 
 print("Dataset acquired.")
 
@@ -48,8 +53,6 @@ for epoch in 1...10 {
         trainingLossSum += loss.scalarized()
         trainingBatchCount += 1
         optimizer.update(&gpt.model, along: gradients)
-
-        print("loss: \(loss.scalarized())")
     }
 
     Context.local.learningPhase = .inference

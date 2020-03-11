@@ -26,6 +26,7 @@ public class GPT2 {
 
     public var model: TransformerLM
     public let bpe: BytePairEncoder
+    public let contextSize: Int
 
     public var seed: Tensor<Int32>
     public var temperature: Float = 1.0
@@ -110,6 +111,8 @@ public class GPT2 {
             let mergePairs = [BytePairEncoder.Pair: Int]()
             bpe = BytePairEncoder(vocabulary: vocabulary, mergePairs: mergePairs)
         }
+
+        contextSize = parameters.contextSize
 
         // TODO: Add argument that controls this.
         let seedId = Int32(bpe.vocabulary.id(forToken: "<|endoftext|>")!)
