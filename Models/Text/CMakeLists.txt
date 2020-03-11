@@ -6,7 +6,7 @@ add_library(TextModels
   Evaluation.swift
   GPT2/CheckpointWriter.swift
   GPT2/GPT2.swift
-  GPT2/Model.swift
+  GPT2/TransformerLM.swift
   GPT2/Operators.swift
   GPT2/PythonCheckpointReader.swift
   ScheduledParameters.swift
