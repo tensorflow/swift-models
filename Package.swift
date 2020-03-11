@@ -28,8 +28,8 @@ let package = Package(
         .executable(name: "FastStyleTransferDemo", targets: ["FastStyleTransferDemo"]),
         .library(name: "MiniGo", targets: ["MiniGo"]),
         .executable(name: "MiniGoDemo", targets: ["MiniGoDemo"]),
-        .library(name: "Transformer", targets: ["Transformer"]),
         .executable(name: "TransformerDemo", targets: ["TransformerDemo"]),
+        .executable(name: "GPT2-WikiText2", targets: ["GPT2-WikiText2"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
@@ -41,10 +41,12 @@ let package = Package(
         .target(name: "ModelSupport", dependencies: ["SwiftProtobuf"], path: "Support"),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),
-        .target(name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport"],
-		    path: "Autoencoder/Autoencoder1D"),
-        .target(name: "Autoencoder2D", dependencies: ["Datasets", "ModelSupport"],
-		    path: "Autoencoder/Autoencoder2D"),
+        .target(
+            name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport"],
+            path: "Autoencoder/Autoencoder1D"),
+        .target(
+            name: "Autoencoder2D", dependencies: ["Datasets", "ModelSupport"],
+            path: "Autoencoder/Autoencoder2D"),
         .target(name: "Catch", path: "Catch"),
         .target(name: "Gym-FrozenLake", path: "Gym/FrozenLake"),
         .target(name: "Gym-CartPole", path: "Gym/CartPole"),
@@ -75,13 +77,16 @@ let package = Package(
         .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
         .testTarget(name: "DatasetsTests", dependencies: ["Datasets"]),
         .target(
-            name: "Transformer", dependencies: ["ModelSupport", "TextModels"],
+            name: "TransformerDemo", dependencies: ["TextModels"],
             path: "Transformer",
-            exclude: ["main.swift", "TransformerLoop.swift", "UI/Windows/main.swift"]),
-        .target(
-            name: "TransformerDemo", dependencies: ["Transformer"], path: "Transformer",
             exclude: ["UI/Windows/main.swift"],
-            sources: ["main.swift", "TransformerLoop.swift"]),
+            sources: ["main.swift"]),
+        .target(
+            name: "GPT2-WikiText2",
+            dependencies: ["Batcher", "Datasets", "TextModels"],
+            path: "Examples/GPT2-WikiText2",
+            exclude: ["UI/Windows/main.swift"]),
+        .testTarget(name: "TextTests", dependencies: ["TextModels"]),
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
         .target(name: "DCGAN", dependencies: ["Datasets", "ModelSupport"], path: "DCGAN"),
         .target(

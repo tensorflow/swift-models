@@ -1,4 +1,4 @@
-// Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+// Copyright 2020 The TensorFlow Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,11 +17,7 @@ import XCTest
 #if !os(macOS)
     public func allTests() -> [XCTestCaseEntry] {
         return [
-            testCase(CIFAR10Tests.allTests),
-            testCase(MNISTTests.allTests),
-            testCase(ImagenetteTests.allTests),
-            testCase(BostonHousingTests.allTests),
-            testCase(TextUnsupervisedTests.allTests),
+            testCase(TextInferenceTests.allTests),
         ]
     }
 #endif

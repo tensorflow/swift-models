@@ -18,7 +18,7 @@ import TensorFlow
 
 /// Computes the Gaussian error linear unit (GELU) nonlinear activation function
 @differentiable
-func gelu<Scalar: TensorFlowFloatingPoint>(_ x: Tensor<Scalar>) -> Tensor<Scalar> {
+public func gelu<Scalar: TensorFlowFloatingPoint>(_ x: Tensor<Scalar>) -> Tensor<Scalar> {
     let xCubed = x * x * x
     let polynomial = 0.79788456 * (x + 0.044715 * xCubed)
     return 0.5 * x * (1.0 + tanh(polynomial))

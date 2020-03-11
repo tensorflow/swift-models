@@ -13,7 +13,8 @@ add_library(Datasets
   MNIST/MNIST.swift
   MNIST/FashionMNIST.swift
   MNIST/KuzushijiMNIST.swift
-  BostonHousing/BostonHousing.swift)
+  BostonHousing/BostonHousing.swift
+  TextUnsupervised/TextUnsupervised.swift)
 target_link_libraries(Datasets PUBLIC
   Batcher
   ModelSupport)

@@ -47,7 +47,7 @@ protocol InitializableFromPythonCheckpoint {
 extension Dense: InitializableFromPythonCheckpoint {
     init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
         var kernel = reader.readTensor(name: scope + "/w", scalarType: Scalar.self)
-        if (kernel.shape.dimensions.count > 2) {
+        if kernel.shape.dimensions.count > 2 {
             // The OpenAI checkpoints have a batch dimension, and our checkpoints do not.
             kernel = kernel.squeezingShape(at: 0)
         }
@@ -64,7 +64,7 @@ extension Dense: InitializableFromPythonCheckpoint {
         activation: String
     ) {
         var kernel = reader.readTensor(name: scope + "/w", scalarType: Scalar.self)
-        if (kernel.shape.dimensions.count > 2) {
+        if kernel.shape.dimensions.count > 2 {
             // The OpenAI checkpoints have a batch dimension, and our checkpoints do not.
             kernel = kernel.squeezingShape(at: 0)
         }
@@ -85,7 +85,7 @@ extension LayerNorm: InitializableFromPythonCheckpoint {
     }
 }
 
-extension MultiHeadAttention: InitializableFromPythonCheckpoint {
+extension MultiHeadAttentionGPT2: InitializableFromPythonCheckpoint {
     init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
         attention = Attention(
             size: config.embeddingSize / config.headCount,
@@ -112,7 +112,8 @@ extension FeedForward: InitializableFromPythonCheckpoint {
 
 extension EncoderLayer: InitializableFromPythonCheckpoint {
     init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
-        selfAttention = MultiHeadAttention(reader: reader, config: config, scope: scope + "/attn")
+        selfAttention = MultiHeadAttentionGPT2(
+            reader: reader, config: config, scope: scope + "/attn")
         selfAttentionDropout = Dropout(probability: 0.2)
         selfAttentionNorm = LayerNorm(reader: reader, config: config, scope: scope + "/ln_1")
         feedForward = FeedForward(reader: reader, config: config, scope: scope + "/mlp")
@@ -123,7 +124,7 @@ extension EncoderLayer: InitializableFromPythonCheckpoint {
 
 extension TransformerLM: InitializableFromPythonCheckpoint {
     public init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
-        embedding = Embedding(
+        embedding = EmbeddingGPT2(
             weight: reader.readTensor(name: scope + "/wte", scalarType: Float.self))
         positionalEmbeddings = reader.readTensor(
             name: scope + "/wpe",
