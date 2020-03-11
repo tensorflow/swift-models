@@ -18,6 +18,8 @@ import SwiftWin32
 import Dispatch
 import Foundation
 
+import TextModels
+
 class MainWindowDelegate: WindowDelegate {
   func OnDestroy(_ hWnd: HWND?, _ wParam: WPARAM, _ lParam: LPARAM)
       -> LRESULT {

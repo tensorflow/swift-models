@@ -5,12 +5,11 @@ target_link_libraries(TransformerDemo PRIVATE
 
 if(CMAKE_SYSTEM_NAME STREQUAL Windows)
   add_executable(TransformerUI
-    UI/Windows/main.swift
-    main.swift)
+    UI/Windows/main.swift)
   target_link_libraries(TransformerUI PRIVATE
-    SwiftWin32
-    Foundation
     TextModels
+    Foundation
+    SwiftWin32
     User32)
   add_custom_command(TARGET TransformerUI POST_BUILD
     COMMAND
