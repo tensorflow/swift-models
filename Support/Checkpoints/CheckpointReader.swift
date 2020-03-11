@@ -42,7 +42,7 @@ open class CheckpointReader {
     /// CRC verification during checkpoint loading is enabled by default, but can be selectively
     /// disabled to speed up reads in debug builds or test cases.
     public var isCRCVerificationEnabled: Bool = true
-    
+
     /// Initializes the checkpoint reader from either a local or remote directory. If remote, 
     /// automatically downloads the checkpoint files into a temporary directory.
     ///
@@ -191,7 +191,8 @@ open class CheckpointReader {
             let calculatedCRC32C = tensorData.maskedCRC32C()
             guard readCRC32C == calculatedCRC32C else {
                 fatalError(
-                    "Tensor \(name) had a bad CRC, expected: \(calculatedCRC32C), read: \(readCRC32C).")
+                    "Tensor \(name) had a bad CRC, expected: \(calculatedCRC32C), read: \(readCRC32C)."
+                )
             }
         }
 

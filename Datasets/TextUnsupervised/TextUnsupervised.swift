@@ -91,8 +91,9 @@ public struct TextUnsupervised {
                 self.variantDetails = variantDetails
             }
 
-            let localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
-                variant.rawValue, isDirectory: true)
+            let localStorageDirectory: URL = FileManager.default.temporaryDirectory
+                .appendingPathComponent(
+                    variant.rawValue, isDirectory: true)
             self.trainingDataset = try TextUnsupervised.loadTraining(
                 localStorageDirectory: localStorageDirectory, bpe: bpe,
                 variantDetails: variantDetails)
