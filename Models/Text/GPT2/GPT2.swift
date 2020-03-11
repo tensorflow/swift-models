@@ -53,6 +53,8 @@ public class GPT2 {
                 checkpointLocation: checkpoint,
                 modelName: "Transformer",
                 additionalFiles: auxiliary)
+            // TODO(michellecasbon): expose this.
+            reader.isCRCVerificationEnabled = false
 
             // Load model configuration.
             let hparamsFile: URL = storage.appendingPathComponent("hparams.json")
