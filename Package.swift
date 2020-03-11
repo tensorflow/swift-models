@@ -10,6 +10,7 @@ let package = Package(
     ],
     products: [
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
+        .library(name: "VideoClassificationModels", targets: ["VideoClassificationModels"]),
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
         .executable(name: "Custom-CIFAR10", targets: ["Custom-CIFAR10"]),
@@ -29,6 +30,7 @@ let package = Package(
     ],
     targets: [
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
+        .target(name: "VideoClassificationModels", path: "Models/Spatiotemporal"),
         .target(name: "Datasets", dependencies: ["ModelSupport"], path: "Datasets"),
         .target(name: "ModelSupport", path: "Support"),
         .target(
@@ -55,6 +57,7 @@ let package = Package(
             name: "MiniGoDemo", dependencies: ["MiniGo"], path: "MiniGo", sources: ["main.swift"]),
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
         .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
+        .testTarget(name: "VideoClassificationTests", dependencies: ["VideoClassificationModels"]),
         .testTarget(name: "DatasetsTests", dependencies: ["Datasets"]),
         .target(name: "Transformer", dependencies: ["ModelSupport"], path: "Transformer"),
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
