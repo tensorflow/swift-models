@@ -39,6 +39,10 @@ open class CheckpointReader {
     /// The names of the tensors stored in the checkpoint.
     public var tensorNames: [String] { [String](metadata.keys) }
 
+    /// CRC verification during checkpoint loading is enabled by default, but can be selectively
+    /// disabled to speed up reads in debug builds or test cases.
+    public var isCRCVerificationEnabled: Bool = true
+    
     /// Initializes the checkpoint reader from either a local or remote directory. If remote, 
     /// automatically downloads the checkpoint files into a temporary directory.
     ///
@@ -182,14 +186,14 @@ open class CheckpointReader {
         let tensorData = shardBytes.subdata(
             in: Int(bundleEntry.offset)..<Int(bundleEntry.offset + bundleEntry.size))
 
-        /*
-        let readCRC32C = bundleEntry.crc32C
-        let calculatedCRC32C = tensorData.maskedCRC32C()
-        guard readCRC32C == calculatedCRC32C else {
-            fatalError(
-                "Tensor \(name) had a bad CRC, expected: \(calculatedCRC32C), read: \(readCRC32C).")
+        if isCRCVerificationEnabled {
+            let readCRC32C = bundleEntry.crc32C
+            let calculatedCRC32C = tensorData.maskedCRC32C()
+            guard readCRC32C == calculatedCRC32C else {
+                fatalError(
+                    "Tensor \(name) had a bad CRC, expected: \(calculatedCRC32C), read: \(readCRC32C).")
+            }
         }
-*/
 
         let scalarArray = tensorData.withUnsafeBytes { pointer in
             Array(pointer.bindMemory(to: Scalar.self))
@@ -237,11 +241,18 @@ extension Data {
 
     func crc32C() -> UInt32 {
         var crc32: UInt32 = 0xFFFF_FFFF
-        let bytes = [UInt8](self)
-        for byte in bytes {
-            let lookupIndex = Int((crc32 ^ (UInt32(byte) & 0xFF)) & 0xFF)
-            crc32 = (crc32 >> 8) ^ Data.crc32CLookupTable[lookupIndex]
+
+        self.withUnsafeBytes { buffer in
+            let totalBytes = self.count
+            var index = 0
+            while index < totalBytes {
+                let byte = buffer[index]
+                let lookupIndex = Int((crc32 ^ (UInt32(byte) & 0xFF)) & 0xFF)
+                crc32 = (crc32 >> 8) ^ Data.crc32CLookupTable[lookupIndex]
+                index = index &+ 1
+            }
         }
+
         return crc32 ^ 0xFFFF_FFFF
     }
 
