@@ -75,7 +75,7 @@ internal extension NSSlider {
 }
 
 func onMain(_ body: @escaping () -> ()) {
-  if NSThread.isMainThread {
+  if Thread.isMainThread {
     body()
   } else {
     DispatchQueue.main.async { body() }
@@ -171,9 +171,9 @@ extension SwiftApplicationDelegate {
     onBackground {
       for _ in 0 ..< 256 {
         do {
-          let word: String = gpt.generate()
+          let word: String = try gpt.generate()
           onMain {
-            try self.output.text = self.output.text + word
+            self.output.text = self.output.text + word
             let range: NSRange =
                 NSRange(location: self.output.text.count - 1, length: 1)
             self.output.scrollRangeToVisible(range)
