@@ -21,7 +21,7 @@ var gpt = try GPT2()
 
 let sequenceLength = gpt.contextSize
 let batchSize = 64
-let numWorkers = 4
+let numWorkers = 8
 // Use default WikiText2 dataset.
 let dataset = TextUnsupervised(bpe: gpt.bpe, variant: .wikiText2, batchSize: batchSize,
     sequenceLength: sequenceLength)
@@ -32,7 +32,7 @@ let validationBatcher = Batcher(
 
 print("Dataset acquired.")
 
-var optimizer = Adam(for: gpt.model, learningRate: 0.02)
+var optimizer = Adam(for: gpt.model, learningRate: 0.001)
 
 print("Starting training...")
 

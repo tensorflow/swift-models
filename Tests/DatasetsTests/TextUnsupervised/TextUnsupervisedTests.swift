@@ -26,8 +26,8 @@ final class TextUnsupervisedTests: XCTestCase {
 
             var totalCount = 0
             for example in dataset.trainingDataset {
-                XCTAssertEqual(example.first.shape[0], 43)
-                XCTAssertEqual(example.second.shape[0], 43)
+                XCTAssertEqual(example.first.shape[0], 299)
+                XCTAssertEqual(example.second.shape[0], 299)
                 totalCount += 1
             }
             XCTAssertEqual(totalCount, 64)
@@ -41,11 +41,11 @@ final class TextUnsupervisedTests: XCTestCase {
 
         var totalCount = 0
         for example in dataset.trainingDataset {
-            XCTAssert(example.first.shape[0] > 38)
-            XCTAssert(example.second.shape[0] > 38)
+            XCTAssert(example.first.shape[0] > 336)
+            XCTAssert(example.second.shape[0] > 336)
             totalCount += 1
         }
-        XCTAssertEqual(totalCount, 192)
+        XCTAssertEqual(totalCount, 128)
     }
 
     func testCreateWikiText2WithBpe() {
@@ -55,8 +55,8 @@ final class TextUnsupervisedTests: XCTestCase {
 
             var totalCount = 0
             for example in dataset.trainingDataset {
-                XCTAssert(example.first.shape[0] > 70)
-                XCTAssert(example.second.shape[0] > 70)
+                XCTAssertEqual(example.first.shape[0], 143)
+                XCTAssertEqual(example.second.shape[0], 143)
                 totalCount += 1
             }
             XCTAssertEqual(totalCount, 64)
@@ -70,11 +70,11 @@ final class TextUnsupervisedTests: XCTestCase {
 
         var totalCount = 0
         for example in dataset.trainingDataset {
-            XCTAssert(example.first.shape[0] > 1)
-            XCTAssert(example.second.shape[0] > 1)
+            XCTAssertEqual(example.first.shape[0], 612)
+            XCTAssertEqual(example.second.shape[0], 612)
             totalCount += 1
         }
-        XCTAssertEqual(totalCount, 320)
+        XCTAssertEqual(totalCount, 64)
     }
 }
 
