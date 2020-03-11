@@ -2,6 +2,13 @@ cmake_minimum_required(VERSION 3.16)
 project(Models
   LANGUAGES Swift)
 
+if(CMAKE_VERSION VERSION_LESS 3.17)
+  if(NOT CMAKE_SYSTEM_NAME STREQUAL Windows)
+    set(CMAKE_EXECUTABLE_RUNTIME_Swift_FLAG "-Xlinker -rpath -Xlinker ")
+    set(CMAKE_EXECUTABLE_RUNTIME_Swift_FLAG_SEP "")
+  endif()
+endif()
+
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
 set(CMAKE_Swift_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/swift)
