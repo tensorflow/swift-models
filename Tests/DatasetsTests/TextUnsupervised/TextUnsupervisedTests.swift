@@ -28,8 +28,6 @@ final class TextUnsupervisedTests: XCTestCase {
             for example in dataset.trainingDataset {
                 XCTAssertEqual(example.first.shape[0], 43)
                 XCTAssertEqual(example.second.shape[0], 43)
-                // print(example.first.shape)
-                // print(example.second.shape)
                 totalCount += 1
             }
             XCTAssertEqual(totalCount, 64)
@@ -39,12 +37,7 @@ final class TextUnsupervisedTests: XCTestCase {
     }
 
     func testCreateWikiText103WithoutBpe() {
-        // Vocab with one token and empty merge pairs.
-        let vocabulary = Vocabulary(tokensToIds: ["<|endoftext|>": 0])
-        let mergePairs = [BytePairEncoder.Pair: Int]()
-        let bpe = BytePairEncoder(vocabulary: vocabulary, mergePairs: mergePairs)
-
-        let dataset = TextUnsupervised(bpe: bpe, variant: .wikiText103)
+        let dataset = TextUnsupervised(variant: .wikiText103)
 
         var totalCount = 0
         for example in dataset.trainingDataset {
@@ -73,12 +66,7 @@ final class TextUnsupervisedTests: XCTestCase {
     }
 
     func testCreateWikiText2WithoutBpe() {
-        // Vocab with one token and empty merge pairs.
-        let vocabulary = Vocabulary(tokensToIds: ["<|endoftext|>": 0])
-        let mergePairs = [BytePairEncoder.Pair: Int]()
-        let bpe = BytePairEncoder(vocabulary: vocabulary, mergePairs: mergePairs)
-
-        let dataset = TextUnsupervised(bpe: bpe, variant: .wikiText2)
+        let dataset = TextUnsupervised()
 
         var totalCount = 0
         for example in dataset.trainingDataset {

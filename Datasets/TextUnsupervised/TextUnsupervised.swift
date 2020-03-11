@@ -64,16 +64,18 @@ public struct TextUnsupervised {
     private let variantDetails: TextUnsupervisedVariantDetails
 
     public init(
-        bpe: BytePairEncoder, variant: TextUnsupervisedVariant = TextUnsupervisedVariant.wikiText2
+        variant: TextUnsupervisedVariant = TextUnsupervisedVariant.wikiText2
     ) {
-        self.init(
-            localStorageDirectory: FileManager.default.temporaryDirectory.appendingPathComponent(
-                variant.rawValue, isDirectory: true), bpe: bpe, variant: variant
-        )
+        // Empty BytePairEncoder.
+        let vocabulary = Vocabulary(tokensToIds: ["<|endoftext|>": 0])
+        let mergePairs = [BytePairEncoder.Pair: Int]()
+        let bpe = BytePairEncoder(vocabulary: vocabulary, mergePairs: mergePairs)
+
+        self.init(bpe: bpe, variant: variant)
     }
 
     public init(
-        localStorageDirectory: URL, bpe: BytePairEncoder,
+        bpe: BytePairEncoder,
         variant: TextUnsupervisedVariant = TextUnsupervisedVariant.wikiText2
     ) {
         do {
@@ -89,6 +91,8 @@ public struct TextUnsupervised {
                 self.variantDetails = variantDetails
             }
 
+            let localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
+                variant.rawValue, isDirectory: true)
             self.trainingDataset = try TextUnsupervised.loadTraining(
                 localStorageDirectory: localStorageDirectory, bpe: bpe,
                 variantDetails: variantDetails)
