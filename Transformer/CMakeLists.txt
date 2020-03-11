@@ -16,8 +16,3 @@ if(CMAKE_SYSTEM_NAME STREQUAL Windows)
     COMMAND
       ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/UI/Windows/TransformerUI.exe.manifest $<TARGET_FILE_DIR:TransformerUI>)
 endif()
-
-
-install(TARGETS TransformerDemo
-  DESTINATION bin)
-get_swift_host_arch(swift_arch)
