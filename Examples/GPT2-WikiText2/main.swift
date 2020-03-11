@@ -75,7 +75,7 @@ for epoch in 1...10 {
             correctGuessCount
             + Int(
                 Tensor<Int32>(correctPredictions).sum().scalarized())
-        totalGuessCount = totalGuessCount + documents.shape[0]
+        totalGuessCount = totalGuessCount + (shape[0] * shape[1])
     }
 
     let accuracy = Float(correctGuessCount) / Float(totalGuessCount)
