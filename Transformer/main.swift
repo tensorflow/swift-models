@@ -17,10 +17,14 @@ import TextModels
 let gpt: GPT2 = try GPT2()
 
 // Set temperature.
-gpt.temperature =
-    CommandLine.arguments.count >= 2
-    ? Float(CommandLine.arguments[1])!
-    : Float(1.0)
+if CommandLine.arguments.count >= 2 {
+  guard let temperature = Float(CommandLine.arguments[1]) else {
+    fatalError("Could not parse command line argument '\(CommandLine.arguments[1])' as a float")
+  }
+  gpt.temperature = temperature
+} else {
+  gpt.temperature = 1.0
+}
 
 // Use seed text.
 if CommandLine.arguments.count == 3 {
