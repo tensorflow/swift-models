@@ -1,9 +1,10 @@
-# Transformer
+# GPT-2 Text Generation
 
-This is an implementation of [OpenAI's GPT-2 Transformer language model](https://github.com/openai/gpt-2) using [Swift for TensorFlow](https://github.com/tensorflow/swift).
+This is a demonstration of text generation using [OpenAI's GPT-2 Transformer language model](https://github.com/openai/gpt-2) 
+using [Swift for TensorFlow](https://github.com/tensorflow/swift). It is initialized with OpenAI's 117M pretrained 
+checkpoint.
 
-Currently, the model must be run from the root of the swift-models project directory. You can run 
-the model by sampling either unconditionally:
+You can run the model by sampling either unconditionally:
 
 ```sh
 swift run -c release TransformerDemo [temperature]
@@ -48,3 +49,12 @@ library search paths added (`-I` and `-L` with their respective values).
 
 Assuming that the generated DLLs are in the `PATH`, it should be possible to
 then execute the demo as `.\Transformer\TransformerUI.exe`.
+
+# macOS UI
+
+The macOS UI demo must be built and run from the root of the swift-models directory. You can run this example 
+using the following command:
+
+```sh
+swift run -c release TransformerUI
+```
