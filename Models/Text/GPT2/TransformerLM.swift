@@ -355,6 +355,3 @@ public struct TransformerLM: Module {
         return logits
     }
 }
-
-extension TransformerLM: KeyPathIterable {
-}
