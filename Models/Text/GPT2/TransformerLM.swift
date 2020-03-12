@@ -355,3 +355,6 @@ public struct TransformerLM: Differentiable {
         return logits
     }
 }
+
+extension TransformerLM: KeyPathIterable {
+}
