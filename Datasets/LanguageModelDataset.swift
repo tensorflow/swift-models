@@ -116,22 +116,24 @@ extension LanguageModelDataset: Collection {
 
 //Extension when Item is [Int] and openItem is not needed
 extension LanguageModelDataset where Item == [Int] {
-  public init(batchSize: Int, sequenceLength: Int, items: [Item], lengths: [Int]) {
+  public init(batchSize: Int, sequenceLength: Int, items: [Item], lengths: [Int], dropLast: Bool = false) {
     self.init(
       openItem: { $0 },
       batchSize: batchSize,
       sequenceLength: sequenceLength,
       items: items,
-      lengths: lengths)
+      lengths: lengths,
+      dropLast: dropLast)
   }
 
-  public init(batchSize: Int, sequenceLength: Int, items: [Item]) {
+  public init(batchSize: Int, sequenceLength: Int, items: [Item], dropLast: Bool = false) {
     self.init(
       openItem: { $0 },
       batchSize: batchSize,
       sequenceLength: sequenceLength,
       items: items,
-      lengths: items.map { $0.count })
+      lengths: items.map { $0.count },
+      dropLast: dropLast)
   }
 }
 
