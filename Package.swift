@@ -91,7 +91,7 @@ let package = Package(
                     [
                         "-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__info_plist",
                         "-Xlinker",
-                        "./Transformer/UI/macOS/Info.plist",
+                        "Transformer/UI/macOS/Info.plist",
                     ], .when(platforms: [.macOS]))
             ]),
         .target(
