@@ -15,6 +15,8 @@ public struct LanguageModelDataset<Item> {
   public let items: [Item]
   //The length of each processed item
   public let lengths: [Int]
+  //Drop the last batch if its length is less than sequenceLength
+  public let dropLast: Bool
   //The length of a contiguous chunk of text
   private var batchLength: Int
   //The number of batches
@@ -31,15 +33,20 @@ public struct LanguageModelDataset<Item> {
     batchSize: Int,
     sequenceLength: Int,
     items: [Item],
-    lengths: [Int]
+    lengths: [Int],
+    dropLast: Bool = false
   ) {
     self.openItem = openItem
     self.batchSize = batchSize
     self.sequenceLength = sequenceLength
     self.items = items
     self.lengths = lengths
+    self.dropLast = dropLast
     cumulativeLengths = lengths.reduce(into: []) { $0.append(($0.last ?? 0) + $1) }
     batchLength = (cumulativeLengths.last! - 1) / batchSize
+    if dropLast {
+        batchLength = (batchLength / sequenceLength) * sequenceLength
+    }
     batchCount = batchLength / sequenceLength + (batchLength % sequenceLength == 0 ? 0 : 1)
     lastLength = batchLength - (batchCount - 1) * sequenceLength
     indices = Array(0..<items.count)
@@ -49,14 +56,16 @@ public struct LanguageModelDataset<Item> {
     openItem: @escaping (Item) -> [Int],
     batchSize: Int,
     sequenceLength: Int,
-    items: [Item]
+    items: [Item],
+    dropLast: Bool = false
   ) {
     self.init(
       openItem: openItem,
       batchSize: batchSize,
       sequenceLength: sequenceLength,
       items: items,
-      lengths: items.map { openItem($0).count })
+      lengths: items.map { openItem($0).count },
+      dropLast: dropLast)
   }
 
   //Shuflle the dataset
