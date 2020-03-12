@@ -75,7 +75,7 @@ let package = Package(
             name: "MiniGoDemo", dependencies: ["MiniGo"], path: "MiniGo", sources: ["main.swift"]),
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
         .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
-        .testTarget(name: "DatasetsTests", dependencies: ["Datasets"]),
+        .testTarget(name: "DatasetsTests", dependencies: ["Datasets", "TextModels"]),
         .target(
             name: "TransformerDemo", dependencies: ["TextModels"],
             path: "Transformer",
