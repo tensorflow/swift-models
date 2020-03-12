@@ -290,7 +290,7 @@ public struct EncoderLayer: Layer {
     }
 }
 
-public struct EmbeddingGPT2: Differentiable {
+public struct EmbeddingGPT2: Module {
     var weight: Tensor<Float>
 
     init(weight: Tensor<Float>) {
@@ -302,12 +302,12 @@ public struct EmbeddingGPT2: Differentiable {
     }
 
     @differentiable(wrt: self)
-    func callAsFunction(_ input: Tensor<Int32>) -> Tensor<Float> {
+    public func callAsFunction(_ input: Tensor<Int32>) -> Tensor<Float> {
         return weight.gathering(atIndices: input)
     }
 }
 
-public struct TransformerLM: Differentiable {
+public struct TransformerLM: Module {
     var embedding: EmbeddingGPT2
     var positionalEmbeddings: Tensor<Float>
     var layers: [EncoderLayer]
@@ -354,7 +354,4 @@ public struct TransformerLM: Differentiable {
         let logits = timeDistributed(h, embedding.weight.transposed())
         return logits
     }
-}
-
-extension TransformerLM: KeyPathIterable {
 }
