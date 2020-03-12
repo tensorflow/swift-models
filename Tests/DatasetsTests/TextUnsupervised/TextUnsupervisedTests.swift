@@ -26,11 +26,16 @@ final class TextUnsupervisedTests: XCTestCase {
 
             var totalCount = 0
             for example in dataset.trainingDataset {
-                XCTAssertEqual(example.first.shape[0], 299)
-                XCTAssertEqual(example.second.shape[0], 299)
+                XCTAssertEqual(example.first.shape[0], 1024)
+                XCTAssertEqual(example.second.shape[0], 1024)
                 totalCount += 1
             }
-            XCTAssertEqual(totalCount, 64)
+            for example in dataset.validationDataset {
+                XCTAssertEqual(example.first.shape[0], 1024)
+                XCTAssertEqual(example.second.shape[0], 1024)
+                totalCount += 1
+            }
+            XCTAssertEqual(totalCount, 24)
         } catch {
             XCTFail(error.localizedDescription)
         }
@@ -41,8 +46,13 @@ final class TextUnsupervisedTests: XCTestCase {
 
         var totalCount = 0
         for example in dataset.trainingDataset {
-            XCTAssert(example.first.shape[0] > 336)
-            XCTAssert(example.second.shape[0] > 336)
+            XCTAssertEqual(example.first.shape[0], 1024)
+            XCTAssertEqual(example.second.shape[0], 1024)
+            totalCount += 1
+        }
+        for example in dataset.validationDataset {
+            XCTAssertEqual(example.first.shape[0], 1024)
+            XCTAssertEqual(example.second.shape[0], 1024)
             totalCount += 1
         }
         XCTAssertEqual(totalCount, 128)
@@ -55,11 +65,16 @@ final class TextUnsupervisedTests: XCTestCase {
 
             var totalCount = 0
             for example in dataset.trainingDataset {
-                XCTAssertEqual(example.first.shape[0], 143)
-                XCTAssertEqual(example.second.shape[0], 143)
+                XCTAssertEqual(example.first.shape[0], 1024)
+                XCTAssertEqual(example.second.shape[0], 1024)
                 totalCount += 1
             }
-            XCTAssertEqual(totalCount, 64)
+            for example in dataset.validationDataset {
+                XCTAssertEqual(example.first.shape[0], 1024)
+                XCTAssertEqual(example.second.shape[0], 1024)
+                totalCount += 1
+            }
+            XCTAssertEqual(totalCount, 12)
         } catch {
             XCTFail(error.localizedDescription)
         }
@@ -70,8 +85,13 @@ final class TextUnsupervisedTests: XCTestCase {
 
         var totalCount = 0
         for example in dataset.trainingDataset {
-            XCTAssertEqual(example.first.shape[0], 612)
-            XCTAssertEqual(example.second.shape[0], 612)
+            XCTAssertEqual(example.first.shape[0], 1024)
+            XCTAssertEqual(example.second.shape[0], 1024)
+            totalCount += 1
+        }
+        for example in dataset.validationDataset {
+            XCTAssertEqual(example.first.shape[0], 1024)
+            XCTAssertEqual(example.second.shape[0], 1024)
             totalCount += 1
         }
         XCTAssertEqual(totalCount, 64)
