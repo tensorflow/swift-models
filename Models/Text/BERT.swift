@@ -279,11 +279,18 @@ public struct BERT: Module, Regularizable {
                 tokenTypeIds.append(Int32(sequenceId))
             }
         }
-        let tokenIds = tokens.map { Int32(vocabulary.id(forToken: $0)!) }
+        var tokenIds = tokens.map { Int32(vocabulary.id(forToken: $0)!) }
 
         // The mask is set to `true` for real tokens and `false` for padding tokens. This is so
         // that only real tokens are attended to.
-        let mask = [Int32](repeating: 1, count: tokenIds.count)
+        var mask = [Int32](repeating: 1, count: tokenIds.count)
+
+        // Zero-pad up to the max sequence length.
+        while tokenIds.count < maxSequenceLength {
+            tokenIds.append(Int32(0))
+            tokenTypeIds.append(Int32(0))
+            mask.append(Int32(0))
+        }
 
         return TextBatch(
             tokenIds: Tensor(tokenIds).expandingShape(at: 0),
