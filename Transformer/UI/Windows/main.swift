@@ -49,8 +49,7 @@ class GenerateDelegate: ButtonDelegate {
     DispatchQueue.global(qos: .background).async {
       for _ in 0 ..< 256 {
         do {
-          try self.output?.text = (self.output?.text ?? "")
-              + (gpt.generate() as NSString).replacingOccurrences(of: "\n", with: "\r\n")
+          try self.output?.text = (self.output?.text ?? "") + gpt.generate()
           let range: Range =
               Range(location: (self.output?.text?.length ?? 1) - 1, length: 1)
           self.output?.scrollRangeToVisible(range)
