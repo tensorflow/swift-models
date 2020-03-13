@@ -1,45 +1,45 @@
 import TensorFlow
 
-//Build a dataset suitable for language modeling from an array of texts
-public struct LanguageModelDataset<Item> {
-  public typealias Index = Int
-  public typealias Element = TensorPair<Int32, Int32>
-
-  //A function that reads Item to get an array of Int
-  public let openItem: (Item) -> [Int]
-  //The size of a batch
+/// A dataset suitable for language modeling.
+///
+/// - Note: This struct does not handle the preprocessing required in NLP
+/// and expects you have already tokenized and numericalized your raw texts
+/// (that is split them in tokens, then mapped those tokens to their ids in your
+/// vocabulary). Therefore the generic type `Texts` refers to a collection of
+/// numericalized texts.
+public struct LanguageModelDataset<Texts> 
+where Texts: Collection, Texts.Index==Int, Texts.Element==[Int] {
+  /// The size of a batch.
   public var batchSize: Int
-  //The length of a sequence
+  /// The length of a sequence.
   public var sequenceLength: Int
-  //The array of raw items to use
-  public let items: [Item]
-  //The length of each processed item
+  /// The collection of numericalized texts.
+  public let numericalizedTexts: Texts
+  /// The length of each processed item.
   public let lengths: [Int]
   //Drop the last batch if its length is less than sequenceLength
   public let dropLast: Bool
   //The length of a contiguous chunk of text
   private var batchLength: Int
-  //The number of batches
+  /// The number of batches.
   private var batchCount: Int
-  //The sequence length of the last batch
+  /// The sequence length of the last batch.
   private var lastLength: Int
-  //Indices used to iterate through the dataset
+  /// Indices used to iterate through the dataset.
   public var indices: [Int]
-  //Cumulative lengths
+  /// Cumulative lengths.
   private var cumulativeLengths: [Int]
 
   public init(
-    openItem: @escaping (Item) -> [Int],
     batchSize: Int,
     sequenceLength: Int,
-    items: [Item],
+    numericalizedTexts: Texts,
     lengths: [Int],
     dropLast: Bool = false
   ) {
-    self.openItem = openItem
     self.batchSize = batchSize
     self.sequenceLength = sequenceLength
-    self.items = items
+    self.numericalizedTexts = numericalizedTexts
     self.lengths = lengths
     self.dropLast = dropLast
     cumulativeLengths = lengths.reduce(into: []) { $0.append(($0.last ?? 0) + $1) }
@@ -49,26 +49,24 @@ public struct LanguageModelDataset<Item> {
     }
     batchCount = batchLength / sequenceLength + (batchLength % sequenceLength == 0 ? 0 : 1)
     lastLength = batchLength - (batchCount - 1) * sequenceLength
-    indices = Array(0..<items.count)
+    indices = Array(0..<numericalizedTexts.count)
   }
 
   public init(
-    openItem: @escaping (Item) -> [Int],
     batchSize: Int,
     sequenceLength: Int,
-    items: [Item],
+    numericalizedTexts: Texts,
     dropLast: Bool = false
   ) {
     self.init(
-      openItem: openItem,
       batchSize: batchSize,
       sequenceLength: sequenceLength,
-      items: items,
-      lengths: items.map { openItem($0).count },
+      numericalizedTexts: numericalizedTexts,
+      lengths: numericalizedTexts.map { $0.count },
       dropLast: dropLast)
   }
 
-  //Shuflle the dataset
+  /// Shuflle the dataset.
   public mutating func shuffle() {
     indices = indices.shuffled()
     cumulativeLengths[0] = lengths[indices[0]]
@@ -79,6 +77,8 @@ public struct LanguageModelDataset<Item> {
 }
 
 extension LanguageModelDataset: Collection {
+  public typealias Index = Int
+  public typealias Element = TensorPair<Int32, Int32>
   public var startIndex: Int { return 0 }
   public var endIndex: Int { return batchCount * batchSize }  
   
@@ -96,13 +96,13 @@ extension LanguageModelDataset: Collection {
     }
   }  
   
-  //Read a contiguous chunk of texts from start to end (may go through several items)
+  /// Read a contiguous chunk of texts from start to end (may go through several items).
   private func readItems(from start: Int, to end: Int) -> [Int] {
     var text: [Int] = []
     var index = cumulativeLengths.firstIndex { $0 >= start }!
     var position = start
     while position < end {
-      let x = openItem(items[indices[index]])
+      let x = numericalizedTexts[indices[index]]
       let cumulativeLength = ([0] + cumulativeLengths)[index]
       let readFrom = position - cumulativeLength
       let readUntil = Swift.min(end - cumulativeLength, x.count)
@@ -114,30 +114,12 @@ extension LanguageModelDataset: Collection {
   }
 }
 
-//Extension when Item is [Int] and openItem is not needed
-extension LanguageModelDataset where Item == [Int] {
-  public init(batchSize: Int, sequenceLength: Int, items: [Item], lengths: [Int], dropLast: Bool = false) {
-    self.init(
-      openItem: { $0 },
-      batchSize: batchSize,
-      sequenceLength: sequenceLength,
-      items: items,
-      lengths: lengths,
-      dropLast: dropLast)
-  }
-
-  public init(batchSize: Int, sequenceLength: Int, items: [Item], dropLast: Bool = false) {
-    self.init(
-      openItem: { $0 },
-      batchSize: batchSize,
-      sequenceLength: sequenceLength,
-      items: items,
-      lengths: items.map { $0.count },
-      dropLast: dropLast)
-  }
-}
-
-//sampleIndices function to use in conjunction with a LanguageModelDataset
+/// The sampleIndices function to use in conjunction with a `LanguageModelDataset` in a `Batcher`.
+/// Will shuffle the dataset in place instead of the indices (like the default function does).
+/// - Parameters:
+///   - dataset: The underlying `LanguageModelDataset`.
+///   - shuffled: Shuffles the data iff `true`.
+/// Returns: All the indices from the dataset in orer. 
 public func languageModelSample<C>(on dataset: inout LanguageModelDataset<C>, shuffled: Bool)
   -> [Int]
 {

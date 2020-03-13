@@ -35,10 +35,12 @@ public struct LabeledExample: TensorGroup, KeyPathIterable, Collatable {
     }
 }
 
-// A simple tuple of Tensor, useful for many deep learning tasks (one tensor of inputs,
-// one tensor of labels). Note that if your task is more elaborate, you should write your
-// own struct of Tensors. Automatic conformance to Collatable can be derived the same way as
-// here.
+/// A generic tuple of two tensors `Tensor`.
+/// 
+/// - Note: `TensorPair` has a generic name and provides little semantic information, to conform to
+/// `Collatable`. You can use it for most basic datasets with one tensor of inputs and one tensor of
+/// labels but you should write your own struct for more complex tasks (or if you want more descriptive
+/// names).
 public struct TensorPair<S1: TensorFlowScalar, S2: TensorFlowScalar>: Collatable, KeyPathIterable {
     public var first: Tensor<S1>
     public var second: Tensor<S2>
