@@ -57,8 +57,8 @@ public struct TextUnsupervised {
         var fileExtension = "tgz"
     }
 
-    public let trainingDataset: LanguageModelDataset<[Int]>
-    public let validationDataset: LanguageModelDataset<[Int]>
+    public let trainingDataset: LanguageModelDataset<[[Int]]>
+    public let validationDataset: LanguageModelDataset<[[Int]]>
     public let bpe: BytePairEncoder
     public let variant: TextUnsupervisedVariant
     private let variantDetails: TextUnsupervisedVariantDetails
@@ -146,7 +146,7 @@ public struct TextUnsupervised {
     private static func loadDirectory(
         named name: String, in directory: URL, bpe: BytePairEncoder,
         variantDetails: TextUnsupervisedVariantDetails, batchSize: Int, sequenceLength: Int
-    ) throws -> LanguageModelDataset<[Int]> {
+    ) throws -> LanguageModelDataset<[[Int]]> {
         downloadIfNotPresent(to: directory, variantDetails: variantDetails)
         let path = directory.appendingPathComponent("\(variantDetails.filename)/\(name).csv")
 
@@ -171,7 +171,7 @@ public struct TextUnsupervised {
         variantDetails: TextUnsupervisedVariantDetails, batchSize: Int, sequenceLength: Int
     )
         throws
-        -> LanguageModelDataset<[Int]>
+        -> LanguageModelDataset<[[Int]]>
     {
         return try loadDirectory(
             named: variantDetails.trainingDirectoryName, in: localStorageDirectory, bpe: bpe,
@@ -183,7 +183,7 @@ public struct TextUnsupervised {
         variantDetails: TextUnsupervisedVariantDetails, batchSize: Int, sequenceLength: Int
     )
         throws
-        -> LanguageModelDataset<[Int]>
+        -> LanguageModelDataset<[[Int]]>
     {
         return try loadDirectory(
             named: variantDetails.validationDirectoryName, in: localStorageDirectory, bpe: bpe,
