@@ -77,7 +77,7 @@ public struct TextUnsupervised {
     public init(
         bpe: BytePairEncoder,
         variant: TextUnsupervisedVariant = TextUnsupervisedVariant.wikiText2,
-        batchSize: Int = 64, sequenceLength: Int = 1024
+        trainingBatchSize: Int = 8, validationBatchSize: Int = 4, sequenceLength: Int = 1024
     ) {
         do {
             self.bpe = bpe
@@ -97,11 +97,11 @@ public struct TextUnsupervised {
                     variant.rawValue, isDirectory: true)
             self.trainingDataset = try TextUnsupervised.loadTraining(
                 localStorageDirectory: localStorageDirectory, bpe: bpe,
-                variantDetails: variantDetails, batchSize: batchSize,
+                variantDetails: variantDetails, batchSize: trainingBatchSize,
                 sequenceLength: sequenceLength)
             self.validationDataset = try TextUnsupervised.loadValidation(
                 localStorageDirectory: localStorageDirectory, bpe: bpe,
-                variantDetails: variantDetails, batchSize: batchSize,
+                variantDetails: variantDetails, batchSize: validationBatchSize,
                 sequenceLength: sequenceLength)
         } catch {
             fatalError("Could not load dataset for \(variant): \(error)")
@@ -161,7 +161,8 @@ public struct TextUnsupervised {
             batchSize: batchSize,
             sequenceLength: sequenceLength,
             items: embeddings,
-            lengths: lengths
+            lengths: lengths,
+            dropLast: true
         )
     }
 
