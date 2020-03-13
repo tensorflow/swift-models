@@ -48,7 +48,7 @@ final class TextInferenceTests: XCTestCase {
             let gpt2 = try GPT2(checkpoint: URL(fileURLWithPath: ""))
 
             let gpt2Result = try gpt2.generate()
-            XCTAssertEqual(gpt2Result, "\n")
+            XCTAssertEqual(gpt2Result, "\r\n")
         } catch { XCTFail(error.localizedDescription) }
     }
 }
