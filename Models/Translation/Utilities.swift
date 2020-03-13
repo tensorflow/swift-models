@@ -64,8 +64,7 @@ struct SublayerConnection: Layer {
     }
     @differentiable
     func callAsFunction(_ input: SubLayerInput< Float>) -> Tensor<Float> {
-// the old call, can't use it because activation now takes a tuple.
-        return input.sequence + self.dropout(input.activation(self.norm(input.sequence)))
+        return input.sequence + self.dropout(input.activation(self.norm(input.sequence))) // The issue happening in norm. probably because of size or axis.
 //        return input.context.input.sequence + self.dropout(input.activation(self.norm(input.context.input.sequence), input.context))
     }
 }
@@ -300,6 +299,14 @@ internal func parse(tsvFileAt fileURL: URL) throws -> [[String]] {
         $0.split(separator: UInt8(ascii: "\n")).map {
             $0.split(separator: UInt8(ascii: "\t"), omittingEmptySubsequences: false)
                 .map { String(decoding: UnsafeRawBufferPointer(rebasing: $0), as: UTF8.self) }
+        }
+    }
+}
+
+extension Array {
+    func chunked(into size: Int) -> [[Element]] {
+        return stride(from: 0, to: count, by: size).map {
+            Array(self[$0 ..< Swift.min($0 + size, count)])
         }
     }
 }

@@ -42,7 +42,9 @@ public struct TextBatch: KeyPathIterable {
             .replacing(with: Tensor(onesLike: source), where: source .!= Tensor.init(pad)) // Tensor.init(0) might need dto be expanded to Tensor(zerosLike: source)
             .expandingShape(at: -2)
         // if target is not None?
-        self.targetTokenIds = target[0...,0...(-1)] // not sure if this is right. just means except last one
+        print(target.shape)
+        let rangeExceptLast = 0..<(source.shape.dimensions[1]-1)
+        self.targetTokenIds = target[0...,rangeExceptLast] // not sure if this is right. just means except last one
         self.targetTruth = target[0..., 1...]
         self.targetMask = TextBatch.makeStandardMask(target: self.targetTokenIds, pad: pad)
         self.tokenCount = Tensor(zerosLike: targetTruth)
@@ -55,7 +57,7 @@ public struct TextBatch: KeyPathIterable {
         var targetMask = Tensor(zerosLike: target)
             .replacing(with: Tensor(onesLike: target), where: target .!= Tensor.init(pad))
             .expandingShape(at: -2)
-        targetMask *= subsequentMask(size: target.shape[-1])
+        targetMask *= subsequentMask(size: target.shape.last!)
         // tgt_mask = tgt_mask & Variable(
 //        subsequent_mask(tgt.size(-1)).type_as(tgt_mask.data))
         return targetMask
@@ -129,8 +131,8 @@ internal func createTargetAttentionMask(forTextBatch text: TextBatch) -> Tensor<
 //
 /// Vocabulary that can be used for tokenizing strings.
 public struct Vocabulary {
-    internal let tokensToIds: [String: Int]
-    internal let idsToTokens: [Int: String]
+    internal var tokensToIds: [String: Int]
+    internal var idsToTokens: [Int: String]
 
     public var count: Int { tokensToIds.count }
 
@@ -143,6 +145,11 @@ public struct Vocabulary {
         self.tokensToIds = [String: Int](uniqueKeysWithValues: idsToTokens.map { ($1, $0) })
         self.idsToTokens = idsToTokens
     }
+    
+    public init() {
+        self.tokensToIds = [:]
+        self.idsToTokens = [:]
+    }
 
     public func contains(_ token: String) -> Bool {
         tokensToIds.keys.contains(token)
@@ -154,6 +161,11 @@ public struct Vocabulary {
 
     public func token(forId id: Int) -> String? {
         idsToTokens[id]
+    }
+    public mutating func add(token: String) -> Int {
+        idsToTokens[count] = token
+        tokensToIds[token] = count
+        return count
     }
 }
 

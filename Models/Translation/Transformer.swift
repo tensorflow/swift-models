@@ -8,18 +8,13 @@
 
 import TensorFlow
 
-struct TransformerModel: Module {
-    // helpers
-    @noDerivative public let tokenizer: Tokenizer
-    @noDerivative public let vocabulary: Vocabulary
+public struct TransformerModel: Module {
     // layers
     var encoder: Encoder
     var decoder: Decoder
     var sourceEmbed: Sequential<Embedding<Float>, PositionalEncoding>
     var targetEmbed: Sequential<Embedding<Float>, PositionalEncoding>
-    init(vocabulary: Vocabulary, tokenizer: Tokenizer, sourceVocabSize: Int, targetVocabSize: Int, layerCount: Int = 6, modelSize: Int = 256, feedForwardSize: Int = 1024, h:Int = 8, dropoutProbability: Double = 0.1) {
-        self.vocabulary = vocabulary
-        self.tokenizer = tokenizer
+    public init(sourceVocabSize: Int, targetVocabSize: Int, layerCount: Int = 6, modelSize: Int = 256, feedForwardSize: Int = 1024, h:Int = 8, dropoutProbability: Double = 0.1) {
         
         let attentions = [MultiHeadAttention](repeating: .init(sourceSize: h, targetSize: modelSize), count: 3)
         let feedForwards = [PositionwiseFeedForward](repeating: .init(dimensionalityModel: modelSize, innerLayerDimensionality: feedForwardSize), count: 2)
@@ -33,8 +28,8 @@ struct TransformerModel: Module {
     }
     
     @differentiable
-    func callAsFunction(_ input: TextBatch) -> Tensor<Float> {
-        let sourceAttentionMask = createAttentionMask(forTextBatch: input) // might not need this?? 
+    public func callAsFunction(_ input: TextBatch) -> Tensor<Float> {
+        let sourceAttentionMask = Tensor<Float>(input.mask)
         return self.decode(input: input, memory: self.encode(input: input, attentionMask: sourceAttentionMask), sourceMask: sourceAttentionMask)
     }
     
@@ -50,69 +45,59 @@ struct TransformerModel: Module {
         let targetAttentionMask = createTargetAttentionMask(forTextBatch: input)
         return self.decoder.callAsFunction(.init(sequence: embedded, sourceMask: sourceMask, targetMask: targetAttentionMask, memory: memory))
     }
-    
-    func preprocess(sequences: [String], targetSequences:[String], maxSequenceLength: Int) -> TextBatch {
-        let sequences = sequences.map(tokenizer.tokenize(_:))
-        let targetSequences = targetSequences.map(tokenizer.tokenize(_:))
-        // I think for sequences I will only pass in nope nope nope.
-        // TODO: confirm batches in original project, there's some fancy rebatching going on that gets confusing.
+}
+
+public struct TextProcessor {
+    public let tokenizer: Tokenizer
+    public var sourceVocabulary: Vocabulary
+    public var targetVocabulary: Vocabulary
+    public init(tokenizer: Tokenizer, sourceVocabulary: Vocabulary, targetVocabulary: Vocabulary) {
+        self.tokenizer = tokenizer
+        self.sourceVocabulary = sourceVocabulary
+        self.targetVocabulary = targetVocabulary
+    }
+    // This will take all source and target sequenes
+    // return batches where each batch is based on the size targets in the sequence.
+    public mutating func preprocess(source: [String], target:[String], maxSequenceLength: Int, batchSize: Int) -> [TextBatch] {
+        let padId = Int32(targetVocabulary.add(token: BLANK_WORD))
         
-        
-        // Truncate the sequences based on the maximum allowed sequence length, while accounting
-        // for the '[CLS]' token and for `sequences.count` '[SEP]' tokens. The following is a
-        // simple heuristic which will truncate the longer sequence one token at a time. This makes
-        // more sense than truncating an equal percent of tokens from each sequence, since if one
-        // sequence is very short then each token that is truncated likely contains more
-        // information than respective tokens in longer sequences.
-//        var totalLength = sequences.map { $0.count }.reduce(0, +)
-//        let totalLengthLimit = { () -> Int in
-//            return maxSequenceLength - 1 - sequences.count
-//        }()
-//        while totalLength >= totalLengthLimit {
-//            let maxIndex = sequences.enumerated().max(by: { $0.1.count < $1.1.count })!.0
-//            sequences[maxIndex] = [String](sequences[maxIndex].dropLast())
-//            totalLength = sequences.map { $0.count }.reduce(0, +)
-//        }
-        
-        
-        let BOS_WORD = "<s>"
-        let EOS_WORD = "</s>"
-        let BLANK_WORD = "<blank>"
-        
-        var sourceTokens: [String] = []// what is the first one supposed to be?
-        var targetTokens: [String] = []
-        
-        for (sequence, target ) in zip(sequences, targetSequences) { // we don't need the enum
-            for token in sequence {
-                sourceTokens.append(token)
-            }
-            
-            targetTokens.append(BOS_WORD)
-            for token in target {
-                targetTokens.append(token)
-            }
-            targetTokens.append(EOS_WORD)
-            
+        let tokenizedSource = source.map{ src -> [Int32] in
+            let src = src.prefix(maxSequenceLength)
+            let tokenizedSequence = tokenizer.tokenize(String(src))
+            return tokenizedSequence.map { Int32(self.sourceVocabulary.add(token: $0))}
         }
+        let tokenizedTarget = target.map{ tar -> [Int32] in
+            let tar = tar.prefix(maxSequenceLength)
+            let tokenizedSequence = tokenizer.tokenize(BOS_WORD + tar + EOS_WORD)
+            return tokenizedSequence.map { Int32(self.targetVocabulary.add(token: $0))}
+        }
+        // (sequenceCount, tokenCount)
         
-        // big questions, a list of the source and target tokens together? no
-        // but it's multiple sources in one source.
-        // that means they all need to be padded.
-        //
+        let groupedSources = Dictionary(grouping: tokenizedSource, by: {$0.count}).values.map { $0}
+        let groupedTargets = Dictionary(grouping: tokenizedTarget, by: {$0.count}).values.map { $0}
+        // (groupCount, sequencePerGroupCount,tokenPerSequenceCount)
         
-        let padId = vocabulary.id(forToken: BLANK_WORD)!
-        let tokenIds = sourceTokens.map { Int32(vocabulary.tokensToIds[$0]!)}
-        let targetTokenIds = targetTokens.map { Int32(vocabulary.tokensToIds[$0]!)}
-        // a batch contains several source sentences and the same amount of target sentences.
-        // at this point a senence/ sequence is just a list of tokens.
-        return TextBatch(source: Tensor(tokenIds), target: Tensor(targetTokenIds), pad: Int32(padId))
-        // do I use tokenTypeIds? nope!
+        let batches = zip(groupedSources, groupedTargets).flatMap { (sourceGroup: [[Int32]], targetGroup: [[Int32]]) -> [TextBatch] in
+            let sourceBatches = sourceGroup.chunked(into: batchSize)
+            let targetBatches  = targetGroup.chunked(into: batchSize)
+            let textBatches = zip(sourceBatches, targetBatches).map { (sourceBatch: [[Int32]], targetBatch: [[Int32]]) -> TextBatch in
+                let sourceTensor = Tensor(sourceBatch.map{ ids in
+                    return Tensor<Int32>.init(ids)
+                })
+                let targetTensor = Tensor(targetBatch.map{ ids in
+                    return Tensor<Int32>.init(ids)
+                })
+                return TextBatch(source: sourceTensor, target: targetTensor, pad: padId)
+            }
+            return textBatches
+        }
+        return batches
     }
     
-    // the source is going to be a tensor of shape (sequence_count, longest_sequence_source)
-    
-    // the target (sequence_count, longest_sequence_of_target) where sequence_count is the same
-    
-    // it looks like the source batches all have the same size.
-    // target is going to have <s> to start and </s> to end.
 }
+
+
+
+let BOS_WORD = "<s>"
+let EOS_WORD = "</s>"
+let BLANK_WORD = "<blank>"
