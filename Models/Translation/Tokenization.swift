@@ -32,7 +32,10 @@ public struct TextBatch: KeyPathIterable {
     public var targetTruth: Tensor<Int32>
     
     public var tokenCount: Int
-    
+//    if I want my batch to have sentence of unequal length, the shorter sentences have to be padded with the `<pad>` token so that every sentence is the same length
+//    The mask for the input listen tensor covers the padded elements
+//    The shape of the target mask is (batch_size, 1, input_sequence_length)
+//    The batch size can be anything but it looks like in the translation example, it is only 1.
     init(source: Tensor<Int32>, target: Tensor<Int32>, pad: Int32 = 0) {
         self.tokenIds = source
         self.mask = Tensor(zerosLike: source)

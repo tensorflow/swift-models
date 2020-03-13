@@ -108,4 +108,11 @@ struct TransformerModel: Module {
         return TextBatch(source: Tensor(tokenIds), target: Tensor(targetTokenIds), pad: Int32(padId))
         // do I use tokenTypeIds? nope!
     }
+    
+    // the source is going to be a tensor of shape (sequence_count, longest_sequence_source)
+    
+    // the target (sequence_count, longest_sequence_of_target) where sequence_count is the same
+    
+    // it looks like the source batches all have the same size.
+    // target is going to have <s> to start and </s> to end.
 }
