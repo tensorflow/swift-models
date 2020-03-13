@@ -286,11 +286,10 @@ public struct BERT: Module, Regularizable {
         var mask = [Int32](repeating: 1, count: tokenIds.count)
 
         // Zero-pad up to the max sequence length.
-        while tokenIds.count < maxSequenceLength {
-            tokenIds.append(Int32(0))
-            tokenTypeIds.append(Int32(0))
-            mask.append(Int32(0))
-        }
+        let zeroPadding = [Int32](repeating: 0, count: maxSequenceLength - tokenIds.count)        
+        tokenIds.append(contentsOf: zeroPadding)
+        tokenTypeIds.append(contentsOf: zeroPadding)
+        mask.append(contentsOf: zeroPadding)
 
         return TextBatch(
             tokenIds: Tensor(tokenIds).expandingShape(at: 0),
