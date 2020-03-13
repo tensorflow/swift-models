@@ -160,7 +160,7 @@ public struct TextUnsupervised {
         return LanguageModelDataset(
             batchSize: batchSize,
             sequenceLength: sequenceLength,
-            items: embeddings,
+            numericalizedTexts: embeddings,
             lengths: lengths,
             dropLast: true
         )
