@@ -98,31 +98,28 @@ open class CheckpointReader {
     static func downloadAndExtractArchive(from checkpointLocation: URL, to temporaryDirectory: URL)
         throws -> URL
     {
-        func findCheckpointBase() throws -> URL? {
-            if FileManager.default.fileExists(atPath: temporaryDirectory.path) {
-                let dirContents = try FileManager.default.contentsOfDirectory(
-                    at: temporaryDirectory, includingPropertiesForKeys: [.isDirectoryKey],
-                    options: [.skipsHiddenFiles])
-                for location in dirContents {
-                    let resourceValues = try location.resourceValues(forKeys: [.isDirectoryKey])
-                    if resourceValues.isDirectory ?? false {
-                        let subdirContents = try FileManager.default.contentsOfDirectory(
-                            at: location, includingPropertiesForKeys: [.isDirectoryKey],
-                            options: [.skipsHiddenFiles])
-                        for file in subdirContents {
-                            if file.path.hasSuffix(".index") {
-                                return URL(
-                                    fileURLWithPath: String(file.path.prefix(file.path.count - 6)))
-                            }
-                        }
-                    }
+        func findCheckpointBase(in directory: URL) throws -> URL? {
+            guard
+                let directoryEnumerator = FileManager.default.enumerator(
+                    at: directory, includingPropertiesForKeys: [.isDirectoryKey],
+                    options: .skipsHiddenFiles)
+            else {
+                return nil
+            }
+            for case let location as URL in directoryEnumerator {
+                let resourceValues = try location.resourceValues(forKeys: [.isDirectoryKey])
+                if !(resourceValues.isDirectory ?? false) && location.path.hasSuffix(".index") {
+                    return URL(
+                        fileURLWithPath: String(location.path.prefix(location.path.count - 6)))
                 }
             }
 
             return nil
         }
 
-        if let checkpointBase = try findCheckpointBase() { return checkpointBase }
+        if let checkpointBase = try findCheckpointBase(in: temporaryDirectory) {
+            return checkpointBase
+        }
 
         let archiveLocation: URL
         if checkpointLocation.isFileURL {
@@ -135,7 +132,7 @@ open class CheckpointReader {
 
         extractArchive(at: archiveLocation, to: temporaryDirectory, deleteArchiveWhenDone: false)
 
-        guard let checkpointBase = try findCheckpointBase() else {
+        guard let checkpointBase = try findCheckpointBase(in: temporaryDirectory) else {
             fatalError("Unable to find checkpoint index in downloaded archive.")
         }
 
