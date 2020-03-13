@@ -12,12 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import TextModels
+
 let gpt: GPT2 = try GPT2()
 
 // Set temperature.
-gpt.temperature = CommandLine.arguments.count >= 2
-                      ? Float(CommandLine.arguments[1])!
-                      : Float(1.0)
+if CommandLine.arguments.count >= 2 {
+  guard let temperature = Float(CommandLine.arguments[1]) else {
+    fatalError("Could not parse command line argument '\(CommandLine.arguments[1])' as a float")
+  }
+  gpt.temperature = temperature
+} else {
+  gpt.temperature = 1.0
+}
 
 // Use seed text.
 if CommandLine.arguments.count == 3 {
@@ -27,9 +34,18 @@ if CommandLine.arguments.count == 3 {
 
 for _ in 0..<100 {
     do {
-      try print(gpt.generate(), terminator: "")
+        try print(gpt.generate(), terminator: "")
     } catch {
-      continue
+        continue
     }
 }
 print()
+
+// The following illustrates how to write out a checkpoint from this model and read it back in.
+/*
+import Foundation
+let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent("Transformer")
+try gpt.writeCheckpoint(to: temporaryDirectory, name: "model2.ckpt")
+
+let recreatedmodel = try GPT2(checkpoint: temporaryDirectory.appendingPathComponent("model2.ckpt"))
+*/

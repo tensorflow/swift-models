@@ -15,11 +15,9 @@
 import XCTest
 
 #if !os(macOS)
-public func allTests() -> [XCTestCaseEntry] {
-    return [
-        testCase(CheckpointIndexReaderTests.allTests),
-        testCase(CheckpointWriterTests.allTests),
-        testCase(SnappyDecompressionTests.allTests),
-    ]
-}
+    public func allTests() -> [XCTestCaseEntry] {
+        return [
+            testCase(TextInferenceTests.allTests),
+        ]
+    }
 #endif

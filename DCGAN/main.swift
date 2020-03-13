@@ -153,8 +153,8 @@ for epoch in 0 ... epochs {
     // Render images.
     let generatedImage = generator(noise)
     try saveImage(
-        generatedImage, size: (28, 28), directory: outputFolder,
-        name: "\(epoch).jpg")
+        generatedImage, shape: (28, 28), format: .grayscale, directory: outputFolder,
+        name: "\(epoch)")
 
     // Print loss.
     let generatorLoss_ = generatorLoss(fakeLabels: generatedImage)
@@ -165,5 +165,5 @@ for epoch in 0 ... epochs {
 let noise1 = Tensor<Float>(randomNormal: TensorShape(1, 100))
 let generatedImage = generator(noise1)
 try saveImage(
-        generatedImage, size: (28, 28), directory: outputFolder,
-        name: "final.jpg")
+    generatedImage, shape: (28, 28), format: .grayscale, directory: outputFolder,
+    name: "final")

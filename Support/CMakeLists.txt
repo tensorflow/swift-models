@@ -1,7 +1,9 @@
 add_library(ModelSupport
   BijectiveDictionary.swift
   Checkpoints/CheckpointIndexReader.swift
+  Checkpoints/CheckpointIndexWriter.swift
   Checkpoints/CheckpointReader.swift
+  Checkpoints/CheckpointWriter.swift
   Checkpoints/Protobufs/tensor_bundle.pb.swift
   Checkpoints/Protobufs/tensor_shape.pb.swift
   Checkpoints/Protobufs/tensor_slice.pb.swift
@@ -10,11 +12,17 @@ add_library(ModelSupport
   Checkpoints/SnappyDecompression.swift
   FileManagement.swift
   Image.swift
-  Stderr.swift)
+  Stderr.swift
+  Text/BytePairEncoder.swift
+  Text/SentencePiece/SentencePieceModel.pb.swift
+  Text/TextBatch.swift
+  Text/Tokenization.swift)
 set_target_properties(ModelSupport PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
 target_compile_options(ModelSupport PRIVATE
   $<$<BOOL:${BUILD_TESTING}>:-enable-testing>)
+target_link_libraries(ModelSupport PUBLIC
+  SwiftProtobuf)
 
 
 install(TARGETS ModelSupport

@@ -1,18 +1,22 @@
 add_library(TextModels
-  SentencePiece/SentencePieceModel.pb.swift
   Attention.swift
   BERT.swift
   BERTClassifier.swift
-  BytePairEncoding.swift
   Embeddings.swift
   Evaluation.swift
+  GPT2/CheckpointWriter.swift
+  GPT2/GPT2.swift
+  GPT2/TransformerLM.swift
+  GPT2/Operators.swift
+  GPT2/PythonCheckpointReader.swift
   ScheduledParameters.swift
-  Tokenization.swift
-  Transformer.swift
+  TransformerBERT.swift
   Utilities.swift
   WeightDecayedAdam.swift)
 set_target_properties(TextModels PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
+target_compile_options(TextModels PRIVATE
+  $<$<BOOL:${BUILD_TESTING}>:-enable-testing>)
 target_link_libraries(TextModels PUBLIC
   Datasets)
 

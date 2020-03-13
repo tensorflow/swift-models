@@ -23,7 +23,7 @@ to be best.
 Here's one output we got:
 
 ```console
-$ swift run -c release 0.5 "Introducing Swift for TensorFlow"
+$ swift run -c release TransformerDemo 0.5 "Introducing Swift for TensorFlow"
 Introducing Swift for TensorFlow
 
 Swift has been around since the beginning. It was created by the Swift team to enable developers to write Swift code. It is a powerful language for developing many different types of data structures.

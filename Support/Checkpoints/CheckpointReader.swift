@@ -39,6 +39,10 @@ open class CheckpointReader {
     /// The names of the tensors stored in the checkpoint.
     public var tensorNames: [String] { [String](metadata.keys) }
 
+    /// CRC verification during checkpoint loading is enabled by default, but can be selectively
+    /// disabled to speed up reads in debug builds or test cases.
+    public var isCRCVerificationEnabled: Bool = true
+
     /// Initializes the checkpoint reader from either a local or remote directory. If remote, 
     /// automatically downloads the checkpoint files into a temporary directory.
     ///
@@ -182,6 +186,16 @@ open class CheckpointReader {
         let tensorData = shardBytes.subdata(
             in: Int(bundleEntry.offset)..<Int(bundleEntry.offset + bundleEntry.size))
 
+        if isCRCVerificationEnabled {
+            let readCRC32C = bundleEntry.crc32C
+            let calculatedCRC32C = tensorData.maskedCRC32C()
+            guard readCRC32C == calculatedCRC32C else {
+                fatalError(
+                    "Tensor \(name) had a bad CRC, expected: \(calculatedCRC32C), read: \(readCRC32C)."
+                )
+            }
+        }
+
         let scalarArray = tensorData.withUnsafeBytes { pointer in
             Array(pointer.bindMemory(to: Scalar.self))
         }
@@ -211,5 +225,42 @@ open class CheckpointReader {
 extension Tensorflow_TensorShapeProto {
     var shapeArray: [Int] {
         return self.dim.map { Int($0.size) }
+    }
+}
+
+extension Data {
+    static var crc32CLookupTable: [UInt32] = {
+        (0...255).map { index -> UInt32 in
+            var lookupValue = UInt32(index)
+            for _ in 0..<8 {
+                lookupValue =
+                    (lookupValue % 2 == 0) ? (lookupValue >> 1) : (0x82F6_3B78 ^ (lookupValue >> 1))
+            }
+            return lookupValue
+        }
+    }()
+
+    func crc32C() -> UInt32 {
+        var crc32: UInt32 = 0xFFFF_FFFF
+
+        self.withUnsafeBytes { buffer in
+            let totalBytes = self.count
+            var index = 0
+            while index < totalBytes {
+                let byte = buffer[index]
+                let lookupIndex = Int((crc32 ^ (UInt32(byte) & 0xFF)) & 0xFF)
+                crc32 = (crc32 >> 8) ^ Data.crc32CLookupTable[lookupIndex]
+                index = index &+ 1
+            }
+        }
+
+        return crc32 ^ 0xFFFF_FFFF
+    }
+
+    // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/lib/hash/crc32c.h
+    func maskedCRC32C() -> UInt32 {
+        let crc32 = self.crc32C()
+        let maskDelta: UInt32 = 0xA282_EAD8
+        return ((crc32 &>> 15) | (crc32 &<< 17)) &+ maskDelta
     }
 }

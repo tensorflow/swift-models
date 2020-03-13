@@ -17,7 +17,9 @@ where Texts: Collection, Texts.Index==Int, Texts.Element==[Int] {
   public let numericalizedTexts: Texts
   /// The length of each processed item.
   public let lengths: [Int]
-  /// The length of a contiguous chunk of text.
+  //Drop the last batch if its length is less than sequenceLength
+  public let dropLast: Bool
+  //The length of a contiguous chunk of text
   private var batchLength: Int
   /// The number of batches.
   private var batchCount: Int
@@ -32,14 +34,19 @@ where Texts: Collection, Texts.Index==Int, Texts.Element==[Int] {
     batchSize: Int,
     sequenceLength: Int,
     numericalizedTexts: Texts,
-    lengths: [Int]
+    lengths: [Int],
+    dropLast: Bool = false
   ) {
     self.batchSize = batchSize
     self.sequenceLength = sequenceLength
     self.numericalizedTexts = numericalizedTexts
     self.lengths = lengths
+    self.dropLast = dropLast
     cumulativeLengths = lengths.reduce(into: []) { $0.append(($0.last ?? 0) + $1) }
     batchLength = (cumulativeLengths.last! - 1) / batchSize
+    if dropLast {
+        batchLength = (batchLength / sequenceLength) * sequenceLength
+    }
     batchCount = batchLength / sequenceLength + (batchLength % sequenceLength == 0 ? 0 : 1)
     lastLength = batchLength - (batchCount - 1) * sequenceLength
     indices = Array(0..<numericalizedTexts.count)
@@ -48,13 +55,15 @@ where Texts: Collection, Texts.Index==Int, Texts.Element==[Int] {
   public init(
     batchSize: Int,
     sequenceLength: Int,
-    numericalizedTexts: Texts
+    numericalizedTexts: Texts,
+    dropLast: Bool = false
   ) {
     self.init(
       batchSize: batchSize,
       sequenceLength: sequenceLength,
       numericalizedTexts: numericalizedTexts,
-      lengths: numericalizedTexts.map { $0.count })
+      lengths: numericalizedTexts.map { $0.count }),
+      dropLast: dropLast)
   }
 
   /// Shuflle the dataset.

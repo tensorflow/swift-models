@@ -4,15 +4,17 @@ add_library(Datasets
   CoLA/Batchable.swift
   CoLA/CoLA.swift
   CoLA/DataUtilities.swift
-  CoLA/TextBatch.swift
   ImageClassificationDataset.swift
   Imagenette/Imagenette.swift
   Imagenette/Imagewoof.swift
   LabeledExample.swift
   LanguageModelDataset.swift
+  MNIST/MNISTDatasetHandler.swift
   MNIST/MNIST.swift
   MNIST/FashionMNIST.swift
-  BostonHousing/BostonHousing.swift)
+  MNIST/KuzushijiMNIST.swift
+  BostonHousing/BostonHousing.swift
+  TextUnsupervised/TextUnsupervised.swift)
 target_link_libraries(Datasets PUBLIC
   Batcher
   ModelSupport)
