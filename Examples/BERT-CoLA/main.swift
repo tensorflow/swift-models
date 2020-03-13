@@ -38,7 +38,7 @@ var bertClassifier = BERTClassifier(bert: bert, classCount: 1)
 var colaTask = try CoLA(
     for: bertClassifier,
     taskDirectoryURL: workspaceURL,
-    maxSequenceLength: 128,
+    maxSequenceLength: 64,
     batchSize: 1024)
 
 var optimizer = WeightDecayedAdam(
