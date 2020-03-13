@@ -62,7 +62,7 @@ where Texts: Collection, Texts.Index==Int, Texts.Element==[Int] {
       batchSize: batchSize,
       sequenceLength: sequenceLength,
       numericalizedTexts: numericalizedTexts,
-      lengths: numericalizedTexts.map { $0.count }),
+      lengths: numericalizedTexts.map { $0.count },
       dropLast: dropLast)
   }
 
