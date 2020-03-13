@@ -31,7 +31,9 @@ public class GPT2 {
     public var seed: Tensor<Int32>
     public var temperature: Float = 1.0
 
-    var states: [AttentionContext]
+    private var states: [AttentionContext]
+    private let endOfText = "<|endoftext|>"
+    private var endOfTextId = 0
 
     public init(checkpoint: URL = GPT2.remoteCheckpoint) throws {
         var parameters = TransformerLMConfig(
@@ -84,6 +86,7 @@ public class GPT2 {
             // Create a bytepair encoder with loaded token mappings.
             bpe = try BytePairEncoder(
                 vocabularyFile: vocabulary.file, mergesFile: merges.file)
+            endOfTextId = bpe.vocabulary.id(forToken: endOfText)!
 
             print("GPT-2 loaded from checkpoint successfully.")
         } catch {
@@ -107,7 +110,7 @@ public class GPT2 {
                 positionalEmbeddings: positionalEmbeddings, layers: layers, norm: layerNorm)
 
             // Empty vocab and merges.
-            let vocabulary = Vocabulary(tokensToIds: ["<|endoftext|>": 0])
+            let vocabulary = Vocabulary(tokensToIds: [endOfText: endOfTextId])
             let mergePairs = [BytePairEncoder.Pair: Int]()
             bpe = BytePairEncoder(vocabulary: vocabulary, mergePairs: mergePairs)
         }
@@ -115,8 +118,7 @@ public class GPT2 {
         contextSize = parameters.contextSize
 
         // TODO: Add argument that controls this.
-        let seedId = Int32(bpe.vocabulary.id(forToken: "<|endoftext|>")!)
-        seed = Tensor(shape: [1, 1], scalars: [seedId])
+        seed = Tensor(shape: [1, 1], scalars: [Int32(endOfTextId)])
 
         // Reset attention context for each layer.
         let empty =
@@ -147,11 +149,16 @@ public class GPT2 {
             result.slice(
                 lowerBounds: [0, timesteps - 1, 0],
                 upperBounds: [batchSize, timesteps, vocabularySize]) / temperature
+
         seed = Tensor(
             randomCategorialLogits: logits.squeezingShape(at: 1),
             sampleCount: 1)
 
         let id = Int32(seed[0][0])!
+        if id == Int32(endOfTextId) {
+            // Replace with newline.
+            return "\n"
+        }
         if let token: String = bpe.vocabulary.token(forId: Int(id)) {
             return BytePairEncoder.decode(token: token)
         }
