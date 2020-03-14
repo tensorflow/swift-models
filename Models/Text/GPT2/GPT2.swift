@@ -157,10 +157,12 @@ public class GPT2 {
         let id = Int32(seed[0][0])!
         if id == Int32(endOfTextId) {
             // Replace with newline.
-            return "\n"
+            return "\r\n"
         }
         if let token: String = bpe.vocabulary.token(forId: Int(id)) {
-            return BytePairEncoder.decode(token: token)
+            let decodedToken = BytePairEncoder.decode(token: token)
+            // Make any line breaks universal.
+            return decodedToken.replacingOccurrences(of: "\n", with: "\r\n")
         }
 
         throw GPT2Error.invalidEncoding(id: id)
