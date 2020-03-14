@@ -31,6 +31,59 @@ final class ImageClassificationInferenceTests: XCTestCase {
         XCTAssertEqual(denseNet121Result.shape, [1, 1000])
     }
 
+    func testEfficientNet() {
+        let input = Tensor<Float>(
+            randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
+            standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
+        let efficientNet = EfficientNet(classCount: 1000)
+        let efficientNetResult = efficientNet(input)
+        XCTAssertEqual(efficientNetResult.shape, [1, 1000])
+
+        let efficientNetSmall = EfficientNet(classCount: 10)
+        let efficientNetSmallResult = efficientNetSmall(input)
+        XCTAssertEqual(efficientNetSmallResult.shape, [1, 10])
+
+        let efficientNetB0 = EfficientNet(kind: .efficientnetB0, classCount: 1000)
+        let efficientNetB0Result = efficientNetB0(input)
+        XCTAssertEqual(efficientNetB0Result.shape, [1, 1000])
+
+        let efficientNetB1 = EfficientNet(kind: .efficientnetB1, classCount: 1000)
+        let efficientNetB1Result = efficientNetB1(input)
+        XCTAssertEqual(efficientNetB1Result.shape, [1, 1000])
+
+        let efficientNetB2 = EfficientNet(kind: .efficientnetB2, classCount: 1000)
+        let efficientNetB2Result = efficientNetB2(input)
+        XCTAssertEqual(efficientNetB2Result.shape, [1, 1000])
+
+        let efficientNetB3 = EfficientNet(kind: .efficientnetB3, classCount: 1000)
+        let efficientNetB3Result = efficientNetB3(input)
+        XCTAssertEqual(efficientNetB3Result.shape, [1, 1000])
+
+        let efficientNetB4 = EfficientNet(kind: .efficientnetB4, classCount: 1000)
+        let efficientNetB4Result = efficientNetB4(input)
+        XCTAssertEqual(efficientNetB4Result.shape, [1, 1000])
+
+        let efficientNetB5 = EfficientNet(kind: .efficientnetB5, classCount: 1000)
+        let efficientNetB5Result = efficientNetB5(input)
+        XCTAssertEqual(efficientNetB5Result.shape, [1, 1000])
+
+        let efficientNetB6 = EfficientNet(kind: .efficientnetB6, classCount: 1000)
+        let efficientNetB6Result = efficientNetB6(input)
+        XCTAssertEqual(efficientNetB6Result.shape, [1, 1000])
+
+        let efficientNetB7 = EfficientNet(kind: .efficientnetB7, classCount: 1000)
+        let efficientNetB7Result = efficientNetB7(input)
+        XCTAssertEqual(efficientNetB7Result.shape, [1, 1000])
+
+        let efficientNetB8 = EfficientNet(kind: .efficientnetB8, classCount: 1000)
+        let efficientNetB8Result = efficientNetB8(input)
+        XCTAssertEqual(efficientNetB8Result.shape, [1, 1000])
+
+        let efficientNetL2 = EfficientNet(kind: .efficientnetL2, classCount: 1000)
+        let efficientNetL2Result = efficientNetL2(input)
+        XCTAssertEqual(efficientNetL2Result.shape, [1, 1000])
+    }
+
     func testLeNet() {
         let leNet = LeNet()
         let input = Tensor<Float>(
@@ -263,6 +316,7 @@ final class ImageClassificationInferenceTests: XCTestCase {
 extension ImageClassificationInferenceTests {
     static var allTests = [
         ("testDenseNet121", testDenseNet121),
+        ("testEfficientNet", testEfficientNet),
         ("testLeNet", testLeNet),
         ("testMobileNetV1", testMobileNetV1),
         ("testMobileNetV2", testMobileNetV2),
