@@ -115,7 +115,8 @@ extension CoLA {
         exampleMap: @escaping (Example) -> DataBatch,
         taskDirectoryURL: URL,
         maxSequenceLength: Int,
-        batchSize: Int
+        batchSize: Int,
+        dropRemainder: Bool
     ) throws {
         self.directoryURL = taskDirectoryURL.appendingPathComponent("CoLA")
         let dataURL = directoryURL.appendingPathComponent("data")
@@ -168,7 +169,8 @@ extension CoLA {
                         inputs: padAndBatch(
                             textBatches: $0.map { $0.inputs }, maxLength: maxSequenceLength),
                         labels: Tensor.batch($0.map { $0.labels! }))
-                }
+                },
+                dropRemainder: dropRemainder
             )
             .prefetched(count: 2)
         self.devDataIterator = devExamples.makeIterator()
@@ -181,7 +183,9 @@ extension CoLA {
                         inputs: padAndBatch(
                             textBatches: $0.map { $0.inputs }, maxLength: maxSequenceLength),
                         labels: Tensor.batch($0.map { $0.labels! }))
-                })
+                },
+                dropRemainder: dropRemainder
+            )
         self.testDataIterator = testExamples.makeIterator()
             .map(exampleMap)
             .grouped(
@@ -192,6 +196,8 @@ extension CoLA {
                         inputs: padAndBatch(
                             textBatches: $0.map { $0.inputs }, maxLength: maxSequenceLength),
                         labels: nil)
-                })
+                },
+                dropRemainder : dropRemainder
+            )
     }
 }
