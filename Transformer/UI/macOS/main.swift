@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#if canImport(AppKit)
 import AppKit
 
 import Dispatch
@@ -189,3 +190,8 @@ extension SwiftApplicationDelegate {
 let delegate: SwiftApplicationDelegate = SwiftApplicationDelegate()
 NSApplication.shared.delegate = delegate
 _ = NSApplicationMain(CommandLine.argc, CommandLine.unsafeArgv)
+
+#else
+fatalError("This demo requires AppKit on macOS to run.")
+#endif
+
