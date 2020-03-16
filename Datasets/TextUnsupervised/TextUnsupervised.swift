@@ -130,7 +130,7 @@ public struct TextUnsupervised {
         // Removing the initial '"'.
         rows[0] = String(rows[0].dropFirst())
         // Removing the last '"\n'
-        rows[rows.count - 1] = String(rows[rows.count - 1].suffix(2))
+        rows[rows.count - 1] = String(rows[rows.count - 1].prefix(rows[rows.count - 1].count - 2))
         return rows
     }
 
