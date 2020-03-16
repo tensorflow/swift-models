@@ -29,6 +29,7 @@ let package = Package(
         .library(name: "MiniGo", targets: ["MiniGo"]),
         .executable(name: "MiniGoDemo", targets: ["MiniGoDemo"]),
         .executable(name: "TransformerDemo", targets: ["TransformerDemo"]),
+        .executable(name: "TransformerUI", targets: ["TransformerUI"]),
         .executable(name: "GPT2-WikiText2", targets: ["GPT2-WikiText2"]),
     ],
     dependencies: [
@@ -81,6 +82,18 @@ let package = Package(
             path: "Transformer",
             exclude: ["UI/Windows/main.swift", "UI/macOS/main.swift"],
             sources: ["main.swift"]),
+        .target(
+            name: "TransformerUI", dependencies: ["TextModels"], path: "Transformer",
+            exclude: ["UI/Windows/main.swift", "main.swift"],
+            sources: ["UI/macOS/main.swift"],
+            linkerSettings: [
+                .unsafeFlags(
+                    [
+                        "-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__info_plist",
+                        "-Xlinker",
+                        "Transformer/UI/macOS/Info.plist",
+                    ], .when(platforms: [.macOS]))
+            ]),
         .target(
             name: "GPT2-WikiText2",
             dependencies: ["Batcher", "Datasets", "TextModels"],
