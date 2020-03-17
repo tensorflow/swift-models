@@ -16,33 +16,45 @@ public struct TransformerModel: Module {
     var targetEmbed: Sequential<Embedding<Float>, PositionalEncoding>
     public init(sourceVocabSize: Int, targetVocabSize: Int, layerCount: Int = 6, modelSize: Int = 256, feedForwardSize: Int = 1024, headCount: Int = 8, dropoutProbability: Double = 0.1) {
         
-        let attentions = [MultiHeadAttention](repeating: .init(sourceSize: modelSize, targetSize: modelSize, headCount: headCount, headSize: modelSize/headCount,  matrixResult: true), count: 3) // matrix true goes further
-        let feedForwards = [PositionwiseFeedForward](repeating: .init(dimensionalityModel: modelSize, innerLayerDimensionality: feedForwardSize), count: 2)
-        let positionalEncodings = [PositionalEncoding](repeating: .init(size: modelSize, dropoutProbability: dropoutProbability), count: 2)
+        let attention = MultiHeadAttention(sourceSize: modelSize,
+                                           targetSize: modelSize,
+                                           headCount: headCount,
+                                           headSize: modelSize/headCount,
+                                           matrixResult: true)
         
-        self.encoder = Encoder(layer: .init(size: modelSize, selfAttention: attentions[0], feedForward: feedForwards[0], dropoutProb: dropoutProbability), layerCount: layerCount)
-        self.decoder = Decoder(layer: .init(size: modelSize, selfAttention: attentions[1], sourceAttention: attentions[2], feedForward: feedForwards[1], dropoutProb: dropoutProbability), layerCount: layerCount)
-        self.sourceEmbed = Sequential(Embedding(vocabularySize: sourceVocabSize, embeddingSize: modelSize), positionalEncodings[0])
-        self.targetEmbed = Sequential(Embedding(vocabularySize: targetVocabSize, embeddingSize: modelSize), positionalEncodings[1])
+        let feedForward = PositionwiseFeedForward(dimensionalityModel: modelSize,
+                                                  innerLayerDimensionality: feedForwardSize)
+        
+        let positionalEncoding = PositionalEncoding(size: modelSize,
+                                                    dropoutProbability: dropoutProbability)
+        
+        self.encoder = Encoder(layer: .init(size: modelSize, selfAttention: attention, feedForward: feedForward, dropoutProb: dropoutProbability), layerCount: layerCount)
+        self.decoder = Decoder(layer: .init(size: modelSize, selfAttention: attention, sourceAttention: attention, feedForward: feedForward, dropoutProb: dropoutProbability), layerCount: layerCount)
+        self.sourceEmbed = Sequential(Embedding(vocabularySize: sourceVocabSize, embeddingSize: modelSize), positionalEncoding)
+        self.targetEmbed = Sequential(Embedding(vocabularySize: targetVocabSize, embeddingSize: modelSize), positionalEncoding)
         // todo xavier init.
     }
     
     @differentiable
     public func callAsFunction(_ input: TextBatch) -> Tensor<Float> {
         let sourceAttentionMask = Tensor<Float>(input.mask)
-        return self.decode(input: input, memory: self.encode(input: input, attentionMask: sourceAttentionMask), sourceMask: sourceAttentionMask)
+        let encodedMemory = self.encode(input: input, attentionMask: sourceAttentionMask)
+        print("encodedMemory shape: \(encodedMemory.shape)")
+        return self.decode(input: input, memory: encodedMemory, sourceMask: sourceAttentionMask)
     }
     
     @differentiable
     func encode(input: TextBatch, attentionMask: Tensor<Float>) -> Tensor<Float> {
         let embedded = self.sourceEmbed(input.tokenIds)
+        print("encode embedded \(embedded.shape)")
         return self.encoder(.init(sequence: embedded, attentionMask: attentionMask))
     }
     
     @differentiable
     func decode(input: TextBatch, memory: Tensor<Float>, sourceMask: Tensor<Float>) -> Tensor<Float> {
         let embedded = self.targetEmbed(input.targetTokenIds)
-        let targetAttentionMask = createTargetAttentionMask(forTextBatch: input)
+        let targetAttentionMask = Tensor<Float>(input.targetMask)
+        print("decode embedded \(embedded.shape)")
         return self.decoder.callAsFunction(.init(sequence: embedded, sourceMask: sourceMask, targetMask: targetAttentionMask, memory: memory))
     }
 }

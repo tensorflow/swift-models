@@ -32,12 +32,13 @@ struct TransformerDecoderLayer: Layer {
         // SR-11882
         let selfNoDerivative = withoutDerivative(at: self)
         let inputNoDerivative = withoutDerivative(at: input)
+        let batchSizeNotDerivative = withoutDerivative(at: input.batchSize)
         // not sure if source and target are right for any of these.
         var output = self.sublayers[0](.init(sequence: input.sequence, activation: {
-            selfNoDerivative.selfAttention(.init(source: $0, target: $0, mask: inputNoDerivative.sourceMask))
+            selfNoDerivative.selfAttention(.init(source: $0, target: $0, mask: inputNoDerivative.targetMask, batchSize: batchSizeNotDerivative))
         }))
         output = self.sublayers[1](.init(sequence: output, activation: {
-            selfNoDerivative.sourceAttention(.init(source: $0, target: inputNoDerivative.memory, mask: inputNoDerivative.sourceMask))
+            selfNoDerivative.sourceAttention(.init(source: $0, target: inputNoDerivative.memory, mask: inputNoDerivative.sourceMask, batchSize: batchSizeNotDerivative))
         }))
         output = self.sublayers[2](.init(sequence: output, activation: {
             selfNoDerivative.feedForward($0)
@@ -93,7 +94,7 @@ struct Decoder: Layer {
         let batchSize = input.sequence.shape[0]
         
         for layerIndex in 0..<(withoutDerivative(at: layers) { $0.count }) {
-            transformerInput = layers[layerIndex](DecoderInput(sequence: transformerInput, sourceMask: input.sourceMask, targetMask: input.targetMask, memory: input.memory, batchSize: batchSize))
+            transformerInput = layers[layerIndex](DecoderInput(sequence: transformerInput, sourceMask: input.sourceMask, targetMask: input.targetMask, memory: input.memory.reshapedToMatrix(), batchSize: batchSize))
         }
         
         return transformerInput.reshapedFromMatrix(originalShape: input.sequence.shape)

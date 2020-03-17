@@ -60,14 +60,16 @@ struct SublayerConnection: Layer {
 
 struct PositionwiseFeedForward: Layer {
     // "Implements FFN equation."
-    var dense1: TimeDistributed// TODO might need to be TimeDistributed to handle timesteps??
-    var dense2: TimeDistributed
+    var dense1: Dense<Float>// TODO might need to be TimeDistributed to handle timesteps??
+    var dense2: Dense<Float>
     @noDerivative let dropout: Dropout<Float>
     
     init(dimensionalityModel:Int, innerLayerDimensionality:Int, dropProbability: Double=0.1) {
         // these are just "nn.Linear"
-        dense1 = TimeDistributed(Dense(inputSize: dimensionalityModel, outputSize: innerLayerDimensionality))
-        dense2 = TimeDistributed(Dense(inputSize: innerLayerDimensionality, outputSize: dimensionalityModel))
+//        dense1 = TimeDistributed(Dense(inputSize: dimensionalityModel, outputSize: innerLayerDimensionality))
+//        dense2 = TimeDistributed(Dense(inputSize: innerLayerDimensionality, outputSize: dimensionalityModel))
+        dense1 = Dense(inputSize: dimensionalityModel, outputSize: innerLayerDimensionality)
+        dense2 = Dense(inputSize: innerLayerDimensionality, outputSize: dimensionalityModel)
         dropout = Dropout<Float>(probability: dropProbability)
     }
     
