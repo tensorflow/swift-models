@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// Based on https://blog.keras.io/building-autoencoders-in-keras.html
-
 import ArgumentParser
 
 struct Options: ParsableArguments {
