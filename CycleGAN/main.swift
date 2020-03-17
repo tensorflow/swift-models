@@ -18,6 +18,7 @@ import TensorFlow
 import Files
 import Foundation
 import TensorBoardX
+import ModelSupport
 
 let options = Options.parseOrExit()
 let logDirURL = URL(fileURLWithPath: options.tensorboardLogdir, isDirectory: true)
