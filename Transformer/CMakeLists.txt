@@ -27,6 +27,9 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
   add_custom_command(TARGET TransformerUI POST_BUILD
     COMMAND
       ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_CURRENT_SOURCE_DIR}/UI/macOS/Info.plist $<TARGET_FILE_DIR:TransformerUI>
+    COMMAND
+      ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:SwiftProtobuf> $<TARGET_FILE_DIR:TransformerUI>
     DEPENDS
+      SwiftProtobuf
       ${CMAKE_CURRENT_SOURCE_DIR}/UI/macOS/Info.plist)
 endif()
