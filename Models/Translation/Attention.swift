@@ -8,6 +8,81 @@
 
 import TensorFlow
 
+///// Input to an attention layer.
+//public struct AttentionInput<Scalar: TensorFlowFloatingPoint>: Differentiable {
+//    public var query: Tensor<Scalar>
+//    public var key: Tensor<Scalar>
+//    public var value: Tensor<Scalar>
+//    public var mask: Tensor<Scalar>?
+//
+//    @differentiable
+//    public init(
+//        query: Tensor<Scalar>,
+//        key: Tensor<Scalar>,
+//        value: Tensor<Scalar>,
+//        mask: Tensor<Scalar>?
+////        batchSize: Int? = nil
+//    ) {
+////        precondition(
+////            source.rank == target.rank,
+////            "The rank of the attention source and target tensors must match.")
+//        self.query = query
+//        self.key = key
+//        self.value = value
+//        self.mask = mask
+////        self.batchSize = batchSize
+//    }
+//}
+//
+//public struct MultiHeadAttention: Layer {
+//    @noDerivative public let heads: Int
+//    @noDerivative public let dimModel: Int
+//    @noDerivative public let dimK: Int
+//    public var linears: [Dense<Float>]
+//    public var dropout: Dropout<Float>
+//    init(heads: Int, dimModel: Int, dropoutProbability: Double) {
+//        self.heads = heads
+//        self.dimModel = dimModel
+//        self.dimK = floor(Double(dimModel) / Double(heads))
+//        self.linears = [Dense<Float>](repeating: .init(inputSize: dimModel, outputSize: dimModel), count: 4)
+//        self.dropout = Dropout(probability: dropoutProbability)
+//    }
+//
+//    public func callAsFunction(_ input: AttentionInput<Float>) -> Tensor<Float> {
+//        let mask = input.mask.expandingShape(at: 1) // Same mask applied to all h heads.
+//        let nBatches = input.query.shape[0]
+//        zip(self.linears,[input.query, input.key, input.value])
+//            .map { (linear: Dense<Float>, x: Tensor<Float>) -> Tensor<Float> in
+//                let output = linear(x)
+//                return.reshaped(to: [nBatches, output.shape.last!, self.heads, self.dimK])
+//        }
+//
+//
+//    }
+//
+////    def attention(query, key, value, mask=None, dropout=None):
+////    "Compute 'Scaled Dot Product Attention'"
+////    d_k = query.size(-1)
+////    scores = torch.matmul(query, key.transpose(-2, -1)) \
+////             / math.sqrt(d_k)
+////    if mask is not None:
+////        scores = scores.masked_fill(mask == 0, -1e9)
+////    p_attn = F.softmax(scores, dim = -1)
+////    if dropout is not None:
+////        p_attn = dropout(p_attn)
+////    return torch.matmul(p_attn, value), p_attn
+//    func attention(input: AttentionInput<Float>) -> Tensor<Float> {
+//        let localDimK = Float(input.query.shape.last!)
+//        let keyRank = input.key.rank
+//        let scores = matmul(input.query, input.key.transposed(permutation: [keyRank - 2, keyRank - 1])) / sqrt(Tensor(localDimK))
+//
+//        if let mask = input.mask {
+//            scores =
+//        }
+//    }
+//}
+
+/// Input to an attention layer.
 public struct AttentionInput<Scalar: TensorFlowFloatingPoint>: Differentiable {
     /// Source tensor that we are attending from, with shape
     /// `[batchSize, sourceSequenceLength, sourceDepth]` or
@@ -122,7 +197,7 @@ public struct MultiHeadAttention: Layer {
         targetSize: Int,
         headCount: Int = 1,
         headSize: Int = 512,
-        queryActivation: @escaping Activation<Scalar> = identity, // the original doesn't use an activation.. maybe this is why positionwisefeedforward is used. so maybe I can just get rid of it? or have it default to relu.
+        queryActivation: @escaping Activation<Scalar> = identity,
         keyActivation: @escaping Activation<Scalar> = identity,
         valueActivation: @escaping Activation<Scalar> = identity,
         attentionDropoutProbability: Scalar = 0,
@@ -183,7 +258,7 @@ public struct MultiHeadAttention: Layer {
 
         // Take the dot product between the query and the key to get the raw attention scores.
         var attentionScores = matmul(q, transposed: false, k, transposed: true) // [B, N, F, T]
-        attentionScores = attentionScores / sqrt(Scalar(headSize))
+        attentionScores = attentionScores / sqrtf(Scalar(headSize))
 
         // Since the attention mask is set to 1.0 for positions we want to attend to and 0.0 for
         // masked positions, we create a tensor which is 0.0 for positions we want to attend to and

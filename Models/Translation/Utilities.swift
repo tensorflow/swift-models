@@ -14,16 +14,6 @@ public typealias Activation<Scalar: TensorFlowFloatingPoint> =
 public typealias ActivationInput<Input: Differentiable,Scalar: TensorFlowFloatingPoint> =
 @differentiable (Input) -> Tensor<Scalar>
 
-//struct SubLayerInput<Input: Differentiable,Scalar: TensorFlowFloatingPoint >: Differentiable {
-//    var sequence: Input
-//    @noDerivative let activation: ActivationInput<Input,Scalar>
-//    @differentiable
-//    init(sequence: Input, activation: @escaping ActivationInput<Input,Scalar>) {
-//        self.sequence = sequence
-//        self.activation = activation
-//    }
-//}
-
 struct DecoderContext: Differentiable {
     var decoder: TransformerDecoderLayer,
     input: DecoderInput<Float>
@@ -38,8 +28,6 @@ struct DecoderContext: Differentiable {
 
 struct SubLayerInput<Scalar: TensorFlowFloatingPoint >: Differentiable {
     var sequence: Tensor<Scalar>
-//    var context: DecoderContext
-    // if I want to use encoder context I could refactor to use an enum
     @noDerivative public let activation: SubLayerInput<Scalar>.Activation
 
     /// The element-wise activation function type.
@@ -49,23 +37,24 @@ struct SubLayerInput<Scalar: TensorFlowFloatingPoint >: Differentiable {
     init(sequence: Tensor<Scalar>, activation: @escaping SubLayerInput<Scalar>.Activation) {
         self.sequence = sequence
         self.activation = activation
-//        self.context = context
     }
 }
 
-// could try putting activation in sublayer connection
-// that would mean I would change the value of the activation during the function call.
 struct SublayerConnection: Layer {
     var norm: LayerNorm<Float>
     var dropout: Dropout<Float>
     init(size: Int, droputProb: Double) {
-        self.norm =  LayerNorm(featureCount: size, axis: -2)// todo check axis
+        self.norm = LayerNorm(featureCount: size, axis: -1, epsilon: 1e-6)
         self.dropout = Dropout(probability: droputProb)
     }
     @differentiable
     func callAsFunction(_ input: SubLayerInput< Float>) -> Tensor<Float> {
-        return input.sequence + self.dropout(input.activation(self.norm(input.sequence))) // The issue happening in norm. probably because of size or axis.
-//        return input.context.input.sequence + self.dropout(input.activation(self.norm(input.context.input.sequence), input.context))
+        let normed = self.norm(input.sequence)
+        let activated = input.activation(normed)
+        let dropped = self.dropout(activated)
+        return input.sequence + dropped // Can't add them together because they aren't the same shape, can't resize because they dont' have the same amount of values
+        
+//        return input.sequence + self.dropout(input.activation(self.norm(input.sequence))) // The issue happening in norm. probably because of size or axis.
     }
 }
 
@@ -82,14 +71,9 @@ struct PositionwiseFeedForward: Layer {
         dropout = Dropout<Float>(probability: dropProbability)
     }
     
-//    @differentiable
-//    func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-//        return dense2(dropout(relu(dense1(input))))
-//    }
     @differentiable
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         return relu(dense1(input)).sequenced(through: dense2, dropout)
-//        return relu(dense1(input)).sequenced(through: dense2, dropout)
     }
 }
 
@@ -120,24 +104,11 @@ struct PositionalEncoding: ParameterlessLayer {
         let divStart = stride(from: 0, to: size, by: 2).map{ Float($0)}
         let divTerm = Tensor(divStart.map{ 1.0 / pow(10000.0, $0 / Float(size)) })
         
-        //        var positionalEncoding = Tensor<Float>(zeros: [maxLength, size]).array
-        //        let sinPortion = sin(position * divTerm).array
-        //        let cosPortion = cos(position * divTerm).array
-        //        // todo use ranges, just like the callAsFunction below
-        //        for index in positionalEncoding.indices {
-        //            let scalarsArrays = [sinPortion[index].scalars,cosPortion[index].scalars]
-        //            positionalEncoding[index] = ShapedArraySlice(shape: [sinPortion[index].count + cosPortion[index].count], scalars:
-        //                // alternates the two tensors
-        //                (0..<scalarsArrays.map{$0.count}.max()!)
-        //            .flatMap{i in scalarsArrays.filter{i<$0.count}.map{$0[i]} } )
-        //        }
-        
         var positionalEncoding = Tensor<Float>(zeros: [maxLength, size])
         // just alternating the value that is placed inside the tensor between to arrays.
         positionalEncoding[0..., 0..<positionalEncoding.shape[1]..2] = sin(position * divTerm)
         positionalEncoding[0..., 1..<positionalEncoding.shape[1]..2] = cos(position * divTerm)
         encoding = Parameter(positionalEncoding.expandingShape(at: 0))
-        //        encoding = Parameter(Tensor(positionalEncoding).expandingShape(at: 0))
     }
     
     @differentiable(wrt: (self, input))

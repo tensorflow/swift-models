@@ -36,19 +36,18 @@ public struct TextBatch: KeyPathIterable {
 //    The mask for the input listen tensor covers the padded elements
 //    The shape of the target mask is (batch_size, 1, input_sequence_length)
 //    The batch size can be anything but it looks like in the translation example, it is only 1.
-    init(source: Tensor<Int32>, target: Tensor<Int32>, pad: Int32 = 0) {
+    init(source: Tensor<Int32>, target: Tensor<Int32>, sourcePadId: Int32, targetPadId: Int32) {
         self.tokenIds = source
         self.mask = Tensor(zerosLike: source)
-            .replacing(with: Tensor(onesLike: source), where: source .!= Tensor.init(pad)) // Tensor.init(0) might need dto be expanded to Tensor(zerosLike: source)
-            .expandingShape(at: -2)
+            .replacing(with: Tensor(onesLike: source), where: source .!= Tensor.init(sourcePadId)) // Tensor.init(0) might need dto be expanded to Tensor(zerosLike: source)
+            .expandingShape(at: 1)
         // if target is not None?
-        print(target.shape)
-        let rangeExceptLast = 0..<(source.shape.dimensions[1]-1)
+        let rangeExceptLast = 0...(source.shape.dimensions[1])
         self.targetTokenIds = target[0...,rangeExceptLast] // not sure if this is right. just means except last one
         self.targetTruth = target[0..., 1...]
-        self.targetMask = TextBatch.makeStandardMask(target: self.targetTokenIds, pad: pad)
+        self.targetMask = TextBatch.makeStandardMask(target: self.targetTokenIds, pad: targetPadId)
         self.tokenCount = Tensor(zerosLike: targetTruth)
-        .replacing(with: Tensor(onesLike: targetTruth), where: self.targetTruth .!= Tensor.init(pad))
+        .replacing(with: Tensor(onesLike: targetTruth), where: self.targetTruth .!= Tensor.init(targetPadId))
         .scalarCount // .sum() returns a vector.. Maybe that's what I want??
         
     }
@@ -165,7 +164,7 @@ public struct Vocabulary {
     public mutating func add(token: String) -> Int {
         idsToTokens[count] = token
         tokensToIds[token] = count
-        return count
+        return tokensToIds[token]!
     }
 }
 
@@ -245,15 +244,13 @@ public struct BasicTokenizer: Tokenizer {
                     options: .regularExpression)
             }
             
-            // This is only true in BERT.
-            
-            // Split punctuation. We treat all non-letter/number ASCII as punctuation. Characters
-            // such as "$" are not in the Unicode Punctuation class but we treat them as
-            // punctuation anyways for consistency.
-//            processed = processed.replacingOccurrences(
-//                of: #"([\p{P}!-/:-@\[-`{-~])"#,
-//                with: " $1 ",
-//                options: .regularExpression)
+//             Split punctuation. We treat all non-letter/number ASCII as punctuation. Characters
+//             such as "$" are not in the Unicode Punctuation class but we treat them as
+//             punctuation anyways for consistency.
+            processed = processed.replacingOccurrences(
+                of: #"([\p{P}!-/:-@\[-`{-~])"#,
+                with: " $1 ",
+                options: .regularExpression)
 
             return processed.split(separator: " ").map(String.init)
         }

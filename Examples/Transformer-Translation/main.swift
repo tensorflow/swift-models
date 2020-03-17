@@ -27,8 +27,8 @@ import TranslationModels
 
 // 1 and 2 can be done using BERT.preprocess
 
-let spanishSource = ["Hola, yo soy santiago.", "Estoy feliz ahorita."]
-let englishSource = ["Hello, my name is james.", "I'm happy right now."]
+let spanishSource = ["Hola, yo soy santiago.", "Estoy feliz", "Thats nice"]
+let englishSource = ["Hola, yo soy santiago.", "Estoy feliz", "Thats nice"]//["Hello, I am james.", "I'm happy."]
 
 let tokenizer = BasicTokenizer()
 
