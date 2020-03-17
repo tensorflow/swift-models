@@ -14,10 +14,10 @@
 
 /// Based on https://blog.keras.io/building-autoencoders-in-keras.html
 
-import TensorFlow
 import Files
 import Foundation
 import ModelSupport
+import TensorFlow
 
 public class Images {
     struct Elements: TensorGroup {
@@ -43,7 +43,7 @@ public class Images {
         }
 
         let source = Tensor<Float>(shape: [elements, 256, 256, 3], scalars: sourceData) / 127.5 - 1.0
-        self.dataset = .init(elements: Elements(image: source))
-        self.count = elements
+        dataset = .init(elements: Elements(image: source))
+        count = elements
     }
 }

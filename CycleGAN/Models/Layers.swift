@@ -14,8 +14,8 @@
 
 /// Based on https://blog.keras.io/building-autoencoders-in-keras.html
 
-import TensorFlow
 import Foundation
+import TensorFlow
 
 public struct Identity: ParameterlessLayer {
     @differentiable
@@ -99,10 +99,11 @@ public struct ZeroPad2D<Scalar: TensorFlowFloatingPoint>: ParameterlessLayer {
             (0, 0),
             padding.0,
             padding.1,
-            (0, 0)
+            (0, 0),
         ], mode: .constant(0))
     }
 }
+
 /// A 2-D layer applying padding with reflection over a mini-batch.
 public struct ReflectionPad2D<Scalar: TensorFlowFloatingPoint>: ParameterlessLayer {
     /// The padding values along the spatial dimensions.
@@ -135,7 +136,7 @@ public struct ReflectionPad2D<Scalar: TensorFlowFloatingPoint>: ParameterlessLay
             (0, 0),
             padding.0,
             padding.1,
-            (0, 0)
+            (0, 0),
         ], mode: .reflect)
     }
 }
@@ -157,12 +158,12 @@ public struct ConvLayer: Layer {
     ///   - kernelSize: Convolution kernel size (both width and height).
     ///   - stride: Stride size (both width and height).
     public init(inChannels: Int, outChannels: Int, kernelSize: Int, stride: Int, padding: Int? = nil) {
-        self.pad = ZeroPad2D<Float>(padding: padding ?? Int(kernelSize / 2))
+        pad = ZeroPad2D<Float>(padding: padding ?? Int(kernelSize / 2))
 
-        self.conv2d = Conv2D<Float>(filterShape: (kernelSize, kernelSize,
-                                                  inChannels, outChannels),
-                                    strides: (stride, stride),
-                                    filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
+        conv2d = Conv2D<Float>(filterShape: (kernelSize, kernelSize,
+                                             inChannels, outChannels),
+                               strides: (stride, stride),
+                               filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
     }
 
     /// Returns the output obtained from applying the layer to the given input.
@@ -179,35 +180,34 @@ public struct UNetSkipConnectionInnermost<NT: FeatureChannelInitializable>: Laye
     public var downConv: Conv2D<Float>
     public var upConv: TransposedConv2D<Float>
     public var upNorm: NT
-    
+
     public init(inChannels: Int,
                 innerChannels: Int,
                 outChannels: Int,
-                normalization: NT.Type) {
-        self.downConv = .init(filterShape: (4, 4, inChannels, innerChannels),
-                              strides: (2, 2),
-                              padding: .same,
-                              filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
-        self.upNorm = .init(featureCount: outChannels)
-        
-        self.upConv = .init(filterShape: (4, 4, innerChannels, outChannels),
-                            strides: (2, 2),
-                            padding: .same,
-                            filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
+                normalization _: NT.Type) {
+        downConv = .init(filterShape: (4, 4, inChannels, innerChannels),
+                         strides: (2, 2),
+                         padding: .same,
+                         filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
+        upNorm = .init(featureCount: outChannels)
+
+        upConv = .init(filterShape: (4, 4, innerChannels, outChannels),
+                       strides: (2, 2),
+                       padding: .same,
+                       filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
     }
-    
+
     @differentiable
     public func callAsFunction(_ input: Tensorf) -> Tensorf {
         var x = leakyRelu(input)
-        x = self.downConv(x)
+        x = downConv(x)
         x = relu(x)
-        x = self.upConv(x)
-        x = self.upNorm(x)
+        x = upConv(x)
+        x = upNorm(x)
 
         return input.concatenated(with: x, alongAxis: 3)
     }
 }
-
 
 public struct UNetSkipConnection<SMT: Layer, NT: FeatureChannelInitializable>: Layer where NT.TangentVector.VectorSpaceScalar == Float, NT.Input == Tensorf, NT.Output == Tensorf, SMT.TangentVector.VectorSpaceScalar == Float, SMT.Input == Tensorf, SMT.Output == Tensorf {
     public var downConv: Conv2D<Float>
@@ -216,46 +216,46 @@ public struct UNetSkipConnection<SMT: Layer, NT: FeatureChannelInitializable>: L
     public var upNorm: NT
     public var dropOut = Dropout<Float>(probability: 0.5)
     @noDerivative public var useDropOut: Bool
-    
+
     public var submodule: SMT
-    
+
     public init(inChannels: Int,
                 innerChannels: Int,
                 outChannels: Int,
                 submodule: SMT,
-                normalization: NT.Type,
+                normalization _: NT.Type,
                 useDropOut: Bool = false) {
-        self.downConv = .init(filterShape: (4, 4, inChannels, innerChannels),
-                              strides: (2, 2),
-                              padding: .same,
-                              filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
-        self.downNorm = .init(featureCount: innerChannels)
-        self.upNorm = .init(featureCount: outChannels)
-        
-        self.upConv = .init(filterShape: (4, 4, outChannels, innerChannels * 2),
-                            strides: (2, 2),
-                            padding: .same,
-                            filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
-    
+        downConv = .init(filterShape: (4, 4, inChannels, innerChannels),
+                         strides: (2, 2),
+                         padding: .same,
+                         filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
+        downNorm = .init(featureCount: innerChannels)
+        upNorm = .init(featureCount: outChannels)
+
+        upConv = .init(filterShape: (4, 4, outChannels, innerChannels * 2),
+                       strides: (2, 2),
+                       padding: .same,
+                       filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
+
         self.submodule = submodule
-        
+
         self.useDropOut = useDropOut
     }
-    
+
     @differentiable
     public func callAsFunction(_ input: Tensorf) -> Tensorf {
         var x = leakyRelu(input)
-        x = self.downConv(x)
-        x = self.downNorm(x)
-        x = self.submodule(x)
+        x = downConv(x)
+        x = downNorm(x)
+        x = submodule(x)
         x = relu(x)
-        x = self.upConv(x)
-        x = self.upNorm(x)
-        
-        if self.useDropOut {
-            x = self.dropOut(x)
+        x = upConv(x)
+        x = upNorm(x)
+
+        if useDropOut {
+            x = dropOut(x)
         }
-        
+
         return input.concatenated(with: x, alongAxis: 3)
     }
 }
@@ -263,32 +263,32 @@ public struct UNetSkipConnection<SMT: Layer, NT: FeatureChannelInitializable>: L
 public struct UNetSkipConnectionOutermost<NT: Layer>: Layer where NT.TangentVector.VectorSpaceScalar == Float, NT.Input == Tensorf, NT.Output == Tensorf {
     public var downConv: Conv2D<Float>
     public var upConv: TransposedConv2D<Float>
-    
+
     public var submodule: NT
-    
+
     public init(inChannels: Int,
                 innerChannels: Int,
                 outChannels: Int,
                 submodule: NT) {
-        self.downConv = .init(filterShape: (4, 4, inChannels, innerChannels),
-                              strides: (2, 2),
-                              padding: .same,
-                              filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
-        self.upConv = .init(filterShape: (4, 4, outChannels, innerChannels * 2),
-                            strides: (2, 2),
-                            padding: .same,
-                            activation: tanh,
-                            filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
-    
+        downConv = .init(filterShape: (4, 4, inChannels, innerChannels),
+                         strides: (2, 2),
+                         padding: .same,
+                         filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
+        upConv = .init(filterShape: (4, 4, outChannels, innerChannels * 2),
+                       strides: (2, 2),
+                       padding: .same,
+                       activation: tanh,
+                       filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
+
         self.submodule = submodule
     }
-    
+
     @differentiable
     public func callAsFunction(_ input: Tensorf) -> Tensorf {
-        var x = self.downConv(input)
-        x = self.submodule(x)
+        var x = downConv(input)
+        x = submodule(x)
         x = relu(x)
-        x = self.upConv(x)
+        x = upConv(x)
 
         return x
     }
@@ -299,49 +299,48 @@ public struct ResnetBlock<NT: FeatureChannelInitializable>: Layer where NT.Tange
     var norm1: NT
     var conv2: Conv2D<Float>
     var norm2: NT
-    
+
     var dropOut: Dropout<Float>
-    
+
     @noDerivative var useDropOut: Bool
     @noDerivative let paddingMode: Tensorf.PaddingMode
-    
+
     public init(channels: Int,
                 paddingMode: Tensorf.PaddingMode,
-                normalization: NT.Type,
+                normalization _: NT.Type,
                 useDropOut: Bool = false,
                 filterInit: (TensorShape) -> Tensorf,
                 biasInit: (TensorShape) -> Tensorf) {
-        self.conv1 = .init(filterShape: (3, 3, channels, channels),
-                           filterInitializer: filterInit,
-                           biasInitializer: biasInit)
-        self.norm1 = .init(featureCount: channels)
-        
-        self.conv2 = .init(filterShape: (3, 3, channels, channels),
-                           filterInitializer: filterInit,
-                           biasInitializer: biasInit)
-        self.norm2 = .init(featureCount: channels)
-        
-        self.dropOut = .init(probability: 0.5)
+        conv1 = .init(filterShape: (3, 3, channels, channels),
+                      filterInitializer: filterInit,
+                      biasInitializer: biasInit)
+        norm1 = .init(featureCount: channels)
+
+        conv2 = .init(filterShape: (3, 3, channels, channels),
+                      filterInitializer: filterInit,
+                      biasInitializer: biasInit)
+        norm2 = .init(featureCount: channels)
+
+        dropOut = .init(probability: 0.5)
         self.useDropOut = useDropOut
-        
+
         self.paddingMode = paddingMode
     }
-    
+
     @differentiable
     public func callAsFunction(_ input: Tensorf) -> Tensorf {
-        var retVal = input.padded(forSizes: [(0, 0), (1, 1), (1, 1), (0, 0)], mode: self.paddingMode)
+        var retVal = input.padded(forSizes: [(0, 0), (1, 1), (1, 1), (0, 0)], mode: paddingMode)
         retVal = retVal.sequenced(through: conv1, norm1)
         retVal = relu(retVal)
-        
+
         if useDropOut {
             retVal = dropOut(retVal)
         }
-        
-        retVal = retVal.padded(forSizes: [(0, 0), (1, 1), (1, 1), (0, 0)], mode: self.paddingMode)
+
+        retVal = retVal.padded(forSizes: [(0, 0), (1, 1), (1, 1), (0, 0)], mode: paddingMode)
         retVal = retVal.sequenced(through: conv2, norm2)
-        
+
         return input + retVal
-        
     }
 }
 
