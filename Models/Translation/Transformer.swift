@@ -61,9 +61,7 @@ public struct TransformerModel: Module {
     
     @differentiable
     public func generate(input: TextBatch) -> Tensor<Float> {
-        let resultSize = input.targetTruth.shape.last! * input.targetTruth.shape.first!
-        return self.generator(self.callAsFunction(input))
-        .reshaped(to: [resultSize, -1])
+        self.generator(self.callAsFunction(input))
     }
 }
 

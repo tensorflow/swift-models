@@ -51,11 +51,16 @@ for _ in 0..<epochs {
         
         let batch = withDevice(.cpu){ textBatch }
         let labels = textBatch.targetTruth.reshaped(to: [-1])
+        let resultSize = textBatch.targetTruth.shape.last! * textBatch.targetTruth.shape.first!
         let result = withLearningPhase(.training) { () -> Float in
             let (loss, grad) = valueWithGradient(at: model) {
                 softmaxCrossEntropy(
-                    logits: $0.generate(input: batch),
+                    logits: $0.generate(input: batch).reshaped(to: [resultSize, -1]),
                     labels: labels )
+//                    .withDerivative { d in
+//                      print("doutput", d.shape)
+//                      print("doutput", d)
+//                    }
             }
             optimizer.update(&model, along: grad)
             return loss.scalarized()
