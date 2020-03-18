@@ -124,17 +124,11 @@ class SwiftApplicationDelegate: NSObject, NSApplicationDelegate {
     self.output.textContainer?.widthTracksTextView = false
     self.window.contentView?.addSubview(view)
 
-    // self.window.contentView?.addSubview(self.output)
     self.window.contentView?.addSubview(self.slider)
     self.window.contentView?.addSubview(self.label)
 
-    let ComicSansMS: NSFont = NSFont(name: "Comic Sans MS", size: 10)!
-
-    self.input.font = ComicSansMS
     self.input.stringValue = "Introducing Swift for TensorFlow on macOS"
 
-    self.label.font = ComicSansMS
-    self.output.font = ComicSansMS
     self.output.isEditable = false
 
     self.button.target = self
@@ -194,4 +188,3 @@ _ = NSApplicationMain(CommandLine.argc, CommandLine.unsafeArgv)
 #else
 fatalError("This demo requires AppKit on macOS to run.")
 #endif
-
