@@ -31,14 +31,24 @@ struct TransformerDecoderLayer: Layer {
     func callAsFunction(_ input: DecoderInput<Float>) -> Tensor<Float> {
         // SR-11882
         let selfNoDerivative = withoutDerivative(at: self)
-        let inputNoDerivative = withoutDerivative(at: input)
-        let batchSizeNotDerivative = withoutDerivative(at: input.batchSize)
-        // not sure if source and target are right for any of these.
-        var output = self.sublayers[0](.init(sequence: input.sequence, activation: {
-            selfNoDerivative.selfAttention(.init(source: $0, target: $0, mask: inputNoDerivative.targetMask, batchSize: batchSizeNotDerivative))
+        let sourceMask = withoutDerivative(at: input.sourceMask)
+        let targetMask = withoutDerivative(at: input.targetMask)
+        let memory = withoutDerivative(at: input.memory)
+        let batchSize = withoutDerivative(at: input.batchSize)
+        
+        var output = input.sequence
+        
+        output = self.sublayers[0](.init(sequence: output, activation: {
+            selfNoDerivative.selfAttention(.init(source: $0,
+                                                 target: $0,
+                                                 mask: targetMask,
+                                                 batchSize: batchSize))
         }))
         output = self.sublayers[1](.init(sequence: output, activation: {
-            selfNoDerivative.sourceAttention(.init(source: $0, target: inputNoDerivative.memory, mask: inputNoDerivative.sourceMask, batchSize: batchSizeNotDerivative))
+            selfNoDerivative.sourceAttention(.init(source: $0,
+                                                   target: memory,
+                                                   mask: sourceMask,
+                                                   batchSize: batchSize))
         }))
         output = self.sublayers[2](.init(sequence: output, activation: {
             selfNoDerivative.feedForward($0)

@@ -49,13 +49,18 @@ for _ in 0..<epochs {
     
     for textBatch in batches {
         
-        let resultSize = textBatch.targetTruth.shape.last! * textBatch.targetTruth.shape.first!
-        let (loss, grad) = valueWithGradient(at: model) {
-            softmaxCrossEntropy(
-                logits: $0(textBatch).reshaped(to: [resultSize, -1]),
-                labels: textBatch.targetTruth.reshaped(to: [-1]) )
+        let batch = withDevice(.cpu){ textBatch }
+        let labels = textBatch.targetTruth.reshaped(to: [-1])
+        let result = withLearningPhase(.training) { () -> Float in
+            let (loss, grad) = valueWithGradient(at: model) {
+                softmaxCrossEntropy(
+                    logits: $0.generate(input: batch),
+                    labels: labels )
+            }
+            optimizer.update(&model, along: grad)
+            return loss.scalarized()
         }
-        optimizer.update(&model, along: grad)
+        print("result \(result)")
     }
     
 }
