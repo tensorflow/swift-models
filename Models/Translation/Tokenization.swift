@@ -31,7 +31,7 @@ public struct TextBatch: KeyPathIterable {
     
     public var targetTruth: Tensor<Int32>
     
-    public var tokenCount: Int
+    public var tokenCount: Int32
 //    if I want my batch to have sentence of unequal length, the shorter sentences have to be padded with the `<pad>` token so that every sentence is the same length
 //    The mask for the input listen tensor covers the padded elements
 //    The shape of the target mask is (batch_size, 1, input_sequence_length)
@@ -42,13 +42,13 @@ public struct TextBatch: KeyPathIterable {
             .replacing(with: Tensor(onesLike: source), where: source .!= Tensor.init(sourcePadId)) // Tensor.init(0) might need dto be expanded to Tensor(zerosLike: source)
             .expandingShape(at: 1)
         // if target is not None?
-        let rangeExceptLast = 0...(source.shape.dimensions[1])
+        let rangeExceptLast = 0..<(target.shape[1] - 1)
         self.targetTokenIds = target[0...,rangeExceptLast] // not sure if this is right. just means except last one
         self.targetTruth = target[0..., 1...]
         self.targetMask = TextBatch.makeStandardMask(target: self.targetTokenIds, pad: targetPadId)
         self.tokenCount = Tensor(zerosLike: targetTruth)
         .replacing(with: Tensor(onesLike: targetTruth), where: self.targetTruth .!= Tensor.init(targetPadId))
-        .scalarCount // .sum() returns a vector.. Maybe that's what I want??
+            .sum().scalar! // .sum() returns a vector.. Maybe that's what I want??
         
     }
     

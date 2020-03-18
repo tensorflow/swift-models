@@ -113,7 +113,7 @@ struct PositionalEncoding: ParameterlessLayer {
         encoding = Parameter(positionalEncoding.expandingShape(at: 0))
     }
     
-    @differentiable(wrt: (self, input))
+    @differentiable
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         return self.dropout(input + encoding.value[0..., 0..<input.shape[1]])
     }

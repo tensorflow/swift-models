@@ -28,7 +28,7 @@ import TranslationModels
 // 1 and 2 can be done using BERT.preprocess
 
 let spanishSource = ["Hola, yo soy santiago.", "Estoy feliz", "Thats nice"]
-let englishSource = ["Hola, yo soy santiago.", "Estoy feliz", "Thats nice"]//["Hello, I am james.", "I'm happy."]
+let englishSource = ["Hello, my name is james", "I'm happy", "Eso es lindo"]//["Hello, I am james.", "I'm happy."]
 
 let tokenizer = BasicTokenizer()
 
@@ -40,17 +40,22 @@ var textProcessor = TextProcessor(tokenizer: tokenizer, sourceVocabulary: .init(
 
 let batches: [TextBatch] = textProcessor.preprocess(source: spanishSource, target: englishSource, maxSequenceLength: MAX_LENGTH, batchSize: batchSize)
 
-let transformer: TransformerModel = TransformerModel(sourceVocabSize: textProcessor.sourceVocabulary.count, targetVocabSize: textProcessor.targetVocabulary.count)
+var model: TransformerModel = TransformerModel(sourceVocabSize: textProcessor.sourceVocabulary.count, targetVocabSize: textProcessor.targetVocabulary.count)
 
 
 let epochs = 3
-
+let optimizer = Adam.init(for: model, learningRate: 5e-7)
 for _ in 0..<epochs {
     
     for textBatch in batches {
-        let output = transformer.callAsFunction(textBatch)
         
+        let resultSize = textBatch.targetTruth.shape.last! * textBatch.targetTruth.shape.first!
+        let (loss, grad) = valueWithGradient(at: model) {
+            softmaxCrossEntropy(
+                logits: $0(textBatch).reshaped(to: [resultSize, -1]),
+                labels: textBatch.targetTruth.reshaped(to: [-1]) )
+        }
+        optimizer.update(&model, along: grad)
     }
     
 }
-//let transformerModel = TransformerModel

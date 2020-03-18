@@ -91,10 +91,17 @@ struct Decoder: Layer {
     @differentiable
     func callAsFunction(_ input: DecoderInput<Float>) -> Tensor<Float> {
         var transformerInput = input.sequence.reshapedToMatrix()
+        print("memoryInput shape: \(input.memory.shape)")
+        let memoryInput = input.memory.reshapedToMatrix()
         let batchSize = input.sequence.shape[0]
         
         for layerIndex in 0..<(withoutDerivative(at: layers) { $0.count }) {
-            transformerInput = layers[layerIndex](DecoderInput(sequence: transformerInput, sourceMask: input.sourceMask, targetMask: input.targetMask, memory: input.memory.reshapedToMatrix(), batchSize: batchSize))
+            transformerInput = layers[layerIndex](DecoderInput(
+                sequence: transformerInput,
+                sourceMask: input.sourceMask,
+                targetMask: input.targetMask,
+                memory: memoryInput,
+                batchSize: batchSize))
         }
         
         return transformerInput.reshapedFromMatrix(originalShape: input.sequence.shape)

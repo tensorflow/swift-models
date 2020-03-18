@@ -14,6 +14,7 @@ public struct TransformerModel: Module {
     var decoder: Decoder
     var sourceEmbed: Sequential<Embedding<Float>, PositionalEncoding>
     var targetEmbed: Sequential<Embedding<Float>, PositionalEncoding>
+    var generator: Generator
     public init(sourceVocabSize: Int, targetVocabSize: Int, layerCount: Int = 6, modelSize: Int = 256, feedForwardSize: Int = 1024, headCount: Int = 8, dropoutProbability: Double = 0.1) {
         
         let attention = MultiHeadAttention(sourceSize: modelSize,
@@ -33,29 +34,46 @@ public struct TransformerModel: Module {
         self.sourceEmbed = Sequential(Embedding(vocabularySize: sourceVocabSize, embeddingSize: modelSize), positionalEncoding)
         self.targetEmbed = Sequential(Embedding(vocabularySize: targetVocabSize, embeddingSize: modelSize), positionalEncoding)
         // todo xavier init.
+        self.generator = Generator(dimModel: modelSize, vocabSize: targetVocabSize)
     }
     
     @differentiable
     public func callAsFunction(_ input: TextBatch) -> Tensor<Float> {
         let sourceAttentionMask = Tensor<Float>(input.mask)
         let encodedMemory = self.encode(input: input, attentionMask: sourceAttentionMask)
-        print("encodedMemory shape: \(encodedMemory.shape)")
         return self.decode(input: input, memory: encodedMemory, sourceMask: sourceAttentionMask)
     }
     
     @differentiable
     func encode(input: TextBatch, attentionMask: Tensor<Float>) -> Tensor<Float> {
         let embedded = self.sourceEmbed(input.tokenIds)
-        print("encode embedded \(embedded.shape)")
-        return self.encoder(.init(sequence: embedded, attentionMask: attentionMask))
+        let encoderInput = TransformerInput(sequence: embedded, attentionMask: attentionMask)
+        return self.encoder(encoderInput)
     }
     
     @differentiable
     func decode(input: TextBatch, memory: Tensor<Float>, sourceMask: Tensor<Float>) -> Tensor<Float> {
         let embedded = self.targetEmbed(input.targetTokenIds)
         let targetAttentionMask = Tensor<Float>(input.targetMask)
-        print("decode embedded \(embedded.shape)")
-        return self.decoder.callAsFunction(.init(sequence: embedded, sourceMask: sourceMask, targetMask: targetAttentionMask, memory: memory))
+        let decoderInput = DecoderInput(sequence: embedded, sourceMask: sourceMask, targetMask: targetAttentionMask, memory: memory)
+        return self.decoder(decoderInput)
+    }
+    
+    @differentiable
+    public func generate(input: TextBatch) -> Tensor<Float> {
+        self.generator(self.callAsFunction(input))
+    }
+}
+
+struct Generator: Layer {
+    var dense: Dense<Float>
+    init(dimModel: Int, vocabSize: Int) {
+        self.dense = Dense(inputSize: dimModel, outputSize: vocabSize)
+    }
+    
+    @differentiable
+    func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
+        return logSoftmax(dense(input))
     }
 }
 
