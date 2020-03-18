@@ -199,8 +199,8 @@ let bResultsFolder = try Folder.current.createSubfolderIfNeeded(at: "testB_resul
 var testStep = 0
 for testBatch in zippedTest.batched(1) {
     withDevice(.gpu, options.gpuIndex) {
-        let realX = testBatch.first.image / 127.5 - 1
-        let realY = testBatch.first.image / 127.5 - 1
+        let realX = testBatch.first.image
+        let realY = testBatch.first.image
         
         let fakeY = generatorG(realX)
         let fakeX = generatorF(realY)
@@ -211,8 +211,12 @@ for testBatch in zippedTest.batched(1) {
         let imageX = Image(tensor: resultX[0] * 255)
         let imageY = Image(tensor: resultY[0] * 255)
         
-        imageX.save(to: aResultsFolder.url.appendingPathComponent(String(testStep), isDirectory: false))
-        imageY.save(to: bResultsFolder.url.appendingPathComponent(String(testStep), isDirectory: false))
+        withDevice(.cpu) {
+            imageX.save(to: aResultsFolder.url.appendingPathComponent("\(String(testStep)).jpg", isDirectory: false),
+                        format: .rgb)
+            imageY.save(to: bResultsFolder.url.appendingPathComponent("\(String(testStep)).jpg", isDirectory: false),
+                        format: .rgb)
+        }
         
         testStep += 1
     }
