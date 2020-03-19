@@ -200,7 +200,7 @@ var testStep = 0
 for testBatch in zippedTest.batched(1) {
     withDevice(.gpu, options.gpuIndex) {
         let realX = testBatch.first.image
-        let realY = testBatch.first.image
+        let realY = testBatch.second.image
         
         let fakeY = generatorG(realX)
         let fakeX = generatorF(realY)
