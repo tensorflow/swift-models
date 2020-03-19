@@ -124,6 +124,7 @@ open class CheckpointReader {
         let archiveLocation: URL
         if checkpointLocation.isFileURL {
             archiveLocation = checkpointLocation
+            try createDirectoryIfMissing(at: temporaryDirectory.path)
         } else {
             try download(from: checkpointLocation, to: temporaryDirectory)
             archiveLocation = temporaryDirectory.appendingPathComponent(
