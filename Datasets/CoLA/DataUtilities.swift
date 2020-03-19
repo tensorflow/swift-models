@@ -210,9 +210,7 @@ public struct GroupedIterator<Base: IteratorProtocol>: IteratorProtocol {
       }
     }
     guard let elementsToReduce = elements else {
-      if dropRemainder {
-        return nil
-      }
+      if dropRemainder { return nil }
       if currentGroup == nil { currentGroup = groups.values.startIndex }
       if currentGroup! >= groups.values.endIndex { return nil }
       while groups.values[currentGroup!].isEmpty {
