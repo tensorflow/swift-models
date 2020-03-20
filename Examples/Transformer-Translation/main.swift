@@ -74,7 +74,7 @@ let workspaceURL = URL(fileURLWithPath: "transformer", isDirectory: true,
 relativeTo: URL(fileURLWithPath: NSTemporaryDirectory(),
                 isDirectory: true))
 
-var translationTask = try TranslationTask(taskDirectoryURL: workspaceURL, maxSequenceLength: 200, batchSize: 40)
+var translationTask = try TranslationTask(taskDirectoryURL: workspaceURL, maxSequenceLength: 200, batchSize: 150)
 
 var model = TransformerModel(sourceVocabSize: translationTask.sourceVocabSize, targetVocabSize: translationTask.targetVocabSize)
 
