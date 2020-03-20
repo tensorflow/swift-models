@@ -14,12 +14,16 @@ import Foundation
 struct TranslationTask {
     let directoryURL: URL
     var trainDataIterator: IndexingIterator<[TextBatch]>
+    var trainData: [TextBatch]
     var textProcessor: TextProcessor
     var sourceVocabSize: Int {
         textProcessor.sourceVocabulary.count
     }
     var targetVocabSize: Int {
         textProcessor.targetVocabulary.count
+    }
+    var trainDataSize: Int {
+        trainData.count
     }
     init(taskDirectoryURL: URL, maxSequenceLength: Int, batchSize: Int) throws {
         self.directoryURL = taskDirectoryURL.appendingPathComponent("Translation")
@@ -37,8 +41,9 @@ struct TranslationTask {
         
         print("preprocessing dataset")
         self.textProcessor = TextProcessor(tokenizer: tokenizer, sourceVocabulary: .init(), targetVocabulary: .init())
+        self.trainData = textProcessor.preprocess(source: loadedSpanish, target: loadedEnglish, maxSequenceLength: maxSequenceLength, batchSize: batchSize)
 
-        self.trainDataIterator = textProcessor.preprocess(source: loadedSpanish, target: loadedEnglish, maxSequenceLength: maxSequenceLength, batchSize: batchSize).makeIterator()
+        self.trainDataIterator = self.trainData.makeIterator()
     }
     
     static func load(fromFile fileURL: URL) throws -> [String] {
@@ -61,7 +66,6 @@ struct TranslationTask {
             optimizer.update(&model, along: grad)
             return loss.scalarized()
         }
-        print("current loss: \(result)")
         return result
     }
 }
@@ -76,6 +80,7 @@ var model = TransformerModel(sourceVocabSize: translationTask.sourceVocabSize, t
 
 let epochs = 3
 var optimizer = Adam.init(for: model, learningRate: 5e-7)
-for step in 0... {
+for step in 0..<translationTask.trainDataSize {
     let loss = translationTask.update(model: &model, using: &optimizer)
+    print("current loss: \(loss)")
 }
