@@ -29,7 +29,6 @@ struct DecoderContext: Differentiable {
 struct SubLayerInput<Scalar: TensorFlowFloatingPoint >: Differentiable {
     var sequence: Tensor<Scalar>
     @noDerivative public let activation: SubLayerInput<Scalar>.Activation
-
     /// The element-wise activation function type.
     public typealias Activation = @differentiable (Tensor<Scalar>) -> Tensor<Scalar>
     
@@ -37,6 +36,21 @@ struct SubLayerInput<Scalar: TensorFlowFloatingPoint >: Differentiable {
     init(sequence: Tensor<Scalar>, activation: @escaping SubLayerInput<Scalar>.Activation) {
         self.sequence = sequence
         self.activation = activation
+    }
+}
+
+struct DecoderSubLayerInput<Scalar: TensorFlowFloatingPoint >: Differentiable {
+    var sequence: Tensor<Scalar>
+    var decoderContext: DecoderInput<Scalar>
+    @noDerivative public let activation: DecoderSubLayerInput<Scalar>.Activation
+    /// The element-wise activation function type.
+    public typealias Activation = @differentiable (Tensor<Scalar>,DecoderInput<Scalar>) -> Tensor<Scalar>
+    
+    @differentiable
+    init(sequence: Tensor<Scalar>, decoderContext: DecoderInput<Scalar>, activation: @escaping DecoderSubLayerInput<Scalar>.Activation) {
+        self.sequence = sequence
+        self.activation = activation
+        self.decoderContext = decoderContext
     }
 }
 
@@ -52,7 +66,20 @@ struct SublayerConnection: Layer {
         let normed = self.norm(input.sequence)
         let activated = input.activation(normed)
         let dropped = self.dropout(activated)
-        return input.sequence + dropped // Can't add them together because they aren't the same shape, can't resize because they dont' have the same amount of values
+        let sequence = input.sequence
+        let summed = sequence + dropped
+        return summed
+        
+//        return input.sequence + self.dropout(input.activation(self.norm(input.sequence))) // The issue happening in norm. probably because of size or axis.
+    }
+    @differentiable
+    func decoderForward(_ input: DecoderSubLayerInput< Float>) -> Tensor<Float> {
+        let normed = self.norm(input.sequence)
+        let activated = input.activation(normed,input.decoderContext)
+        let dropped = self.dropout(activated)
+        let sequence = input.sequence
+        let summed = sequence + dropped
+        return summed
         
 //        return input.sequence + self.dropout(input.activation(self.norm(input.sequence))) // The issue happening in norm. probably because of size or axis.
     }
@@ -189,7 +216,7 @@ extension Tensor {
 ///
 /// - Returns: Boolean value indicating whether a download was
 ///     performed (as opposed to not needed).
-internal func maybeDownload(from url: URL, to destination: URL) throws {
+public func maybeDownload(from url: URL, to destination: URL) throws {
     if !FileManager.default.fileExists(atPath: destination.path) {
         // Create any potentially missing directories.
         try FileManager.default.createDirectory(

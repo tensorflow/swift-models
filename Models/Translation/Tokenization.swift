@@ -25,9 +25,9 @@ public struct TextBatch: KeyPathIterable {
 
     /// Mask over the sequence of tokens specifying which ones are "real" as opposed to "padding".
     /// The shape of this tensor is `[batchSize, maxSequenceLength]`.
-    public var mask: Tensor<Int32> // TODO: !!! Mutable in order to allow for batching.
+    public var mask: Tensor<Float> // TODO: !!! Mutable in order to allow for batching.
     
-    public var targetMask: Tensor<Int32> // TODO: !!! Mutable in order to allow for batching.
+    public var targetMask: Tensor<Float> // TODO: !!! Mutable in order to allow for batching.
     
     public var targetTruth: Tensor<Int32>
     
@@ -38,9 +38,10 @@ public struct TextBatch: KeyPathIterable {
 //    The batch size can be anything but it looks like in the translation example, it is only 1.
     init(source: Tensor<Int32>, target: Tensor<Int32>, sourcePadId: Int32, targetPadId: Int32) {
         self.tokenIds = source
-        self.mask = Tensor(zerosLike: source)
+        self.mask = Tensor<Float>(Tensor(zerosLike: source)
             .replacing(with: Tensor(onesLike: source), where: source .!= Tensor.init(sourcePadId)) // Tensor.init(0) might need dto be expanded to Tensor(zerosLike: source)
-            .expandingShape(at: 1)
+            .expandingShape(at: 1))
+            
         // if target is not None?
         let rangeExceptLast = 0..<(target.shape[1] - 1)
         self.targetTokenIds = target[0...,rangeExceptLast] // not sure if this is right. just means except last one
@@ -52,14 +53,14 @@ public struct TextBatch: KeyPathIterable {
         
     }
     
-    static func makeStandardMask(target: Tensor<Int32>, pad: Int32) -> Tensor<Int32> {
+    static func makeStandardMask(target: Tensor<Int32>, pad: Int32) -> Tensor<Float> {
         var targetMask = Tensor(zerosLike: target)
             .replacing(with: Tensor(onesLike: target), where: target .!= Tensor.init(pad))
             .expandingShape(at: -2)
         targetMask *= subsequentMask(size: target.shape.last!)
         // tgt_mask = tgt_mask & Variable(
 //        subsequent_mask(tgt.size(-1)).type_as(tgt_mask.data))
-        return targetMask
+        return Tensor<Float>(targetMask)
     }
 }
 func subsequentMask(size: Int) -> Tensor<Int32> {

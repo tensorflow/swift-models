@@ -9,63 +9,73 @@
 
 import TensorFlow
 import TranslationModels
-//import Text
-//import Foundation
+import Foundation
 
-//let spanishPath = URL(fileURLWithPath: "./spanish")
-//try maybeDownload(from: URL(string: "https://raw.githubusercontent.com/nickwalton/translation/master/gc_2010-2017_conglomerated_20171009_es.txt")!, to: spanishPath)
-//
-//let englishPath = URL(fileURLWithPath: "./english")
-//try maybeDownload(from: URL(string: "https://raw.githubusercontent.com/nickwalton/translation/master/gc_2010-2017_conglomerated_20171009_en.txt")!, to: englishPath)
+struct TranslationTask {
+    let directoryURL: URL
+    var trainDataIterator: IndexingIterator<[TextBatch]>
+    var textProcessor: TextProcessor
+    var sourceVocabSize: Int {
+        textProcessor.sourceVocabulary.count
+    }
+    var targetVocabSize: Int {
+        textProcessor.targetVocabulary.count
+    }
+    init(taskDirectoryURL: URL, maxSequenceLength: Int, batchSize: Int) throws {
+        self.directoryURL = taskDirectoryURL.appendingPathComponent("Translation")
+        let dataURL = directoryURL.appendingPathComponent("data")
 
-
-// 1. separate into vocabulary.
-
-// 2. then create a dataset
-
-// 3. then train.
-
-// 1 and 2 can be done using BERT.preprocess
-
-let spanishSource = ["Hola, yo soy santiago.", "Estoy feliz", "Thats nice"]
-let englishSource = ["Hello, my name is james", "I'm happy", "Eso es lindo"]//["Hello, I am james.", "I'm happy."]
-
-let tokenizer = BasicTokenizer()
-
-let MAX_LENGTH = 200
-
-let batchSize = 1000
-
-var textProcessor = TextProcessor(tokenizer: tokenizer, sourceVocabulary: .init(), targetVocabulary: .init())
-
-let batches: [TextBatch] = textProcessor.preprocess(source: spanishSource, target: englishSource, maxSequenceLength: MAX_LENGTH, batchSize: batchSize)
-
-var model: TransformerModel = TransformerModel(sourceVocabSize: textProcessor.sourceVocabulary.count, targetVocabSize: textProcessor.targetVocabulary.count)
-
-
-let epochs = 3
-let optimizer = Adam.init(for: model, learningRate: 5e-7)
-for _ in 0..<epochs {
-    
-    for textBatch in batches {
+        let spanishLanguagePath = dataURL.appendingPathExtension("source")
+        try maybeDownload(from: URL(string: "https://raw.githubusercontent.com/nickwalton/translation/master/gc_2010-2017_conglomerated_20171009_es.txt")!, to: spanishLanguagePath)
+        let englishPath = dataURL.appendingPathExtension("target")
+        try maybeDownload(from: URL(string: "https://raw.githubusercontent.com/nickwalton/translation/master/gc_2010-2017_conglomerated_20171009_en.txt")!, to: englishPath)
+        print("loading datasets")
+        let loadedSpanish = try TranslationTask.load(fromFile: spanishLanguagePath)
+        let loadedEnglish = try TranslationTask.load(fromFile: englishPath)
         
-        let batch = withDevice(.cpu){ textBatch }
-        let labels = textBatch.targetTruth.reshaped(to: [-1])
-        let resultSize = textBatch.targetTruth.shape.last! * textBatch.targetTruth.shape.first!
+        let tokenizer = BasicTokenizer()
+        
+        print("preprocessing dataset")
+        self.textProcessor = TextProcessor(tokenizer: tokenizer, sourceVocabulary: .init(), targetVocabulary: .init())
+
+        self.trainDataIterator = textProcessor.preprocess(source: loadedSpanish, target: loadedEnglish, maxSequenceLength: maxSequenceLength, batchSize: batchSize).makeIterator()
+    }
+    
+    static func load(fromFile fileURL: URL) throws -> [String] {
+        try Data(contentsOf: fileURL).withUnsafeBytes {
+            $0.split(separator: UInt8(ascii: "\n"))
+            .map { String(decoding: UnsafeRawBufferPointer(rebasing: $0), as: UTF8.self) }
+        }
+    }
+    
+    mutating func update(model: inout TransformerModel, using optimizer: inout Adam<TransformerModel>) -> Float {
+        let batch = withDevice(.cpu) { trainDataIterator.next()! }
+        let labels = batch.targetTruth.reshaped(to: [-1])
+        let resultSize = batch.targetTruth.shape.last! * batch.targetTruth.shape.first!
         let result = withLearningPhase(.training) { () -> Float in
             let (loss, grad) = valueWithGradient(at: model) {
                 softmaxCrossEntropy(
                     logits: $0.generate(input: batch).reshaped(to: [resultSize, -1]),
                     labels: labels )
-//                    .withDerivative { d in
-//                      print("doutput", d.shape)
-//                      print("doutput", d)
-//                    }
             }
             optimizer.update(&model, along: grad)
             return loss.scalarized()
         }
-        print("result \(result)")
+        print("current loss: \(result)")
+        return result
     }
-    
+}
+
+let workspaceURL = URL(fileURLWithPath: "transformer", isDirectory: true,
+relativeTo: URL(fileURLWithPath: NSTemporaryDirectory(),
+                isDirectory: true))
+
+var translationTask = try TranslationTask(taskDirectoryURL: workspaceURL, maxSequenceLength: 200, batchSize: 1000)
+
+var model = TransformerModel(sourceVocabSize: translationTask.sourceVocabSize, targetVocabSize: translationTask.targetVocabSize)
+
+let epochs = 3
+var optimizer = Adam.init(for: model, learningRate: 5e-7)
+for step in 0... {
+    let loss = translationTask.update(model: &model, using: &optimizer)
 }

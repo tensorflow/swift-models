@@ -45,16 +45,15 @@ struct Encoder: Layer {
     
     @differentiable
     func callAsFunction(_ input: TransformerInput<Float>) -> Tensor<Float> {
-        var transformerInput = input.sequence.reshapedToMatrix()
-        let batchSize = input.sequence.shape[0]
+        var transformerInput = input.sequence//.reshapedToMatrix().debugIdentity()
+//        let batchSize = input.sequence.shape[0]
         
         for layerIndex in 0..<(withoutDerivative(at: layers) { $0.count }) {
             transformerInput = layers[layerIndex](TransformerInput(
                 sequence: transformerInput,
-                attentionMask: input.attentionMask,
-                batchSize: batchSize))
+                attentionMask: input.attentionMask))
         }
         
-        return transformerInput.reshapedFromMatrix(originalShape: input.sequence.shape)
+        return transformerInput//.reshapedFromMatrix(originalShape: input.sequence.shape).debugIdentity()
     }
 }

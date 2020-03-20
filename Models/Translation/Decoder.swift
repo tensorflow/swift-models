@@ -30,29 +30,29 @@ struct TransformerDecoderLayer: Layer {
     @differentiable
     func callAsFunction(_ input: DecoderInput<Float>) -> Tensor<Float> {
         // SR-11882
+        // we have to pass the input as a param in the Sublayer input because we still need to diferentiate
+        // targetMask, memory, and sourceMask
         let selfNoDerivative = withoutDerivative(at: self)
-        let sourceMask = withoutDerivative(at: input.sourceMask)
-        let targetMask = withoutDerivative(at: input.targetMask)
-        let memory = withoutDerivative(at: input.memory)
         let batchSize = withoutDerivative(at: input.batchSize)
         
         var output = input.sequence
         
-        output = self.sublayers[0](.init(sequence: output, activation: {
-            selfNoDerivative.selfAttention(.init(source: $0,
-                                                 target: $0,
-                                                 mask: targetMask,
-                                                 batchSize: batchSize))
+        
+        output = self.sublayers[0].decoderForward(.init(sequence: output, decoderContext: input, activation: {
+        selfNoDerivative.selfAttention(.init(source: $0,
+                                             target: $0,
+                                             mask: $1.targetMask,
+                                             batchSize: batchSize))
         }))
-        output = self.sublayers[1](.init(sequence: output, activation: {
+        output = self.sublayers[1].decoderForward(.init(sequence: output, decoderContext: input, activation: {
             selfNoDerivative.sourceAttention(.init(source: $0,
-                                                   target: memory,
-                                                   mask: sourceMask,
+                                                   target: $1.memory,
+                                                   mask: $1.sourceMask,
                                                    batchSize: batchSize))
-        }))
-        output = self.sublayers[2](.init(sequence: output, activation: {
-            selfNoDerivative.feedForward($0)
-        }))
+            }))
+        output = self.sublayers[2].decoderForward(.init(sequence: output, decoderContext: input, activation: {(result, _) in
+            selfNoDerivative.feedForward(result)
+            }))
         return output
     }
 }
@@ -63,6 +63,8 @@ public struct DecoderInput<Scalar: TensorFlowFloatingPoint>: Differentiable {
     /// `[batchSize, sequenceLength, depth]` or `[batchSize, sequenceLength * depth]`.
     public var sequence: Tensor<Scalar>
     
+    public var memory: Tensor<Scalar>
+    
     /// Mask to apply on the attention scores. This is a tensor with shape
     /// `[batchSize, sourceSequenceLength, targetSequenceLength]` or
     /// `[batchSize, sourceSequenceLength * targetSequenceLength]`. The values should be `1` or
@@ -71,8 +73,7 @@ public struct DecoderInput<Scalar: TensorFlowFloatingPoint>: Differentiable {
     public var sourceMask: Tensor<Scalar>
     
     public var targetMask: Tensor<Scalar>
-    
-    public var memory: Tensor<Scalar>
+
     
     /// The batch size of this input. This is optional because it is only needed if the input
     /// sequences have been reshaped to matrices.
@@ -100,20 +101,23 @@ struct Decoder: Layer {
     
     @differentiable
     func callAsFunction(_ input: DecoderInput<Float>) -> Tensor<Float> {
-        var transformerInput = input.sequence.reshapedToMatrix()
-        print("memoryInput shape: \(input.memory.shape)")
-        let memoryInput = input.memory.reshapedToMatrix()
-        let batchSize = input.sequence.shape[0]
+        var transformerInput = input.sequence//.reshapedToMatrix().debugIdentity()
+//        print("input.memory.shape: \(input.memory.shape)")
+        let memoryInput = input.memory//.debugIdentity()//.reshapedToMatrix().debugIdentity()
+//        print("input.memory.shape: \(memoryInput.shape)")
+//        let batchSize = input.sequence.shape[0]
         
         for layerIndex in 0..<(withoutDerivative(at: layers) { $0.count }) {
+//            let decoderInput = DecoderInput
             transformerInput = layers[layerIndex](DecoderInput(
                 sequence: transformerInput,
                 sourceMask: input.sourceMask,
-                targetMask: input.targetMask,
-                memory: memoryInput,
-                batchSize: batchSize))
+            targetMask: input.targetMask,
+            memory: memoryInput
+                // it probably is because the masks and memory aren't getting a derivative back. 
+            ))
         }
         
-        return transformerInput.reshapedFromMatrix(originalShape: input.sequence.shape)
+        return transformerInput//.reshapedFromMatrix(originalShape: input.sequence.shape).debugIdentity()
     }
 }

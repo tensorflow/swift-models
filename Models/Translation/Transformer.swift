@@ -21,7 +21,7 @@ public struct TransformerModel: Module {
                                            targetSize: modelSize,
                                            headCount: headCount,
                                            headSize: modelSize/headCount,
-                                           matrixResult: true)
+                                           matrixResult: false)
         
         let feedForward = PositionwiseFeedForward(dimensionalityModel: modelSize,
                                                   innerLayerDimensionality: feedForwardSize)
@@ -39,31 +39,49 @@ public struct TransformerModel: Module {
     
     @differentiable
     public func callAsFunction(_ input: TextBatch) -> Tensor<Float> {
-        let sourceAttentionMask = Tensor<Float>(input.mask)
-        let encodedMemory = self.encode(input: input, attentionMask: sourceAttentionMask)
-        return self.decode(input: input, memory: encodedMemory, sourceMask: sourceAttentionMask)
+        let encodedMemory = self.encode(input: input)
+        return self.decode(input: input, memory: encodedMemory)
     }
     
     @differentiable
-    func encode(input: TextBatch, attentionMask: Tensor<Float>) -> Tensor<Float> {
+    func encode(input: TextBatch) -> Tensor<Float> {
         let embedded = self.sourceEmbed(input.tokenIds)
-        let encoderInput = TransformerInput(sequence: embedded, attentionMask: attentionMask)
+        let encoderInput = TransformerInput(sequence: embedded, attentionMask: input.mask)
         return self.encoder(encoderInput)
     }
     
     @differentiable
-    func decode(input: TextBatch, memory: Tensor<Float>, sourceMask: Tensor<Float>) -> Tensor<Float> {
+    func decode(input: TextBatch, memory: Tensor<Float>) -> Tensor<Float> {
         let embedded = self.targetEmbed(input.targetTokenIds)
-        let targetAttentionMask = Tensor<Float>(input.targetMask)
-        let decoderInput = DecoderInput(sequence: embedded, sourceMask: sourceMask, targetMask: targetAttentionMask, memory: memory)
+        let decoderInput = DecoderInput(sequence: embedded, sourceMask: input.mask, targetMask: input.targetMask, memory: memory)
         return self.decoder(decoderInput)
     }
     
     @differentiable
     public func generate(input: TextBatch) -> Tensor<Float> {
-        self.generator(self.callAsFunction(input))
+        debugIdentity(self.generator(self.callAsFunction(input)))
     }
 }
+
+extension Tensor where Scalar == Float {
+    @differentiable
+    public func debugIdentity() -> Tensor<Scalar> {
+        return TranslationModels.debugIdentity(self)
+    }
+}
+
+public func debugIdentity(_ x: Tensor<Float>) -> Tensor<Float> {
+    return x
+}
+@derivative(of: debugIdentity)
+public func debugDerivative(_ x: Tensor<Float>) -> (value: Tensor<Float>, pullback: (Tensor<Float>) -> Tensor<Float>) {
+    let x_shape = x.shape
+    return (x, { x_grad in
+        if (x_grad.shape != x_shape) { fatalError("\(x_grad.shape) != \(x_shape)") }
+        return x_grad
+    })
+}
+
 
 struct Generator: Layer {
     var dense: Dense<Float>
@@ -108,16 +126,16 @@ public struct TextProcessor {
         }
         // (sequenceCount, tokenCount)
         
-//        print("tokenizedSource \(tokenizedSource)")
-//        print("tokenizedTarget \(tokenizedTarget)")
+        //        print("tokenizedSource \(tokenizedSource)")
+        //        print("tokenizedTarget \(tokenizedTarget)")
         
         // will have to group based on the source token count and then pad the target
         let sourceWithTarget = zip(tokenizedSource, tokenizedTarget).map{ $0 }
-//        print("sourceWithTarget \(sourceWithTarget)")
+        //        print("sourceWithTarget \(sourceWithTarget)")
         
         let groupedBySourceSize = Dictionary(grouping: sourceWithTarget, by: { $0.0.count}).values.flatMap { (group: [([Int32], [Int32])]) -> [TextBatch] in
             let batchesFromGroup = group.chunked(into: batchSize)
-//            print("batchesFromGroup \(batchesFromGroup)")
+            //            print("batchesFromGroup \(batchesFromGroup)")
             return batchesFromGroup.map { (batch: [([Int32], [Int32])]) -> TextBatch in
                 // batch has multiple pairs of sources and targets
                 let sourceTensor = Tensor(batch.map{ Tensor<Int32>.init($0.0) })
@@ -125,48 +143,48 @@ public struct TextProcessor {
                 // pad target length up to largest max.
                 let targetTensor = Tensor(batch.map{ Tensor<Int32>.init($0.1 + [Int32](repeating: targetPadId, count: (maxTargetLength - $0.1.count))) }) // taraget tensor needs to be padded
                 let textBatch = TextBatch(source: sourceTensor, target: targetTensor, sourcePadId: sourcePadId, targetPadId: targetPadId)
-//                print(textBatch)
-//                 tokenIds: (batchSize, tokens)
+                //                print(textBatch)
+                //                 tokenIds: (batchSize, tokens)
                 // targetTokenIds: (batchSize, targetTokens + startToken)
                 // targetTruth: (batchSize, targetTokens + endToken)
                 // mask: (batchSize, tokens) everything except the start is masked?
                 // targetMask: ( batchSize, targetTokens + startToken, targetTokens + startToken) upper right triangle for each sequence in batch.
-//                print("source: \(textBatch.tokenIds) ")
-//                print("source mask: \(textBatch.mask)")
-//                print("target: \(textBatch.targetTokenIds.shape)")
-//                print("target_y: \(textBatch.targetTruth.shape)")
-//                print("target_mask \(textBatch.targetMask.shape)")
+                //                print("source: \(textBatch.tokenIds) ")
+                //                print("source mask: \(textBatch.mask)")
+                //                print("target: \(textBatch.targetTokenIds.shape)")
+                //                print("target_y: \(textBatch.targetTruth.shape)")
+                //                print("target_mask \(textBatch.targetMask.shape)")
                 return textBatch
             }
         }
         
-//        print(groupedBySourceSize)
+        //        print(groupedBySourceSize)
         return groupedBySourceSize
-////        let groupedBySourceSize = Dictionary(grouping: zip(tokenizedSource, tokenizedTarget), by: { $0.0.count }).values.map { ([Zip2Sequence<[[Int32]], [[Int32]]>.Element]) -> T in
-////            <#code#>
-////        }
-//        let groupedSources = Dictionary(grouping: tokenizedSource, by: {$0.count}).values.map { $0}
-//        let groupedTargets = Dictionary(grouping: tokenizedTarget, by: {$0.count}).values.map { $0}
-//        // (groupCount, sequencePerGroupCount,tokenPerSequenceCount)
-//
-//        print("source \(source)")
-//        print("grouped sources: \(groupedSources)")
-//
-//        let batches = zip(groupedSources, groupedTargets).flatMap { (sourceGroup: [[Int32]], targetGroup: [[Int32]]) -> [TextBatch] in
-//            let sourceBatches = sourceGroup.chunked(into: batchSize)
-//            let targetBatches  = targetGroup.chunked(into: batchSize)
-//            let textBatches = zip(sourceBatches, targetBatches).map { (sourceBatch: [[Int32]], targetBatch: [[Int32]]) -> TextBatch in
-//                let sourceTensor = Tensor(sourceBatch.map{ ids in
-//                    return Tensor<Int32>.init(ids)
-//                })
-//                let targetTensor = Tensor(targetBatch.map{ ids in
-//                    return Tensor<Int32>.init(ids)
-//                })
-//                return TextBatch(source: sourceTensor, target: targetTensor, pad: padId)
-//            }
-//            return textBatches
-//        }
-//        return batches
+        ////        let groupedBySourceSize = Dictionary(grouping: zip(tokenizedSource, tokenizedTarget), by: { $0.0.count }).values.map { ([Zip2Sequence<[[Int32]], [[Int32]]>.Element]) -> T in
+        ////            <#code#>
+        ////        }
+        //        let groupedSources = Dictionary(grouping: tokenizedSource, by: {$0.count}).values.map { $0}
+        //        let groupedTargets = Dictionary(grouping: tokenizedTarget, by: {$0.count}).values.map { $0}
+        //        // (groupCount, sequencePerGroupCount,tokenPerSequenceCount)
+        //
+        //        print("source \(source)")
+        //        print("grouped sources: \(groupedSources)")
+        //
+        //        let batches = zip(groupedSources, groupedTargets).flatMap { (sourceGroup: [[Int32]], targetGroup: [[Int32]]) -> [TextBatch] in
+        //            let sourceBatches = sourceGroup.chunked(into: batchSize)
+        //            let targetBatches  = targetGroup.chunked(into: batchSize)
+        //            let textBatches = zip(sourceBatches, targetBatches).map { (sourceBatch: [[Int32]], targetBatch: [[Int32]]) -> TextBatch in
+        //                let sourceTensor = Tensor(sourceBatch.map{ ids in
+        //                    return Tensor<Int32>.init(ids)
+        //                })
+        //                let targetTensor = Tensor(targetBatch.map{ ids in
+        //                    return Tensor<Int32>.init(ids)
+        //                })
+        //                return TextBatch(source: sourceTensor, target: targetTensor, pad: padId)
+        //            }
+        //            return textBatches
+        //        }
+        //        return batches
     }
     
 }
