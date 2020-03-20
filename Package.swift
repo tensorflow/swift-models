@@ -14,6 +14,7 @@ let package = Package(
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
         .library(name: "TextModels", targets: ["TextModels"]),
+        .library(name: "RecommendationModels", targets: ["RecommendationModels"]),
         .executable(name: "Benchmarks", targets: ["Benchmarks"]),
         .executable(name: "VGG-Imagewoof", targets: ["VGG-Imagewoof"]),
         .executable(name: "Regression-BostonHousing", targets: ["Regression-BostonHousing"]),
@@ -41,6 +42,7 @@ let package = Package(
         .target(name: "ModelSupport", dependencies: ["SwiftProtobuf"], path: "Support"),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),
+        .target(name: "RecommendationModels", path: "Models/Recommendation"),
         .target(
             name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport"],
             path: "Autoencoder/Autoencoder1D"),
