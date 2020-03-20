@@ -12,19 +12,25 @@ For general information about Swift for TensorFlow development, please visit
 
 ## Development
 
+### macOS and Linux
+
 Use Swift Package Manager to develop Swift for TensorFlow models.
 
-### Build
+#### Build
 
 ```bash
 swift build
 ```
 
-### Test
+#### Test
 
 ```bash
 swift test
 ```
+
+### Windows
+
+Use CMake to develop Swift for TensorFlow models.
 
 ### *Experimental* CMake Support
 
