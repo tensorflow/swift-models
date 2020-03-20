@@ -8,7 +8,6 @@
 
 import Foundation
 import TensorFlow
-import Python
 /// Tokenized text passage.
 public struct TextBatch: KeyPathIterable {
     /// IDs that correspond to the vocabulary used while tokenizing.
