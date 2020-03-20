@@ -8,6 +8,8 @@
 
 import TensorFlow
 import Foundation
+import FoundationNetworking
+
 public typealias Activation<Scalar: TensorFlowFloatingPoint> =
     @differentiable (Tensor<Scalar>) -> Tensor<Scalar>
 
