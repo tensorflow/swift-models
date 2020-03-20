@@ -111,7 +111,7 @@ extension BenchmarkCommand {
         @Option(default: -1, help: "Number of batches.")
         var batches: Int
 
-        @Option(default: -1, help: "Size of a single batch.")
+        @Option(name: .customLong("batchSize"), default: -1, help: "Size of a single batch.")
         var batchSize: Int
 
         @Option(default: -1, help: "Number of benchmark iterations.")
