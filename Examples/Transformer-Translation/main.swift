@@ -43,7 +43,7 @@ struct TranslationTask {
         self.textProcessor = TextProcessor(tokenizer: tokenizer, sourceVocabulary: .init(), targetVocabulary: .init())
         self.trainData = textProcessor.preprocess(source: loadedSpanish, target: loadedEnglish, maxSequenceLength: maxSequenceLength, batchSize: batchSize)
 
-        self.trainDataIterator = self.trainData.makeIterator()
+        self.trainDataIterator = self.trainData.shuffled().makeIterator()
     }
     
     static func load(fromFile fileURL: URL) throws -> [String] {
@@ -77,6 +77,19 @@ relativeTo: URL(fileURLWithPath: NSTemporaryDirectory(),
 var translationTask = try TranslationTask(taskDirectoryURL: workspaceURL, maxSequenceLength: 200, batchSize: 150)
 
 var model = TransformerModel(sourceVocabSize: translationTask.sourceVocabSize, targetVocabSize: translationTask.targetVocabSize)
+
+ func greedyDecode(model: TransformerModel, input: TextBatch, maxLength: Int, startSymbol: Int32) -> Tensor<Int32> {
+     let memory = model.encode(input: input)
+     var ys = Tensor.init(repeating: startSymbol, shape: [1,1])
+     for i in 0..<maxLength {
+        let decoderInput = TextBatch.init(tokenIds: input.tokenIds, targetTokenIds: ys, mask: input.mask, targetMask: Tensor<Float>(subsequentMask(size: ys.shape[1])), targetTruth: input.targetTruth, tokenCount: input.tokenCount)
+         let out = model.decode(input: decoderInput, memory: memory)
+         let prob = model.generate(input: out[0..<out.shape.first!,-1])
+        let nextWord = Int32(prob.max(alongAxes: 1)[0].scalar!)
+        ys = Tensor(concatenating: [ys, Tensor.init(repeating: nextWord, shape: [1,1])], alongAxis: 1)
+     }
+    return ys
+ }
 
 let epochs = 3
 var optimizer = Adam.init(for: model, learningRate: 5e-4)

@@ -52,6 +52,15 @@ public struct TextBatch: KeyPathIterable {
         
     }
     
+    public init(tokenIds: Tensor<Int32>, targetTokenIds: Tensor<Int32>, mask: Tensor<Float>, targetMask: Tensor<Float>, targetTruth: Tensor<Int32>, tokenCount: Int32) {
+        self.tokenIds = tokenIds
+        self.targetTokenIds = targetTokenIds
+        self.mask = mask
+        self.targetMask = targetMask
+        self.targetTruth = targetTruth
+        self.tokenCount = tokenCount
+    }
+    
     static func makeStandardMask(target: Tensor<Int32>, pad: Int32) -> Tensor<Float> {
         var targetMask = Tensor(zerosLike: target)
             .replacing(with: Tensor(onesLike: target), where: target .!= Tensor.init(pad))
@@ -62,7 +71,7 @@ public struct TextBatch: KeyPathIterable {
         return Tensor<Float>(targetMask)
     }
 }
-func subsequentMask(size: Int) -> Tensor<Int32> {
+public func subsequentMask(size: Int) -> Tensor<Int32> {
     let attentionShape = [1, size, size]
     return Tensor<Int32>(ones: TensorShape(attentionShape))
         .bandPart(subdiagonalCount: 0, superdiagonalCount: -1)
