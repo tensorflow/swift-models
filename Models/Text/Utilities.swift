@@ -15,6 +15,7 @@
 import Foundation
 import TensorFlow
 import ModelSupport
+import FoundationNetworking
 
 public typealias Activation<Scalar: TensorFlowFloatingPoint> =
     @differentiable (Tensor<Scalar>) -> Tensor<Scalar>
