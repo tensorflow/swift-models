@@ -35,7 +35,7 @@ public struct TextBatch: KeyPathIterable {
 //    The mask for the input listen tensor covers the padded elements
 //    The shape of the target mask is (batch_size, 1, input_sequence_length)
 //    The batch size can be anything but it looks like in the translation example, it is only 1.
-    init(source: Tensor<Int32>, target: Tensor<Int32>, sourcePadId: Int32, targetPadId: Int32) {
+    public init(source: Tensor<Int32>, target: Tensor<Int32>, sourcePadId: Int32, targetPadId: Int32) {
         self.tokenIds = source
         self.mask = Tensor<Float>(Tensor(zerosLike: source)
             .replacing(with: Tensor(onesLike: source), where: source .!= Tensor.init(sourcePadId)) // Tensor.init(0) might need dto be expanded to Tensor(zerosLike: source)
@@ -162,9 +162,14 @@ public struct Vocabulary {
         idsToTokens[id]
     }
     public mutating func add(token: String) -> Int {
-        idsToTokens[count] = token
-        tokensToIds[token] = count
-        return tokensToIds[token]!
+        if let result = tokensToIds[token] {
+            return result
+        }
+        let newId = self.count
+        idsToTokens[newId] = token
+        tokensToIds[token] = newId
+        assert(idsToTokens.count == tokensToIds.count, "Vocabulary doesn't match, tokensToIds \(tokensToIds.count) , idsTotokens \(idsToTokens.count)")
+        return newId
     }
 }
 

@@ -44,14 +44,14 @@ public struct TransformerModel: Module {
     }
     
     @differentiable
-    func encode(input: TextBatch) -> Tensor<Float> {
+    public func encode(input: TextBatch) -> Tensor<Float> {
         let embedded = self.sourceEmbed(input.tokenIds)
         let encoderInput = TransformerInput(sequence: embedded, attentionMask: input.mask)
         return self.encoder(encoderInput)
     }
     
     @differentiable
-    func decode(input: TextBatch, memory: Tensor<Float>) -> Tensor<Float> {
+    public func decode(input: TextBatch, memory: Tensor<Float>) -> Tensor<Float> {
         let embedded = self.targetEmbed(input.targetTokenIds)
         let decoderInput = DecoderInput(sequence: embedded, sourceMask: input.mask, targetMask: input.targetMask, memory: memory)
         return self.decoder(decoderInput)
@@ -59,7 +59,11 @@ public struct TransformerModel: Module {
     
     @differentiable
     public func generate(input: TextBatch) -> Tensor<Float> {
-        debugIdentity(self.generator(self.callAsFunction(input)))
+        self.generator(self.callAsFunction(input))
+    }
+    @differentiable
+    public func generate(input: Tensor<Float>) -> Tensor<Float> {
+        self.generator(input)
     }
 }
 

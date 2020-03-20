@@ -54,7 +54,7 @@ struct TranslationTask {
     }
     
     mutating func update(model: inout TransformerModel, using optimizer: inout Adam<TransformerModel>) -> Float {
-        let batch = withDevice(.gpu) { trainDataIterator.next()! }
+        let batch = withDevice(.cpu) { trainDataIterator.next()! }
         let labels = batch.targetTruth.reshaped(to: [-1])
         let resultSize = batch.targetTruth.shape.last! * batch.targetTruth.shape.first!
         let result = withLearningPhase(.training) { () -> Float in
