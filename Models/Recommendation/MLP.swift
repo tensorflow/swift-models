@@ -17,9 +17,13 @@ import TensorFlow
 /// MLP is a multi-layer perceptron and is used as a component of the DLRM model
 public struct MLP: Layer {
     public var blocks: [Dense<Float>] = []
-    init(dims: [Int]) {
+    init(dims: [Int], sigmoidLastLayer: Bool = false) {
         for i in 0..<(dims.count-1) {
-            blocks += [Dense(inputSize: dims[i], outputSize: dims[i+1])]
+            if sigmoidLastLayer && i == dims.count - 2 {
+                blocks.append(Dense(inputSize: dims[i], outputSize: dims[i+1], activation: sigmoid))
+            } else {
+                blocks.append(Dense(inputSize: dims[i], outputSize: dims[i+1], activation: relu))
+            }
         }
     }
 

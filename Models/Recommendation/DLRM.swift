@@ -14,6 +14,23 @@
 
 import TensorFlow
 
+/// The DLRM model is parameterized to support multiple ways of combining the latent spaces of the inputs.
+public enum InteractionType {
+    /// Concatenate the tensors representing the latent spaces of the inputs together.
+    ///
+    /// This operation is the fastest, but does not encode any higher-order feature interactions.
+    case concatenate
+
+    /// Compute the dot product of every input latent space with every other input latent space
+    /// and concatenate the results.
+    ///
+    /// This computation encodes 2nd-order feature interactions.
+    ///
+    /// If `selfInteraction` is true, 2nd-order self-interactions occur. If false,
+    /// self-interactions are excluded.
+    case dot(selfInteraction: Bool)
+}
+
 /// DLRM is the deep learning recommendation model and is used for recommendation tasks.
 ///
 /// DLRM handles inputs that contain both sparse categorical data and numerical data.
@@ -27,15 +44,16 @@ public struct DLRM: Module {
     public var mlpTop: MLP
     public var latentFactors: [Embedding<Float>]
     @noDerivative public let nDense: Int
+    @noDerivative public let interaction: InteractionType
 
-    public init(nDense: Int, mSpa: Int, lnEmb: [Int], lnBot: [Int], lnTop: [Int]) {
+    public init(nDense: Int, mSpa: Int, lnEmb: [Int], lnBot: [Int], lnTop: [Int],
+                interaction: InteractionType = .concatenate) {
         self.nDense = nDense
         mlpBottom = MLP(dims: [nDense] + lnBot)
         let topInput = lnEmb.count * mSpa + lnBot.last!
         mlpTop = MLP(dims: [topInput] + lnTop + [1])
         latentFactors = lnEmb.map { Embedding(vocabularySize: $0, embeddingSize: mSpa) }
-
-        // TODO: Dot interactions
+        self.interaction = interaction
     }
 
     @differentiable
@@ -44,16 +62,49 @@ public struct DLRM: Module {
     }
 
     @differentiable(wrt: self)
-    public func callAsFunction(denseInput: Tensor<Float>, sparseInput: [Tensor<Int32>]) -> Tensor<Float> {
+    public func callAsFunction(
+        denseInput: Tensor<Float>,
+        sparseInput: [Tensor<Int32>]
+    ) -> Tensor<Float> {
         precondition(denseInput.shape.last! == nDense)
         assert(sparseInput.count == latentFactors.count)
         let denseEmbVec = mlpBottom(denseInput)
-        let sparseEmbVecs = computeEmbeddings(sparseInputs: sparseInput, latentFactors: latentFactors)
-        let topInput = Tensor(concatenating: sparseEmbVecs + [denseEmbVec], alongAxis: 1)
+        let sparseEmbVecs = computeEmbeddings(sparseInputs: sparseInput,
+                                              latentFactors: latentFactors)
+        let topInput = Tensor(concatenating: sparseEmbVecs + [denseEmbVec],
+                              alongAxis: 1)
         let prediction = mlpTop(topInput)
 
         // TODO: loss threshold clipping
         return prediction.reshaped(to: [-1])
+    }
+
+    @differentiable(wrt: (denseEmbVec, sparseEmbVecs))
+    public func computeInteractions(
+        denseEmbVec:  Tensor<Float>,
+        sparseEmbVecs: [Tensor<Float>]
+    ) -> Tensor<Float> {
+        switch self.interaction {
+        case .concatenate:
+            return Tensor(concatenating: sparseEmbVecs + [denseEmbVec], alongAxis: 1)
+        case let .dot(selfInteraction):
+            let batchSize = denseEmbVec.shape[0]
+            let allEmbeddings = Tensor(
+                concatenating: sparseEmbVecs + [denseEmbVec],
+                alongAxis: 1).reshaped(to: [batchSize, -1, denseEmbVec.shape[1]])
+            // Use matmul to efficiently compute all dot products
+            let higherOrderInteractions = matmul(
+                allEmbeddings, allEmbeddings.transposed(permutation: 0, 2, 1))
+            // Gather relevant indices
+            let flattenedHigherOrderInteractions = higherOrderInteractions.reshaped(
+                to: [batchSize, -1])
+            let desiredIndices = makeIndices(
+                n: Int32(higherOrderInteractions.shape[1]),
+                selfInteraction: selfInteraction)
+            let desiredInteractions =
+                flattenedHigherOrderInteractions.batchGathering(atIndices: desiredIndices)
+            return Tensor(concatenating: [desiredInteractions, denseEmbVec], alongAxis: 1)
+        }
     }
 }
 
@@ -107,4 +158,24 @@ fileprivate func computeEmbeddingsVJP(
             return Array.DifferentiableView(arr)
         }
     )
+}
+
+/// Compute indices for the upper triangle (optionally including the diagonal) in a flattened representation.
+///
+/// - Parameter n: Size of the square matrix.
+/// - Parameter selfInteraction: Include the diagonal iff selfInteraction is true.
+fileprivate func makeIndices(n: Int32, selfInteraction: Bool) -> Tensor<Int32> {
+    let interactionOffset: Int32
+    if selfInteraction {
+        interactionOffset = 0
+    } else {
+        interactionOffset = 1
+    }
+    var result = [Int32]()
+    for i in 0..<n {
+        for j in (i + interactionOffset)..<n {
+            result.append(i*n + j)
+        }
+    }
+    return Tensor(result)
 }
