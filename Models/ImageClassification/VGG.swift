@@ -98,34 +98,13 @@ public struct VGG19: Layer {
     }
 }
 
-public func extract(tarGZippedFileAt source: URL, to destination: URL) throws {
-    print("Extracting file at '\(source.path)'.")
-    try FileManager.default.createDirectory(
-        at: destination,
-        withIntermediateDirectories: false)
-    let process = Process()
-    process.environment = ProcessInfo.processInfo.environment
-    process.executableURL = URL(fileURLWithPath: "/bin/bash")
-    process.arguments = ["-c", "tar -C \(destination.path) -xzf \(source.path)"]
-    try process.run()
-    process.waitUntilExit()
-}
-
 extension VGG16 {
     public func pretrained(from directory:URL) throws -> VGG16 {
         print("Loading VGG16 pre-trained on Imagenet-2012.")
-        var url = URL(string: "http://download.tensorflow.org/models/vgg_16_2016_08_28.tar.gz")!
-
-        let subDirectory = "vgg_16_2016_08_28"
-        let compressedFileURL = directory.appendingPathComponent("\(subDirectory).tar.gz")
-        try download(from: url, to:directory)
-        let extractedDirectoryURL = directory.appendingPathComponent(subDirectory)
-        if !FileManager.default.fileExists(atPath: extractedDirectoryURL.path) {
-            try extract(tarGZippedFileAt: compressedFileURL, to: extractedDirectoryURL)
-        }
         var vgg16 = VGG16()
-        let path = extractedDirectoryURL.appendingPathComponent("vgg_16.ckpt")
-        let checkpointReader = TensorFlowCheckpointReader(checkpointPath: path.path)
+        let remoteCheckpoint = URL(
+            string: "https://storage.googleapis.com/s4tf-hosted-binaries/checkpoints/VGG16/vgg_16.tar.gz")!
+        let checkpointReader = try CheckpointReader(checkpointLocation: remoteCheckpoint, modelName: "VGG")
         
         vgg16.layer1.blocks[0].filter = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv1/conv1_1/weights"))
         vgg16.layer1.blocks[0].bias = Tensor(checkpointReader.loadTensor(named: "vgg_16/conv1/conv1_1/biases"))
