@@ -79,7 +79,7 @@ var translationTask = try TranslationTask(taskDirectoryURL: workspaceURL, maxSeq
 var model = TransformerModel(sourceVocabSize: translationTask.sourceVocabSize, targetVocabSize: translationTask.targetVocabSize)
 
 let epochs = 3
-var optimizer = Adam.init(for: model, learningRate: 5e-7)
+var optimizer = Adam.init(for: model, learningRate: 5e-4)
 for step in 0..<translationTask.trainDataSize {
     let loss = translationTask.update(model: &model, using: &optimizer)
     print("current loss: \(loss)")
