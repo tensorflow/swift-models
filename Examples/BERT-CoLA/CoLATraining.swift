@@ -74,6 +74,6 @@ extension CoLA {
 
         try self.init(
             exampleMap: exampleMapFn, taskDirectoryURL: taskDirectoryURL,
-            maxSequenceLength: maxSequenceLength, batchSize: batchSize)
+            maxSequenceLength: maxSequenceLength, batchSize: batchSize, dropRemainder: true)
     }
 }
