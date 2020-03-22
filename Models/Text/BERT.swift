@@ -279,7 +279,7 @@ public struct BERT: Module, Regularizable {
                 tokenTypeIds.append(Int32(sequenceId))
             }
         }
-        let tokenIds = tokens.map { Int32(vocabulary.tokensToIds[$0]!) }
+        let tokenIds = tokens.map { Int32(vocabulary.id(forToken: $0)!) }
 
         // The mask is set to `true` for real tokens and `false` for padding tokens. This is so
         // that only real tokens are attended to.
@@ -639,7 +639,7 @@ extension BERT {
         ///   - directory: Directory to load the pretrained model from.
         public func load(from directory: URL) throws -> BERT {
             print("Loading BERT pre-trained model '\(name)'.")
-            let directory = directory.appendingPathComponent(variant.description)
+            let directory = directory.appendingPathComponent(variant.description, isDirectory: true)
             try maybeDownload(to: directory)
 
             // Load the appropriate vocabulary file.

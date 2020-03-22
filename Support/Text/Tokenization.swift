@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Datasets
 import Foundation
 import TensorFlow
 
@@ -23,7 +22,7 @@ import TensorFlow
 ///     `[batchSize, sequenceLength]`.
 ///
 /// - Returns: Attention mask with shape `[batchSize, sequenceLength, sequenceLength]`.
-internal func createAttentionMask(forTextBatch text: TextBatch) -> Tensor<Float> {
+public func createAttentionMask(forTextBatch text: TextBatch) -> Tensor<Float> {
     let batchSize = text.tokenIds.shape[0]
     let fromSequenceLength = text.tokenIds.shape[1]
     let toSequenceLength = text.mask.shape[1]

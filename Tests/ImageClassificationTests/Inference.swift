@@ -73,6 +73,16 @@ final class ImageClassificationInferenceTests: XCTestCase {
         XCTAssertEqual(mobileNetDMDResult.shape, [1, 10])
     }
 
+    func testMobileNetV2() {
+        // ImageNet size
+        let inputImageNet = Tensor<Float>(
+            randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
+            standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
+        let mobileNet = MobileNetV2(classCount: 1000)
+        let mobileNetResult = mobileNet(inputImageNet)
+        XCTAssertEqual(mobileNetResult.shape, [1, 1000])
+    }
+
     func testResNet() {
         let inputCIFAR = Tensor<Float>(
             randomNormal: [1, 32, 32, 3], mean: Tensor<Float>(0.5),
@@ -245,6 +255,7 @@ extension ImageClassificationInferenceTests {
         ("testDenseNet121", testDenseNet121),
         ("testLeNet", testLeNet),
         ("testMobileNetV1", testMobileNetV1),
+        ("testMobileNetV2", testMobileNetV2),
         ("testResNet", testResNet),
         ("testResNetV2", testResNetV2),
         ("testSqueezeNetV1_0", testSqueezeNetV1_0),

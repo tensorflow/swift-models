@@ -136,8 +136,8 @@ func saveImageGrid(_ testImage: Tensor<Float>, name: String) throws {
     gridImage = (gridImage + 1) / 2
 
     try saveImage(
-        gridImage, size: (gridImage.shape[0], gridImage.shape[1]), directory: outputFolder,
-        name: name)
+        gridImage, shape: (gridImage.shape[0], gridImage.shape[1]), format: .grayscale,
+        directory: outputFolder, name: name)
 }
 
 print("Start training...")

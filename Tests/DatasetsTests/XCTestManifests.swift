@@ -15,12 +15,13 @@
 import XCTest
 
 #if !os(macOS)
-public func allTests() -> [XCTestCaseEntry] {
-    return [
-        testCase(CIFAR10Tests.allTests),
-        testCase(MNISTTests.allTests),
-        testCase(ImagenetteTests.allTests),
-        testCase(BostonHousingTests.allTests),
-    ]
-}
+    public func allTests() -> [XCTestCaseEntry] {
+        return [
+            testCase(CIFAR10Tests.allTests),
+            testCase(MNISTTests.allTests),
+            testCase(ImagenetteTests.allTests),
+            testCase(BostonHousingTests.allTests),
+            testCase(TextUnsupervisedTests.allTests),
+        ]
+    }
 #endif

@@ -12,59 +12,40 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Foundation
-import ModelSupport
-import Python
-import TensorFlow
-import Transformer
+import TextModels
 
-let modelName = "117M"
+let gpt: GPT2 = try GPT2()
 
-let remoteCheckpoint = URL(
-    string: "https://storage.googleapis.com/gpt-2/models/\(modelName)/model.ckpt")!
-
-let reader = try CheckpointReader(
-    checkpointLocation: remoteCheckpoint, modelName: "Transformer",
-    additionalFiles: ["checkpoint", "encoder.json", "hparams.json", "model.ckpt.meta", "vocab.bpe"])
-
-let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
-    "Transformer")
-let sys = Python.import("sys")
-sys.path = sys.path + ["./Transformer"]
-let encoder = Python.import("encoder").get_encoder(temporaryDirectory.path)
-
-let configFile = temporaryDirectory.appendingPathComponent("hparams.json")
-let configData = try Data(contentsOf: configFile)
-let config = try JSONDecoder().decode(TransformerLMConfig.self, from: configData)
-let model = TransformerLM(reader: reader, config: config, scope: "model")
-
-let start_token = Int32(encoder.encoder["<|endoftext|>"])!
-var tokens = Tensor(shape: [1, 1], scalars: [start_token])
-var temperature = Float(1.0)
-
+// Set temperature.
 if CommandLine.arguments.count >= 2 {
-    temperature = Float(CommandLine.arguments[1])!
+  guard let temperature = Float(CommandLine.arguments[1]) else {
+    fatalError("Could not parse command line argument '\(CommandLine.arguments[1])' as a float")
+  }
+  gpt.temperature = temperature
+} else {
+  gpt.temperature = 1.0
 }
 
+// Use seed text.
 if CommandLine.arguments.count == 3 {
-    let seed = CommandLine.arguments[2]
-    print(seed, terminator: "")
-    let pytok = encoder.encode(seed)
-    let tokarr: [Int32] = [Int](pytok)!.map { Int32($0) }
-    tokens = Tensor(shape: [1, tokarr.count], scalars: tokarr)
+    gpt.seed = gpt.embedding(for: CommandLine.arguments[2])
+    print(CommandLine.arguments[2], terminator: "")
 }
-
-let empty = Tensor<Float>(zeros: [config.headCount, 0, config.embeddingSize / config.headCount])
-var states = (0..<config.layerCount).map { _ in AttentionContext(key: empty, value: empty) }
 
 for _ in 0..<100 {
-    let logits = model(tokens, states: &states)
-    let (batchSize, timeSteps, vocabSize) = (logits.shape[0], logits.shape[1], logits.shape[2])
-    let lastLogit =
-        logits.slice(
-            lowerBounds: [0, timeSteps - 1, 0],
-            upperBounds: [batchSize, timeSteps, vocabSize]) / temperature
-    tokens = Tensor(randomCategorialLogits: lastLogit.squeezingShape(at: 1), sampleCount: 1)
-    print(encoder.decode(tokens[0].makeNumpyArray()), terminator: "")
+    do {
+        try print(gpt.generate(), terminator: "")
+    } catch {
+        continue
+    }
 }
 print()
+
+// The following illustrates how to write out a checkpoint from this model and read it back in.
+/*
+import Foundation
+let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent("Transformer")
+try gpt.writeCheckpoint(to: temporaryDirectory, name: "model2.ckpt")
+
+let recreatedmodel = try GPT2(checkpoint: temporaryDirectory.appendingPathComponent("model2.ckpt"))
+*/

@@ -34,3 +34,19 @@ public struct LabeledExample: TensorGroup, KeyPathIterable, Collatable {
         data = Tensor<Float>(handle: TensorHandle<Float>(handle: _handles[dataIndex]))
     }
 }
+
+/// A generic tuple of two tensors `Tensor`.
+/// 
+/// - Note: `TensorPair` has a generic name and provides little semantic information, to conform to
+/// `Collatable`. You can use it for most basic datasets with one tensor of inputs and one tensor of
+/// labels but you should write your own struct for more complex tasks (or if you want more descriptive
+/// names).
+public struct TensorPair<S1: TensorFlowScalar, S2: TensorFlowScalar>: Collatable, KeyPathIterable {
+    public var first: Tensor<S1>
+    public var second: Tensor<S2>
+    
+    public init(first: Tensor<S1>, second: Tensor<S2>) {
+        self.first = first
+        self.second = second
+    }
+}

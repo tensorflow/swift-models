@@ -9,7 +9,7 @@ let package = Package(
         .macOS(.v10_13),
     ],
     products: [
-        .library( name: "Batcher", targets: ["Batcher"]),
+        .library(name: "Batcher", targets: ["Batcher"]),
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
@@ -29,8 +29,8 @@ let package = Package(
         .executable(name: "FastStyleTransferDemo", targets: ["FastStyleTransferDemo"]),
         .library(name: "MiniGo", targets: ["MiniGo"]),
         .executable(name: "MiniGoDemo", targets: ["MiniGoDemo"]),
-        .library(name: "Transformer", targets: ["Transformer"]),
         .executable(name: "TransformerDemo", targets: ["TransformerDemo"]),
+        .executable(name: "GPT2-WikiText2", targets: ["GPT2-WikiText2"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
@@ -44,7 +44,11 @@ let package = Package(
         .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),
         .target(name: "RecommendationModels", path: "Models/Recommendation"),
         .target(
-            name: "Autoencoder", dependencies: ["Datasets", "ModelSupport"], path: "Autoencoder"),
+            name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport"],
+            path: "Autoencoder/Autoencoder1D"),
+        .target(
+            name: "Autoencoder2D", dependencies: ["Datasets", "ModelSupport"],
+            path: "Autoencoder/Autoencoder2D"),
         .target(name: "Catch", path: "Catch"),
         .target(name: "Gym-FrozenLake", path: "Gym/FrozenLake"),
         .target(name: "Gym-CartPole", path: "Gym/CartPole"),
@@ -74,11 +78,18 @@ let package = Package(
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
         .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
         .testTarget(name: "RecommendationModelTests", dependencies: ["RecommendationModels"]),
-        .testTarget(name: "DatasetsTests", dependencies: ["Datasets"]),
+        .testTarget(name: "DatasetsTests", dependencies: ["Datasets", "TextModels"]),
         .target(
-            name: "Transformer", dependencies: ["ModelSupport"], path: "Transformer", exclude: ["main.swift"]),
+            name: "TransformerDemo", dependencies: ["TextModels"],
+            path: "Transformer",
+            exclude: ["UI/Windows/main.swift", "UI/macOS/main.swift"],
+            sources: ["main.swift"]),
         .target(
-            name: "TransformerDemo", dependencies: ["Transformer"], path: "Transformer", sources: ["main.swift"]),
+            name: "GPT2-WikiText2",
+            dependencies: ["Batcher", "Datasets", "TextModels"],
+            path: "Examples/GPT2-WikiText2",
+            exclude: ["UI/Windows/main.swift"]),
+        .testTarget(name: "TextTests", dependencies: ["TextModels"]),
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
         .target(name: "DCGAN", dependencies: ["Datasets", "ModelSupport"], path: "DCGAN"),
         .target(
@@ -95,5 +106,6 @@ let package = Package(
         .testTarget(name: "CheckpointTests", dependencies: ["ModelSupport"]),
         .target(
             name: "BERT-CoLA", dependencies: ["TextModels", "Datasets"], path: "Examples/BERT-CoLA"),
+        .testTarget(name: "SupportTests", dependencies: ["ModelSupport"]),
     ]
 )

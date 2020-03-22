@@ -48,9 +48,10 @@ extension IteratorProtocol {
   public func grouped(
     keyFn: @escaping (Element) -> Int,
     sizeFn: @escaping (Int) -> Int,
-    reduceFn: @escaping ([Element]) -> Element
+    reduceFn: @escaping ([Element]) -> Element,
+    dropRemainder: Bool = false
   ) -> GroupedIterator<Self> {
-    GroupedIterator(self, keyFn: keyFn, sizeFn: sizeFn, reduceFn: reduceFn)
+    GroupedIterator(self, keyFn: keyFn, sizeFn: sizeFn, reduceFn: reduceFn, dropRemainder: dropRemainder)
   }
 
   // TODO: [DOC] Add documentation string.
@@ -171,6 +172,7 @@ public struct GroupedIterator<Base: IteratorProtocol>: IteratorProtocol {
   private let keyFn: (Base.Element) -> Int
   private let sizeFn: (Int) -> Int
   private let reduceFn: ([Base.Element]) -> Base.Element
+  private let dropRemainder: Bool
   private var iterator: Base
   private var groups: [Int: [Base.Element]]
   private var currentGroup: Dictionary<Int, [Base.Element]>.Index? = nil
@@ -179,11 +181,13 @@ public struct GroupedIterator<Base: IteratorProtocol>: IteratorProtocol {
     _ iterator: Base,
     keyFn: @escaping (Base.Element) -> Int,
     sizeFn: @escaping (Int) -> Int,
-    reduceFn: @escaping ([Base.Element]) -> Base.Element
+    reduceFn: @escaping ([Base.Element]) -> Base.Element,
+    dropRemainder: Bool = false
   ) {
     self.keyFn = keyFn
     self.sizeFn = sizeFn
     self.reduceFn = reduceFn
+    self.dropRemainder = dropRemainder
     self.iterator = iterator
     self.groups = [Int: [Base.Element]]()
   }
@@ -206,6 +210,7 @@ public struct GroupedIterator<Base: IteratorProtocol>: IteratorProtocol {
       }
     }
     guard let elementsToReduce = elements else {
+      if dropRemainder { return nil }
       if currentGroup == nil { currentGroup = groups.values.startIndex }
       if currentGroup! >= groups.values.endIndex { return nil }
       while groups.values[currentGroup!].isEmpty {
