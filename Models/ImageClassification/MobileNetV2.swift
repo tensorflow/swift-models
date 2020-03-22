@@ -19,33 +19,57 @@ import TensorFlow
 // Mark Sandler, Andrew Howard, Menglong Zhu, Andrey Zhmoginov, Liang-Chieh Chen
 // https://arxiv.org/abs/1801.04381
 
+fileprivate func makeDivisible(filter: Int, widthMultiplier: Float = 1.0, divisor: Float = 8.0)
+    -> Int
+{
+    /// Return a filter multiplied by width, evenly divisible by the divisor
+    let filterMult = Float(filter) * widthMultiplier
+    let filterAdd = Float(filterMult) + (divisor / 2.0)
+    var div = filterAdd / divisor
+    div.round(.down)
+    div = div * Float(divisor)
+    var newFilterCount = max(1, Int(div))
+    if newFilterCount < Int(0.9 * Float(filter)) {
+        newFilterCount += Int(divisor)
+    }
+    return Int(newFilterCount)
+}
+
+fileprivate func roundFilterPair(filters: (Int, Int), widthMultiplier: Float) -> (Int, Int) {
+    return (
+        makeDivisible(filter: filters.0, widthMultiplier: widthMultiplier),
+        makeDivisible(filter: filters.1, widthMultiplier: widthMultiplier)
+    )
+}
+
 public struct InitialInvertedBottleneckBlock: Layer {
     public var dConv: DepthwiseConv2D<Float>
     public var batchNormDConv: BatchNorm<Float>
     public var conv2: Conv2D<Float>
     public var batchNormConv: BatchNorm<Float>
 
-    public init(filters: (Int, Int)) {
+    public init(filters: (Int, Int), widthMultiplier: Float) {
+        let filterMult = roundFilterPair(filters: filters, widthMultiplier: widthMultiplier)
         dConv = DepthwiseConv2D<Float>(
-            filterShape: (3, 3, filters.0, 1),
+            filterShape: (3, 3, filterMult.0, 1),
             strides: (1, 1),
             padding: .same)
         conv2 = Conv2D<Float>(
-            filterShape: (1, 1, filters.0, filters.1),
+            filterShape: (1, 1, filterMult.0, filterMult.1),
             strides: (1, 1),
             padding: .same)
-        batchNormDConv = BatchNorm(featureCount: filters.0)
-        batchNormConv = BatchNorm(featureCount: filters.1)
+        batchNormDConv = BatchNorm(featureCount: filterMult.0)
+        batchNormConv = BatchNorm(featureCount: filterMult.1)
     }
 
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        let dw = relu6(batchNormDConv(dConv(input)))
-        return relu6(conv2(dw))
+        let depthwise = relu6(batchNormDConv(dConv(input)))
+        return batchNormConv(conv2(depthwise))
     }
 }
 
-public struct InvertedResidualBlock: Layer {
+public struct InvertedBottleneckBlock: Layer {
     @noDerivative public var addResLayer: Bool
     @noDerivative public var strides: (Int, Int)
     @noDerivative public let zeroPad = ZeroPadding2D<Float>(padding: ((0, 1), (0, 1)))
@@ -57,13 +81,19 @@ public struct InvertedResidualBlock: Layer {
     public var conv2: Conv2D<Float>
     public var batchNormConv2: BatchNorm<Float>
 
-    public init(filters: (Int, Int), depthMultiplier: Int = 6, strides: (Int, Int) = (1, 1)) {
+    public init(
+        filters: (Int, Int),
+        widthMultiplier: Float,
+        depthMultiplier: Int = 6,
+        strides: (Int, Int) = (1, 1)
+    ) {
         self.strides = strides
         self.addResLayer = filters.0 == filters.1 && strides == (1, 1)
 
-        let hiddenDimension = filters.0 * depthMultiplier
+        let filterMult = roundFilterPair(filters: filters, widthMultiplier: widthMultiplier)
+        let hiddenDimension = filterMult.0 * depthMultiplier
         conv1 = Conv2D<Float>(
-            filterShape: (1, 1, filters.0, hiddenDimension),
+            filterShape: (1, 1, filterMult.0, hiddenDimension),
             strides: (1, 1),
             padding: .same)
         dConv = DepthwiseConv2D<Float>(
@@ -71,41 +101,52 @@ public struct InvertedResidualBlock: Layer {
             strides: strides,
             padding: strides == (1, 1) ? .same : .valid)
         conv2 = Conv2D<Float>(
-            filterShape: (1, 1, hiddenDimension, filters.1),
+            filterShape: (1, 1, hiddenDimension, filterMult.1),
             strides: (1, 1),
             padding: .same)
         batchNormConv1 = BatchNorm(featureCount: hiddenDimension)
         batchNormDConv = BatchNorm(featureCount: hiddenDimension)
-        batchNormConv2 = BatchNorm(featureCount: filters.1)
+        batchNormConv2 = BatchNorm(featureCount: filterMult.1)
     }
 
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        let pw = relu6(batchNormConv1(conv1(input)))
-        var dw: Tensor<Float>
+        let pointwise = relu6(batchNormConv1(conv1(input)))
+        var depthwise: Tensor<Float>
         if self.strides == (1, 1) {
-            dw = batchNormDConv(dConv(pw))
+            depthwise = relu6(batchNormDConv(dConv(pointwise)))
         } else {
-            dw = zeroPad(batchNormDConv(dConv(pw)))
+            depthwise = relu6(batchNormDConv(dConv(zeroPad(pointwise))))
         }
-        let pwLinear = batchNormConv2(conv2(dw))
+        let pointwiseLinear = batchNormConv2(conv2(depthwise))
 
         if self.addResLayer {
-            return input + pwLinear
+            return input + pointwiseLinear
         } else {
-            return pwLinear
+            return pointwiseLinear
         }
     }
 }
 
-public struct InvertedResidualBlockStack: Layer {
-    var blocks: [InvertedResidualBlock] = []
+public struct InvertedBottleneckBlockStack: Layer {
+    var blocks: [InvertedBottleneckBlock] = []
 
-    public init(filters: (Int, Int), blockCount: Int, initialStrides: (Int, Int) = (2, 2)) {
-        self.blocks = [InvertedResidualBlock(filters: (filters.0, filters.1),
-            strides: initialStrides)]
+    public init(
+        filters: (Int, Int),
+        widthMultiplier: Float,
+        blockCount: Int,
+        initialStrides: (Int, Int) = (2, 2)
+    ) {
+        self.blocks = [
+            InvertedBottleneckBlock(
+                filters: (filters.0, filters.1), widthMultiplier: widthMultiplier,
+                strides: initialStrides)
+        ]
         for _ in 1..<blockCount {
-            self.blocks.append(InvertedResidualBlock(filters: (filters.1, filters.1)))
+            self.blocks.append(
+                InvertedBottleneckBlock(
+                    filters: (filters.1, filters.1), widthMultiplier: widthMultiplier)
+            )
         }
     }
 
@@ -116,42 +157,81 @@ public struct InvertedResidualBlockStack: Layer {
 }
 
 public struct MobileNetV2: Layer {
+    @noDerivative public let zeroPad = ZeroPadding2D<Float>(padding: ((0, 1), (0, 1)))
     public var inputConv: Conv2D<Float>
     public var inputConvBatchNorm: BatchNorm<Float>
-    public var initialInvertedBottleneck = InitialInvertedBottleneckBlock(filters: (32, 16))
+    public var initialInvertedBottleneck: InitialInvertedBottleneckBlock
 
-    public var residualBlockStack1 = InvertedResidualBlockStack(filters: (16, 24), blockCount: 2)
-    public var residualBlockStack2 = InvertedResidualBlockStack(filters: (24, 32), blockCount: 3)
-    public var residualBlockStack3 = InvertedResidualBlockStack(filters: (32, 64), blockCount: 4)
-    public var residualBlockStack4 = InvertedResidualBlockStack(filters: (64, 96),
-        blockCount: 3, initialStrides: (1, 1))
-    public var residualBlockStack5 = InvertedResidualBlockStack(filters: (96, 160), blockCount: 3)
+    public var residualBlockStack1: InvertedBottleneckBlockStack
+    public var residualBlockStack2: InvertedBottleneckBlockStack
+    public var residualBlockStack3: InvertedBottleneckBlockStack
+    public var residualBlockStack4: InvertedBottleneckBlockStack
+    public var residualBlockStack5: InvertedBottleneckBlockStack
 
-    public var invertedBottleneckBlock16 = InvertedResidualBlock(filters: (160, 320))
-    public var finalConv: Conv2D<Float>
+    public var invertedBottleneckBlock16: InvertedBottleneckBlock
+
+    public var outputConv: Conv2D<Float>
+    public var outputConvBatchNorm: BatchNorm<Float>
     public var avgPool = GlobalAvgPool2D<Float>()
-    public var output: Dense<Float>
+    public var outputClassifer: Dense<Float>
 
-    public init(classCount: Int = 1000) {
+    public init(classCount: Int = 1000, widthMultiplier: Float = 1.0) {
         inputConv = Conv2D<Float>(
-            filterShape: (3, 3, 3, 32),
+            filterShape: (3, 3, 3, makeDivisible(filter: 32, widthMultiplier: widthMultiplier)),
             strides: (2, 2),
             padding: .same)
-        inputConvBatchNorm = BatchNorm(featureCount: 32)
+        inputConvBatchNorm = BatchNorm(
+            featureCount: makeDivisible(filter: 32, widthMultiplier: widthMultiplier))
 
-        finalConv = Conv2D<Float>(
-            filterShape: (1, 1, 320, 1280),
+        initialInvertedBottleneck = InitialInvertedBottleneckBlock(
+            filters: (32, 16), widthMultiplier: widthMultiplier)
+
+        residualBlockStack1 = InvertedBottleneckBlockStack(
+            filters: (16, 24), widthMultiplier: widthMultiplier, blockCount: 2)
+        residualBlockStack2 = InvertedBottleneckBlockStack(
+            filters: (24, 32), widthMultiplier: widthMultiplier, blockCount: 3)
+        residualBlockStack3 = InvertedBottleneckBlockStack(
+            filters: (32, 64), widthMultiplier: widthMultiplier, blockCount: 4)
+        residualBlockStack4 = InvertedBottleneckBlockStack(
+            filters: (64, 96), widthMultiplier: widthMultiplier, blockCount: 3,
+            initialStrides: (1, 1))
+        residualBlockStack5 = InvertedBottleneckBlockStack(
+            filters: (96, 160), widthMultiplier: widthMultiplier, blockCount: 3)
+
+        invertedBottleneckBlock16 = InvertedBottleneckBlock(
+            filters: (160, 320), widthMultiplier: widthMultiplier)
+
+        var lastBlockFilterCount = makeDivisible(filter: 1280, widthMultiplier: widthMultiplier)
+        if widthMultiplier < 1 {
+            // paper: "One minor implementation difference, with [arxiv:1704.04861] is that for
+            // multipliers less than one, we apply width multiplier to all layers except the very
+            // last convolutional layer."
+            lastBlockFilterCount = 1280
+        }
+
+        outputConv = Conv2D<Float>(
+            filterShape: (
+                1, 1,
+                makeDivisible(filter: 320, widthMultiplier: widthMultiplier), lastBlockFilterCount
+            ),
             strides: (1, 1),
             padding: .same)
-        output = Dense(inputSize: 1280, outputSize: classCount)
+        outputConvBatchNorm = BatchNorm(featureCount: lastBlockFilterCount)
+
+        avgPool = GlobalAvgPool2D()
+        outputClassifer = Dense(
+            inputSize: lastBlockFilterCount, outputSize: classCount,
+            activation: softmax)
     }
 
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        let convolved = input.sequenced(through: inputConv, inputConvBatchNorm,
-            initialInvertedBottleneck)
-        let backbone = convolved.sequenced(through: residualBlockStack1, residualBlockStack2,
-            residualBlockStack3, residualBlockStack4, residualBlockStack5)
-        return backbone.sequenced(through: invertedBottleneckBlock16, finalConv, avgPool, output)
+        let convolved = relu6(input.sequenced(through: zeroPad, inputConv, inputConvBatchNorm))
+        let initialConv = initialInvertedBottleneck(convolved)
+        let backbone = initialConv.sequenced(
+            through: residualBlockStack1, residualBlockStack2, residualBlockStack3,
+            residualBlockStack4, residualBlockStack5)
+        let output = relu6(outputConvBatchNorm(outputConv(invertedBottleneckBlock16(backbone))))
+        return output.sequenced(through: avgPool, outputClassifer)
     }
 }
