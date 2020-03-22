@@ -17,6 +17,13 @@ import TensorFlow
 /// MLP is a multi-layer perceptron and is used as a component of the DLRM model
 public struct MLP: Layer {
     public var blocks: [Dense<Float>] = []
+
+    /// Randomly initializes a new multilayer perceptron from the given hyperparameters.
+    ///
+    /// - Parameter dims: Dims represents the size of the input, hidden layers, and output of the
+    ///   multi-layer perceptron.
+    /// - Parameter sigmoidLastLayer: if `true`, use a `sigmoid` activation function for the last layer,
+    ///   `relu` otherwise.
     init(dims: [Int], sigmoidLastLayer: Bool = false) {
         for i in 0..<(dims.count-1) {
             if sigmoidLastLayer && i == dims.count - 2 {

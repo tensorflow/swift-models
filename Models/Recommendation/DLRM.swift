@@ -46,12 +46,21 @@ public struct DLRM: Module {
     @noDerivative public let nDense: Int
     @noDerivative public let interaction: InteractionType
 
+    /// Randomly initialize a DLRM model from the given hyperparameters.
+    ///
+    /// - Parameters:
+    ///    - nDense: The number of continuous or dense inputs for each example.
+    ///    - mSpa: The "width" of all embedding tables.
+    ///    - lnEmb: Defines the "heights" of each of each embedding table.
+    ///    - lnBot: The size of the hidden layers in the bottom MLP.
+    ///    - lnTop: The size of the hidden layers in the top MLP.
+    ///    - interaction: The type of interactions between the hidden  features.
     public init(nDense: Int, mSpa: Int, lnEmb: [Int], lnBot: [Int], lnTop: [Int],
                 interaction: InteractionType = .concatenate) {
         self.nDense = nDense
         mlpBottom = MLP(dims: [nDense] + lnBot)
         let topInput = lnEmb.count * mSpa + lnBot.last!
-        mlpTop = MLP(dims: [topInput] + lnTop + [1])
+        mlpTop = MLP(dims: [topInput] + lnTop + [1], sigmoidLastLayer: true)
         latentFactors = lnEmb.map { Embedding(vocabularySize: $0, embeddingSize: mSpa) }
         self.interaction = interaction
     }
