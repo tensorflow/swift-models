@@ -76,7 +76,6 @@ add_subdirectory(MiniGo)
 add_subdirectory(GAN)
 add_subdirectory(DCGAN)
 add_subdirectory(FastStyleTransfer)
-add_subdirectory(Transformer)
 add_subdirectory(Examples)
 
 if(BUILD_TESTING)
