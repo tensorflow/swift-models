@@ -33,7 +33,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
-        .package(url: "https://github.com/kylef/Commander.git", from: "0.9.1"),
+        .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.0.1")),
     ],
     targets: [
         .target(name: "Batcher", path: "Batcher"),
@@ -98,7 +98,7 @@ let package = Package(
         .testTarget(name: "FastStyleTransferTests", dependencies: ["FastStyleTransfer"]),
         .target(
             name: "Benchmarks",
-            dependencies: ["Datasets", "ModelSupport", "ImageClassificationModels", "Commander"],
+            dependencies: ["Datasets", "ModelSupport", "ImageClassificationModels", "ArgumentParser"],
             path: "Benchmarks"),
         .testTarget(name: "CheckpointTests", dependencies: ["ModelSupport"]),
         .target(
