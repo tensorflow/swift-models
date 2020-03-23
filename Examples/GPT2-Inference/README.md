@@ -1,29 +1,48 @@
-# Transformer
+# GPT-2 Inference
 
-This is an implementation of [OpenAI's GPT-2 Transformer language model](https://github.com/openai/gpt-2) using [Swift for TensorFlow](https://github.com/tensorflow/swift).
+This example demonstrates how to generate sequences of text using a
+pre-trained
+[OpenAI GPT-2 Transformer language model](https://github.com/openai/gpt-2).
 
-Currently, the model must be run from the root of the swift-models project directory. You can run 
-the model by sampling either unconditionally:
+A pre-trained GPT-2 network is instantiated from the library of standard models
+and used to generate a sequence of text.
 
-## Building and Running
+## Setup
 
-NOTE the first run will take a little while as it will download the GPT-2 data model from the internet.
-
-A "temperature" of 0 means "always output the same text, but it'll be fairly boring,"
-a temperature of 1 means sampling exactly according to the model probabilities, and a temperature
-higher than 1 means sampling more randomly than the model probabilities indicate. Values of 0.5-0.8 tend
-to be best.
+To begin, you'll need the [latest version of Swift for
+TensorFlow](https://github.com/tensorflow/swift/blob/master/Installation.md)
+installed. Make sure you've added the correct version of `swift` to your path.
 
 ### macOS and Linux
 
-```sh
-swift run -c release TransformerDemo [temperature]
+To generate text by sampling unconditionally, run:
+
+```console
+cd swift-models
+swift run -c release GPT2-Inference
 ```
 
-or conditionally:
+To generate text based on a provided seed, run:
 
-```sh
-swift run -c release TransformerDemo [temperature] "conditioning text"
+```console
+cd swift-models
+swift run -c release GPT2-Inference [temperature] ["conditioning text"]
+```
+
+A "temperature" of 0 means "always output the same text, but it'll be fairly
+boring," a temperature of 1 means sampling exactly according to the model
+probabilities, and a temperature higher than 1 means sampling more randomly
+than the model probabilities indicate. Values of 0.5-0.8 tend to be best.
+
+Here's an example of expected output:
+
+```console
+$ swift run -c release GPT2-Inference 0.5 "Introducing Swift for TensorFlow"
+Introducing Swift for TensorFlow
+
+Swift has been around since the beginning. It was created by the Swift team to enable developers to write Swift code. It is a powerful language for developing many different types of data structures.
+
+In this tutorial, we will show you how to use Swift to write a simple, simple TensorFlow program.
 ```
 
 ### Windows
@@ -70,23 +89,3 @@ copy \BinaryCache\swift-models\Transformer\TransformerUI.exe.manifest \BinaryCac
 
 Once all the files have been copied, you should be able to run the demo application by either double clicking the `TransformerUI` executable from Windows Explorer or running `\BinaryCache\TransformerUI\TransformerUI` from the commandline.
 
-### Sample Run
-
-Here's one output we got:
-
-```console
-$ swift run -c release TransformerDemo 0.5 "Introducing Swift for TensorFlow"
-Introducing Swift for TensorFlow
-
-Swift has been around since the beginning. It was created by the Swift team to enable developers to write Swift code. It is a powerful language for developing many different types of data structures.
-
-In this tutorial, we will show you how to use Swift to write a simple, simple TensorFlow program.
-```
-
-### Dependencies
-
-This code requires a Swift for TensorFlow toolchain.
-To get a toolchain, you can:
-
-1. [Download a pre-built package](https://github.com/tensorflow/swift/blob/master/Installation.md).
-2. [Compile a toolchain from source](https://github.com/apple/swift/tree/tensorflow#building-swift-for-tensorflow).

@@ -19,4 +19,4 @@ train-images-idx3-ubyte
 imagenette
 imagenette-160
 imagenette-320
-Transformer/__pycache__
+Examples/GPT2-Inference/__pycache__
