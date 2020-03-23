@@ -69,23 +69,23 @@ set SWIFTFLAGS=-sdk %SDKROOT% -I %SDKROOT%/usr/lib/swift -L %SDKROOT%/usr/lib/sw
 #### Build
 
 ```cmd
-cmake --build /BinaryCache/swift-models --target TransformerUI
+cmake --build /BinaryCache/swift-models --target GPT2InferenceUI
 ```
 
 #### Run
 
 ```cmd
-md \BinaryCache\TransformerUI
-copy \BinaryCache\swift-models\swift-protobuf-prefix\src\swift-protobuf-build\Sources\SwiftProtobuf\SwiftProtobuf.dll \BinaryCache\TransformerUI\
-copy \BinaryCache\swift-models\swift-win32-prefix\src\swift-win32-build\SwiftWin32.dll \BinaryCache\TransformerUI\
-copy \BinaryCache\swift-models\Batcher\Batcher.dll \BinaryCache\TransformerUI\
-copy \BinaryCache\swift-models\Datasets\Datasets.dll \BinaryCache\TransformerUI\
-copy \BinaryCache\swift-models\Models\Text\TextModels.dll \BinaryCache\TransformerUI\
-copy \BinaryCache\swift-models\Support\ModelSupport.dll \BinaryCache\TransformerUI\
-copy \BinaryCache\swift-models\Transformer\Transformer.dll \BinaryCache\TransformerUI\
-copy \BinaryCache\swift-models\Transformer\TransformerUI.exe \BinaryCache\TransformerUI\
-copy \BinaryCache\swift-models\Transformer\TransformerUI.exe.manifest \BinaryCache\TransformerUI\
+md \BinaryCache\GPT2InferenceUI
+copy \BinaryCache\swift-models\swift-protobuf-prefix\src\swift-protobuf-build\Sources\SwiftProtobuf\SwiftProtobuf.dll \BinaryCache\GPT2InferenceUI\
+copy \BinaryCache\swift-models\swift-win32-prefix\src\swift-win32-build\SwiftWin32.dll \BinaryCache\GPT2InferenceUI\
+copy \BinaryCache\swift-models\Batcher\Batcher.dll \BinaryCache\GPT2InferenceUI\
+copy \BinaryCache\swift-models\Datasets\Datasets.dll \BinaryCache\GPT2InferenceUI\
+copy \BinaryCache\swift-models\Models\Text\TextModels.dll \BinaryCache\GPT2InferenceUI\
+copy \BinaryCache\swift-models\Support\ModelSupport.dll \BinaryCache\GPT2InferenceUI\
+copy \BinaryCache\swift-models\Transformer\Transformer.dll \BinaryCache\GPT2InferenceUI\
+copy \BinaryCache\swift-models\Transformer\GPT2InferenceUI.exe \BinaryCache\GPT2InferenceUI\
+copy \BinaryCache\swift-models\Transformer\GPT2InferenceUI.exe.manifest \BinaryCache\GPT2InferenceUI\
 ```
 
-Once all the files have been copied, you should be able to run the demo application by either double clicking the `TransformerUI` executable from Windows Explorer or running `\BinaryCache\TransformerUI\TransformerUI` from the commandline.
+Once all the files have been copied, you should be able to run the demo application by either double clicking the `GPT2InferenceUI` executable from Windows Explorer or running `\BinaryCache\GPT2InferenceUI\GPT2InferenceUI` from the commandline.
 
