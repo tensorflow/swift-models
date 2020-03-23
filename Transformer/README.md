@@ -34,41 +34,49 @@ Although all the models build and run, not all of them have been tested.  Partic
 
 #### Configure
 
+Ensure that your
+[installation](https://github.com/tensorflow/swift/blob/master/Installation.md#installation-2)
+is up-to-date. In particular, ensure that you have deployed Windows SDK
+modulemaps since your last Visual Studio update.
+
 ```cmd
-git clone git://github.com/tensorflow/swift-models /SourceCache/swift-models
+git clone git://github.com/tensorflow/swift-models swift-models
 set SDKROOT=%SystemDrive%/Library/Developer/Platforms/Windows.platform/Developer/SDKs/Windows.sdk
 set SWIFTFLAGS=-sdk %SDKROOT% -I %SDKROOT%/usr/lib/swift -L %SDKROOT%/usr/lib/swift/windows -Xlinker -ignore:4217 -Xlinker -ignore:4286
 "%ProgramFiles%/CMake/bin/cmake.exe"    ^
-  -B /BinaryCache/swift-models          ^
+  -B build/swift-models                 ^
   -D BUILD_SHARED_LIBS=YES              ^
   -D CMAKE_BUILD_TYPE=Release           ^
   -D CMAKE_Swift_FLAGS="%SWIFTFLAGS%"   ^
   -G Ninja                              ^
-  -S /SourceCache/swift-models
+  -S swift-models
 ```
 
 #### Build
 
 ```cmd
-cmake --build /BinaryCache/swift-models --target TransformerUI
+cmake --build build/swift-models --target TransformerUI
 ```
 
 #### Run
 
 ```cmd
-md \BinaryCache\TransformerUI
-copy \BinaryCache\swift-models\swift-protobuf-prefix\src\swift-protobuf-build\Sources\SwiftProtobuf\SwiftProtobuf.dll \BinaryCache\TransformerUI\
-copy \BinaryCache\swift-models\swift-win32-prefix\src\swift-win32-build\SwiftWin32.dll \BinaryCache\TransformerUI\
-copy \BinaryCache\swift-models\Batcher\Batcher.dll \BinaryCache\TransformerUI\
-copy \BinaryCache\swift-models\Datasets\Datasets.dll \BinaryCache\TransformerUI\
-copy \BinaryCache\swift-models\Models\Text\TextModels.dll \BinaryCache\TransformerUI\
-copy \BinaryCache\swift-models\Support\ModelSupport.dll \BinaryCache\TransformerUI\
-copy \BinaryCache\swift-models\Transformer\Transformer.dll \BinaryCache\TransformerUI\
-copy \BinaryCache\swift-models\Transformer\TransformerUI.exe \BinaryCache\TransformerUI\
-copy \BinaryCache\swift-models\Transformer\TransformerUI.exe.manifest \BinaryCache\TransformerUI\
+md build\TransformerUI
+copy build\swift-models\swift-protobuf-prefix\src\swift-protobuf-build\Sources\SwiftProtobuf\SwiftProtobuf.dll build\TransformerUI\
+copy build\swift-models\swift-win32-prefix\src\swift-win32-build\SwiftWin32.dll build\TransformerUI\
+copy build\swift-models\Batcher\Batcher.dll build\TransformerUI\
+copy build\swift-models\Datasets\Datasets.dll build\TransformerUI\
+copy build\swift-models\Models\Text\TextModels.dll build\TransformerUI\
+copy build\swift-models\Support\ModelSupport.dll build\TransformerUI\
+copy build\swift-models\Transformer\Transformer.dll build\TransformerUI\
+copy build\swift-models\Transformer\TransformerUI.exe build\TransformerUI\
+copy build\swift-models\Transformer\TransformerUI.exe.manifest build\TransformerUI\
 ```
 
-Once all the files have been copied, you should be able to run the demo application by either double clicking the `TransformerUI` executable from Windows Explorer or running `\BinaryCache\TransformerUI\TransformerUI` from the commandline.
+Once all the files have been copied, you should be able to run the demo
+application by either double clicking the `TransformerUI` executable from
+Windows Explorer or running `build\TransformerUI\TransformerUI` from the
+command line.
 
 ### Sample Run
 
