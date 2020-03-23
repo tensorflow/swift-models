@@ -61,7 +61,14 @@ public struct DLRM: Module {
         mlpBottom = MLP(dims: [nDense] + lnBot)
         let topInput = lnEmb.count * mSpa + lnBot.last!
         mlpTop = MLP(dims: [topInput] + lnTop + [1], sigmoidLastLayer: true)
-        latentFactors = lnEmb.map { Embedding(vocabularySize: $0, embeddingSize: mSpa) }
+        latentFactors = lnEmb.map { embeddingSize -> Embedding<Float> in
+            // Use a random uniform initialization to match the reference implementation.
+            let weights = Tensor<Float>(
+                randomUniform: [embeddingSize, mSpa],
+                lowerBound: Tensor(Float(-1.0)/Float(embeddingSize)),
+                upperBound: Tensor(Float(1.0)/Float(embeddingSize)))
+            return Embedding(embeddings: weights)
+        }
         self.interaction = interaction
     }
 
@@ -80,8 +87,8 @@ public struct DLRM: Module {
         let denseEmbVec = mlpBottom(denseInput)
         let sparseEmbVecs = computeEmbeddings(sparseInputs: sparseInput,
                                               latentFactors: latentFactors)
-        let topInput = Tensor(concatenating: sparseEmbVecs + [denseEmbVec],
-                              alongAxis: 1)
+        let topInput = computeInteractions(
+            denseEmbVec: denseEmbVec, sparseEmbVecs: sparseEmbVecs)
         let prediction = mlpTop(topInput)
 
         // TODO: loss threshold clipping

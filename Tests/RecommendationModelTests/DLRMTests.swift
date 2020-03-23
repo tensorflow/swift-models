@@ -43,19 +43,12 @@ final class DLRMTests: XCTestCase {
     }
 
     func testDLRMTraining() {
-        let trainingSteps = 2000
+        let trainingSteps = 400
         let nDense = 9
         let dimEmbed = 4
         let bottomMLPSize = [8, 4]
         let topMLPSize = [11, 4]
         let batchSize = 10
-
-        var model = DLRM(
-            nDense: nDense,
-            mSpa: dimEmbed,
-            lnEmb: [10, 20],
-            lnBot: bottomMLPSize,
-            lnTop: topMLPSize)
 
         func lossFunc(predicted: Tensor<Float>, labels: Tensor<Float>) -> Tensor<Float> {
             let difference = predicted - labels
@@ -63,32 +56,45 @@ final class DLRMTests: XCTestCase {
             return squared.sum()
         }
 
-        let trainingData = DLRMInput(dense: Tensor(ones: [batchSize, nDense]),
+        let trainingData = DLRMInput(dense: Tensor(randomNormal: [batchSize, nDense]),
                                       sparse: [Tensor([7, 3, 1, 3, 1, 6, 7, 8, 9, 2]),
                                                Tensor([17, 13, 19, 0, 1, 6, 7, 8, 9, 10])])
         let labels = Tensor<Float>([1,0,0,1,1,1,0,1,0,1])
 
-        let optimizer = SGD(for: model, learningRate: 0.0015)
+        // Sometimes DLRM on such a small dataset can get "stuck" in a bad initialization.
+        // To ensure a reliable test, we give ourselves a few reinitializations.
+        for attempt in 1...5 {
+            var model = DLRM(
+                nDense: nDense,
+                mSpa: dimEmbed,
+                lnEmb: [10, 20],
+                lnBot: bottomMLPSize,
+                lnTop: topMLPSize)
+            let optimizer = SGD(for: model, learningRate: 0.1)
 
-        for step in 1...trainingSteps {
-            let (loss, grads) = valueWithGradient(at: model) { model in
-                lossFunc(predicted: model(trainingData), labels: labels)
-            }
-            if step % 100 == 0 {
-                print(step, loss)
-                if loss.scalarized() < 1e-7 {
-                    return // Success!
+            for step in 0...trainingSteps {
+                let (loss, grads) = valueWithGradient(at: model) { model in
+                    lossFunc(predicted: model(trainingData), labels: labels)
                 }
+                if step % 50 == 0 {
+                    print(step, loss)
+                    if round(model(trainingData)) == labels { return }  // Success
+                }
+                if step > 300 && step % 50 == 0 {
+                    print("\n\n-----------------------------------------")
+                    print("Step: \(step), loss: \(loss)\nGrads:\n\(grads)\nModel:\n\(model)")
+                }
+                optimizer.update(&model, along: grads)
             }
-            optimizer.update(&model, along: grads)
+            print("Final model outputs (attempt: \(attempt)):\n\(model(trainingData))\nTarget:\n\(labels)")
         }
-        XCTFail("Could not perfectly fit a single mini-batch.")
+        XCTFail("Could not perfectly fit a single mini-batch after 5 reinitializations.")
      }
 }
 
 extension DLRMTests {
     static var allTests = [
         ("testDLRM", testDLRM),
-        ("testDLRMTraining", testDLRMTraining)
+        ("testDLRMTraining", testDLRMTraining),
     ]
 }
