@@ -42,7 +42,7 @@ set SWIFTFLAGS=-sdk %SDKROOT% -I %SDKROOT%/usr/lib/swift -L %SDKROOT%/usr/lib/sw
   -B /BinaryCache/swift-models          ^
   -D BUILD_SHARED_LIBS=YES              ^
   -D CMAKE_BUILD_TYPE=Release           ^
-  -D CMAKE_Swift_FLAGS="%SWIFTFLAGS%    ^
+  -D CMAKE_Swift_FLAGS="%SWIFTFLAGS%"    ^
   -G Ninja                              ^
   -S /SourceCache/swift-models
 ```
