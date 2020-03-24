@@ -35,8 +35,8 @@ public struct CIFAR10: ImageClassificationDataset {
 
     public init(
         remoteBinaryArchiveLocation: URL, 
-        localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
-                "CIFAR10", isDirectory: true), 
+        localStorageDirectory: URL = DatasetUtilities.defaultDirectory
+                .appendingPathComponent("CIFAR10", isDirectory: true), 
         normalizing: Bool) 
     {
         downloadCIFAR10IfNotPresent(from: remoteBinaryArchiveLocation, to: localStorageDirectory)

@@ -32,8 +32,8 @@ public struct FashionMNIST: ImageClassificationDataset {
 
     public init(
         flattening: Bool = false, normalizing: Bool = false,
-        localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
-            "FashionMNIST", isDirectory: true)
+        localStorageDirectory: URL = DatasetUtilities.defaultDirectory
+            .appendingPathComponent("FashionMNIST", isDirectory: true)
     ) {
         self.trainingDataset = Dataset<LabeledExample>(
             elements: fetchMNISTDataset(
