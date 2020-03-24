@@ -7,7 +7,7 @@ final class CIFAR10Tests: XCTestCase {
     override func setUp() {
         super.setUp()
         // Force downloading of the dataset during tests by removing any pre-existing local files.
-        let path = FileManager.default.temporaryDirectory.appendingPathComponent(
+        let path = DatasetUtilities.defaultDirectory.appendingPathComponent(
             "CIFAR10/cifar-10-batches-bin").path
         if FileManager.default.fileExists(atPath: path) {
             try! FileManager.default.removeItem(atPath: path)
