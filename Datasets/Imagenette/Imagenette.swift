@@ -48,8 +48,8 @@ public struct Imagenette: ImageClassificationDataset {
 
     public init(
         inputSize: ImageSize, outputSize: Int,
-        localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
-            "Imagenette", isDirectory: true)
+        localStorageDirectory: URL = DatasetUtilities.defaultDirectory
+                .appendingPathComponent("Imagenette", isDirectory: true)
     ) {
         do {
             self.trainingDataset = Dataset<LabeledExample>(
@@ -177,7 +177,7 @@ public struct ImagenetteBatchers {
 
     public init(
         inputSize: Imagenette.ImageSize, outputSize: Int, batchSize: Int = 64, numWorkers: Int = 8, 
-        localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
+        localStorageDirectory: URL = DatasetUtilities.defaultDirectory.appendingPathComponent(
             "Imagenette", isDirectory: true)
     ) {
         do {
