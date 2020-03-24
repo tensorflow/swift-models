@@ -4,16 +4,6 @@ import TensorFlow
 import XCTest
 
 final class CIFAR10Tests: XCTestCase {
-    override func setUp() {
-        super.setUp()
-        // Force downloading of the dataset during tests by removing any pre-existing local files.
-        let path = DatasetUtilities.defaultDirectory.appendingPathComponent(
-            "CIFAR10/cifar-10-batches-bin").path
-        if FileManager.default.fileExists(atPath: path) {
-            try! FileManager.default.removeItem(atPath: path)
-        }
-    }
-
     func testCreateCIFAR10() {
         let dataset = CIFAR10( 
             remoteBinaryArchiveLocation:
