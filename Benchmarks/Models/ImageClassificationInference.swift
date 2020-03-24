@@ -37,7 +37,7 @@ where Model: ImageClassificationModel, ClassificationDataset: ImageClassificatio
     init(settings: BenchmarkSettings, images: Tensor<Float>? = nil) {
         self.batches = settings.batches
         self.batchSize = settings.batchSize
-        self.dataset = ClassificationDataset()
+        self.dataset = ClassificationDataset(batchSize: settings.batchSize)
         self.model = Model()
         if let providedImages = images {
             self.images = providedImages

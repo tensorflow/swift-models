@@ -22,16 +22,14 @@ where
 {
     let dataset: ClassificationDataset
     let epochs: Int
-    let batchSize: Int
 
     var exampleCount: Int {
-        return epochs * dataset.trainingExampleCount
+        return epochs * dataset.trainingBatcher.dataset.count
     }
 
     init(settings: BenchmarkSettings) {
         self.epochs = settings.epochs
-        self.batchSize = settings.batchSize
-        self.dataset = ClassificationDataset()
+        self.dataset = ClassificationDataset(batchSize: settings.batchSize)
     }
 
     func run() {
@@ -41,10 +39,8 @@ where
 
         Context.local.learningPhase = .training
         for epoch in 1...epochs {
-            let trainingShuffled = dataset.trainingDataset.shuffled(
-                sampleCount: dataset.trainingExampleCount, randomSeed: Int64(epoch))
-            for batch in trainingShuffled.batched(batchSize) {
-                let (labels, images) = (batch.label, batch.data)
+            for batch in dataset.trainBatcher.sequenced() {
+                let (images, labels) = (batch.first, batch.second)
                 let 𝛁model = TensorFlow.gradient(at: model) { model -> Tensor<Float> in
                     let logits = model(images)
                     return softmaxCrossEntropy(logits: logits, labels: labels)
