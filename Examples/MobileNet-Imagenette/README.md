@@ -4,8 +4,6 @@ This example demonstrates how to train the [MobileNet v1](https://arxiv.org/abs/
 
 A MobileNet (version 1) network is instantiated from the ImageClassificationModels library of standard models, and applied to an instance of the Imagenette dataset. A custom training loop is defined, and the training and test losses and accuracies for each epoch are shown during training.
 
-As a note: the current implementation of the Imagenette dataset loads all images into memory as floats, which can lead to memory exhaustion on machines with less than 16 GB of available RAM.
-
 ## Setup
 
 To begin, you'll need the [latest version of Swift for
