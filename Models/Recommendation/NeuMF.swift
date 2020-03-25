@@ -13,27 +13,21 @@
 // limitations under the License.
 
 import TensorFlow
-
-// Original Paper:
-// "Neural Collaborative Filtering∗"
-// Xiangnan He, Lizi Liao, Hanwang Zhang, Liqiang Nie, Xia Hu, Tat-Seng Chua
-// https://arxiv.org/pdf/1708.05031.pdf
+/// NeuMF is recommendation model which is combination of Matrix Factorization and Multi-layer Perceptron
+///
+/// Original Paper:
+/// "Neural Collaborative Filtering∗"
+/// Xiangnan He, Lizi Liao, Hanwang Zhang, Liqiang Nie, Xia Hu, Tat-Seng Chua
+/// https://arxiv.org/pdf/1708.05031.pdf
 
 public struct NeuMF: Module {
 
     public typealias Scalar = Float
-    // Total number of users
     @noDerivative public let numUsers: Int
-    // Total number of items
     @noDerivative public let numItems: Int
-    //Embedding size of MF model
     @noDerivative public let mfDim: Int
-    //Regularization for MF embeddings
     @noDerivative public let mfReg: Scalar
-    // MLP layers: Note that the first layer is the concatenation of user and item embeddings
-    // So mlpLayerSizes[0]/2 is the embedding size."
     @noDerivative public var mlpLayerSizes : [Int] = [64,32,16,8]
-    //Regularization for MLP layer
     @noDerivative public var mlpLayerRegs: [Scalar] = [0,0,0,0]
 
     public var mfUserEmbed: Embedding<Scalar>
@@ -44,6 +38,18 @@ public struct NeuMF: Module {
     public var dense2: Dense<Scalar>
     public var dense3: Dense<Scalar>
     public var finalDense: Dense<Scalar>
+
+    /// Initial the NeuMF models as per dataset from the given hyperparameters.
+    ///
+    /// -Parameters
+    /// - numUsers: Total number of users in dataset.
+    /// - numItems: Total number of items in dataset.
+    /// - mfDim: Embedding size of Matrix Factorization model.
+    /// - mfReg: Regularization for Matrix Factorization embeddings.
+    /// - mlpLayerSizes: The size of layers in Multi Layer Perceptron model.
+    /// - mlpLayerRegs: Regularization for each Multi Layer Perceptron layer.
+    ///
+    ///  Note: The first MLP layer is the concatenation of user and item embeddings So mlpLayerSizes[0]/2 is the embedding size.
 
     public init(
         numUsers: Int,
