@@ -41,7 +41,7 @@ public class Images {
         }
 
         let source = Tensor<Float>(shape: [elements, 256, 256, 3], scalars: sourceData) / 127.5 - 1.0
-        dataset = .init(elements: Elements(image: source))
+        dataset = Dataset(elements: Elements(image: source))
         count = elements
     }
 }
