@@ -15,20 +15,6 @@
 import Foundation
 import TensorFlow
 
-public struct Identity: ParameterlessLayer {
-    @differentiable
-    public func callAsFunction(_ input: Tensorf) -> Tensorf {
-        input
-    }
-}
-
-public struct LeakyRELU: ParameterlessLayer {
-    @differentiable
-    public func callAsFunction(_ input: Tensorf) -> Tensorf {
-        return leakyRelu(input)
-    }
-}
-
 /// 2-D layer applying instance normalization over a mini-batch of inputs.
 ///
 /// Reference: [Instance Normalization](https://arxiv.org/abs/1607.08022)
