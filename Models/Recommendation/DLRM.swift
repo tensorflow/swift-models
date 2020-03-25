@@ -83,7 +83,7 @@ public struct DLRM: Module {
         sparseInput: [Tensor<Int32>]
     ) -> Tensor<Float> {
         precondition(denseInput.shape.last! == nDense)
-        assert(sparseInput.count == latentFactors.count)
+        precondition(sparseInput.count == latentFactors.count)
         let denseEmbVec = mlpBottom(denseInput)
         let sparseEmbVecs = computeEmbeddings(sparseInputs: sparseInput,
                                               latentFactors: latentFactors)
