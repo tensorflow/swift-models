@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import TensorFlow
+import Batcher
 
 public protocol ImageClassificationDataset {
     associatedtype SourceDataSet: Collection 

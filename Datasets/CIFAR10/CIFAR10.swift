@@ -20,6 +20,7 @@
 import Foundation
 import ModelSupport
 import TensorFlow
+import Batcher
 
 public struct CIFAR10: ImageClassificationDataset {
     public typealias SourceDataSet = [TensorPair<Float, Int32>]

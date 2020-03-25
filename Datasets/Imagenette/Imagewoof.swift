@@ -20,12 +20,12 @@
 import Foundation
 import ModelSupport
 import TensorFlow
+import Batcher
 
 public struct Imagewoof: ImageClassificationDataset {
-    public let trainingDataset: Dataset<LabeledExample>
-    public let testDataset: Dataset<LabeledExample>
-    public let trainingExampleCount = 12454
-    public let testExampleCount = 500
+    public typealias SourceDataSet = LazyDataSet
+    public let trainingBatcher: Batcher<SourceDataSet>
+    public let testBatcher: Batcher<SourceDataSet>
 
     public enum ImageSize {
         case full
@@ -41,26 +41,30 @@ public struct Imagewoof: ImageClassificationDataset {
         }
     }
 
-    public init() {
-        self.init(inputSize: .resized320, outputSize: 224)
+    public init(batchSize: Int) {
+        self.init(batchSize: batchSize, inputSize: .resized320, outputSize: 224)
     }
 
     public init(
+        batchSize: Int,
         inputSize: ImageSize, outputSize: Int,
         localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
             "Imagewoof", isDirectory: true)
     ) {
         do {
-            self.trainingDataset = Dataset<LabeledExample>(
-                elements: try loadImagewoofTrainingImages(
+            trainingBatcher = Batcher<SourceDataSet>(
+                on: try loadImagewoofTrainingDirectory(
                     inputSize: inputSize, outputSize: outputSize,
-                    localStorageDirectory: localStorageDirectory))
-            self.testDataset = Dataset<LabeledExample>(
-                elements: try loadImagewoofValidationImages(
+                    localStorageDirectory: localStorageDirectory),
+                batchSize: batchSize, 
+                shuffle: true)
+            testBatcher = Batcher<SourceDataSet>(
+                on: try loadImagewoofValidationDirectory(
                     inputSize: inputSize, outputSize: outputSize,
-                    localStorageDirectory: localStorageDirectory))
+                    localStorageDirectory: localStorageDirectory),
+                batchSize: batchSize)
         } catch {
-            fatalError("Could not load Imagewoof dataset: \(error)")
+            fatalError("Could not load Imagenette dataset: \(error)")
         }
     }
 }
@@ -80,59 +84,50 @@ func downloadImagewoofIfNotPresent(to directory: URL, size: Imagewoof.ImageSize)
         remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
 }
 
-func loadImagewoofDirectory(
-    named name: String, in directory: URL, inputSize: Imagewoof.ImageSize, outputSize: Int
-) throws -> LabeledExample {
+func exploreImagewoofDirectory(named name: String, in directory: URL, inputSize: Imagewoof.ImageSize) throws -> [URL] {
     downloadImagewoofIfNotPresent(to: directory, size: inputSize)
     let path = directory.appendingPathComponent("imagewoof\(inputSize.suffix)/\(name)")
     let dirContents = try FileManager.default.contentsOfDirectory(
         at: path, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])
 
-    var imageData: [Float] = []
-    var stringLabels: [String] = []
-    var labels: [Int32] = []
-    var currentLabel: Int32 = 0
-    var imageCount = 0
+    var urls: [URL] = []
     for directoryURL in dirContents {
-        stringLabels.append(directoryURL.lastPathComponent)
-
         let subdirContents = try FileManager.default.contentsOfDirectory(
             at: directoryURL, includingPropertiesForKeys: [.isDirectoryKey],
             options: [.skipsHiddenFiles])
-        for fileURL in subdirContents {
-            let image = Image(jpeg: fileURL)
-            let resizedImage = image.resized(to: (outputSize, outputSize))
-            let scaledImage = resizedImage.tensor / 255.0
-            imageData.append(contentsOf: scaledImage.scalars)
-
-            labels.append(currentLabel)
-
-            imageCount += 1
-        }
-        currentLabel += 1
+        urls += subdirContents
     }
-
-    let labelTensor = Tensor<Int32>(shape: [imageCount], scalars: labels)
-    let imageTensor = Tensor<Float>(
-        shape: [imageCount, outputSize, outputSize, 3], scalars: imageData)
-
-    return LabeledExample(label: labelTensor, data: imageTensor)
+    return urls
 }
 
-func loadImagewoofTrainingImages(
-    inputSize: Imagewoof.ImageSize, outputSize: Int, localStorageDirectory: URL
-) throws
-    -> LabeledExample
-{
-    return try loadImagewoofDirectory(
-        named: "train", in: localStorageDirectory, inputSize: inputSize, outputSize: outputSize)
+func loadImagewoofDirectory(
+    named name: String, in directory: URL, inputSize: Imagewoof.ImageSize, outputSize: Int,
+    labelDict: [String:Int]? = nil
+) throws -> LazyDataSet {
+    let urls = try exploreImagewoofDirectory(named: name, in: directory, inputSize: inputSize)
+    let unwrappedLabelDict = labelDict ?? createLabelDict(urls: urls)
+    return urls.lazy.map { (url: URL) -> TensorPair<Float, Int32> in
+        TensorPair<Float, Int32>(
+            first: Image(jpeg: url).resized(to: (outputSize, outputSize)).tensor[0] / 255.0,
+            second: Tensor<Int32>(Int32(unwrappedLabelDict[parentLabel(url: url)]!))
+        )    
+    }
 }
 
-func loadImagewoofValidationImages(
-    inputSize: Imagewoof.ImageSize, outputSize: Int, localStorageDirectory: URL
+func loadImagewoofTrainingDirectory(
+    inputSize: Imagewoof.ImageSize, outputSize: Int, localStorageDirectory: URL, labelDict: [String:Int]? = nil
 ) throws
-    -> LabeledExample
+    -> LazyDataSet
 {
     return try loadImagewoofDirectory(
-        named: "val", in: localStorageDirectory, inputSize: inputSize, outputSize: outputSize)
+        named: "train", in: localStorageDirectory, inputSize: inputSize, outputSize: outputSize, labelDict: labelDict)
+}
+
+func loadImagewoofValidationDirectory(
+    inputSize: Imagewoof.ImageSize, outputSize: Int, localStorageDirectory: URL, labelDict: [String:Int]? = nil
+) throws
+    -> LazyDataSet
+{
+    return try loadImagewoofDirectory(
+        named: "val", in: localStorageDirectory, inputSize: inputSize, outputSize: outputSize, labelDict: labelDict)
 }

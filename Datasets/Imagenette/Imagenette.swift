@@ -22,11 +22,12 @@ import ModelSupport
 import TensorFlow
 import Batcher
 
+public typealias LazyDataSet = LazyMapSequence<[URL], TensorPair<Float, Int32>>
+
 public struct Imagenette: ImageClassificationDataset {
-    public let trainingDataset: Dataset<LabeledExample>
-    public let testDataset: Dataset<LabeledExample>
-    public let trainingExampleCount = 12894
-    public let testExampleCount = 500
+    public typealias SourceDataSet = LazyDataSet
+    public let trainingBatcher: Batcher<SourceDataSet>
+    public let testBatcher: Batcher<SourceDataSet>
 
     public enum ImageSize {
         case full
@@ -42,24 +43,28 @@ public struct Imagenette: ImageClassificationDataset {
         }
     }
 
-    public init() {
-        self.init(inputSize: .resized320, outputSize: 224)
+    public init(batchSize: Int) {
+        self.init(batchSize: batchSize, inputSize: .resized320, outputSize: 224)
     }
 
     public init(
+        batchSize: Int,
         inputSize: ImageSize, outputSize: Int,
         localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
             "Imagenette", isDirectory: true)
     ) {
         do {
-            self.trainingDataset = Dataset<LabeledExample>(
-                elements: try loadImagenetteTrainingImages(
+            trainingBatcher = Batcher<SourceDataSet>(
+                on: try loadImagenetteTrainingDirectory(
                     inputSize: inputSize, outputSize: outputSize,
-                    localStorageDirectory: localStorageDirectory))
-            self.testDataset = Dataset<LabeledExample>(
-                elements: try loadImagenetteValidationImages(
+                    localStorageDirectory: localStorageDirectory),
+                batchSize: batchSize, 
+                shuffle: true)
+            testBatcher = Batcher<SourceDataSet>(
+                on: try loadImagenetteValidationDirectory(
                     inputSize: inputSize, outputSize: outputSize,
-                    localStorageDirectory: localStorageDirectory))
+                    localStorageDirectory: localStorageDirectory),
+                batchSize: batchSize)
         } catch {
             fatalError("Could not load Imagenette dataset: \(error)")
         }
@@ -81,65 +86,7 @@ func downloadImagenetteIfNotPresent(to directory: URL, size: Imagenette.ImageSiz
         remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
 }
 
-func loadImagenetteDirectory(
-    named name: String, in directory: URL, inputSize: Imagenette.ImageSize, outputSize: Int
-) throws -> LabeledExample {
-    downloadImagenetteIfNotPresent(to: directory, size: inputSize)
-    let path = directory.appendingPathComponent("imagenette\(inputSize.suffix)/\(name)")
-    let dirContents = try FileManager.default.contentsOfDirectory(
-        at: path, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])
-
-    var imageData: [Float] = []
-    var stringLabels: [String] = []
-    var labels: [Int32] = []
-    var currentLabel: Int32 = 0
-    var imageCount = 0
-    for directoryURL in dirContents {
-        stringLabels.append(directoryURL.lastPathComponent)
-
-        let subdirContents = try FileManager.default.contentsOfDirectory(
-            at: directoryURL, includingPropertiesForKeys: [.isDirectoryKey],
-            options: [.skipsHiddenFiles])
-        for fileURL in subdirContents {
-            let image = Image(jpeg: fileURL)
-            let resizedImage = image.resized(to: (outputSize, outputSize))
-            let scaledImage = resizedImage.tensor / 255.0
-            imageData.append(contentsOf: scaledImage.scalars)
-
-            labels.append(currentLabel)
-
-            imageCount += 1
-        }
-        currentLabel += 1
-    }
-
-    let labelTensor = Tensor<Int32>(shape: [imageCount], scalars: labels)
-    let imageTensor = Tensor<Float>(
-        shape: [imageCount, outputSize, outputSize, 3], scalars: imageData)
-
-    return LabeledExample(label: labelTensor, data: imageTensor)
-}
-
-func loadImagenetteTrainingImages(
-    inputSize: Imagenette.ImageSize, outputSize: Int, localStorageDirectory: URL
-) throws
-    -> LabeledExample
-{
-    return try loadImagenetteDirectory(
-        named: "train", in: localStorageDirectory, inputSize: inputSize, outputSize: outputSize)
-}
-
-func loadImagenetteValidationImages(
-    inputSize: Imagenette.ImageSize, outputSize: Int, localStorageDirectory: URL
-) throws
-    -> LabeledExample
-{
-    return try loadImagenetteDirectory(
-        named: "val", in: localStorageDirectory, inputSize: inputSize, outputSize: outputSize)
-}
-
-// Alternative design using Batcher
-func exploreDirectory(named name: String, in directory: URL, inputSize: Imagenette.ImageSize) throws -> [URL] {
+func exploreImagenetteDirectory(named name: String, in directory: URL, inputSize: Imagenette.ImageSize) throws -> [URL] {
     downloadImagenetteIfNotPresent(to: directory, size: inputSize)
     let path = directory.appendingPathComponent("imagenette\(inputSize.suffix)/\(name)")
     let dirContents = try FileManager.default.contentsOfDirectory(
@@ -159,62 +106,40 @@ func parentLabel(url: URL) -> String {
     return url.deletingLastPathComponent().lastPathComponent
 }
 
-public func basicDataset<Item> (
-    from items: [Item], 
-    toInput: @escaping (Item) -> Tensor<Float>,
-    toTarget: @escaping (Item) -> Tensor<Int32>
-) -> LazyMapSequence<[Item], LabeledExample> {
-    return items.lazy.map { LabeledExample(label: toTarget($0), data: toInput($0)) }
+func createLabelDict(urls: [URL]) -> [String: Int] {
+    let allLabels = urls.map(parentLabel)
+    let labels = Array(Set(allLabels)).sorted()
+    return Dictionary(uniqueKeysWithValues: labels.enumerated().map{ ($0.element, $0.offset) })
 }
 
-public struct ImagenetteBatchers {
-    public let training: Batcher<LazyMapSequence<[URL], LabeledExample>>
-    public let validation: Batcher<LazyMapSequence<[URL], LabeledExample>>
-
-    public init(batchSize: Int = 64, numWorkers: Int = 8) {
-        self.init(inputSize: .resized320, outputSize: 224, batchSize: batchSize, numWorkers: numWorkers)
+func loadImagenetteDirectory(
+    named name: String, in directory: URL, inputSize: Imagenette.ImageSize, outputSize: Int,
+    labelDict: [String:Int]? = nil
+) throws -> LazyDataSet {
+    let urls = try exploreImagenetteDirectory(named: name, in: directory, inputSize: inputSize)
+    let unwrappedLabelDict = labelDict ?? createLabelDict(urls: urls)
+    return urls.lazy.map { (url: URL) -> TensorPair<Float, Int32> in
+        TensorPair<Float, Int32>(
+            first: Image(jpeg: url).resized(to: (outputSize, outputSize)).tensor[0] / 255.0,
+            second: Tensor<Int32>(Int32(unwrappedLabelDict[parentLabel(url: url)]!))
+        )    
     }
+}
 
-    public init(
-        inputSize: Imagenette.ImageSize, outputSize: Int, batchSize: Int = 64, numWorkers: Int = 8, 
-        localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
-            "Imagenette", isDirectory: true)
-    ) {
-        do {
-            let trainUrls = try exploreDirectory(
-                named: "train", 
-                in: localStorageDirectory,
-                inputSize: inputSize
-            )
-            let validUrls = try exploreDirectory(
-                named: "val", 
-                in: localStorageDirectory,
-                inputSize: inputSize
-            )
-            let allLabels = trainUrls.map(parentLabel)
-            let labels = Array(Set(allLabels)).sorted()
-            let labelToInt = Dictionary(uniqueKeysWithValues: labels.enumerated().map{ ($0.element, $0.offset) })
-            
-            let toInput: (URL) -> Tensor<Float> = {
-                Image(jpeg: $0).resized(to: (outputSize, outputSize)).tensor[0] / 255.0
-            }
-            let toTarget: (URL) -> Tensor<Int32> = {
-                Tensor<Int32>(Int32(labelToInt[parentLabel(url: $0)]!))
-            }
-            
-            training = Batcher(
-                on: basicDataset(from: trainUrls, toInput: toInput, toTarget: toTarget),
-                batchSize: batchSize,
-                numWorkers: numWorkers,
-                shuffle: true
-            )
-            validation = Batcher(
-                on: basicDataset(from: validUrls, toInput: toInput, toTarget: toTarget),
-                batchSize: batchSize,
-                numWorkers: numWorkers
-            )
-        } catch {
-            fatalError("Could not load Imagenette dataset: \(error)")
-        }
-    }
+func loadImagenetteTrainingDirectory(
+    inputSize: Imagenette.ImageSize, outputSize: Int, localStorageDirectory: URL, labelDict: [String:Int]? = nil
+) throws
+    -> LazyDataSet
+{
+    return try loadImagenetteDirectory(
+        named: "train", in: localStorageDirectory, inputSize: inputSize, outputSize: outputSize, labelDict: labelDict)
+}
+
+func loadImagenetteValidationDirectory(
+    inputSize: Imagenette.ImageSize, outputSize: Int, localStorageDirectory: URL, labelDict: [String:Int]? = nil
+) throws
+    -> LazyDataSet
+{
+    return try loadImagenetteDirectory(
+        named: "val", in: localStorageDirectory, inputSize: inputSize, outputSize: outputSize, labelDict: labelDict)
 }
