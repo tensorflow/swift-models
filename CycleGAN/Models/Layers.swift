@@ -123,11 +123,11 @@ public struct ConvLayer: Layer {
     }
 }
 
-public struct ResNetBlock<NT: FeatureChannelInitializable>: Layer where NT.TangentVector.VectorSpaceScalar == Float, NT.Input == Tensorf, NT.Output == Tensorf {
+public struct ResNetBlock<NormalizationType: FeatureChannelInitializable>: Layer where NormalizationType.TangentVector.VectorSpaceScalar == Float, NormalizationType.Input == Tensorf, NormalizationType.Output == Tensorf {
     var conv1: Conv2D<Float>
-    var norm1: NT
+    var norm1: NormalizationType
     var conv2: Conv2D<Float>
-    var norm2: NT
+    var norm2: NormalizationType
 
     var dropOut: Dropout<Float>
 
@@ -136,21 +136,21 @@ public struct ResNetBlock<NT: FeatureChannelInitializable>: Layer where NT.Tange
 
     public init(channels: Int,
                 paddingMode: Tensorf.PaddingMode,
-                normalization _: NT.Type,
+                normalization _: NormalizationType.Type,
                 useDropOut: Bool = false,
                 filterInit: (TensorShape) -> Tensorf,
                 biasInit: (TensorShape) -> Tensorf) {
-        conv1 = .init(filterShape: (3, 3, channels, channels),
-                      filterInitializer: filterInit,
-                      biasInitializer: biasInit)
-        norm1 = .init(featureCount: channels)
+        conv1 = Conv2D(filterShape: (3, 3, channels, channels),
+                       filterInitializer: filterInit,
+                       biasInitializer: biasInit)
+        norm1 = NormalizationType(featureCount: channels)
 
-        conv2 = .init(filterShape: (3, 3, channels, channels),
-                      filterInitializer: filterInit,
-                      biasInitializer: biasInit)
-        norm2 = .init(featureCount: channels)
+        conv2 = Conv2D(filterShape: (3, 3, channels, channels),
+                       filterInitializer: filterInit,
+                       biasInitializer: biasInit)
+        norm2 = NormalizationType(featureCount: channels)
 
-        dropOut = .init(probability: 0.5)
+        dropOut = Dropout(probability: 0.5)
         self.useDropOut = useDropOut
 
         self.paddingMode = paddingMode
