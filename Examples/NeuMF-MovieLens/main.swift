@@ -18,26 +18,18 @@ import Batcher
 import Datasets
 import RecommendationModels
 
-//Loading Data
 let dataset = MovieLens()
 let numUsers = dataset.numUsers
 let numItems = dataset.numItems
 
 let batcher = Batcher(on: dataset.trainMatrix, batchSize: 1024, shuffle: true)
 
-print("Number of datapoints", dataset.trainMatrix.count)
-print("Number of users", numUsers)
-print("Number of items", numItems)
-
 let size:[Int] = [16, 32, 16, 8]
 let regs:[Float] = [0.0, 0.0, 0.0, 0.0]
 
 var model = NeuMF(numUsers: numUsers, numItems: numItems, mfDim: 8, mfReg: 0.0, mlpLayerSizes: size, mlpLayerRegs: regs)
 let optimizer = Adam(for: model, learningRate: 0.001)
-// Test TopK accuracy of each user in test dataset
-let temp = Array(repeating: 0.0, count: dataset.testUsers.count)
-// number of items of each users in test dataset
-var itemCount = Dictionary(uniqueKeysWithValues: zip(dataset.testUsers,temp))
+var itemCount = Dictionary(uniqueKeysWithValues: zip(dataset.testUsers, Array(repeating: 0.0, count: dataset.testUsers.count)))
 var testNegSampling = Tensor<Float>(zeros: [numUsers,numItems])
 
 for element in dataset.testData{
@@ -49,8 +41,9 @@ for element in dataset.testData{
       itemCount[element[0]] = itemCount[element[0]]! + 1.0
     }
 }
+print("Dataset acquired.")
 
-//Training
+print("Starting training...")
 for epoch in 1...20{
     var avgLoss: Float = 0.0
     Context.local.learningPhase = .training
@@ -64,7 +57,7 @@ for epoch in 1...20{
             optimizer.update(&model, along: grad)
             avgLoss = avgLoss + loss.scalarized()
     }
-    // Validation on first 20 users
+
     Context.local.learningPhase = .inference
     var correct = 0.0
     var count = 0
@@ -94,7 +87,7 @@ for epoch in 1...20{
     print("Epoch: \(epoch)", "Current loss: \(avgLoss/1024.0)", "Validation Accuracy:", correct/Double(count))
 }
 
-// Testing on test dataset
+print("Starting testing...")
 Context.local.learningPhase = .inference
 var correct = 0.0
 var count = 0
@@ -110,15 +103,14 @@ for user in dataset.testUsers{
             negativeItem.append(item)
         }
     }
-    //Sort every non visited item on basis of score
+
     let itemScore = Dictionary(uniqueKeysWithValues: zip(negativeItem,output))
     let sortedItemScore = itemScore.sorted {$0.1 > $1.1}
     let topK = sortedItemScore.prefix(min(10, Int(itemCount[user]!)))
 
     print("User:", user , terminator:"\t")
-    print("Top 10 Recommended Items:", terminator:"\t")
+    print("Top K Recommended Items:", terminator:"\t")
 
-    // check if the Recommended items are correct as per test data
     for (key,_) in topK{
         print(key, terminator: "\t")
         if(testNegSampling[userIndex][dataset.item2id[key]!] == Tensor(1.0)){

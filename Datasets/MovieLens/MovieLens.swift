@@ -13,8 +13,11 @@
 // limitations under the License.
 
 // Original source:
-// "MovieLens Dataset"
 // http://files.grouplens.org/datasets/movielens/
+// F. Maxwell Harper and Joseph A. Konstan. 2015. The MovieLens Datasets:
+// History and Context. ACM Transactions on Interactive Intelligent
+// Systems (TiiS) 5, 4, Article 19 (December 2015), 19 pages.
+// DOI=http://dx.doi.org/10.1145/2827872
 
 import Foundation
 import TensorFlow
@@ -32,31 +35,17 @@ extension Sequence where Iterator.Element: Hashable {
 }
 
 public struct MovieLens {
-    // array of all user in training dataset
     public let trainUsers: [Float]
-    // array of all user in testing dataset
     public let testUsers: [Float]
-    // array of test datset of users, items, rating and timestanp
     public let testData: [[Float]]
-    // array of all items present in dataset
     public let items: [Float]
-    // total number of users
     public let numUsers: Int
-    // total number of items
     public let numItems: Int
-    // train matrix of user, item and label
     public let trainMatrix: [TensorPair<Int32,Float>]
-    // Dictionary mapping each unique user to unique id starting from 0
     public let user2id: [Float:Int]
-    // Dictionary mapping id to its user
     public let id2user: [Int:Float]
-    // Dictionary mapping each unique item to unique id starting from 0
     public let item2id: [Float:Int]
-    // Dictionary mapping id to its item
     public let id2item: [Int:Float]
-    // Tensor matrix to store interaction of item of user and item
-    // Each row is unique user and each column is item
-    // 1 correspond to interaction between user and item and 0 for vice-versa
     public let trainNegSampling: Tensor<Float>
 
     static func downloadMovieLensDatasetIfNotPresent() -> URL{
