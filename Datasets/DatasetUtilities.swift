@@ -22,9 +22,10 @@ import ModelSupport
 public enum DatasetUtilities {
     public static let currentWorkingDirectoryURL = URL(
         fileURLWithPath: FileManager.default.currentDirectoryPath)
-    
-    public static let defaultDirectory = FileManager.default.homeDirectoryForCurrentUser
-            .appendingPathComponent(".s4tf").appendingPathComponent("datasets")
+        
+    public static let defaultDirectory = FileManager.default.urls(
+            for: .applicationSupportDirectory, in: .userDomainMask).first!
+            .appendingPathComponent("swift-models").appendingPathComponent("datasets")
 
     @discardableResult
     public static func downloadResource(
