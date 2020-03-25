@@ -20,9 +20,9 @@ import TextModels
 var gpt = try GPT2()
 
 let sequenceLength = gpt.contextSize
-let trainingBatchSize = 8
-let validationBatchSize = 4
-let numWorkers = 8
+let trainingBatchSize = 2
+let validationBatchSize = 2
+let numWorkers = 1
 // Use default WikiText2 dataset.
 let dataset = TextUnsupervised(bpe: gpt.bpe, variant: .wikiText2,
     trainingBatchSize: trainingBatchSize, validationBatchSize: validationBatchSize,

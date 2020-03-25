@@ -63,23 +63,95 @@ public func download(from source: URL, to destination: URL) throws {
 ///   - recurse: Will explore all subfolders if set to `true`.
 ///   - extensions: Only keeps URLs with extensions in that array if it's provided
 public func collectURLs(
-  under directory: URL, recurse: Bool = false, filtering extensions: [String]? = nil
+    under directory: URL, recurse: Bool = false, filtering extensions: [String]? = nil
 ) -> [URL] {
-  var files: [URL] = []
-  do {
-    let dirContents = try FileManager.default.contentsOfDirectory(
-      at: directory, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])
-    for content in dirContents {
-      if content.hasDirectoryPath && recurse {
-        files += collectURLs(under: content, recurse: recurse, filtering: extensions)
-      } else if content.isFileURL
-        && (extensions == nil || extensions!.contains(dirContents[0].pathExtension.lowercased()))
-      {
-        files.append(content)
-      }
+    var files: [URL] = []
+    do {
+        let dirContents = try FileManager.default.contentsOfDirectory(
+            at: directory, includingPropertiesForKeys: [.isDirectoryKey],
+            options: [.skipsHiddenFiles])
+        for content in dirContents {
+            if content.hasDirectoryPath && recurse {
+                files += collectURLs(under: content, recurse: recurse, filtering: extensions)
+            } else if content.isFileURL
+                && (extensions == nil
+                    || extensions!.contains(dirContents[0].pathExtension.lowercased()))
+            {
+                files.append(content)
+            }
+        }
+    } catch {
+        fatalError("Could not explore this folder: \(error)")
     }
-  } catch {
-    fatalError("Could not explore this folder: \(error)")
-  }
-  return files
+    return files
+}
+
+/// Extracts a compressed file to a specified directory. This keys off of either the explicit
+/// file extension or one determined from the archive to determine which unarchiving method to use.
+/// This optionally deletes the original archive when done.
+///
+/// - Parameters:
+///   - archive: The source archive file, assumed to be on the local filesystem.
+///   - localStorageDirectory: A directory that the archive will be unpacked into.
+///   - fileExtension: An optional explicitly-specified file extension for the archive, determining
+///     how it is unpacked.
+///   - deleteArchiveWhenDone: Whether or not the original archive is deleted when the extraction
+///     process has been completed. This defaults to false.
+public func extractArchive(
+    at archive: URL, to localStorageDirectory: URL, fileExtension: String? = nil,
+    deleteArchiveWhenDone: Bool = false
+) {
+    let archivePath = archive.path
+
+    #if os(macOS)
+        var binaryLocation = "/usr/bin/"
+    #else
+        var binaryLocation = "/bin/"
+    #endif
+
+    let toolName: String
+    let arguments: [String]
+    let adjustedPathExtension: String
+    if archive.path.hasSuffix(".tar.gz") {
+        adjustedPathExtension = "tar.gz"
+    } else {
+        adjustedPathExtension = archive.pathExtension
+    }
+    switch fileExtension ?? adjustedPathExtension {
+    case "gz":
+        toolName = "gunzip"
+        arguments = [archivePath]
+    case "tar.gz", "tgz":
+        toolName = "tar"
+        arguments = ["xzf", archivePath, "-C", localStorageDirectory.path]
+    case "zip":
+        binaryLocation = "/usr/bin/"
+        toolName = "unzip"
+        arguments = [archivePath, "-d", localStorageDirectory.path]
+    default:
+        printError(
+            "Unable to find archiver for extension \(fileExtension ?? adjustedPathExtension).")
+        exit(-1)
+    }
+    let toolLocation = "\(binaryLocation)\(toolName)"
+
+    let task = Process()
+    task.executableURL = URL(fileURLWithPath: toolLocation)
+    task.arguments = arguments
+    do {
+        try task.run()
+        task.waitUntilExit()
+    } catch {
+        printError("Failed to extract \(archivePath) with error: \(error)")
+        exit(-1)
+    }
+
+    if FileManager.default.fileExists(atPath: archivePath) && deleteArchiveWhenDone {
+        do {
+            try FileManager.default.removeItem(atPath: archivePath)
+        } catch {
+            printError("Could not remove archive, error: \(error)")
+            exit(-1)
+        }
+    }
 }

@@ -82,7 +82,7 @@ class SwiftApplicationDelegate: ApplicationDelegate {
       Slider(frame: Rect(x: 24, y: 312, width: 512, height: 32))
   lazy var label: Label =
       Label(frame: Rect(x: 24, y: 352, width: 512, height: 20),
-            title: "Loading Transformer ...")
+            title: "Loading GPT-2 ...")
 
   var gpt: GPT2?
 
@@ -118,9 +118,9 @@ class SwiftApplicationDelegate: ApplicationDelegate {
       do {
         self.gpt = try GPT2()
         self.buttonDelegate.gpt = self.gpt
-        self.label.text = "Transformer ready!"
+        self.label.text = "GPT-2 ready!"
       } catch {
-        self.label.text = "GPT2 Construction Failure"
+        self.label.text = "GPT-2 Construction Failure"
       }
     }
 
