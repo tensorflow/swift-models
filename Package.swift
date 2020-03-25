@@ -13,6 +13,7 @@ let package = Package(
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
+        .library(name: "RecommendationModels", targets: ["RecommendationModels"]),
         .library(name: "TextModels", targets: ["TextModels"]),
         .library(name: "RecommendationModels", targets: ["RecommendationModels"]),
         .executable(name: "Benchmarks", targets: ["Benchmarks"]),
@@ -29,13 +30,13 @@ let package = Package(
         .executable(name: "FastStyleTransferDemo", targets: ["FastStyleTransferDemo"]),
         .library(name: "MiniGo", targets: ["MiniGo"]),
         .executable(name: "MiniGoDemo", targets: ["MiniGoDemo"]),
-        .executable(name: "TransformerDemo", targets: ["TransformerDemo"]),
+        .executable(name: "GPT2-Inference", targets: ["GPT2-Inference"]),
         .executable(name: "GPT2-WikiText2", targets: ["GPT2-WikiText2"]),
         .executable(name: "NeuMF-MovieLens", targets: ["NeuMF-MovieLens"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
-        .package(url: "https://github.com/kylef/Commander.git", from: "0.9.1"),
+        .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.0.1")),
     ],
     targets: [
         .target(name: "Batcher", path: "Batcher"),
@@ -81,12 +82,12 @@ let package = Package(
             path: "Examples/NeuMF-MovieLens"),
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
         .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
+        .testTarget(name: "RecommendationModelTests", dependencies: ["RecommendationModels"]),
         .testTarget(name: "DatasetsTests", dependencies: ["Datasets", "TextModels"]),
         .target(
-            name: "TransformerDemo", dependencies: ["TextModels"],
-            path: "Transformer",
-            exclude: ["UI/Windows/main.swift", "UI/macOS/main.swift"],
-            sources: ["main.swift"]),
+            name: "GPT2-Inference", dependencies: ["TextModels"],
+            path: "Examples/GPT2-Inference",
+            exclude: ["UI/Windows/main.swift", "UI/macOS/main.swift"]),
         .target(
             name: "GPT2-WikiText2",
             dependencies: ["Batcher", "Datasets", "TextModels"],
@@ -104,7 +105,7 @@ let package = Package(
         .testTarget(name: "FastStyleTransferTests", dependencies: ["FastStyleTransfer"]),
         .target(
             name: "Benchmarks",
-            dependencies: ["Datasets", "ModelSupport", "ImageClassificationModels", "Commander"],
+            dependencies: ["Datasets", "ModelSupport", "ImageClassificationModels", "ArgumentParser"],
             path: "Benchmarks"),
         .testTarget(name: "CheckpointTests", dependencies: ["ModelSupport"]),
         .target(
