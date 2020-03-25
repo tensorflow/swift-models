@@ -18,9 +18,6 @@ struct Options: ParsableArguments {
     @Option(default: "./dataset", help: ArgumentHelp("Path to the dataset folder", valueName: "dataset-path"))
     var datasetPath: String
 
-    @Option(default: 0, help: ArgumentHelp("GPU Index", valueName: "gpu-index"))
-    var gpuIndex: UInt
-
     @Option(default: 50, help: ArgumentHelp("Number of epochs", valueName: "epochs"))
     var epochs: Int
 
