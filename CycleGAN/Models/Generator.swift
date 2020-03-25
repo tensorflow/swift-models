@@ -14,7 +14,7 @@
 
 import TensorFlow
 
-public struct ResnetGenerator<NT: FeatureChannelInitializable>: Layer where NT.TangentVector.VectorSpaceScalar == Float, NT.Input == Tensorf, NT.Output == Tensorf {
+public struct ResNetGenerator<NT: FeatureChannelInitializable>: Layer where NT.TangentVector.VectorSpaceScalar == Float, NT.Input == Tensorf, NT.Output == Tensorf {
     var conv1: Conv2D<Float>
     var norm1: NT
 
@@ -24,7 +24,7 @@ public struct ResnetGenerator<NT: FeatureChannelInitializable>: Layer where NT.T
     var conv3: Conv2D<Float>
     var norm3: NT
 
-    var resblocks: [ResnetBlock<NT>]
+    var resblocks: [ResNetBlock<NT>]
 
     var upConv1: TransposedConv2D<Float>
     var upNorm1: NT
@@ -75,7 +75,7 @@ public struct ResnetGenerator<NT: FeatureChannelInitializable>: Layer where NT.T
         mult = 4
 
         resblocks = (0 ..< blocks).map { _ in
-            ResnetBlock(channels: ngf * mult,
+            ResNetBlock(channels: ngf * mult,
                         paddingMode: .reflect,
                         normalization: normalization,
                         useDropOut: useDropout,

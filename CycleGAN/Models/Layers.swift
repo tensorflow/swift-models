@@ -137,7 +137,7 @@ public struct ConvLayer: Layer {
     }
 }
 
-public struct ResnetBlock<NT: FeatureChannelInitializable>: Layer where NT.TangentVector.VectorSpaceScalar == Float, NT.Input == Tensorf, NT.Output == Tensorf {
+public struct ResNetBlock<NT: FeatureChannelInitializable>: Layer where NT.TangentVector.VectorSpaceScalar == Float, NT.Input == Tensorf, NT.Output == Tensorf {
     var conv1: Conv2D<Float>
     var norm1: NT
     var conv2: Conv2D<Float>
