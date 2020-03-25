@@ -59,36 +59,36 @@ is up-to-date. In particular, ensure that you have deployed Windows SDK
 modulemaps since your last Visual Studio update.
 
 ```console
-git clone git://github.com/tensorflow/swift-models swift-models
+git clone git://github.com/tensorflow/swift-models C:/SourceCache/swift-models
 set SDKROOT=%SystemDrive%/Library/Developer/Platforms/Windows.platform/Developer/SDKs/Windows.sdk
 set SWIFTFLAGS=-sdk %SDKROOT% -I %SDKROOT%/usr/lib/swift -L %SDKROOT%/usr/lib/swift/windows -Xlinker -ignore:4217 -Xlinker -ignore:4286
 "%ProgramFiles%/CMake/bin/cmake.exe"    ^
-  -B build/swift-models                 ^
+  -B C:/BinaryCache/swift-models        ^
   -D BUILD_SHARED_LIBS=YES              ^
   -D CMAKE_BUILD_TYPE=Release           ^
   -D CMAKE_Swift_FLAGS="%SWIFTFLAGS%"   ^
   -G Ninja                              ^
-  -S swift-models
+  -S C:/SourceCache/swift-models
 ```
 
 #### Build
 
 ```console
-cmake --build build/swift-models --target GPT2InferenceUI
+cmake --build C:/BinaryCache/swift-models --target GPT2InferenceUI
 ```
 
 #### Run
 
 ```console
-md build\GPT2InferenceUI
-copy build\swift-models\swift-protobuf-prefix\src\swift-protobuf-build\Sources\SwiftProtobuf\SwiftProtobuf.dll build\GPT2InferenceUI\
-copy build\swift-models\swift-win32-prefix\src\swift-win32-build\SwiftWin32.dll build\GPT2InferenceUI\
-copy build\swift-models\Batcher\Batcher.dll build\GPT2InferenceUI\
-copy build\swift-models\Datasets\Datasets.dll build\GPT2InferenceUI\
-copy build\swift-models\Models\Text\TextModels.dll build\GPT2InferenceUI\
-copy build\swift-models\Support\ModelSupport.dll build\GPT2InferenceUI\
-copy build\swift-models\GPT2-Inference\GPT2InferenceUI.exe build\GPT2InferenceUI\
-copy build\swift-models\GPT2-Inference\GPT2InferenceUI.exe.manifest build\GPT2InferenceUI\
+md C:\BinaryCache\GPT2InferenceUI
+copy C:\BinaryCache\swift-models\swift-protobuf-prefix\src\swift-protobuf-build\Sources\SwiftProtobuf\SwiftProtobuf.dll C:\BinaryCache\GPT2InferenceUI\
+copy C:\BinaryCache\swift-models\swift-win32-prefix\src\swift-win32-build\SwiftWin32.dll C:\BinaryCache\GPT2InferenceUI\
+copy C:\BinaryCache\swift-models\Batcher\Batcher.dll C:\BinaryCache\GPT2InferenceUI\
+copy C:\BinaryCache\swift-models\Datasets\Datasets.dll C:\BinaryCache\GPT2InferenceUI\
+copy C:\BinaryCache\swift-models\Models\Text\TextModels.dll C:\BinaryCache\GPT2InferenceUI\
+copy C:\BinaryCache\swift-models\Support\ModelSupport.dll C:\BinaryCache\GPT2InferenceUI\
+copy C:\BinaryCache\swift-models\Examples\GPT2-Inference\GPT2InferenceUI.exe C:\BinaryCache\GPT2InferenceUI\
+copy C:\BinaryCache\swift-models\Examples\GPT2-Inference\GPT2InferenceUI.exe.manifest C:\BinaryCache\GPT2InferenceUI\
 ```
 
 Once all the files have been copied, you should be able to run the demo
