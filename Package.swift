@@ -13,6 +13,7 @@ let package = Package(
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
+        .library(name: "RecommendationModels", targets: ["RecommendationModels"]),
         .library(name: "TextModels", targets: ["TextModels"]),
         .executable(name: "Benchmarks", targets: ["Benchmarks"]),
         .executable(name: "VGG-Imagewoof", targets: ["VGG-Imagewoof"]),
@@ -41,6 +42,7 @@ let package = Package(
         .target(name: "ModelSupport", dependencies: ["SwiftProtobuf"], path: "Support"),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),
+        .target(name: "RecommendationModels", path: "Models/Recommendation"),
         .target(
             name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport"],
             path: "Autoencoder/Autoencoder1D"),
@@ -75,6 +77,7 @@ let package = Package(
             name: "MiniGoDemo", dependencies: ["MiniGo"], path: "MiniGo", sources: ["main.swift"]),
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
         .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
+        .testTarget(name: "RecommendationModelTests", dependencies: ["RecommendationModels"]),
         .testTarget(name: "DatasetsTests", dependencies: ["Datasets", "TextModels"]),
         .target(
             name: "GPT2-Inference", dependencies: ["TextModels"],
