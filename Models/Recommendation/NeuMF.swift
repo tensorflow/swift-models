@@ -39,7 +39,7 @@ public struct NeuMF: Module {
     public var dense3: Dense<Scalar>
     public var finalDense: Dense<Scalar>
 
-    /// Initial the NeuMF models as per dataset from the given hyperparameters.
+    /// Initialize the NeuMF models as per the dataset from the given hyperparameters.
     ///
     /// -Parameters
     /// - numUsers: Total number of users in dataset.

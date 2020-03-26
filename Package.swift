@@ -15,7 +15,6 @@ let package = Package(
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
         .library(name: "RecommendationModels", targets: ["RecommendationModels"]),
         .library(name: "TextModels", targets: ["TextModels"]),
-        .library(name: "RecommendationModels", targets: ["RecommendationModels"]),
         .executable(name: "Benchmarks", targets: ["Benchmarks"]),
         .executable(name: "VGG-Imagewoof", targets: ["VGG-Imagewoof"]),
         .executable(name: "Regression-BostonHousing", targets: ["Regression-BostonHousing"]),
