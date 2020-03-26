@@ -14,7 +14,7 @@ import FoundationNetworking
 
 
 @differentiable(wrt: logits)
-func softmaxCrossEntropy(logits: Tensor<Float>, labels: Tensor<Int32>, ignoreIndex: Int32) -> Tensor<Float> {
+public func softmaxCrossEntropy(logits: Tensor<Float>, labels: Tensor<Int32>, ignoreIndex: Int32) -> Tensor<Float> {
     let ids = Tensor<Int32>(rangeFrom: 0, to: Int32(labels.shape.first!), stride: 1)
     let indices = ids.gathering(where: labels .!= Tensor(ignoreIndex))
     let maskedLogits = logits.gathering(atIndices: indices, alongAxis: 0)
