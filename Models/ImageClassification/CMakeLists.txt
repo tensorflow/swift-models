@@ -5,6 +5,7 @@ add_library(ImageClassificationModels
   MobileNetV2.swift
   ResNet.swift
   ResNetV2.swift
+  ShuffleNetV2.swift
   SqueezeNet.swift
   VGG.swift
   WideResNet.swift)

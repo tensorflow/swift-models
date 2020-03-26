@@ -167,6 +167,28 @@ final class ImageClassificationInferenceTests: XCTestCase {
         let resNet152Result = resNet152(input)
         XCTAssertEqual(resNet152Result.shape, [1, 1000])
     }
+    
+    func testShuffleNetV2() {
+        let input = Tensor<Float>(
+        randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
+        standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
+        
+        let shuffleNetV2x05 = ShuffleNetV2(kind: .shuffleNetV2x05)
+        let shuffleNetV2x05Result = shuffleNetV2x05(input)
+        XCTAssertEqual(shuffleNetV2x05Result.shape, [1, 1000])
+        
+        let shuffleNetV2x10 = ShuffleNetV2(kind: .shuffleNetV2x10)
+        let shuffleNetV2x10Result = shuffleNetV2x10(input)
+        XCTAssertEqual(shuffleNetV2x10Result.shape, [1, 1000])
+        
+        let shuffleNetV2x15 = ShuffleNetV2(kind: .shuffleNetV2x15)
+        let shuffleNetV2x15Result = shuffleNetV2x15(input)
+        XCTAssertEqual(shuffleNetV2x15Result.shape, [1, 1000])
+        
+        let shuffleNetV2x20 = ShuffleNetV2(kind: .shuffleNetV2x20)
+        let shuffleNetV2x20Result = shuffleNetV2x20(input)
+        XCTAssertEqual(shuffleNetV2x20Result.shape, [1, 1000])
+    }
 
     func testSqueezeNetV1_0() {
         let input = Tensor<Float>(
@@ -258,6 +280,7 @@ extension ImageClassificationInferenceTests {
         ("testMobileNetV2", testMobileNetV2),
         ("testResNet", testResNet),
         ("testResNetV2", testResNetV2),
+        ("testShuffleNetV2", testShuffleNetV2),
         ("testSqueezeNetV1_0", testSqueezeNetV1_0),
         ("testSqueezeNetV1_1", testSqueezeNetV1_1),
         ("testWideResNet", testWideResNet),
