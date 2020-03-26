@@ -33,20 +33,20 @@ struct TransformerDecoderLayer: Layer {
         
         
         output = self.sublayers[0].decoderForward(.init(sequence: output, decoderContext: input, activation: {
-        selfNoDerivative.selfAttention(.init(source: $0,
-                                             target: $0,
-                                             mask: $1.targetMask,
-                                             batchSize: batchSize))
+            selfNoDerivative.selfAttention(.init(source: $0,
+                                                 target: $0,
+                                                 mask: $1.targetMask,
+                                                 batchSize: batchSize))
         }))
         output = self.sublayers[1].decoderForward(.init(sequence: output, decoderContext: input, activation: {
             selfNoDerivative.sourceAttention(.init(source: $0,
                                                    target: $1.memory,
                                                    mask: $1.sourceMask,
                                                    batchSize: batchSize))
-            }))
+        }))
         output = self.sublayers[2].decoderForward(.init(sequence: output, decoderContext: input, activation: {(result, _) in
             selfNoDerivative.feedForward(result)
-            }))
+        }))
         return output
     }
 }
@@ -68,8 +68,8 @@ struct Decoder: Layer {
             transformerInput = layers[layerIndex](DecoderInput(
                 sequence: transformerInput,
                 sourceMask: input.sourceMask,
-            targetMask: input.targetMask,
-            memory: memoryInput
+                targetMask: input.targetMask,
+                memory: memoryInput
             ))
         }
         

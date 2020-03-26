@@ -55,7 +55,7 @@ struct WMTTranslationTask {
     static func load(fromFile fileURL: URL) throws -> [String] {
         try Data(contentsOf: fileURL).withUnsafeBytes {
             $0.split(separator: UInt8(ascii: "\n"))
-            .map { String(decoding: UnsafeRawBufferPointer(rebasing: $0), as: UTF8.self) }
+                .map { String(decoding: UnsafeRawBufferPointer(rebasing: $0), as: UTF8.self) }
         }
     }
     
@@ -75,30 +75,30 @@ struct WMTTranslationTask {
 }
 
 let workspaceURL = URL(fileURLWithPath: "transformer", isDirectory: true,
-relativeTo: URL(fileURLWithPath: NSTemporaryDirectory(),
-                isDirectory: true))
+                       relativeTo: URL(fileURLWithPath: NSTemporaryDirectory(),
+                                       isDirectory: true))
 
 var translationTask = try WMTTranslationTask(taskDirectoryURL: workspaceURL, maxSequenceLength: 50, batchSize: 150)
 
 var model = TransformerModel(sourceVocabSize: translationTask.sourceVocabSize, targetVocabSize: translationTask.targetVocabSize)
 
- func greedyDecode(model: TransformerModel, input: TextBatch, maxLength: Int, startSymbol: Int32) -> Tensor<Int32> {
-     let memory = model.encode(input: input)
-     var ys = Tensor(repeating: startSymbol, shape: [1,1])
-     for _ in 0..<maxLength {
+func greedyDecode(model: TransformerModel, input: TextBatch, maxLength: Int, startSymbol: Int32) -> Tensor<Int32> {
+    let memory = model.encode(input: input)
+    var ys = Tensor(repeating: startSymbol, shape: [1,1])
+    for _ in 0..<maxLength {
         let decoderInput = TextBatch(tokenIds: input.tokenIds,
                                      targetTokenIds: ys,
                                      mask: input.mask,
                                      targetMask: Tensor<Float>(subsequentMask(size: ys.shape[1])),
                                      targetTruth: input.targetTruth,
                                      tokenCount: input.tokenCount)
-         let out = model.decode(input: decoderInput, memory: memory)
+        let out = model.decode(input: decoderInput, memory: memory)
         let prob = model.generate(input: out[0...,-1])
         let nextWord = Int32(prob.argmax().scalarized())
         ys = Tensor(concatenating: [ys, Tensor(repeating: nextWord, shape: [1,1])], alongAxis: 1)
-     }
+    }
     return ys
- }
+}
 
 let epochs = 3
 var optimizer = Adam.init(for: model, learningRate: 5e-4)

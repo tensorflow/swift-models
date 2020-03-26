@@ -14,23 +14,23 @@ public struct AttentionInput<Scalar: TensorFlowFloatingPoint>: Differentiable {
     /// `[batchSize, sourceSequenceLength, sourceDepth]` or
     /// `[batchSize, sourceSequenceLength * sourceDepth]`.
     public var source: Tensor<Scalar>
-
+    
     /// Target tensor that we are attending to, with shape
     /// `[batchSize, targetSequenceLength, targetDepth]` or
     /// `[batchSize, targetSequenceLength * targetDepth]`.
     public var target: Tensor<Scalar>
-
+    
     /// Mask to apply on the attention scores. This is a tensor with shape
     /// `[batchSize, sourceSequenceLength, targetSequenceLength]` or
     /// `[batchSize, sourceSequenceLength * targetSequenceLength]`. The values should be `1` or `0`.
     /// The attention scores will effectively be set to negative infinity for any positions in the
     /// mask that are set to `0`, and will be unchanged for positions that are set to `1`.
     public var mask: Tensor<Scalar>
-
+    
     /// The batch size of this input. This is optional because it is only needed if the input
     /// sequences have been reshaped to matrices.
     @noDerivative let batchSize: Int?
-
+    
     @differentiable
     public init(
         source: Tensor<Scalar>,
@@ -70,7 +70,7 @@ public struct AttentionInput<Scalar: TensorFlowFloatingPoint>: Differentiable {
 public struct MultiHeadAttention: Layer {
     // TODO: Convert to a generic constraint once TF-427 is resolved.
     public typealias Scalar = Float
-
+    
     @noDerivative public let sourceSize: Int
     @noDerivative public let targetSize: Int
     @noDerivative public let headCount: Int
@@ -79,7 +79,7 @@ public struct MultiHeadAttention: Layer {
     @noDerivative public let keyActivation: Activation<Scalar>
     @noDerivative public let valueActivation: Activation<Scalar>
     @noDerivative public let matrixResult: Bool
-
+    
     public var queryWeight: Tensor<Scalar>
     public var queryBias: Tensor<Scalar>
     public var keyWeight: Tensor<Scalar>
@@ -87,17 +87,17 @@ public struct MultiHeadAttention: Layer {
     public var valueWeight: Tensor<Scalar>
     public var valueBias: Tensor<Scalar>
     @noDerivative public var attentionDropout: Dropout<Scalar>
-
+    
     public var regularizationValue: TangentVector {
         TangentVector(
-        queryWeight: queryWeight,
-        queryBias: Tensor(Scalar(0)),
-        keyWeight: keyWeight,
-        keyBias: Tensor(Scalar(0)),
-        valueWeight: valueWeight,
-        valueBias: Tensor(Scalar(0)))
+            queryWeight: queryWeight,
+            queryBias: Tensor(Scalar(0)),
+            keyWeight: keyWeight,
+            keyBias: Tensor(Scalar(0)),
+            valueWeight: valueWeight,
+            valueBias: Tensor(Scalar(0)))
     }
-
+    
     /// Creates a multi-head attention layer.
     ///
     /// - Parameters:
@@ -152,7 +152,7 @@ public struct MultiHeadAttention: Layer {
         // TODO: Make dropout generic over the probability type.
         self.attentionDropout = Dropout(probability: Double(attentionDropoutProbability))
     }
-
+    
     @differentiable
     public func callAsFunction(_ input: AttentionInput<Scalar>) -> Tensor<Scalar> {
         precondition(
@@ -170,34 +170,34 @@ public struct MultiHeadAttention: Layer {
         let T = matrixInput ? input.target.shape[0] / B : input.target.shape[1]
         let N = headCount
         let H = headSize
-
+        
         let source = input.source.reshapedToMatrix()
         let target = input.target.reshapedToMatrix()
-
+        
         var q = queryActivation(matmul(source, queryWeight) + queryBias) // [B * F, N * H]
         var k = keyActivation(matmul(target, keyWeight) + keyBias)       // [B * T, N * H]
         var v = valueActivation(matmul(target, valueWeight) + valueBias) // [B * T, N * H]
-
+        
         q = q.reshaped(to: [B, F, N, H]).transposed(permutation: 0, 2, 1, 3) // [B, N, F, H]
         k = k.reshaped(to: [B, T, N, H]).transposed(permutation: 0, 2, 1, 3) // [B, N, T, H]
         v = v.reshaped(to: [B, T, N, H]).transposed(permutation: 0, 2, 1, 3) // [B, N, T, H]
-
+        
         // Take the dot product between the query and the key to get the raw attention scores.
         var attentionScores = matmul(q, transposed: false, k, transposed: true) // [B, N, F, T]
         attentionScores = attentionScores / sqrtf(Scalar(headSize))
-
+        
         // Since the attention mask is set to 1.0 for positions we want to attend to and 0.0 for
         // masked positions, we create a tensor which is 0.0 for positions we want to attend to and
         // -10000.0 for masked positions. Since we are adding this tensor to the raw scores before
         // the softmax, this is effectively the same as removing the masked entries entirely.
         let attentionMask = input.mask.expandingShape(at: 1) // [B, 1, F, T]
         attentionScores = attentionScores - 10000 * (1 - attentionMask)
-
+        
         // Normalize the attention scores to convert them to probabilities. We are also dropping
         // out entire tokens to attend to, which might seem a bit unusual, but it is taken from the
         // original Transformer paper.
         let attentionProbabilities = attentionDropout(softmax(attentionScores)) // [B, N, F, T]
-
+        
         let result = matmul(attentionProbabilities, v) // [B, N, F, H]
             .transposed(permutation: 0, 2, 1, 3)       // [B, F, N, H]
         return matrixResult ?
@@ -211,7 +211,7 @@ extension MultiHeadAttention {
     public static var defaultWeightInitializer: ParameterInitializer<Scalar> {
         truncatedNormalInitializer(standardDeviation: Tensor<Scalar>(0.02))
     }
-
+    
     /// Default initializer to use for the linear transform biases.
     public static var defaultBiasInitializer: ParameterInitializer<Scalar> {
         zeros()

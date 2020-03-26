@@ -26,7 +26,7 @@ public typealias Activation<Scalar: TensorFlowFloatingPoint> =
     @differentiable (Tensor<Scalar>) -> Tensor<Scalar>
 
 public typealias ActivationInput<Input: Differentiable,Scalar: TensorFlowFloatingPoint> =
-@differentiable (Input) -> Tensor<Scalar>
+    @differentiable (Input) -> Tensor<Scalar>
 
 struct DecoderContext: Differentiable {
     var decoder: TransformerDecoderLayer,
@@ -34,7 +34,7 @@ struct DecoderContext: Differentiable {
     
     @differentiable
     init(decoder: TransformerDecoderLayer,
-    input: DecoderInput<Float>) {
+         input: DecoderInput<Float>) {
         self.decoder = decoder
         self.input = input
     }
@@ -167,7 +167,7 @@ public struct DecoderInput<Scalar: TensorFlowFloatingPoint>: Differentiable {
     public var sourceMask: Tensor<Scalar>
     
     public var targetMask: Tensor<Scalar>
-
+    
     
     /// The batch size of this input. This is optional because it is only needed if the input
     /// sequences have been reshaped to matrices.
@@ -189,14 +189,14 @@ extension Tensor {
     internal func reshapedToMatrix() -> Tensor {
         reshaped(to: [-1, shape[rank - 1]])
     }
-
+    
     /// Returns this previously-reshaped rank-2 tensor reshaped back to its original shape.
     @differentiable(wrt: self where Scalar: TensorFlowFloatingPoint)
     internal func reshapedFromMatrix(originalShape: TensorShape) -> Tensor {
         reshaped(to: TensorShape(
             originalShape[0..<originalShape.count - 1].dimensions + [shape[rank - 1]]))
     }
-
+    
     /// Returns this previously-reshaped rank-2 tensor reshaped back to its original shape.
     @differentiable(wrt: self where Scalar: TensorFlowFloatingPoint)
     internal func reshapedFromMatrix(originalShape: Tensor<Int32>) -> Tensor {
@@ -221,18 +221,18 @@ public func maybeDownload(from url: URL, to destination: URL) throws {
         try FileManager.default.createDirectory(
             atPath: destination.deletingLastPathComponent().path,
             withIntermediateDirectories: true)
-
+        
         // Create the URL session that will be used to download the dataset.
         let semaphore = DispatchSemaphore(value: 0)
         let delegate = DataDownloadDelegate(destinationFileUrl: destination, semaphore: semaphore)
         let session = URLSession(configuration: .ephemeral, delegate: delegate, delegateQueue: nil)
-
+        
         // Download the data to a temporary file and then copy that file to
         // the destination path.
         print("Downloading \(url).")
         let task = session.downloadTask(with: url)
         task.resume()
-
+        
         // Wait for the download to finish.
         semaphore.wait()
     }
@@ -242,9 +242,9 @@ internal class DataDownloadDelegate: NSObject, URLSessionDownloadDelegate {
     let destinationFileUrl: URL
     let semaphore: DispatchSemaphore
     let numBytesFrequency: Int64
-
+    
     internal var logCount: Int64 = 0
-
+    
     init(
         destinationFileUrl: URL,
         semaphore: DispatchSemaphore,
@@ -254,7 +254,7 @@ internal class DataDownloadDelegate: NSObject, URLSessionDownloadDelegate {
         self.semaphore = semaphore
         self.numBytesFrequency = numBytesFrequency
     }
-
+    
     internal func urlSession(
         _ session: URLSession,
         downloadTask: URLSessionDownloadTask,

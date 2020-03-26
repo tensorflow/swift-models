@@ -75,11 +75,11 @@ public struct TextBatch: KeyPathIterable {
     
     public var targetTokenIds: Tensor<Int32>
     // aka tgt
-
+    
     /// IDs of the token types (e.g., sentence A and sentence B in BERT).
     /// The shape of this tensor is `[batchSize, maxSequenceLength]`.
-//    public var tokenTypeIds: Tensor<Int32> // TODO: !!! Mutable in order to allow for batching.
-
+    //    public var tokenTypeIds: Tensor<Int32> // TODO: !!! Mutable in order to allow for batching.
+    
     /// Mask over the sequence of tokens specifying which ones are "real" as opposed to "padding".
     /// The shape of this tensor is `[batchSize, maxSequenceLength]`.
     public var mask: Tensor<Float> // TODO: !!! Mutable in order to allow for batching.
@@ -89,19 +89,19 @@ public struct TextBatch: KeyPathIterable {
     public var targetTruth: Tensor<Int32>
     
     public var tokenCount: Int32
-
+    
     public init(source: Tensor<Int32>, target: Tensor<Int32>, sourcePadId: Int32, targetPadId: Int32) {
         self.tokenIds = source
         self.mask = Tensor<Float>(Tensor(zerosLike: source)
             .replacing(with: Tensor(onesLike: source), where: source .!= Tensor.init(sourcePadId))
             .expandingShape(at: 1))
-            
+        
         let rangeExceptLast = 0..<(target.shape[1] - 1)
         self.targetTokenIds = target[0...,rangeExceptLast]
         self.targetTruth = target[0..., 1...]
         self.targetMask = TextBatch.makeStandardMask(target: self.targetTokenIds, pad: targetPadId)
         self.tokenCount = Tensor(zerosLike: targetTruth)
-        .replacing(with: Tensor(onesLike: targetTruth), where: self.targetTruth .!= Tensor.init(targetPadId))
+            .replacing(with: Tensor(onesLike: targetTruth), where: self.targetTruth .!= Tensor.init(targetPadId))
             .sum().scalar!
         
     }
@@ -132,14 +132,14 @@ public func subsequentMask(size: Int) -> Tensor<Int32> {
 public struct Vocabulary {
     internal var tokensToIds: [String: Int]
     internal var idsToTokens: [Int: String]
-
+    
     public var count: Int { tokensToIds.count }
-
+    
     public init(tokensToIds: [String: Int]) {
         self.tokensToIds = tokensToIds
         self.idsToTokens = [Int: String](uniqueKeysWithValues: tokensToIds.map { ($1, $0) })
     }
-
+    
     public init(idsToTokens: [Int: String]) {
         self.tokensToIds = [String: Int](uniqueKeysWithValues: idsToTokens.map { ($1, $0) })
         self.idsToTokens = idsToTokens
@@ -149,15 +149,15 @@ public struct Vocabulary {
         self.tokensToIds = [:]
         self.idsToTokens = [:]
     }
-
+    
     public func contains(_ token: String) -> Bool {
         tokensToIds.keys.contains(token)
     }
-
+    
     public func id(forToken token: String) -> Int? {
         tokensToIds[token]
     }
-
+    
     public func token(forId id: Int) -> String? {
         idsToTokens[id]
     }
@@ -182,7 +182,7 @@ public protocol Tokenizer {
 /// then performs tokenization based on whitespaces.
 public struct BasicTokenizer: Tokenizer {
     public let caseSensitive: Bool
-
+    
     /// Creates a basic text tokenizer.
     ///
     /// Arguments:
@@ -190,16 +190,16 @@ public struct BasicTokenizer: Tokenizer {
     public init(caseSensitive: Bool = false) {
         self.caseSensitive = caseSensitive
     }
-
+    
     public func tokenize(_ text: String) -> [String] {
         clean(text).split(separator: " ").flatMap { token -> [String] in
             var processed = String(token)
             if !caseSensitive {
                 processed = processed.lowercased()
-
+                
                 // Normalize unicode characters.
                 processed = processed.decomposedStringWithCanonicalMapping
-
+                
                 // Strip accents.
                 processed = processed.replacingOccurrences(
                     of: #"\p{Mn}"#,
@@ -207,14 +207,14 @@ public struct BasicTokenizer: Tokenizer {
                     options: .regularExpression)
             }
             
-//             Split punctuation. We treat all non-letter/number ASCII as punctuation. Characters
-//             such as "$" are not in the Unicode Punctuation class but we treat them as
-//             punctuation anyways for consistency.
+            //             Split punctuation. We treat all non-letter/number ASCII as punctuation. Characters
+            //             such as "$" are not in the Unicode Punctuation class but we treat them as
+            //             punctuation anyways for consistency.
             processed = processed.replacingOccurrences(
                 of: #"([\p{P}!-/:-@\[-`{-~])"#,
                 with: " $1 ",
                 options: .regularExpression)
-
+            
             return processed.split(separator: " ").map(String.init)
         }
     }
@@ -234,13 +234,13 @@ internal func clean(_ text: String) -> String {
         of: #"\s+"#,
         with: " ",
         options: .regularExpression)
-
+    
     // Remove control characters.
     let afterControl = afterWhitespace.replacingOccurrences(
         of: #"[\x{0000}\x{fffd}\p{C}]"#,
         with: "",
         options: .regularExpression)
-
+    
     // Add whitespace around CJK characters.
     //
     // The regular expression that we use defines a "chinese character" as anything in the
@@ -258,10 +258,10 @@ internal func clean(_ text: String) -> String {
             #"\x{2a700}-\x{2b73f}"# +
             #"\x{2b740}-\x{2b81f}"# +
             #"\x{2b820}-\x{2ceaf}"# +
-            #"\x{2f800}-\x{2fa1f}])"#,
+        #"\x{2f800}-\x{2fa1f}])"#,
         with: " $1 ",
         options: .regularExpression)
-
+    
     return afterCJK
 }
 
