@@ -77,38 +77,22 @@ struct SublayerConnection: Layer {
     }
     @differentiable
     func callAsFunction(_ input: SubLayerInput< Float>) -> Tensor<Float> {
-        let normed = self.norm(input.sequence)
-        let activated = input.activation(normed)
-        let dropped = self.dropout(activated)
-        let sequence = input.sequence
-        let summed = sequence + dropped
-        return summed
-        
-//        return input.sequence + self.dropout(input.activation(self.norm(input.sequence))) // The issue happening in norm. probably because of size or axis.
+        return input.sequence + self.dropout(input.activation(self.norm(input.sequence)))
     }
+    
     @differentiable
     func decoderForward(_ input: DecoderSubLayerInput< Float>) -> Tensor<Float> {
-        let normed = self.norm(input.sequence)
-        let activated = input.activation(normed,input.decoderContext)
-        let dropped = self.dropout(activated)
-        let sequence = input.sequence
-        let summed = sequence + dropped
-        return summed
-        
-//        return input.sequence + self.dropout(input.activation(self.norm(input.sequence))) // The issue happening in norm. probably because of size or axis.
+        return input.sequence + self.dropout(input.activation(self.norm(input.sequence), input.decoderContext))
     }
 }
 
 struct PositionwiseFeedForward: Layer {
     // "Implements FFN equation."
-    var dense1: Dense<Float>// TODO might need to be TimeDistributed to handle timesteps??
+    var dense1: Dense<Float>
     var dense2: Dense<Float>
     @noDerivative let dropout: Dropout<Float>
     
     init(dimensionalityModel:Int, innerLayerDimensionality:Int, dropProbability: Double=0.1) {
-        // these are just "nn.Linear"
-//        dense1 = TimeDistributed(Dense(inputSize: dimensionalityModel, outputSize: innerLayerDimensionality))
-//        dense2 = TimeDistributed(Dense(inputSize: innerLayerDimensionality, outputSize: dimensionalityModel))
         dense1 = Dense(inputSize: dimensionalityModel, outputSize: innerLayerDimensionality)
         dense2 = Dense(inputSize: innerLayerDimensionality, outputSize: dimensionalityModel)
         dropout = Dropout<Float>(probability: dropProbability)
@@ -120,23 +104,6 @@ struct PositionwiseFeedForward: Layer {
     }
 }
 
-
-struct TimeDistributed: Layer {
-    var dense: Dense<Float>
-    
-    init(_ wrapped: Dense<Float>) {
-        self.dense = wrapped
-    }
-    
-    @differentiable(wrt: (self, input))
-    func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        let (batchSize, timeSteps, features) = (input.shape[0], input.shape[1], input.shape[2])
-        let reshaped = input.reshaped(to: [batchSize * timeSteps, features])
-        let output = dense(reshaped)
-        let outputFeatures = output.shape[1]
-        return output.reshaped(to: [batchSize, timeSteps, outputFeatures])
-    }
-}
 
 struct PositionalEncoding: ParameterlessLayer {
     @noDerivative var encoding: Parameter<Float> // maybe should be an embedding?
@@ -159,6 +126,8 @@ struct PositionalEncoding: ParameterlessLayer {
         return self.dropout(input + encoding.value[0..., 0..<input.shape[1]])
     }
 }
+
+
 public struct TransformerInput<Scalar: TensorFlowFloatingPoint>: Differentiable {
     /// Sequence that the transformer encoder operates over. The shape of this tensor is
     /// `[batchSize, sequenceLength, depth]` or `[batchSize, sequenceLength * depth]`.
@@ -183,18 +152,34 @@ public struct TransformerInput<Scalar: TensorFlowFloatingPoint>: Differentiable 
     }
 }
 
+public struct DecoderInput<Scalar: TensorFlowFloatingPoint>: Differentiable {
+    /// Sequence that the transformer encoder operates over. The shape of this tensor is
+    /// `[batchSize, sequenceLength, depth]` or `[batchSize, sequenceLength * depth]`.
+    public var sequence: Tensor<Scalar>
+    
+    public var memory: Tensor<Scalar>
+    
+    /// Mask to apply on the attention scores. This is a tensor with shape
+    /// `[batchSize, sourceSequenceLength, targetSequenceLength]` or
+    /// `[batchSize, sourceSequenceLength * targetSequenceLength]`. The values should be `1` or
+    /// `0`. The attention scores will effectively be set to negative infinity for any positions in
+    /// the mask that are set to `0`, and will be unchanged for positions that are set to `1`.
+    public var sourceMask: Tensor<Scalar>
+    
+    public var targetMask: Tensor<Scalar>
 
-extension KeyPathIterable {
-    public mutating func clipByGlobalNorm<Scalar: TensorFlowFloatingPoint>(clipNorm: Scalar) {
-        let clipNorm = Tensor<Scalar>(clipNorm)
-        var globalNorm = Tensor<Scalar>(zeros: [])
-        for kp in self.recursivelyAllWritableKeyPaths(to: Tensor<Scalar>.self) {
-            globalNorm += self[keyPath: kp].squared().sum()
-        }
-        globalNorm = sqrt(globalNorm)
-        for kp in self.recursivelyAllWritableKeyPaths(to: Tensor<Scalar>.self) {
-            self[keyPath: kp] *= clipNorm / max(globalNorm, clipNorm)
-        }
+    
+    /// The batch size of this input. This is optional because it is only needed if the input
+    /// sequences have been reshaped to matrices.
+    @noDerivative let batchSize: Int?
+    
+    @differentiable
+    public init(sequence: Tensor<Scalar>, sourceMask: Tensor<Scalar>,targetMask: Tensor<Scalar>, memory: Tensor<Scalar>, batchSize: Int? = nil) {
+        self.sequence = sequence
+        self.sourceMask = sourceMask
+        self.targetMask = targetMask
+        self.memory = memory
+        self.batchSize = batchSize
     }
 }
 

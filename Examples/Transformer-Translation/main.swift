@@ -44,7 +44,7 @@ struct WMTTranslationTask {
         let tokenizer = BasicTokenizer()
         
         print("preprocessing dataset")
-        self.textProcessor = TextProcessor(tokenizer: tokenizer, sourceVocabulary: .init(), targetVocabulary: .init())
+        self.textProcessor = TextProcessor(tokenizer: tokenizer)
         self.trainData = textProcessor.preprocess(source: loadedGerman, target: loadedEnglish, maxSequenceLength: maxSequenceLength, batchSize: batchSize)
     }
     

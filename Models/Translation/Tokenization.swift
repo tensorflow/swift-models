@@ -8,6 +8,64 @@
 
 import Foundation
 import TensorFlow
+
+public struct TextProcessor {
+    public let tokenizer: Tokenizer
+    public var sourceVocabulary: Vocabulary
+    public var targetVocabulary: Vocabulary
+    public init(tokenizer: Tokenizer, sourceVocabulary: Vocabulary = .init(), targetVocabulary: Vocabulary = .init()) {
+        self.tokenizer = tokenizer
+        self.sourceVocabulary = sourceVocabulary
+        self.targetVocabulary = targetVocabulary
+    }
+    // This will take all source and target sequenes
+    // return batches where each batch is based on the size targets in the sequence.
+    public mutating func preprocess(source: [String], target:[String], maxSequenceLength: Int, batchSize: Int) -> [TextBatch] {
+        let sourcePadId = Int32(sourceVocabulary.add(token: BLANK_WORD))
+        let targetPadId = Int32(targetVocabulary.add(token: BLANK_WORD))
+        let bosId = Int32(targetVocabulary.add(token: BOS_WORD))
+        let eosId = Int32(targetVocabulary.add(token: EOS_WORD))
+        
+        let tokenizedSource = source.map{ src -> [Int32] in
+            let tokenizedSequence = tokenizer
+                .tokenize(String(src))
+                .prefix(maxSequenceLength)
+            return tokenizedSequence.map { Int32(self.sourceVocabulary.add(token: $0))}
+        }
+        let tokenizedTarget = target.map{ tar -> [Int32] in
+            let tokenizedSequence = tokenizer
+                .tokenize(String(tar))
+                .prefix(maxSequenceLength)
+            return [bosId] + tokenizedSequence.map { Int32(self.targetVocabulary.add(token: $0))} + [eosId]
+        }
+        
+        let sourceWithTarget = zip(tokenizedSource, tokenizedTarget).map{ $0 }
+        
+        let groupedBySourceSize = Dictionary(grouping: sourceWithTarget, by: { $0.0.count}).values.flatMap { (group: [([Int32], [Int32])]) -> [TextBatch] in
+            let batchesFromGroup = group.chunked(into: batchSize)
+            return batchesFromGroup.map { (batch: [([Int32], [Int32])]) -> TextBatch in
+                // batch has multiple pairs of sources and targets
+                let sourceTensor = Tensor(batch.map{ Tensor<Int32>.init($0.0) })
+                let maxTargetLength = batch.map{ $0.1.count}.max() ?? 0
+                // pad target length up to largest max.
+                let targetTensor = Tensor(batch.map{ Tensor<Int32>.init($0.1 + [Int32](repeating: targetPadId, count: (maxTargetLength - $0.1.count))) }) // taraget tensor needs to be padded
+                let textBatch = TextBatch(source: sourceTensor, target: targetTensor, sourcePadId: sourcePadId, targetPadId: targetPadId)
+                return textBatch
+            }
+        }
+        
+        return groupedBySourceSize
+    }
+    
+}
+
+
+
+let BOS_WORD = "<s>"
+let EOS_WORD = "</s>"
+let BLANK_WORD = "<blank>"
+
+
 /// Tokenized text passage.
 public struct TextBatch: KeyPathIterable {
     /// IDs that correspond to the vocabulary used while tokenizing.
@@ -31,24 +89,20 @@ public struct TextBatch: KeyPathIterable {
     public var targetTruth: Tensor<Int32>
     
     public var tokenCount: Int32
-//    if I want my batch to have sentence of unequal length, the shorter sentences have to be padded with the `<pad>` token so that every sentence is the same length
-//    The mask for the input listen tensor covers the padded elements
-//    The shape of the target mask is (batch_size, 1, input_sequence_length)
-//    The batch size can be anything but it looks like in the translation example, it is only 1.
+
     public init(source: Tensor<Int32>, target: Tensor<Int32>, sourcePadId: Int32, targetPadId: Int32) {
         self.tokenIds = source
         self.mask = Tensor<Float>(Tensor(zerosLike: source)
-            .replacing(with: Tensor(onesLike: source), where: source .!= Tensor.init(sourcePadId)) // Tensor.init(0) might need dto be expanded to Tensor(zerosLike: source)
+            .replacing(with: Tensor(onesLike: source), where: source .!= Tensor.init(sourcePadId))
             .expandingShape(at: 1))
             
-        // if target is not None?
         let rangeExceptLast = 0..<(target.shape[1] - 1)
-        self.targetTokenIds = target[0...,rangeExceptLast] // not sure if this is right. just means except last one
+        self.targetTokenIds = target[0...,rangeExceptLast]
         self.targetTruth = target[0..., 1...]
         self.targetMask = TextBatch.makeStandardMask(target: self.targetTokenIds, pad: targetPadId)
         self.tokenCount = Tensor(zerosLike: targetTruth)
         .replacing(with: Tensor(onesLike: targetTruth), where: self.targetTruth .!= Tensor.init(targetPadId))
-            .sum().scalar! // .sum() returns a vector.. Maybe that's what I want??
+            .sum().scalar!
         
     }
     
@@ -66,8 +120,6 @@ public struct TextBatch: KeyPathIterable {
             .replacing(with: Tensor(onesLike: target), where: target .!= Tensor.init(pad))
             .expandingShape(at: -2)
         targetMask *= subsequentMask(size: target.shape.last!)
-        // tgt_mask = tgt_mask & Variable(
-//        subsequent_mask(tgt.size(-1)).type_as(tgt_mask.data))
         return Tensor<Float>(targetMask)
     }
 }
@@ -76,68 +128,7 @@ public func subsequentMask(size: Int) -> Tensor<Int32> {
     return Tensor<Int32>(ones: TensorShape(attentionShape))
         .bandPart(subdiagonalCount: 0, superdiagonalCount: -1)
 }
-/// Returns a 3-D attention mask that correspond to the 2-D mask of the provided text batch.
-///
-/// - Parameters:
-///   - text: Text batch for which to create an attention mask. `input.mask` has shape
-///     `[batchSize, sequenceLength]`.
-///
-/// - Returns: Attention mask with shape `[batchSize, sequenceLength, sequenceLength]`.
-internal func createAttentionMask(forTextBatch text: TextBatch) -> Tensor<Float> {
-    let batchSize = text.tokenIds.shape[0]
-    let fromSequenceLength = text.tokenIds.shape[1]
-    let toSequenceLength = text.mask.shape[1]
-    let reshapedMask = Tensor<Float>(text.mask.reshaped(to: [batchSize, 1, toSequenceLength]))
 
-    // We do not assume that `input.tokenIds` is a mask. We do not actually care if we attend
-    // *from* padding tokens (only *to* padding tokens) so we create a tensor of all ones.
-    let broadcastOnes = Tensor<Float>(ones: [batchSize, fromSequenceLength, 1])
-
-    // We broadcast along two dimensions to create the mask.
-    return broadcastOnes * reshapedMask
-}
-
-internal func createTargetAttentionMask(forTextBatch text: TextBatch) -> Tensor<Float> {
-    let batchSize = text.targetTokenIds.shape[0]
-    let fromSequenceLength = text.targetTokenIds.shape[1]
-    let toSequenceLength = text.targetMask.shape[1]
-    let reshapedMask = Tensor<Float>(text.targetMask.reshaped(to: [batchSize, 1, toSequenceLength]))
-
-    // We do not assume that `input.tokenIds` is a mask. We do not actually care if we attend
-    // *from* padding tokens (only *to* padding tokens) so we create a tensor of all ones.
-    let broadcastOnes = Tensor<Float>(ones: [batchSize, fromSequenceLength, 1])
-
-    // We broadcast along two dimensions to create the mask.
-    return broadcastOnes * reshapedMask
-}
-
-//// TODO: Add documentation.
-//internal func padAndBatch(textBatches: [TextBatch]) -> TextBatch {
-//    if textBatches.count == 1 { return textBatches.first! }
-//    let maxLength = textBatches.map { $0.tokenIds.shape[1] }.max()!
-//    let paddedBatches = textBatches.map { batch -> TextBatch in
-//        let paddingSize = maxLength - batch.tokenIds.shape[1]
-//        return TextBatch(
-//            tokenIds: batch.tokenIds.padded(forSizes: [
-//                (before: 0, after: 0),
-//                (before: 0, after: paddingSize)]),
-//            tokenTypeIds: batch.tokenTypeIds.padded(forSizes: [
-//                (before: 0, after: 0),
-//                (before: 0, after: paddingSize)]),
-//            mask: batch.mask.padded(forSizes: [
-//                (before: 0, after: 0),
-//                (before: 0, after: paddingSize)]))
-//    }
-//    return TextBatch(
-//        tokenIds: Tensor<Int32>(
-//            concatenating: paddedBatches.map { $0.tokenIds }, alongAxis: 0),
-//        tokenTypeIds: Tensor<Int32>(
-//            concatenating: paddedBatches.map { $0.tokenTypeIds }, alongAxis: 0),
-//        mask: Tensor<Int32>(
-//            concatenating: paddedBatches.map { $0.mask }, alongAxis: 0))
-//}
-//
-/// Vocabulary that can be used for tokenizing strings.
 public struct Vocabulary {
     internal var tokensToIds: [String: Int]
     internal var idsToTokens: [Int: String]
@@ -182,48 +173,6 @@ public struct Vocabulary {
     }
 }
 
-//extension Vocabulary {
-//    public init(fromFile fileURL: URL) throws {
-//        self.init(
-//        tokensToIds: [String: Int](
-//            (try String(contentsOfFile: fileURL.path, encoding: .utf8))
-//                .components(separatedBy: .newlines)
-//                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-//                .filter { $0.count > 0 }
-//                .enumerated().map { ($0.element, $0.offset) },
-//            uniquingKeysWith: { (v1, v2) in max(v1, v2) }))
-//    }
-//
-//    public func save(toFile fileURL: URL) throws {
-//        try idsToTokens
-//            .sorted { $0.key < $1.key }
-//            .map { $0.1 }
-//            .joined(separator: "\n")
-//            .write(to: fileURL, atomically: true, encoding: .utf8)
-//    }
-//}
-//
-//extension Vocabulary {
-//    public init(fromSentencePieceModel fileURL: URL) throws {
-//        self.init(
-//            tokensToIds: [String: Int](
-//                (try Sentencepiece_ModelProto(serializedData: Data(contentsOf: fileURL)))
-//                    .pieces
-//                    .map { $0.piece.replacingOccurrences(of: "▁", with: "##") }
-//                    .map { $0 == "<unk>" ? "[UNK]" : $0 }
-//                    .enumerated().map { ($0.element, $0.offset) },
-//                uniquingKeysWith: { (v1, v2) in max(v1, v2) }))
-//    }
-//
-//    public init(fromJSONFile fileURL: URL) throws {
-//        let json = try String(contentsOfFile: fileURL.path)
-//        let tokensToIds = try JSONDecoder().decode(
-//            [String: Int].self,
-//            from: json.data(using: .utf8)!)
-//        self.init(tokensToIds: tokensToIds)
-//    }
-//}
-//
 /// Text tokenizer which is used to split strings into arrays of tokens.
 public protocol Tokenizer {
     func tokenize(_ text: String) -> [String]
@@ -271,66 +220,7 @@ public struct BasicTokenizer: Tokenizer {
     }
 }
 
-///// Greedy subword tokenizer.
-/////
-///// This tokenizer uses a greedy longest-match-first algorithm to perform tokenization using the
-///// provided vocabulary. For example, `"unaffable"` could be tokenized as
-///// `["un", "##aff", "##able"]`.
-//public struct GreedySubwordTokenizer: Tokenizer {
-//    public let vocabulary: Vocabulary
-//    public let unknownToken: String
-//    public let maxTokenLength: Int?
-//
-//    /// Creates a subword tokenizer.
-//    ///
-//    /// - Parameters:
-//    ///   - vocabulary: Vocabulary containing all supported tokens.
-//    ///   - unknownToken: Token used to represent unknown tokens (i.e., tokens that are not in the
-//    ///     provided vocabulary or whose length is longer than `maxTokenLength`).
-//    ///   - maxTokenLength: Maximum allowed token length.
-//    public init(vocabulary: Vocabulary, unknownToken: String = "[UNK]", maxTokenLength: Int?) {
-//        self.vocabulary = vocabulary
-//        self.unknownToken = unknownToken
-//        self.maxTokenLength = maxTokenLength
-//    }
-//
-//    public func tokenize(_ text: String) -> [String] {
-//        clean(text).split(separator: " ").flatMap { token -> [String] in
-//            if let maxLength = maxTokenLength, token.count > maxLength { return [unknownToken] }
-//            var isBad = false
-//            var start = token.startIndex
-//            var subTokens = [String]()
-//            while start < token.endIndex {
-//                // Find the longest matching substring.
-//                var end = token.endIndex
-//                var currentSubstring = ""
-//                while start < end {
-//                    var substring = String(token[start..<end])
-//                    if start > token.startIndex {
-//                        substring = "##" + substring
-//                    }
-//                    if vocabulary.contains(substring) {
-//                        currentSubstring = substring
-//                        start = end
-//                    } else {
-//                        end = token.index(end, offsetBy: -1)
-//                    }
-//                }
-//
-//                // Check if the substring is good.
-//                if currentSubstring.isEmpty {
-//                    isBad = true
-//                    start = token.endIndex
-//                } else {
-//                    subTokens.append(currentSubstring)
-//                    start = end
-//                }
-//            }
-//            return isBad ? [unknownToken] : subTokens
-//        }
-//    }
-//}
-//
+
 /// Returns a cleaned version of the provided string. Cleaning in this case consists of normalizing
 /// whitespaces, removing control characters and adding whitespaces around CJK characters.
 ///
