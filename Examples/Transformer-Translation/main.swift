@@ -18,6 +18,7 @@ struct WMTTranslationTask {
     private let trainEnglishURL = URL(string: "https://nlp.stanford.edu/projects/nmt/data/wmt14.en-de/train.en")!
     let directoryURL: URL
     var trainData: [TextBatch]
+    var valData: [TextBatch]
     var textProcessor: TextProcessor
     var sourceVocabSize: Int {
         textProcessor.sourceVocabulary.count
@@ -45,11 +46,22 @@ struct WMTTranslationTask {
         
         print("preprocessing dataset")
         self.textProcessor = TextProcessor(tokenizer: tokenizer)
-        self.trainData = textProcessor.preprocess(source: loadedGerman, target: loadedEnglish, maxSequenceLength: maxSequenceLength, batchSize: batchSize)
+        let dataset = textProcessor.preprocess(source: loadedGerman, target: loadedEnglish, maxSequenceLength: maxSequenceLength, batchSize: batchSize)
+        (self.trainData, self.valData) = WMTTranslationTask.split(dataset: dataset, with: 0.7)
+    }
+    static func split(dataset: [TextBatch], with trainPercent: Double) -> (train: [TextBatch], val: [TextBatch]) {
+        let splitIndex = Int(Double(dataset.count) * trainPercent)
+        let trainSplit = dataset[0..<splitIndex]
+        let valSplit = dataset[splitIndex..<dataset.count]
+        return (Array(trainSplit), Array(valSplit))
     }
     
     func getTrainIterator() -> IndexingIterator<[TextBatch]>{
         self.trainData.shuffled().makeIterator()
+    }
+    
+    func getValIterator() -> IndexingIterator<[TextBatch]> {
+        self.valData.makeIterator()
     }
     
     static func load(fromFile fileURL: URL) throws -> [String] {
@@ -69,6 +81,17 @@ struct WMTTranslationTask {
             }
             optimizer.update(&model, along: grad)
             return loss.scalarized()
+        }
+        return result
+    }
+    
+    /// returns validation loss
+    func validate(model: inout TransformerModel, for batch: TextBatch) -> Float {
+        let labels = batch.targetTruth.reshaped(to: [-1])
+        let resultSize = batch.targetTruth.shape.last! * batch.targetTruth.shape.first!
+        let padIndex = Int32(textProcessor.targetVocabulary.id(forToken: "<blank>")!)
+        let result = withLearningPhase(.inference) { () -> Float in
+            softmaxCrossEntropy(logits: model.generate(input: batch).reshaped(to: [resultSize, -1]), labels: labels,ignoreIndex: padIndex).scalarized()
         }
         return result
     }
@@ -109,10 +132,20 @@ for epoch in 0..<epochs {
         let batch = withDevice(.cpu) { iterator.next()! }
         let loss = translationTask.update(model: &model, using: &optimizer, for: batch)
         print("current loss at step \(step): \(loss)")
+        
+        if step % 100 == 0 {
+            var validationLosses = [Float]()
+            var valIterator = translationTask.getValIterator()
+            for _ in 0..<translationTask.valData.count {
+                let valBatch = withDevice(.cpu){ valIterator.next()! }
+                let loss = translationTask.validate(model: &model, for: valBatch)
+                validationLosses.append(loss)
+            }
+            let averageLoss = validationLosses.reduce(0, +) / Float(validationLosses.count)
+            print("Average validation loss at step \(step): \(averageLoss)")
+        }
     }
 }
-
-// Test
 
 let batch = translationTask.trainData[0]
 let exampleIndex = 1
@@ -130,5 +163,4 @@ let out = greedyDecode(model: model, input: source, maxLength: 50, startSymbol: 
 
 func decode(tensor: Tensor<Float>, vocab: Vocabulary) -> String {
     tensor.scalars.compactMap{ vocab.token(forId: Int($0)) }.joined(separator: " ")
-    // todo use a loop and break on </s>
 }
