@@ -38,8 +38,8 @@ where
         let optimizer = SGD(for: model, learningRate: 0.1)
 
         Context.local.learningPhase = .training
-        for epoch in 1...epochs {
-            for batch in dataset.trainBatcher.sequenced() {
+        for _ in 1...epochs {
+            for batch in dataset.trainingBatcher.sequenced() {
                 let (images, labels) = (batch.first, batch.second)
                 let 𝛁model = TensorFlow.gradient(at: model) { model -> Tensor<Float> in
                     let logits = model(images)

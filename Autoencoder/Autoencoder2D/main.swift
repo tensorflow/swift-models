@@ -18,6 +18,7 @@ import Datasets
 import Foundation
 import ModelSupport
 import TensorFlow
+import Batcher
 
 let epochCount = 10
 let batchSize = 100
@@ -25,7 +26,7 @@ let imageHeight = 28
 let imageWidth = 28
 
 let outputFolder = "./output/"
-let dataset = KuzushijiMNIST(flattening: true)
+let dataset = KuzushijiMNIST(batchSize: batchSize, flattening: true)
 
 // An autoencoder.
 struct Autoencoder2D: Layer {
@@ -59,15 +60,15 @@ struct Autoencoder2D: Layer {
 var model = Autoencoder2D()
 let optimizer = AdaDelta(for: model)
 
-let individualTestImages = dataset.testDataset.batched(1)
-var testImageIterator = individualTestImages.makeIterator()
+let individualTestImages = Batcher(on: dataset.testBatcher.dataset, batchSize: 1)
+var testImageIterator = individualTestImages.sequenced()
 var localBatchSize = batchSize
 
 // Training loop
 for epoch in 1...epochCount {
     localBatchSize = 1
     if let nextIndividualImage = testImageIterator.next() {
-        let sampleTensor = nextIndividualImage.data
+        let sampleTensor = nextIndividualImage.first
         let sampleImage = Tensor(
             shape: [28, 28], scalars: sampleTensor.scalars)
 
@@ -89,10 +90,8 @@ for epoch in 1...epochCount {
     }
 
     localBatchSize = batchSize
-    let trainingShuffled = dataset.trainingDataset.shuffled(
-        sampleCount: dataset.trainingExampleCount, randomSeed: Int64(epoch))
-    for batch in trainingShuffled.batched(batchSize) {
-        let x = batch.data
+    for batch in dataset.trainingBatcher.sequenced() {
+        let x = batch.first
 
         let 𝛁model = TensorFlow.gradient(at: model) { model -> Tensor<Float> in
             let image = model(x)

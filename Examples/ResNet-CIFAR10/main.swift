@@ -18,8 +18,7 @@ import TensorFlow
 
 let batchSize = 10
 
-let dataset = CIFAR10()
-let testBatches = dataset.testDataset.batched(batchSize)
+let dataset = CIFAR10(batchSize: batchSize)
 
 // Use the network sized for CIFAR-10
 var model = ResNet(classCount: 10, depth: .resNet50, downsamplingInFirstStage: true)
@@ -34,10 +33,8 @@ for epoch in 1...10 {
     Context.local.learningPhase = .training
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
-    let trainingShuffled = dataset.trainingDataset.shuffled(
-        sampleCount: dataset.trainingExampleCount, randomSeed: Int64(epoch))
-    for batch in trainingShuffled.batched(batchSize) {
-        let (labels, images) = (batch.label, batch.data)
+    for batch in dataset.trainingBatcher.sequenced() {
+        let (images, labels) = (batch.first, batch.second)
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
             let logits = model(images)
             return softmaxCrossEntropy(logits: logits, labels: labels)
@@ -52,8 +49,8 @@ for epoch in 1...10 {
     var testBatchCount = 0
     var correctGuessCount = 0
     var totalGuessCount = 0
-    for batch in testBatches {
-        let (labels, images) = (batch.label, batch.data)
+    for batch in dataset.testBatcher.sequenced() {
+        let (images, labels) = (batch.first, batch.second)
         let logits = model(images)
         testLossSum += softmaxCrossEntropy(logits: logits, labels: labels).scalarized()
         testBatchCount += 1

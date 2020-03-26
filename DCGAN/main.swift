@@ -18,7 +18,7 @@ import ModelSupport
 import TensorFlow
 
 let batchSize = 512
-let mnist = MNIST(flattening: false, normalizing: true)
+let mnist = MNIST(batchSize: batchSize, flattening: false, normalizing: true)
 
 let outputFolder = "./output/"
 
@@ -120,9 +120,8 @@ print("Begin training...")
 let epochs = 20
 for epoch in 0 ... epochs {
     Context.local.learningPhase = .training
-    let trainingShuffled = mnist.trainingDataset.shuffled(sampleCount: mnist.trainingExampleCount, randomSeed: Int64(epoch)) 
-    for batch in trainingShuffled.batched(batchSize) {
-        let realImages = batch.data 
+    for batch in mnist.trainingBatcher.sequenced() {
+        let realImages = batch.first
 
         // Train generator.
         let noiseG = Tensor<Float>(randomNormal: TensorShape(batchSize, zDim))

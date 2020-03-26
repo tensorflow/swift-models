@@ -105,7 +105,7 @@ func sampleVector(size: Int) -> Tensor<Float> {
     Tensor(randomNormal: [size, latentSize])
 }
 
-let dataset = MNIST(flattening: true, normalizing: true)
+let dataset = MNIST(batchSize: batchSize, flattening: true, normalizing: true)
 
 var generator = Generator()
 var discriminator = Discriminator()
@@ -146,9 +146,7 @@ print("Start training...")
 for epoch in 1...epochCount {
     // Start training phase.
     Context.local.learningPhase = .training
-    let trainingShuffled = dataset.trainingDataset.shuffled(
-        sampleCount: dataset.trainingExampleCount, randomSeed: Int64(epoch))
-    for batch in trainingShuffled.batched(batchSize) {
+    for batch in dataset.trainingBatcher.sequenced() {
         // Perform alternative update.
         // Update generator.
         let vec1 = sampleVector(size: batchSize)
@@ -162,7 +160,7 @@ for epoch in 1...epochCount {
         optG.update(&generator, along: 𝛁generator)
 
         // Update discriminator.
-        let realImages = batch.data
+        let realImages = batch.first
         let vec2 = sampleVector(size: batchSize)
         let fakeImages = generator(vec2)
 

@@ -22,7 +22,7 @@ func fetchMNISTDataset(
     labelsFilename: String,
     flattening: Bool,
     normalizing: Bool
-) -> LabeledExample {
+) -> [TensorPair<Float, Int32>] {
     guard let remoteRoot = URL(string: remoteBaseDirectory) else {
         fatalError("Failed to create MNIST root url: \(remoteBaseDirectory)")
     }
@@ -51,13 +51,12 @@ func fetchMNISTDataset(
         if normalizing {
             flattenedImages = flattenedImages * 2.0 - 1.0
         }
-        return LabeledExample(label: Tensor(labels), data: flattenedImages)
+        return (0..<rowCount).map { TensorPair(first: flattenedImages[$0], second: Tensor<Int32>(labels[$0])) }
     } else {
-        return LabeledExample(
-            label: Tensor(labels),
-            data:
-                Tensor(shape: [rowCount, 1, imageHeight, imageWidth], scalars: images)
-                .transposed(permutation: [0, 2, 3, 1]) / 255  // NHWC
-        )
+        var images = Tensor(shape: [rowCount, 1, imageHeight, imageWidth], scalars: images)
+        if normalizing {
+            images = images * 2.0 - 1.0
+        }
+        return (0..<rowCount).map { TensorPair(first: images[$0], second: Tensor<Int32>(labels[$0])) }
     }
 }
