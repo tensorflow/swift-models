@@ -22,8 +22,8 @@ import Batcher
 
 public struct KuzushijiMNIST: ImageClassificationDataset {
     public typealias SourceDataSet = [TensorPair<Float, Int32>]
-    public let trainingBatcher: Batcher<SourceDataSet>
-    public let testBatcher: Batcher<SourceDataSet>
+    public let training: Batcher<SourceDataSet>
+    public let test: Batcher<SourceDataSet>
 
     public init(batchSize: Int) {
         self.init(batchSize: batchSize, flattening: false, normalizing: false)
@@ -34,7 +34,7 @@ public struct KuzushijiMNIST: ImageClassificationDataset {
         localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
             "KuzushijiMNIST", isDirectory: true)
     ) {
-        trainingBatcher = Batcher<SourceDataSet>(
+        training = Batcher<SourceDataSet>(
             on: fetchMNISTDataset(
                 localStorageDirectory: localStorageDirectory,
                 remoteBaseDirectory: "http://codh.rois.ac.jp/kmnist/dataset/kmnist/",
@@ -46,7 +46,7 @@ public struct KuzushijiMNIST: ImageClassificationDataset {
             numWorkers: 1, //No need to use parallelism since everything is loaded in memory
             shuffle: true)
 
-        testBatcher = Batcher<SourceDataSet>(
+        test = Batcher<SourceDataSet>(
             on: fetchMNISTDataset(
                 localStorageDirectory: localStorageDirectory,
                 remoteBaseDirectory: "http://codh.rois.ac.jp/kmnist/dataset/kmnist/",

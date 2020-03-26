@@ -23,8 +23,8 @@ import Batcher
 
 public struct FashionMNIST: ImageClassificationDataset {
     public typealias SourceDataSet = [TensorPair<Float, Int32>]
-    public let trainingBatcher: Batcher<SourceDataSet>
-    public let testBatcher: Batcher<SourceDataSet>
+    public let training: Batcher<SourceDataSet>
+    public let test: Batcher<SourceDataSet>
 
     public init(batchSize: Int) {
         self.init(batchSize: batchSize, flattening: false, normalizing: false)
@@ -35,7 +35,7 @@ public struct FashionMNIST: ImageClassificationDataset {
         localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
             "FashionMNIST", isDirectory: true)
     ) {
-        trainingBatcher = Batcher<SourceDataSet>(
+        training = Batcher<SourceDataSet>(
             on: fetchMNISTDataset(
                 localStorageDirectory: localStorageDirectory,
                 remoteBaseDirectory: "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/",
@@ -47,7 +47,7 @@ public struct FashionMNIST: ImageClassificationDataset {
             numWorkers: 1, //No need to use parallelism since everything is loaded in memory
             shuffle: true)
 
-        testBatcher = Batcher<SourceDataSet>(
+        test = Batcher<SourceDataSet>(
             on: fetchMNISTDataset(
                 localStorageDirectory: localStorageDirectory,
                 remoteBaseDirectory: "http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/",

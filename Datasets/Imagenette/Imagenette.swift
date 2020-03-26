@@ -26,8 +26,8 @@ public typealias LazyDataSet = LazyMapSequence<[URL], TensorPair<Float, Int32>>
 
 public struct Imagenette: ImageClassificationDataset {
     public typealias SourceDataSet = LazyDataSet
-    public let trainingBatcher: Batcher<SourceDataSet>
-    public let testBatcher: Batcher<SourceDataSet>
+    public let training: Batcher<SourceDataSet>
+    public let test: Batcher<SourceDataSet>
 
     public enum ImageSize {
         case full
@@ -54,13 +54,13 @@ public struct Imagenette: ImageClassificationDataset {
             "Imagenette", isDirectory: true)
     ) {
         do {
-            trainingBatcher = Batcher<SourceDataSet>(
+            training = Batcher<SourceDataSet>(
                 on: try loadImagenetteTrainingDirectory(
                     inputSize: inputSize, outputSize: outputSize,
                     localStorageDirectory: localStorageDirectory),
                 batchSize: batchSize, 
                 shuffle: true)
-            testBatcher = Batcher<SourceDataSet>(
+            test = Batcher<SourceDataSet>(
                 on: try loadImagenetteValidationDirectory(
                     inputSize: inputSize, outputSize: outputSize,
                     localStorageDirectory: localStorageDirectory),

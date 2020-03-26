@@ -146,7 +146,7 @@ print("Start training...")
 for epoch in 1...epochCount {
     // Start training phase.
     Context.local.learningPhase = .training
-    for batch in dataset.trainingBatcher.sequenced() {
+    for batch in dataset.training.sequenced() {
         // Perform alternative update.
         // Update generator.
         let vec1 = sampleVector(size: batchSize)

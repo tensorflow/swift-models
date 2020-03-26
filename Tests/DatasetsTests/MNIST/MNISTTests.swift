@@ -7,7 +7,7 @@ final class MNISTTests: XCTestCase {
         let dataset = MNIST(batchSize: 1)
 
         var totalCount = 0
-        for example in dataset.trainingBatcher.sequenced() {
+        for example in dataset.training.sequenced() {
             XCTAssertTrue((0..<10).contains(example.second[0].scalar!))
             XCTAssertEqual(example.first.shape, [1, 28, 28, 1])
             totalCount += 1
@@ -19,7 +19,7 @@ final class MNISTTests: XCTestCase {
         let dataset = FashionMNIST(batchSize: 1)
 
         var totalCount = 0
-        for example in dataset.trainingBatcher.sequenced() {
+        for example in dataset.training.sequenced() {
             XCTAssertTrue((0..<10).contains(example.second[0].scalar!))
             XCTAssertEqual(example.first.shape, [1, 28, 28, 1])
             totalCount += 1
@@ -31,7 +31,7 @@ final class MNISTTests: XCTestCase {
         let dataset = KuzushijiMNIST(batchSize: 1)
 
         var totalCount = 0
-        for example in dataset.trainingBatcher.sequenced() {
+        for example in dataset.training.sequenced() {
             XCTAssertTrue((0..<10).contains(example.second[0].scalar!))
             XCTAssertEqual(example.first.shape, [1, 28, 28, 1])
             totalCount += 1

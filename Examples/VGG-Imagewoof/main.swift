@@ -31,7 +31,7 @@ for epoch in 1...90 {
     Context.local.learningPhase = .training
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
-    for batch in dataset.trainingBatcher.sequenced() {
+    for batch in dataset.training.sequenced() {
         let (images, labels) = (batch.first, batch.second)
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
             let logits = model(images)
@@ -47,7 +47,7 @@ for epoch in 1...90 {
     var testBatchCount = 0
     var correctGuessCount = 0
     var totalGuessCount = 0
-    for batch in dataset.testBatcher.sequenced() {
+    for batch in dataset.test.sequenced() {
         let (images, labels) = (batch.first, batch.second)
         let logits = model(images)
         testLossSum += softmaxCrossEntropy(logits: logits, labels: labels).scalarized()

@@ -24,7 +24,7 @@ where
     let epochs: Int
 
     var exampleCount: Int {
-        return epochs * dataset.trainingBatcher.dataset.count
+        return epochs * dataset.training.dataset.count
     }
 
     init(settings: BenchmarkSettings) {
@@ -39,7 +39,7 @@ where
 
         Context.local.learningPhase = .training
         for _ in 1...epochs {
-            for batch in dataset.trainingBatcher.sequenced() {
+            for batch in dataset.training.sequenced() {
                 let (images, labels) = (batch.first, batch.second)
                 let 𝛁model = TensorFlow.gradient(at: model) { model -> Tensor<Float> in
                     let logits = model(images)

@@ -60,7 +60,7 @@ struct Autoencoder2D: Layer {
 var model = Autoencoder2D()
 let optimizer = AdaDelta(for: model)
 
-let individualTestImages = Batcher(on: dataset.testBatcher.dataset, batchSize: 1)
+let individualTestImages = Batcher(on: dataset.test.dataset, batchSize: 1)
 var testImageIterator = individualTestImages.sequenced()
 var localBatchSize = batchSize
 
@@ -90,7 +90,7 @@ for epoch in 1...epochCount {
     }
 
     localBatchSize = batchSize
-    for batch in dataset.trainingBatcher.sequenced() {
+    for batch in dataset.training.sequenced() {
         let x = batch.first
 
         let 𝛁model = TensorFlow.gradient(at: model) { model -> Tensor<Float> in

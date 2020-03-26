@@ -120,7 +120,7 @@ print("Begin training...")
 let epochs = 20
 for epoch in 0 ... epochs {
     Context.local.learningPhase = .training
-    for batch in mnist.trainingBatcher.sequenced() {
+    for batch in mnist.training.sequenced() {
         let realImages = batch.first
 
         // Train generator.

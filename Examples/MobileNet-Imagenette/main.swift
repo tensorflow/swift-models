@@ -32,7 +32,7 @@ for epoch in 1...10 {
     Context.local.learningPhase = .training
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
-    for batch in imagenette.trainingBatcher.sequenced() {
+    for batch in imagenette.training.sequenced() {
         let (images, labels) = (batch.first, batch.second)
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
             let logits = model(images)
@@ -48,7 +48,7 @@ for epoch in 1...10 {
     var testBatchCount = 0
     var correctGuessCount = 0
     var totalGuessCount = 0
-    for batch in imagenette.testBatcher.sequenced() {
+    for batch in imagenette.test.sequenced() {
         let (images, labels) = (batch.first, batch.second)
         let logits = model(images)
         testLossSum += softmaxCrossEntropy(logits: logits, labels: labels).scalarized()

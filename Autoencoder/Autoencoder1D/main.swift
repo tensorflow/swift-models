@@ -40,7 +40,7 @@ var autoencoder = Sequential {
 }
 let optimizer = RMSProp(for: autoencoder)
 
-let individualTestImages = Batcher(on: dataset.testBatcher.dataset, batchSize: 1)
+let individualTestImages = Batcher(on: dataset.test.dataset, batchSize: 1)
 var testImageIterator = individualTestImages.sequenced()
 
 // Training loop
@@ -67,7 +67,7 @@ for epoch in 1...epochCount {
         print("[Epoch: \(epoch)] Loss: \(sampleLoss)")
     }
 
-    for batch in dataset.trainingBatcher.sequenced() {
+    for batch in dataset.training.sequenced() {
         let x = batch.first
 
         let 𝛁model = TensorFlow.gradient(at: autoencoder) { autoencoder -> Tensor<Float> in

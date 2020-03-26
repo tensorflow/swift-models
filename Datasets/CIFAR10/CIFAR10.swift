@@ -24,8 +24,8 @@ import Batcher
 
 public struct CIFAR10: ImageClassificationDataset {
     public typealias SourceDataSet = [TensorPair<Float, Int32>]
-    public let trainingBatcher: Batcher<SourceDataSet>
-    public let testBatcher: Batcher<SourceDataSet>
+    public let training: Batcher<SourceDataSet>
+    public let test: Batcher<SourceDataSet>
 
     public init(batchSize: Int) {
         self.init(
@@ -43,12 +43,12 @@ public struct CIFAR10: ImageClassificationDataset {
         normalizing: Bool) 
     {
         downloadCIFAR10IfNotPresent(from: remoteBinaryArchiveLocation, to: localStorageDirectory)
-        self.trainingBatcher = Batcher(
+        self.training = Batcher(
             on: loadCIFARTrainingFiles(localStorageDirectory: localStorageDirectory, normalizing: normalizing),
             batchSize: batchSize,
             numWorkers: 1, //No need to use parallelism since everything is loaded in memory
             shuffle: true)
-        self.testBatcher = Batcher(
+        self.test = Batcher(
             on: loadCIFARTestFile(localStorageDirectory: localStorageDirectory, normalizing: normalizing),
             batchSize: batchSize,
             numWorkers: 1) //No need to use parallelism since everything is loaded in memory

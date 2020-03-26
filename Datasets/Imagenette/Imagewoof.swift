@@ -24,8 +24,8 @@ import Batcher
 
 public struct Imagewoof: ImageClassificationDataset {
     public typealias SourceDataSet = LazyDataSet
-    public let trainingBatcher: Batcher<SourceDataSet>
-    public let testBatcher: Batcher<SourceDataSet>
+    public let training: Batcher<SourceDataSet>
+    public let test: Batcher<SourceDataSet>
 
     public enum ImageSize {
         case full
@@ -52,13 +52,13 @@ public struct Imagewoof: ImageClassificationDataset {
             "Imagewoof", isDirectory: true)
     ) {
         do {
-            trainingBatcher = Batcher<SourceDataSet>(
+            training = Batcher<SourceDataSet>(
                 on: try loadImagewoofTrainingDirectory(
                     inputSize: inputSize, outputSize: outputSize,
                     localStorageDirectory: localStorageDirectory),
                 batchSize: batchSize, 
                 shuffle: true)
-            testBatcher = Batcher<SourceDataSet>(
+            test = Batcher<SourceDataSet>(
                 on: try loadImagewoofValidationDirectory(
                     inputSize: inputSize, outputSize: outputSize,
                     localStorageDirectory: localStorageDirectory),

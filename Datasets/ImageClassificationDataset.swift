@@ -19,6 +19,6 @@ public protocol ImageClassificationDataset {
     associatedtype SourceDataSet: Collection 
     where SourceDataSet.Element == TensorPair<Float, Int32>, SourceDataSet.Index == Int
     init(batchSize: Int)
-    var trainingBatcher: Batcher<SourceDataSet> { get }
-    var testBatcher: Batcher<SourceDataSet> { get }
+    var training: Batcher<SourceDataSet> { get }
+    var test: Batcher<SourceDataSet> { get }
 }

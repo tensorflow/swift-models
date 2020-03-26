@@ -28,7 +28,7 @@ final class CIFAR10Tests: XCTestCase {
 
     func verify(_ dataset: CIFAR10) {
         var totalCount = 0
-        for example in dataset.trainingBatcher.sequenced() {
+        for example in dataset.training.sequenced() {
             XCTAssertTrue((0..<10).contains(example.second[0].scalar!))
             XCTAssertEqual(example.first.shape, [1, 32, 32, 3])
             totalCount += 1

@@ -23,8 +23,8 @@ import Batcher
 
 public struct MNIST: ImageClassificationDataset {
     public typealias SourceDataSet = [TensorPair<Float, Int32>]
-    public let trainingBatcher: Batcher<SourceDataSet>
-    public let testBatcher: Batcher<SourceDataSet>
+    public let training: Batcher<SourceDataSet>
+    public let test: Batcher<SourceDataSet>
 
     public init(batchSize: Int) {
         self.init(batchSize: batchSize, flattening: false, normalizing: false)
@@ -35,7 +35,7 @@ public struct MNIST: ImageClassificationDataset {
         localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
             "MNIST", isDirectory: true)
     ) {
-        trainingBatcher = Batcher<SourceDataSet>(
+        training = Batcher<SourceDataSet>(
             on: fetchMNISTDataset(
                 localStorageDirectory: localStorageDirectory,
                 remoteBaseDirectory: "https://storage.googleapis.com/cvdf-datasets/mnist",
@@ -47,7 +47,7 @@ public struct MNIST: ImageClassificationDataset {
             numWorkers: 1, //No need to use parallelism since everything is loaded in memory
             shuffle: true)
         
-        testBatcher = Batcher<SourceDataSet>(
+        test = Batcher<SourceDataSet>(
             on: fetchMNISTDataset(
                 localStorageDirectory: localStorageDirectory,
                 remoteBaseDirectory: "https://storage.googleapis.com/cvdf-datasets/mnist",

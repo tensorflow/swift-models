@@ -48,7 +48,7 @@ for epoch in 1...epochCount {
     var testStats = Statistics()
     
     Context.local.learningPhase = .training
-    for batch in dataset.trainingBatcher.sequenced() {
+    for batch in dataset.training.sequenced() {
         let (images, labels) = (batch.first, batch.second)
         // Compute the gradient with respect to the model.
         let 𝛁model = TensorFlow.gradient(at: classifier) { classifier -> Tensor<Float> in
@@ -67,7 +67,7 @@ for epoch in 1...epochCount {
     }
 
     Context.local.learningPhase = .inference
-    for batch in dataset.testBatcher.sequenced() {
+    for batch in dataset.test.sequenced() {
         let (images, labels) = (batch.first, batch.second)
         // Compute loss on test set
         let ŷ = classifier(images)
