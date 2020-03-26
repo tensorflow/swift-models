@@ -7,13 +7,13 @@ add_library(Datasets
   ImageClassificationDataset.swift
   Imagenette/Imagenette.swift
   Imagenette/Imagewoof.swift
-  LabeledExample.swift
   LanguageModelDataset.swift
   MNIST/MNISTDatasetHandler.swift
   MNIST/MNIST.swift
   MNIST/FashionMNIST.swift
   MNIST/KuzushijiMNIST.swift
   BostonHousing/BostonHousing.swift
+  TensorPair.swift
   TextUnsupervised/TextUnsupervised.swift)
 target_link_libraries(Datasets PUBLIC
   Batcher
