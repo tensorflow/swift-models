@@ -18,38 +18,43 @@
 
 import Foundation
 import TensorFlow
+import Batcher
 
 public struct KuzushijiMNIST: ImageClassificationDataset {
-    public let trainingDataset: Dataset<LabeledExample>
-    public let testDataset: Dataset<LabeledExample>
-    public let trainingExampleCount = 60000
-    public let testExampleCount = 10000
+    public typealias SourceDataSet = [TensorPair<Float, Int32>]
+    public let training: Batcher<SourceDataSet>
+    public let test: Batcher<SourceDataSet>
 
-    public init() {
-        self.init(flattening: false, normalizing: false)
+    public init(batchSize: Int) {
+        self.init(batchSize: batchSize, flattening: false, normalizing: false)
     }
 
     public init(
-        flattening: Bool = false, normalizing: Bool = false,
+        batchSize: Int, flattening: Bool = false, normalizing: Bool = false,
         localStorageDirectory: URL = DatasetUtilities.defaultDirectory
             .appendingPathComponent("KuzushijiMNIST", isDirectory: true)
     ) {
-        self.trainingDataset = Dataset<LabeledExample>(
-            elements: fetchMNISTDataset(
+        training = Batcher<SourceDataSet>(
+            on: fetchMNISTDataset(
                 localStorageDirectory: localStorageDirectory,
                 remoteBaseDirectory: "http://codh.rois.ac.jp/kmnist/dataset/kmnist/",
                 imagesFilename: "train-images-idx3-ubyte",
                 labelsFilename: "train-labels-idx1-ubyte",
                 flattening: flattening,
-                normalizing: normalizing))
+                normalizing: normalizing),
+            batchSize: batchSize,
+            numWorkers: 1, //No need to use parallelism since everything is loaded in memory
+            shuffle: true)
 
-        self.testDataset = Dataset<LabeledExample>(
-            elements: fetchMNISTDataset(
+        test = Batcher<SourceDataSet>(
+            on: fetchMNISTDataset(
                 localStorageDirectory: localStorageDirectory,
                 remoteBaseDirectory: "http://codh.rois.ac.jp/kmnist/dataset/kmnist/",
                 imagesFilename: "t10k-images-idx3-ubyte",
                 labelsFilename: "t10k-labels-idx1-ubyte",
                 flattening: flattening,
-                normalizing: normalizing))
+                normalizing: normalizing),
+            batchSize: batchSize,
+            numWorkers: 1) //No need to use parallelism since everything is loaded in memory
     }
 }

@@ -13,11 +13,12 @@
 // limitations under the License.
 
 import TensorFlow
+import Batcher
 
 public protocol ImageClassificationDataset {
-    init()
-    var trainingDataset: Dataset<LabeledExample> { get }
-    var testDataset: Dataset<LabeledExample> { get }
-    var trainingExampleCount: Int { get }
-    var testExampleCount: Int { get }
+    associatedtype SourceDataSet: Collection 
+    where SourceDataSet.Element == TensorPair<Float, Int32>, SourceDataSet.Index == Int
+    init(batchSize: Int)
+    var training: Batcher<SourceDataSet> { get }
+    var test: Batcher<SourceDataSet> { get }
 }
