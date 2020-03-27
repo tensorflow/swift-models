@@ -93,7 +93,35 @@ public struct TextProcessor {
         
         // padding is going to be equal to the difference between maxSequence length and the totalEncod
         let targetTensor = Tensor<Int32>.init( encodedTarget).expandingShape(at: 0)
-        return TranslationBatch(source: sourceTensor, target: targetTensor, sourcePadId: sourcePadId, targetPadId: targetPadId)
+        let singleBatch = TranslationBatch(source: sourceTensor, target: targetTensor, sourcePadId: sourcePadId, targetPadId: targetPadId)
+        return singleBatch
     }
     
+}
+
+func decode(tensor: Tensor<Int32>, vocab: Vocabulary) -> String {
+  let endId = Int32(vocab.id(forToken: "</s>")!)
+   var words = [String]()
+   for scalar in tensor.scalars {
+       if Int(scalar) == endId {
+           break
+       } else if let token = vocab.token(forId: Int(scalar)) {
+           words.append(token)
+       }
+   }
+   return words.joined(separator: " ")
+}
+
+extension Vocabulary {    
+    public init(fromFile fileURL: URL, specialTokens: [String]) throws {
+        let vocabItems = try ( String(contentsOfFile: fileURL.path, encoding: .utf8))
+        .components(separatedBy: .newlines)
+        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+        let dictionary = [String: Int](
+                (specialTokens + vocabItems)
+                .filter { $0.count > 0 }
+                .enumerated().map { ($0.element, $0.offset) },
+            uniquingKeysWith: { (v1, v2) in min(v1, v2) })
+        self.init(tokensToIds: dictionary )
+    }
 }

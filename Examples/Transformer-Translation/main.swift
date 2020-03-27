@@ -16,6 +16,7 @@ import Datasets
 let BOS_WORD = "<s>"
 let EOS_WORD = "</s>"
 let BLANK_WORD = "<blank>"
+let UNKNOWN_WORD = "<unk>"
 struct WMTTranslationTask {
     var textProcessor: TextProcessor
     var dataset: WMT2014EnDe
@@ -29,7 +30,7 @@ struct WMTTranslationTask {
     static let germanVocabURL = URL(string: "https://nlp.stanford.edu/projects/nmt/data/wmt14.en-de/vocab.50K.de")!
     
     init(taskDirectoryURL: URL, maxSequenceLength: Int, batchSize: Int) throws {
-        let tokenizer = BasicTokenizer()
+        let tokenizer = BasicTokenizer(caseSensitive: true)
         
         let germanVocabPath = taskDirectoryURL.appendingPathExtension("de")
         let englishVocabPath = taskDirectoryURL.appendingPathExtension("en")
@@ -38,8 +39,8 @@ struct WMTTranslationTask {
         try maybeDownload(from: WMTTranslationTask.englishVocabURL, to: englishVocabPath)
         
         // this vocabulary already has <s> and </s> but not the padding token
-        let sourceVocabulary = try Vocabulary(fromFile: germanVocabPath, specialTokens: [BLANK_WORD])
-        let targetVocabulary = try Vocabulary(fromFile: englishVocabPath, specialTokens: [BLANK_WORD])
+        let sourceVocabulary = try Vocabulary(fromFile: germanVocabPath, specialTokens: [UNKNOWN_WORD, BLANK_WORD])
+        let targetVocabulary = try Vocabulary(fromFile: englishVocabPath, specialTokens: [UNKNOWN_WORD, BLANK_WORD])
         
         self.textProcessor = TextProcessor(tokenizer: tokenizer, sourceVocabulary: sourceVocabulary ,targetVocabulary: targetVocabulary, maxSequenceLength: maxSequenceLength, batchSize: batchSize)
         self.dataset = try WMT2014EnDe(mapExample: self.textProcessor.preprocess, taskDirectoryURL: taskDirectoryURL, maxSequenceLength: maxSequenceLength, batchSize: batchSize)
