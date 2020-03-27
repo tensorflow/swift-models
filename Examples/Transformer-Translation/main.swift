@@ -10,58 +10,34 @@
 import TensorFlow
 import TranslationModels
 import Foundation
+import Datasets
 
 struct WMTTranslationTask {
-    // https://nlp.stanford.edu/projects/nmt/
-    // WMT'14 English-German data
-    private let trainGermanURL = URL(string: "https://nlp.stanford.edu/projects/nmt/data/wmt14.en-de/train.de")!
-    private let trainEnglishURL = URL(string: "https://nlp.stanford.edu/projects/nmt/data/wmt14.en-de/train.en")!
-    let directoryURL: URL
-    var trainData: [TextBatch]
-    var valData: [TextBatch]
     var textProcessor: TextProcessor
+    var dataset: WMT2014EnDe
     var sourceVocabSize: Int {
         textProcessor.sourceVocabulary.count
     }
     var targetVocabSize: Int {
         textProcessor.targetVocabulary.count
     }
-    var trainDataSize: Int {
-        trainData.count
-    }
+    static let englishVocabURL = URL(string: "https://nlp.stanford.edu/projects/nmt/data/wmt14.en-de/vocab.50K.en")!
+    static let germanVocabURL = URL(string: "https://nlp.stanford.edu/projects/nmt/data/wmt14.en-de/vocab.50K.de")!
+    
     init(taskDirectoryURL: URL, maxSequenceLength: Int, batchSize: Int) throws {
-        self.directoryURL = taskDirectoryURL.appendingPathComponent("Translation")
-        let dataURL = directoryURL.appendingPathComponent("data")
-        
-        let trainGermanDataPath = dataURL.appendingPathExtension("source")
-        let trainEnglishDataPath = dataURL.appendingPathExtension("target")
-        print("downloading datasets")
-        try maybeDownload(from: trainGermanURL, to: trainGermanDataPath)
-        try maybeDownload(from: trainEnglishURL, to: trainEnglishDataPath)
-        print("loading datasets")
-        let loadedGerman = try WMTTranslationTask.load(fromFile: trainGermanDataPath)
-        let loadedEnglish = try WMTTranslationTask.load(fromFile: trainEnglishDataPath)
-        
         let tokenizer = BasicTokenizer()
         
-        print("preprocessing dataset")
-        self.textProcessor = TextProcessor(tokenizer: tokenizer)
-        let dataset = textProcessor.preprocess(source: loadedGerman, target: loadedEnglish, maxSequenceLength: maxSequenceLength, batchSize: batchSize)
-        (self.trainData, self.valData) = WMTTranslationTask.split(dataset: dataset, with: 0.7)
-    }
-    static func split(dataset: [TextBatch], with trainPercent: Double) -> (train: [TextBatch], val: [TextBatch]) {
-        let splitIndex = Int(Double(dataset.count) * trainPercent)
-        let trainSplit = dataset[0..<splitIndex]
-        let valSplit = dataset[splitIndex..<dataset.count]
-        return (Array(trainSplit), Array(valSplit))
-    }
-    
-    func getTrainIterator() -> IndexingIterator<[TextBatch]>{
-        self.trainData.shuffled().makeIterator()
-    }
-    
-    func getValIterator() -> IndexingIterator<[TextBatch]> {
-        self.valData.makeIterator()
+        let germanVocabPath = taskDirectoryURL.appendingPathExtension("de")
+        let englishVocabPath = taskDirectoryURL.appendingPathExtension("en")
+        
+        try maybeDownload(from: WMTTranslationTask.germanVocabURL, to: germanVocabPath)
+        try maybeDownload(from: WMTTranslationTask.englishVocabURL, to: englishVocabPath)
+        
+        let sourceVocabulary = try Vocabulary(fromFile: germanVocabPath)
+        let targetVocabulary = try Vocabulary(fromFile: englishVocabPath)
+        
+        self.textProcessor = TextProcessor(tokenizer: tokenizer, sourceVocabulary: sourceVocabulary ,targetVocabulary: targetVocabulary, maxSequenceLength: maxSequenceLength, batchSize: batchSize)
+        self.dataset = try WMT2014EnDe(mapExample: self.textProcessor.preprocess, taskDirectoryURL: taskDirectoryURL, maxSequenceLength: maxSequenceLength, batchSize: batchSize)
     }
     
     static func load(fromFile fileURL: URL) throws -> [String] {
@@ -71,7 +47,7 @@ struct WMTTranslationTask {
         }
     }
     
-    mutating func update(model: inout TransformerModel, using optimizer: inout Adam<TransformerModel>, for batch: TextBatch) -> Float {
+    mutating func update(model: inout TransformerModel, using optimizer: inout Adam<TransformerModel>, for batch: WMT2014EnDe.TextBatch) -> Float {
         let labels = batch.targetTruth.reshaped(to: [-1])
         let resultSize = batch.targetTruth.shape.last! * batch.targetTruth.shape.first!
         let padIndex = Int32(textProcessor.targetVocabulary.id(forToken: "<blank>")!)
@@ -86,7 +62,7 @@ struct WMTTranslationTask {
     }
     
     /// returns validation loss
-    func validate(model: inout TransformerModel, for batch: TextBatch) -> Float {
+    func validate(model: inout TransformerModel, for batch: WMT2014EnDe.TextBatch) -> Float {
         let labels = batch.targetTruth.reshaped(to: [-1])
         let resultSize = batch.targetTruth.shape.last! * batch.targetTruth.shape.first!
         let padIndex = Int32(textProcessor.targetVocabulary.id(forToken: "<blank>")!)
@@ -105,11 +81,11 @@ var translationTask = try WMTTranslationTask(taskDirectoryURL: workspaceURL, max
 
 var model = TransformerModel(sourceVocabSize: translationTask.sourceVocabSize, targetVocabSize: translationTask.targetVocabSize)
 
-func greedyDecode(model: TransformerModel, input: TextBatch, maxLength: Int, startSymbol: Int32) -> Tensor<Int32> {
+func greedyDecode(model: TransformerModel, input: WMT2014EnDe.TextBatch, maxLength: Int, startSymbol: Int32) -> Tensor<Int32> {
     let memory = model.encode(input: input)
     var ys = Tensor(repeating: startSymbol, shape: [1,1])
     for _ in 0..<maxLength {
-        let decoderInput = TextBatch(tokenIds: input.tokenIds,
+        let decoderInput = WMT2014EnDe.TextBatch(tokenIds: input.tokenIds,
                                      targetTokenIds: ys,
                                      mask: input.mask,
                                      targetMask: Tensor<Float>(subsequentMask(size: ys.shape[1])),
@@ -127,16 +103,16 @@ let epochs = 3
 var optimizer = Adam.init(for: model, learningRate: 5e-4)
 for epoch in 0..<epochs {
     print("Start epoch \(epoch)")
-    var iterator = translationTask.getTrainIterator()
-    for step in 0..<translationTask.trainData.count {
+    var iterator = translationTask.dataset.trainDataIterator
+    for step in 0... { // TODO getCount!
         let batch = withDevice(.cpu) { iterator.next()! }
         let loss = translationTask.update(model: &model, using: &optimizer, for: batch)
         print("current loss at step \(step): \(loss)")
         
         if step % 100 == 0 {
             var validationLosses = [Float]()
-            var valIterator = translationTask.getValIterator()
-            for _ in 0..<translationTask.valData.count {
+            var valIterator = translationTask.dataset.devDataIterator
+            for _ in 0... {
                 let valBatch = withDevice(.cpu){ valIterator.next()! }
                 let loss = translationTask.validate(model: &model, for: valBatch)
                 validationLosses.append(loss)
@@ -147,20 +123,29 @@ for epoch in 0..<epochs {
     }
 }
 
-let batch = translationTask.trainData[0]
-let exampleIndex = 1
-let source = TextBatch(tokenIds: batch.tokenIds[exampleIndex].expandingShape(at: 0),
-                       targetTokenIds: batch.targetTokenIds[exampleIndex].expandingShape(at: 0),
-                       mask: batch.mask[exampleIndex].expandingShape(at: 0),
-                       targetMask: batch.targetMask[exampleIndex].expandingShape(at: 0),
-                       targetTruth: batch.targetTruth[exampleIndex].expandingShape(at: 0),
-                       tokenCount: batch.tokenCount)
-let startSymbol = Int32(translationTask.textProcessor.targetVocabulary.id(forToken: "<s>")!)
-
-Context.local.learningPhase = .inference
-
-let out = greedyDecode(model: model, input: source, maxLength: 50, startSymbol: startSymbol)
-
-func decode(tensor: Tensor<Float>, vocab: Vocabulary) -> String {
-    tensor.scalars.compactMap{ vocab.token(forId: Int($0)) }.joined(separator: " ")
-}
+//let batch = translationTask.dataset.devExamples[0]
+//let exampleIndex = 1
+//let source = WMT2014EnDe.TextBatch(tokenIds: batch.tokenIds[exampleIndex].expandingShape(at: 0),
+//                       targetTokenIds: batch.targetTokenIds[exampleIndex].expandingShape(at: 0),
+//                       mask: batch.mask[exampleIndex].expandingShape(at: 0),
+//                       targetMask: batch.targetMask[exampleIndex].expandingShape(at: 0),
+//                       targetTruth: batch.targetTruth[exampleIndex].expandingShape(at: 0),
+//                       tokenCount: batch.tokenCount)
+//let startId = Int32(translationTask.textProcessor.targetVocabulary.id(forToken: "<s>")!)
+//let endId = Int32(translationTask.textProcessor.targetVocabulary.id(forToken: "</s>")!)
+//
+//Context.local.learningPhase = .inference
+//
+//let out = greedyDecode(model: model, input: source, maxLength: 50, startSymbol: startId)
+//
+//func decode(tensor: Tensor<Float>, vocab: Vocabulary) -> String {
+//    var words = [String]()
+//    for scalar in tensor.scalars {
+//        if Int(scalar) == endId {
+//            break
+//        } else if let token = vocab.token(forId: Int(scalar)) {
+//            words.append(token)
+//        }
+//    }
+//    return words.joined(separator: " ")
+//}

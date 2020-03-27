@@ -93,7 +93,7 @@ let package = Package(
             exclude: ["UI/Windows/main.swift"]),
         .target(
             name: "Transformer-Translation",
-            dependencies: ["TranslationModels"],
+            dependencies: ["TranslationModels", "Datasets"],
             path: "Examples/Transformer-Translation"
             ),
         .testTarget(name: "TextTests", dependencies: ["TextModels"]),
