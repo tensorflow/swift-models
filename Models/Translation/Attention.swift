@@ -217,7 +217,4 @@ extension MultiHeadAttention {
         zeros()
     }
     
-    public static var glorotUniformInitializer: ParameterInitializer<Scalar> {
-        glorotUniform()
-    }
 }
