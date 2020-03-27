@@ -23,11 +23,13 @@ public enum DatasetUtilities {
     public static let currentWorkingDirectoryURL = URL(
         fileURLWithPath: FileManager.default.currentDirectoryPath)
 
+    @discardableResult
     public static func downloadResource(
         filename: String,
         fileExtension: String,
         remoteRoot: URL,
-        localStorageDirectory: URL = currentWorkingDirectoryURL
+        localStorageDirectory: URL = currentWorkingDirectoryURL,
+        extract: Bool = true
     ) -> URL {
         printError("Loading resource: \(filename)")
 
@@ -43,12 +45,13 @@ public enum DatasetUtilities {
             printError(
                 "File does not exist locally at expected path: \(localURL.path) and must be fetched"
             )
-            fetchFromRemoteAndSave(resource)
+            fetchFromRemoteAndSave(resource, extract: extract)
         }
 
         return localURL
     }
 
+    @discardableResult
     public static func fetchResource(
         filename: String,
         fileExtension: String,
@@ -86,7 +89,7 @@ public enum DatasetUtilities {
         }
     }
 
-    static func fetchFromRemoteAndSave(_ resource: ResourceDefinition) {
+    static func fetchFromRemoteAndSave(_ resource: ResourceDefinition, extract: Bool) {
         let remoteLocation = resource.remoteURL
         let archiveLocation = resource.localStorageDirectory
 
@@ -98,53 +101,10 @@ public enum DatasetUtilities {
         }
         printError("Archive saved to: \(archiveLocation.path)")
 
-        extractArchive(for: resource)
-    }
-
-    static func extractArchive(for resource: ResourceDefinition) {
-        printError("Extracting archive...")
-
-        let archivePath = resource.archiveURL.path
-
-        #if os(macOS)
-            let binaryLocation = "/usr/bin/"
-        #else
-            let binaryLocation = "/bin/"
-        #endif
-
-        let toolName: String
-        let arguments: [String]
-        switch resource.fileExtension {
-        case "gz":
-            toolName = "gunzip"
-            arguments = [archivePath]
-        case "tar.gz", "tgz":
-            toolName = "tar"
-            arguments = ["xzf", archivePath, "-C", resource.localStorageDirectory.path]
-        default:
-            printError("Unable to find archiver for extension \(resource.fileExtension).")
-            exit(-1)
-        }
-        let toolLocation = "\(binaryLocation)\(toolName)"
-
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: toolLocation)
-        task.arguments = arguments
-        do {
-            try task.run()
-            task.waitUntilExit()
-        } catch {
-            printError("Failed to extract \(archivePath) with error: \(error)")
-            exit(-1)
-        }
-
-        if FileManager.default.fileExists(atPath: archivePath) {
-            do {
-                try FileManager.default.removeItem(atPath: archivePath)
-            } catch {
-                printError("Could not remove archive, error: \(error)")
-                exit(-1)
-            }
+        if extract {
+            extractArchive(
+                at: resource.archiveURL, to: resource.localStorageDirectory,
+                fileExtension: resource.fileExtension, deleteArchiveWhenDone: true)
         }
     }
 }

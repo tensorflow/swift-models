@@ -1,0 +1,8 @@
+add_subdirectory(Custom-CIFAR10)
+add_subdirectory(ResNet-CIFAR10)
+add_subdirectory(LeNet-MNIST)
+add_subdirectory(MobileNet-Imagenette)
+add_subdirectory(Regression-BostonHousing)
+add_subdirectory(BERT-CoLA)
+add_subdirectory(GPT2-WikiText2)
+add_subdirectory(GPT2-Inference)

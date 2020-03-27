@@ -13,8 +13,9 @@
 // limitations under the License.
 
 import TensorFlow
+import Batcher
 
-public struct LabeledExample: TensorGroup {
+public struct LabeledExample: TensorGroup, KeyPathIterable, Collatable {
     public var label: Tensor<Int32>
     public var data: Tensor<Float>
 
@@ -31,5 +32,21 @@ public struct LabeledExample: TensorGroup {
         let dataIndex = _handles.index(labelIndex, offsetBy: 1)
         label = Tensor<Int32>(handle: TensorHandle<Int32>(handle: _handles[labelIndex]))
         data = Tensor<Float>(handle: TensorHandle<Float>(handle: _handles[dataIndex]))
+    }
+}
+
+/// A generic tuple of two tensors `Tensor`.
+/// 
+/// - Note: `TensorPair` has a generic name and provides little semantic information, to conform to
+/// `Collatable`. You can use it for most basic datasets with one tensor of inputs and one tensor of
+/// labels but you should write your own struct for more complex tasks (or if you want more descriptive
+/// names).
+public struct TensorPair<S1: TensorFlowScalar, S2: TensorFlowScalar>: Collatable, KeyPathIterable {
+    public var first: Tensor<S1>
+    public var second: Tensor<S2>
+    
+    public init(first: Tensor<S1>, second: Tensor<S2>) {
+        self.first = first
+        self.second = second
     }
 }

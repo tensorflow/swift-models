@@ -11,5 +11,13 @@ RUN curl -fSsL $swift_tf_url -o swift.tar.gz \
     && rm swift.tar.gz
 ENV PATH="/swift-tensorflow-toolchain/usr/bin:${PATH}"
 
+RUN curl -qL https://apt.kitware.com/keys/kitware-archive-latest.asc | apt-key add -
+RUN echo 'deb https://apt.kitware.com/ubuntu/ bionic main' >> /etc/apt/sources.list
+RUN apt-get update
+RUN apt-get -yq install --no-install-recommends cmake ninja-build
+
+# Dependencies
+RUN git clone git://github.com/apple/swift-protobuf /swift-protobuf
+
 WORKDIR /swift-models
 COPY . .

@@ -33,68 +33,24 @@ public struct MNIST: ImageClassificationDataset {
     public init(
         flattening: Bool = false, normalizing: Bool = false,
         localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
-            "MNIST")
+            "MNIST", isDirectory: true)
     ) {
         self.trainingDataset = Dataset<LabeledExample>(
-            elements: fetchDataset(
+            elements: fetchMNISTDataset(
                 localStorageDirectory: localStorageDirectory,
+                remoteBaseDirectory: "https://storage.googleapis.com/cvdf-datasets/mnist",
                 imagesFilename: "train-images-idx3-ubyte",
                 labelsFilename: "train-labels-idx1-ubyte",
                 flattening: flattening,
                 normalizing: normalizing))
 
         self.testDataset = Dataset<LabeledExample>(
-            elements: fetchDataset(
+            elements: fetchMNISTDataset(
                 localStorageDirectory: localStorageDirectory,
+                remoteBaseDirectory: "https://storage.googleapis.com/cvdf-datasets/mnist",
                 imagesFilename: "t10k-images-idx3-ubyte",
                 labelsFilename: "t10k-labels-idx1-ubyte",
                 flattening: flattening,
                 normalizing: normalizing))
-    }
-}
-
-fileprivate func fetchDataset(
-    localStorageDirectory: URL,
-    imagesFilename: String,
-    labelsFilename: String,
-    flattening: Bool,
-    normalizing: Bool
-) -> LabeledExample {
-    guard let remoteRoot = URL(string: "https://storage.googleapis.com/cvdf-datasets/mnist") else {
-        fatalError("Failed to create MNIST root url: https://storage.googleapis.com/cvdf-datasets/mnist")
-    }
-
-    let imagesData = DatasetUtilities.fetchResource(
-        filename: imagesFilename,
-        fileExtension: "gz",
-        remoteRoot: remoteRoot,
-        localStorageDirectory: localStorageDirectory)
-    let labelsData = DatasetUtilities.fetchResource(
-        filename: labelsFilename,
-        fileExtension: "gz",
-        remoteRoot: remoteRoot,
-        localStorageDirectory: localStorageDirectory)
-
-    let images = [UInt8](imagesData).dropFirst(16).map(Float.init)
-    let labels = [UInt8](labelsData).dropFirst(8).map(Int32.init)
-
-    let rowCount = labels.count
-    let (imageWidth, imageHeight) = (28, 28)
-
-    if flattening {
-        var flattenedImages =
-            Tensor(shape: [rowCount, imageHeight * imageWidth], scalars: images)
-            / 255.0
-        if normalizing {
-            flattenedImages = flattenedImages * 2.0 - 1.0
-        }
-        return LabeledExample(label: Tensor(labels), data: flattenedImages)
-    } else {
-        return LabeledExample(
-            label: Tensor(labels),
-            data:
-                Tensor(shape: [rowCount, 1, imageHeight, imageWidth], scalars: images)
-                .transposed(permutation: [0, 2, 3, 1]) / 255  // NHWC
-        )
     }
 }
