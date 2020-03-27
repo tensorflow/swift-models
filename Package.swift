@@ -13,6 +13,7 @@ let package = Package(
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
+        .library(name: "VideoClassificationModels", targets: ["VideoClassificationModels"]),
         .library(name: "RecommendationModels", targets: ["RecommendationModels"]),
         .library(name: "TextModels", targets: ["TextModels"]),
         .executable(name: "Benchmarks", targets: ["Benchmarks"]),
@@ -41,6 +42,7 @@ let package = Package(
         .target(name: "Datasets", dependencies: ["ModelSupport", "Batcher"], path: "Datasets"),
         .target(name: "ModelSupport", dependencies: ["SwiftProtobuf"], path: "Support"),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
+        .target(name: "VideoClassificationModels", path: "Models/Spatiotemporal"),
         .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),
         .target(name: "RecommendationModels", path: "Models/Recommendation"),
         .target(
@@ -77,6 +79,7 @@ let package = Package(
             name: "MiniGoDemo", dependencies: ["MiniGo"], path: "MiniGo", sources: ["main.swift"]),
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
         .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
+        .testTarget(name: "VideoClassificationTests", dependencies: ["VideoClassificationModels"]),
         .testTarget(name: "RecommendationModelTests", dependencies: ["RecommendationModels"]),
         .testTarget(name: "DatasetsTests", dependencies: ["Datasets", "TextModels"]),
         .target(
