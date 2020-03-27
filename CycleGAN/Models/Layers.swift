@@ -51,49 +51,12 @@ public struct InstanceNorm2D<Scalar: TensorFlowFloatingPoint>: Layer {
     }
 }
 
-/// A 2-D layer applying padding with zeros over a mini-batch.
-public struct ZeroPad2D<Scalar: TensorFlowFloatingPoint>: ParameterlessLayer {
-    /// The padding values along the spatial dimensions.
-    @noDerivative public let padding: ((Int, Int), (Int, Int))
-
-    /// Creates a zero-padding 2D Layer.
-    ///
-    /// - Parameter padding: A tuple of 2 tuples of two integers describing how many elements to
-    ///   be padded at the beginning and end of each padding dimensions.
-    public init(padding: ((Int, Int), (Int, Int))) {
-        self.padding = padding
-    }
-
-    /// Creates a zero-padding 2D Layer.
-    ///
-    /// - Parameter padding: Integer that describes how many elements to be padded
-    ///   at the beginning and end of each padding dimensions.
-    public init(padding: Int) {
-        self.padding = ((padding, padding), (padding, padding))
-    }
-
-    /// Returns the output obtained from applying the layer to the given input.
-    ///
-    /// - Parameter input: The input to the layer. Expected layout is BxHxWxC.
-    /// - Returns: The output.
-    @differentiable
-    public func callAsFunction(_ input: Tensor<Scalar>) -> Tensor<Scalar> {
-        // Padding applied to height and width dimensions only.
-        return input.padded(forSizes: [
-            (0, 0),
-            padding.0,
-            padding.1,
-            (0, 0),
-        ], mode: .constant(0))
-    }
-}
-
 public struct ConvLayer: Layer {
     public typealias Input = Tensorf
     public typealias Output = Tensorf
 
     /// Padding layer.
-    public var pad: ZeroPad2D<Float>
+    public var pad: ZeroPadding2D<Float>
     /// Convolution layer.
     public var conv2d: Conv2D<Float>
 
@@ -105,12 +68,12 @@ public struct ConvLayer: Layer {
     ///   - kernelSize: Convolution kernel size (both width and height).
     ///   - stride: Stride size (both width and height).
     public init(inChannels: Int, outChannels: Int, kernelSize: Int, stride: Int, padding: Int? = nil) {
-        pad = ZeroPad2D<Float>(padding: padding ?? Int(kernelSize / 2))
-
-        conv2d = Conv2D<Float>(filterShape: (kernelSize, kernelSize,
-                                             inChannels, outChannels),
-                               strides: (stride, stride),
-                               filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
+        let _padding =  padding ?? Int(kernelSize / 2)
+        pad = ZeroPadding2D(padding: ((_padding, _padding), (_padding, _padding)))
+    
+        conv2d = Conv2D(filterShape: (kernelSize, kernelSize, inChannels, outChannels),
+                        strides: (stride, stride),
+                        filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
     }
 
     /// Returns the output obtained from applying the layer to the given input.
