@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Files
 import Foundation
 import ModelSupport
 import TensorFlow
@@ -25,15 +24,19 @@ public class Images {
     let dataset: Dataset<Elements>
     let count: Int
 
-    public init(folder: Folder) throws {
-        let imageFiles = folder.files(extensions: ["jpg"])
+    public init(folderURL: URL) throws {
+        let folderContents = try FileManager.default
+                                            .contentsOfDirectory(at: folderURL,
+                                                                 includingPropertiesForKeys: [.isDirectoryKey],
+                                                                 options: [.skipsHiddenFiles])
+        let imageFiles = folderContents.filter { $0.pathExtension == "jpg" }
 
         var sourceData: [Float] = []
 
         var elements = 0
 
         for imageFile in imageFiles {
-            let imageTensor = Image(jpeg: imageFile.url).tensor
+            let imageTensor = Image(jpeg: imageFile).tensor
 
             sourceData.append(contentsOf: imageTensor.scalars)
 

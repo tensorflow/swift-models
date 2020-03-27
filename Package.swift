@@ -35,7 +35,6 @@ let package = Package(
     dependencies: [
         .package(name: "SwiftProtobuf", url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
         .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.0.1")),
-        .package(url: "https://github.com/JohnSundell/Files", from: "4.0.0"),
         .package(name: "TensorBoardX", url: "https://github.com/t-ae/tensorboardx-s4tf.git", from: "0.1.2"),
     ],
     targets: [
@@ -108,7 +107,7 @@ let package = Package(
         .testTarget(name: "SupportTests", dependencies: ["ModelSupport"]),
         .target(
             name: "CycleGAN",
-            dependencies: ["Files", "TensorBoardX", .product(name: "ArgumentParser", package: "swift-argument-parser"), "ModelSupport"],
+            dependencies: ["TensorBoardX", .product(name: "ArgumentParser", package: "swift-argument-parser"), "ModelSupport"],
             path: "CycleGAN"
         )
     ]

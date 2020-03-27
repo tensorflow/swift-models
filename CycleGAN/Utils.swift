@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import TensorFlow
+import Foundation
 
 public typealias Tensorf = Tensor<Float>
 
@@ -36,4 +37,11 @@ extension InstanceNorm2D: FeatureChannelInitializable {
     public init(featureCount: Int) {
         self.init(featureCount: featureCount, epsilon: Tensor(1e-5))
     }
+}
+
+func createDirectoryIfNeeded(path: String) throws -> URL {
+    try FileManager.default.createDirectory(atPath: path,
+                                            withIntermediateDirectories: true,
+                                            attributes: nil)
+    return URL(string: path)!
 }

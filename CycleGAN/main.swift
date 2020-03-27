@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Files
 import Foundation
 import ModelSupport
 import TensorBoardX
@@ -26,14 +25,14 @@ let writer = SummaryWriter(logdir: writerURL)
 
 print("Starting with run id: \(runId)")
 
-let datasetFolder = try Folder(path: options.datasetPath)
-let trainFolderA = try datasetFolder.subfolder(named: "trainA")
-let trainFolderB = try datasetFolder.subfolder(named: "trainB")
-let testFolderA = try datasetFolder.subfolder(named: "testA")
-let testFolderB = try datasetFolder.subfolder(named: "testB")
+let datasetFolder = URL(fileURLWithPath: options.datasetPath, isDirectory: true)
+let trainFolderA = datasetFolder.appendingPathComponent("trainA")
+let trainFolderB = datasetFolder.appendingPathComponent("trainB")
+let testFolderA = datasetFolder.appendingPathComponent("testA")
+let testFolderB = datasetFolder.appendingPathComponent("testB")
 
-let trainDatasetA = try Images(folder: trainFolderA)
-let trainDatasetB = try Images(folder: trainFolderB)
+let trainDatasetA = try Images(folderURL: trainFolderA)
+let trainDatasetB = try Images(folderURL: trainFolderB)
 
 var generatorG = ResNetGenerator(inputChannels: 3, outputChannels: 3, blocks: 9, ngf: 64, normalization: InstanceNorm2D.self)
 var generatorF = ResNetGenerator(inputChannels: 3, outputChannels: 3, blocks: 9, ngf: 64, normalization: InstanceNorm2D.self)
@@ -53,7 +52,11 @@ let _ones = Tensorf.one
 
 var step = 0
 
-let sampleImage = Image(jpeg: testFolderA.files.first!.url).tensor.expandingShape(at: 0) / 127.5 - 1
+var sampleImage: Tensorf = .zero
+for sampleBatch in trainDatasetA.dataset.batched(1) {
+    sampleImage = sampleBatch.image
+    break
+}
 
 // MARK: Train
 
@@ -189,13 +192,15 @@ for epoch in 0 ..< epochs {
 
 // MARK: Final test
 
-let testDatasetA = try Images(folder: testFolderA).dataset
-let testDatasetB = try Images(folder: testFolderB).dataset
+let testDatasetA = try Images(folderURL: testFolderA).dataset
+let testDatasetB = try Images(folderURL: testFolderB).dataset
 
 let zippedTest = zip(testDatasetA, testDatasetB)
 
-let aResultsFolder = try Folder.current.createSubfolderIfNeeded(at: "testA_results")
-let bResultsFolder = try Folder.current.createSubfolderIfNeeded(at: "testB_results")
+let aResultsFolder = try createDirectoryIfNeeded(path: FileManager.default
+                                                                  .currentDirectoryPath + "/testA_results")
+let bResultsFolder = try createDirectoryIfNeeded(path: FileManager.default
+                                                                  .currentDirectoryPath + "/testB_results")
 
 var testStep = 0
 for testBatch in zippedTest.batched(1) {
@@ -211,9 +216,9 @@ for testBatch in zippedTest.batched(1) {
     let imageX = Image(tensor: resultX[0] * 255)
     let imageY = Image(tensor: resultY[0] * 255)
 
-    imageX.save(to: aResultsFolder.url.appendingPathComponent("\(String(testStep)).jpg", isDirectory: false),
+    imageX.save(to: aResultsFolder.appendingPathComponent("\(String(testStep)).jpg", isDirectory: false),
                 format: .rgb)
-    imageY.save(to: bResultsFolder.url.appendingPathComponent("\(String(testStep)).jpg", isDirectory: false),
+    imageY.save(to: bResultsFolder.appendingPathComponent("\(String(testStep)).jpg", isDirectory: false),
                 format: .rgb)
 
     testStep += 1
