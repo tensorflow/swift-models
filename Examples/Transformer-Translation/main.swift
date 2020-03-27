@@ -16,7 +16,6 @@ import Datasets
 let BOS_WORD = "<s>"
 let EOS_WORD = "</s>"
 let BLANK_WORD = "<blank>"
-let SPECIAL_TOKENS = [BOS_WORD,EOS_WORD,BLANK_WORD]
 struct WMTTranslationTask {
     var textProcessor: TextProcessor
     var dataset: WMT2014EnDe
@@ -38,8 +37,9 @@ struct WMTTranslationTask {
         try maybeDownload(from: WMTTranslationTask.germanVocabURL, to: germanVocabPath)
         try maybeDownload(from: WMTTranslationTask.englishVocabURL, to: englishVocabPath)
         
-        let sourceVocabulary = try Vocabulary(fromFile: germanVocabPath, specialTokens: SPECIAL_TOKENS)
-        let targetVocabulary = try Vocabulary(fromFile: englishVocabPath, specialTokens: SPECIAL_TOKENS)
+        // this vocabulary already has <s> and </s> but not the padding token
+        let sourceVocabulary = try Vocabulary(fromFile: germanVocabPath, specialTokens: [BLANK_WORD])
+        let targetVocabulary = try Vocabulary(fromFile: englishVocabPath, specialTokens: [BLANK_WORD])
         
         self.textProcessor = TextProcessor(tokenizer: tokenizer, sourceVocabulary: sourceVocabulary ,targetVocabulary: targetVocabulary, maxSequenceLength: maxSequenceLength, batchSize: batchSize)
         self.dataset = try WMT2014EnDe(mapExample: self.textProcessor.preprocess, taskDirectoryURL: taskDirectoryURL, maxSequenceLength: maxSequenceLength, batchSize: batchSize)

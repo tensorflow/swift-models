@@ -79,11 +79,11 @@ extension Vocabulary {
     }
     
     public init(fromFile fileURL: URL, specialTokens: [String]) throws {
+        let vocabItems = try ( String(contentsOfFile: fileURL.path, encoding: .utf8))
+        .components(separatedBy: .newlines)
+        .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
         let dictionary = [String: Int](
-            (try (String(contentsOfFile: fileURL.path, encoding: .utf8))
-                .components(separatedBy: .newlines)
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                + specialTokens)
+                (specialTokens + vocabItems)
                 .filter { $0.count > 0 }
                 .enumerated().map { ($0.element, $0.offset) },
             uniquingKeysWith: { (v1, v2) in max(v1, v2) })

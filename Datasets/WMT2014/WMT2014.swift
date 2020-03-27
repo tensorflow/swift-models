@@ -5,9 +5,13 @@
 //  Created by Andre Carrera on 3/26/20.
 //
 
-import Foundation
 import TensorFlow
 import ModelSupport
+import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
 
 let BOS_WORD = "<s>"
 let EOS_WORD = "</s>"
