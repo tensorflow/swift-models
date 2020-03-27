@@ -89,12 +89,12 @@ public struct Image {
             return Image(
                 tensor: _Raw.resizeBilinear(
                     images: Tensor<UInt8>([data]),
-                    size: Tensor<Int32>([Int32(size.0), Int32(size.1)])))
+                    size: Tensor<Int32>([Int32(size.0), Int32(size.1)]))).squeezingShape(at: 0)
         case let .float(data):
             return Image(
                 tensor: _Raw.resizeBilinear(
                     images: Tensor<Float>([data]),
-                    size: Tensor<Int32>([Int32(size.0), Int32(size.1)])))
+                    size: Tensor<Int32>([Int32(size.0), Int32(size.1)]))).squeezingShape(at: 0)
         }
 
     }
