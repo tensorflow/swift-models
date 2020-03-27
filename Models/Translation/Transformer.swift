@@ -20,8 +20,7 @@ public struct TransformerModel: Module {
                                            targetSize: modelSize,
                                            headCount: headCount,
                                            headSize: modelSize/headCount,
-                                           matrixResult: false,
-                                           queryWeightInitializer: glorotUniform(), keyWeightInitializer: glorotUniform(),  valueWeightInitializer: glorotUniform())
+                                           matrixResult: false)
         let feedForward = PositionwiseFeedForward(dimensionalityModel: modelSize,
                                                   innerLayerDimensionality: feedForwardSize)
         
