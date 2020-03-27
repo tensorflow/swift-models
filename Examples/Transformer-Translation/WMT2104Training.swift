@@ -101,7 +101,7 @@ public struct TextProcessor {
         
 //        print("original source:", example.sourceSentence)
 //        print("decoded source:", decode(tensor: singleBatch.tokenIds, vocab: sourceVocabulary))
-//        
+//
 //        print("max len = \(maxSequenceLength)")
 //        print("encoded target \(encodedTarget.count) last: \(encodedTarget.last!)")
 //        print("original target:", example.targetSentence)
@@ -116,9 +116,9 @@ func decode(tensor: Tensor<Int32>, vocab: Vocabulary) -> String {
   let endId = Int32(vocab.id(forToken: "</s>")!)
    var words = [String]()
    for scalar in tensor.scalars {
-//       if Int(scalar) == endId {
-//           break
-//       } else
+       if Int(scalar) == endId {
+           break
+       } else
         if let token = vocab.token(forId: Int(scalar)) {
            words.append(token)
        }

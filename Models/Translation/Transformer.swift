@@ -20,8 +20,8 @@ public struct TransformerModel: Module {
                                            targetSize: modelSize,
                                            headCount: headCount,
                                            headSize: modelSize/headCount,
-                                           matrixResult: false)
-        
+                                           matrixResult: false,
+                                           queryWeightInitializer: MultiHeadAttention.glorotUniformInitializer, queryBiasInitializer: MultiHeadAttention.glorotUniformInitializer, keyWeightInitializer: MultiHeadAttention.glorotUniformInitializer, keyBiasInitializer: MultiHeadAttention.glorotUniformInitializer, valueWeightInitializer: MultiHeadAttention.glorotUniformInitializer, valueBiasInitializer: MultiHeadAttention.glorotUniformInitializer)
         let feedForward = PositionwiseFeedForward(dimensionalityModel: modelSize,
                                                   innerLayerDimensionality: feedForwardSize)
         
@@ -30,8 +30,8 @@ public struct TransformerModel: Module {
         
         self.encoder = Encoder(layer: .init(size: modelSize, selfAttention: attention, feedForward: feedForward, dropoutProb: dropoutProbability), layerCount: layerCount)
         self.decoder = Decoder(layer: .init(size: modelSize, selfAttention: attention, sourceAttention: attention, feedForward: feedForward, dropoutProb: dropoutProbability), layerCount: layerCount)
-        self.sourceEmbed = Sequential(Embedding(vocabularySize: sourceVocabSize, embeddingSize: modelSize), positionalEncoding)
-        self.targetEmbed = Sequential(Embedding(vocabularySize: targetVocabSize, embeddingSize: modelSize), positionalEncoding)
+        self.sourceEmbed = Sequential(Embedding(vocabularySize: sourceVocabSize, embeddingSize: modelSize, embeddingsInitializer: glorotUniform()), positionalEncoding)
+        self.targetEmbed = Sequential(Embedding(vocabularySize: targetVocabSize, embeddingSize: modelSize,embeddingsInitializer: glorotUniform()), positionalEncoding)
         self.generator = Generator(dimModel: modelSize, vocabSize: targetVocabSize)
     }
     
@@ -88,7 +88,7 @@ public func debugDerivative(_ x: Tensor<Float>) -> (value: Tensor<Float>, pullba
 struct Generator: Layer {
     var dense: Dense<Float>
     init(dimModel: Int, vocabSize: Int) {
-        self.dense = Dense(inputSize: dimModel, outputSize: vocabSize)
+        self.dense = Dense(inputSize: dimModel, outputSize: vocabSize, weightInitializer: glorotUniform())
     }
     
     @differentiable

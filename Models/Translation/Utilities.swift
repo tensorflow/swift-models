@@ -127,8 +127,8 @@ struct PositionwiseFeedForward: Layer {
     @noDerivative let dropout: Dropout<Float>
     
     init(dimensionalityModel:Int, innerLayerDimensionality:Int, dropProbability: Double=0.1) {
-        dense1 = Dense(inputSize: dimensionalityModel, outputSize: innerLayerDimensionality)
-        dense2 = Dense(inputSize: innerLayerDimensionality, outputSize: dimensionalityModel)
+        dense1 = Dense(inputSize: dimensionalityModel, outputSize: innerLayerDimensionality, weightInitializer: glorotUniform())
+        dense2 = Dense(inputSize: innerLayerDimensionality, outputSize: dimensionalityModel, weightInitializer: glorotUniform())
         dropout = Dropout<Float>(probability: dropProbability)
     }
     

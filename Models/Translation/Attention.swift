@@ -216,4 +216,8 @@ extension MultiHeadAttention {
     public static var defaultBiasInitializer: ParameterInitializer<Scalar> {
         zeros()
     }
+    
+    public static var glorotUniformInitializer: ParameterInitializer<Scalar> {
+        glorotUniform()
+    }
 }
