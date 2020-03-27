@@ -48,7 +48,7 @@ let package = Package(
         .target(
             name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport"],
             path: "Autoencoder/Autoencoder1D"),
-        .target(name: "TranslationModels", path: "Models/Translation"),
+        .target(name: "TranslationModels", dependencies: ["Datasets"], path: "Models/Translation"),
         .target(
             name: "Autoencoder2D", dependencies: ["Datasets", "ModelSupport"],
             path: "Autoencoder/Autoencoder2D"),
@@ -93,7 +93,7 @@ let package = Package(
             exclude: ["UI/Windows/main.swift"]),
         .target(
             name: "Transformer-Translation",
-            dependencies: ["TranslationModels", "Datasets"],
+            dependencies: ["TranslationModels", "Datasets", "ModelSupport"],
             path: "Examples/Transformer-Translation"
             ),
         .testTarget(name: "TextTests", dependencies: ["TextModels"]),

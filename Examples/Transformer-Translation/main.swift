@@ -10,8 +10,13 @@
 import TensorFlow
 import TranslationModels
 import Foundation
+import ModelSupport
 import Datasets
 
+let BOS_WORD = "<s>"
+let EOS_WORD = "</s>"
+let BLANK_WORD = "<blank>"
+let SPECIAL_TOKENS = [BOS_WORD,EOS_WORD,BLANK_WORD]
 struct WMTTranslationTask {
     var textProcessor: TextProcessor
     var dataset: WMT2014EnDe
@@ -33,8 +38,8 @@ struct WMTTranslationTask {
         try maybeDownload(from: WMTTranslationTask.germanVocabURL, to: germanVocabPath)
         try maybeDownload(from: WMTTranslationTask.englishVocabURL, to: englishVocabPath)
         
-        let sourceVocabulary = try Vocabulary(fromFile: germanVocabPath)
-        let targetVocabulary = try Vocabulary(fromFile: englishVocabPath)
+        let sourceVocabulary = try Vocabulary(fromFile: germanVocabPath, specialTokens: SPECIAL_TOKENS)
+        let targetVocabulary = try Vocabulary(fromFile: englishVocabPath, specialTokens: SPECIAL_TOKENS)
         
         self.textProcessor = TextProcessor(tokenizer: tokenizer, sourceVocabulary: sourceVocabulary ,targetVocabulary: targetVocabulary, maxSequenceLength: maxSequenceLength, batchSize: batchSize)
         self.dataset = try WMT2014EnDe(mapExample: self.textProcessor.preprocess, taskDirectoryURL: taskDirectoryURL, maxSequenceLength: maxSequenceLength, batchSize: batchSize)
@@ -47,7 +52,7 @@ struct WMTTranslationTask {
         }
     }
     
-    mutating func update(model: inout TransformerModel, using optimizer: inout Adam<TransformerModel>, for batch: WMT2014EnDe.TextBatch) -> Float {
+    mutating func update(model: inout TransformerModel, using optimizer: inout Adam<TransformerModel>, for batch: TranslationBatch) -> Float {
         let labels = batch.targetTruth.reshaped(to: [-1])
         let resultSize = batch.targetTruth.shape.last! * batch.targetTruth.shape.first!
         let padIndex = Int32(textProcessor.targetVocabulary.id(forToken: "<blank>")!)
@@ -62,7 +67,7 @@ struct WMTTranslationTask {
     }
     
     /// returns validation loss
-    func validate(model: inout TransformerModel, for batch: WMT2014EnDe.TextBatch) -> Float {
+    func validate(model: inout TransformerModel, for batch: TranslationBatch) -> Float {
         let labels = batch.targetTruth.reshaped(to: [-1])
         let resultSize = batch.targetTruth.shape.last! * batch.targetTruth.shape.first!
         let padIndex = Int32(textProcessor.targetVocabulary.id(forToken: "<blank>")!)
@@ -81,11 +86,11 @@ var translationTask = try WMTTranslationTask(taskDirectoryURL: workspaceURL, max
 
 var model = TransformerModel(sourceVocabSize: translationTask.sourceVocabSize, targetVocabSize: translationTask.targetVocabSize)
 
-func greedyDecode(model: TransformerModel, input: WMT2014EnDe.TextBatch, maxLength: Int, startSymbol: Int32) -> Tensor<Int32> {
+func greedyDecode(model: TransformerModel, input: TranslationBatch, maxLength: Int, startSymbol: Int32) -> Tensor<Int32> {
     let memory = model.encode(input: input)
     var ys = Tensor(repeating: startSymbol, shape: [1,1])
     for _ in 0..<maxLength {
-        let decoderInput = WMT2014EnDe.TextBatch(tokenIds: input.tokenIds,
+        let decoderInput = TranslationBatch(tokenIds: input.tokenIds,
                                      targetTokenIds: ys,
                                      mask: input.mask,
                                      targetMask: Tensor<Float>(subsequentMask(size: ys.shape[1])),
@@ -125,7 +130,7 @@ for epoch in 0..<epochs {
 
 //let batch = translationTask.dataset.devExamples[0]
 //let exampleIndex = 1
-//let source = WMT2014EnDe.TextBatch(tokenIds: batch.tokenIds[exampleIndex].expandingShape(at: 0),
+//let source = TranslationBatch(tokenIds: batch.tokenIds[exampleIndex].expandingShape(at: 0),
 //                       targetTokenIds: batch.targetTokenIds[exampleIndex].expandingShape(at: 0),
 //                       mask: batch.mask[exampleIndex].expandingShape(at: 0),
 //                       targetMask: batch.targetMask[exampleIndex].expandingShape(at: 0),

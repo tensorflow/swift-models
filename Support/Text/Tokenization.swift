@@ -77,6 +77,18 @@ extension Vocabulary {
                 .enumerated().map { ($0.element, $0.offset) },
             uniquingKeysWith: { (v1, v2) in max(v1, v2) }))
     }
+    
+    public init(fromFile fileURL: URL, specialTokens: [String]) throws {
+        let dictionary = [String: Int](
+            (try (String(contentsOfFile: fileURL.path, encoding: .utf8))
+                .components(separatedBy: .newlines)
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                + specialTokens)
+                .filter { $0.count > 0 }
+                .enumerated().map { ($0.element, $0.offset) },
+            uniquingKeysWith: { (v1, v2) in max(v1, v2) })
+        self.init(tokensToIds: dictionary )
+    }
 
     public func save(toFile fileURL: URL) throws {
         try idsToTokens

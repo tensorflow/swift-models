@@ -68,6 +68,40 @@ struct DecoderSubLayerInput<Scalar: TensorFlowFloatingPoint >: Differentiable {
     }
 }
 
+public struct TextBatchInput: KeyPathIterable {
+    /// IDs that correspond to the vocabulary used while tokenizing.
+    /// The shape of this tensor is `[batchSize, maxSequenceLength]`.
+    public var tokenIds: Tensor<Int32> // TODO: !!! Mutable in order to allow for batching.
+    // aka src
+    
+    public var targetTokenIds: Tensor<Int32>
+    // aka tgt
+    
+    /// IDs of the token types (e.g., sentence A and sentence B in BERT).
+    /// The shape of this tensor is `[batchSize, maxSequenceLength]`.
+    //    public var tokenTypeIds: Tensor<Int32> // TODO: !!! Mutable in order to allow for batching.
+    
+    /// Mask over the sequence of tokens specifying which ones are "real" as opposed to "padding".
+    /// The shape of this tensor is `[batchSize, maxSequenceLength]`.
+    public var mask: Tensor<Float> // TODO: !!! Mutable in order to allow for batching.
+    
+    public var targetMask: Tensor<Float> // TODO: !!! Mutable in order to allow for batching.
+    
+    public var targetTruth: Tensor<Int32>
+    
+    public var tokenCount: Int32
+    
+    
+    public init(tokenIds: Tensor<Int32>, targetTokenIds: Tensor<Int32>, mask: Tensor<Float>, targetMask: Tensor<Float>, targetTruth: Tensor<Int32>, tokenCount: Int32) {
+        self.tokenIds = tokenIds
+        self.targetTokenIds = targetTokenIds
+        self.mask = mask
+        self.targetMask = targetMask
+        self.targetTruth = targetTruth
+        self.tokenCount = tokenCount
+    }
+}
+
 struct SublayerConnection: Layer {
     var norm: LayerNorm<Float>
     var dropout: Dropout<Float>

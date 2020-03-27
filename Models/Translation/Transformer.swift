@@ -7,7 +7,7 @@
 //
 
 import TensorFlow
-import Datasets
+import ModelSupport
 public struct TransformerModel: Module {
     var encoder: Encoder
     var decoder: Decoder
@@ -36,27 +36,27 @@ public struct TransformerModel: Module {
     }
     
     @differentiable
-    public func callAsFunction(_ input: WMT2014EnDe.TextBatch) -> Tensor<Float> {
+    public func callAsFunction(_ input: TranslationBatch) -> Tensor<Float> {
         let encodedMemory = self.encode(input: input)
         return self.decode(input: input, memory: encodedMemory)
     }
     
     @differentiable
-    public func encode(input: WMT2014EnDe.TextBatch) -> Tensor<Float> {
+    public func encode(input: TranslationBatch) -> Tensor<Float> {
         let embedded = self.sourceEmbed(input.tokenIds)
         let encoderInput = TransformerInput(sequence: embedded, attentionMask: input.mask)
         return self.encoder(encoderInput)
     }
     
     @differentiable
-    public func decode(input: WMT2014EnDe.TextBatch, memory: Tensor<Float>) -> Tensor<Float> {
+    public func decode(input: TranslationBatch, memory: Tensor<Float>) -> Tensor<Float> {
         let embedded = self.targetEmbed(input.targetTokenIds)
         let decoderInput = DecoderInput(sequence: embedded, sourceMask: input.mask, targetMask: input.targetMask, memory: memory)
         return self.decoder(decoderInput)
     }
     
     @differentiable
-    public func generate(input: WMT2014EnDe.TextBatch) -> Tensor<Float> {
+    public func generate(input: TranslationBatch) -> Tensor<Float> {
         self.generator(self.callAsFunction(input))
     }
     @differentiable
