@@ -32,8 +32,8 @@ public struct MNIST: ImageClassificationDataset {
 
     public init(
         batchSize: Int, flattening: Bool = false, normalizing: Bool = false,
-        localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
-            "MNIST", isDirectory: true)
+        localStorageDirectory: URL = DatasetUtilities.defaultDirectory
+            .appendingPathComponent("MNIST", isDirectory: true)
     ) {
         training = Batcher<SourceDataSet>(
             on: fetchMNISTDataset(

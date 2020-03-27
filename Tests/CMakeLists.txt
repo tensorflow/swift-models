@@ -3,6 +3,7 @@ add_subdirectory(DatasetsTests)
 add_subdirectory(FastStyleTransferTests)
 add_subdirectory(ImageClassificationTests)
 add_subdirectory(MiniGoTests)
+add_subdirectory(RecommendationModelTests)
 add_subdirectory(SupportTests)
 add_subdirectory(TextTests)
 
@@ -14,6 +15,7 @@ target_link_libraries(ModelTests PRIVATE
   FastStyleTransferTests
   ImageClassificationTests
   MiniGoTests
+  RecommendationModelTests
   SupportTests
   TextTests
   XCTest)

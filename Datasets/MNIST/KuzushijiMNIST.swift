@@ -31,8 +31,8 @@ public struct KuzushijiMNIST: ImageClassificationDataset {
 
     public init(
         batchSize: Int, flattening: Bool = false, normalizing: Bool = false,
-        localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
-            "KuzushijiMNIST", isDirectory: true)
+        localStorageDirectory: URL = DatasetUtilities.defaultDirectory
+            .appendingPathComponent("KuzushijiMNIST", isDirectory: true)
     ) {
         training = Batcher<SourceDataSet>(
             on: fetchMNISTDataset(

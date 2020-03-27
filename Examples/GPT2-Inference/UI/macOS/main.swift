@@ -104,7 +104,7 @@ class SwiftApplicationDelegate: NSObject, NSApplicationDelegate {
       NSSlider(frame: NSRect(x: 24, y: 100, width: 512, height: 32))
   lazy var label: NSLabel =
       NSLabel(frame: NSRect(x: 24, y: 60, width: 512, height: 20),
-              title: "Loading Transformer ...")
+              title: "Loading GPT-2 ...")
 
   var gpt: GPT2?
 
@@ -142,9 +142,9 @@ class SwiftApplicationDelegate: NSObject, NSApplicationDelegate {
     onBackground {
       do {
         self.gpt = try GPT2()
-        onMain { self.label.text = "Transformer ready!" }
+        onMain { self.label.text = "GPT-2 ready!" }
       } catch {
-        onMain { self.label.text = "GPT2 Construction Failure" }
+        onMain { self.label.text = "GPT-2 Construction Failure" }
       }
     }
 
