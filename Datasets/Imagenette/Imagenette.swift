@@ -120,7 +120,7 @@ func loadImagenetteDirectory(
     let unwrappedLabelDict = labelDict ?? createLabelDict(urls: urls)
     return urls.lazy.map { (url: URL) -> TensorPair<Float, Int32> in
         TensorPair<Float, Int32>(
-            first: Image(jpeg: url).resized(to: (outputSize, outputSize)).tensor[0] / 255.0,
+            first: Image(jpeg: url).resized(to: (outputSize, outputSize)).tensor / 255.0,
             second: Tensor<Int32>(Int32(unwrappedLabelDict[parentLabel(url: url)]!))
         )    
     }
