@@ -173,13 +173,13 @@ public struct MobileNetV2: Layer {
     public var outputConv: Conv2D<Float>
     public var outputConvBatchNorm: BatchNorm<Float>
     public var avgPool = GlobalAvgPool2D<Float>()
-    public var outputClassifer: Dense<Float>
+    public var outputClassifier: Dense<Float>
 
     public init(classCount: Int = 1000, widthMultiplier: Float = 1.0) {
         inputConv = Conv2D<Float>(
             filterShape: (3, 3, 3, makeDivisible(filter: 32, widthMultiplier: widthMultiplier)),
             strides: (2, 2),
-            padding: .same)
+            padding: .valid)
         inputConvBatchNorm = BatchNorm(
             featureCount: makeDivisible(filter: 32, widthMultiplier: widthMultiplier))
 
@@ -218,8 +218,7 @@ public struct MobileNetV2: Layer {
             padding: .same)
         outputConvBatchNorm = BatchNorm(featureCount: lastBlockFilterCount)
 
-        avgPool = GlobalAvgPool2D()
-        outputClassifer = Dense(
+        outputClassifier = Dense(
             inputSize: lastBlockFilterCount, outputSize: classCount,
             activation: softmax)
     }
@@ -232,6 +231,6 @@ public struct MobileNetV2: Layer {
             through: residualBlockStack1, residualBlockStack2, residualBlockStack3,
             residualBlockStack4, residualBlockStack5)
         let output = relu6(outputConvBatchNorm(outputConv(invertedBottleneckBlock16(backbone))))
-        return output.sequenced(through: avgPool, outputClassifer)
+        return output.sequenced(through: avgPool, outputClassifier)
     }
 }
