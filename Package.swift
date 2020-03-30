@@ -18,12 +18,12 @@ let package = Package(
         .library(name: "TextModels", targets: ["TextModels"]),
         .executable(name: "Benchmarks", targets: ["Benchmarks"]),
         .executable(name: "VGG-Imagewoof", targets: ["VGG-Imagewoof"]),
-        .executable(name: "MobileNetV2-Imagenette", targets: ["MobileNetV2-Imagenette"]),
         .executable(name: "Regression-BostonHousing", targets: ["Regression-BostonHousing"]),
         .executable(name: "Custom-CIFAR10", targets: ["Custom-CIFAR10"]),
         .executable(name: "ResNet-CIFAR10", targets: ["ResNet-CIFAR10"]),
         .executable(name: "LeNet-MNIST", targets: ["LeNet-MNIST"]),
         .executable(name: "MobileNetV1-Imagenette", targets: ["MobileNetV1-Imagenette"]),
+        .executable(name: "MobileNetV2-Imagenette", targets: ["MobileNetV2-Imagenette"]),
         .executable(name: "GAN", targets: ["GAN"]),
         .executable(name: "DCGAN", targets: ["DCGAN"]),
         .executable(name: "BERT-CoLA", targets: ["BERT-CoLA"]),
@@ -61,9 +61,6 @@ let package = Package(
             name: "VGG-Imagewoof", dependencies: ["ImageClassificationModels", "Datasets"],
             path: "Examples/VGG-Imagewoof"),
         .target(
-            name: "MobileNetV2-Imagenette", dependencies: ["ImageClassificationModels", "Datasets"],
-            path: "Examples/MobileNetV2-Imagenette"),
-        .target(
             name: "Regression-BostonHousing", dependencies: ["Datasets"],
             path: "Examples/Regression-BostonHousing"),
         .target(
@@ -78,6 +75,9 @@ let package = Package(
         .target(
             name: "MobileNetV1-Imagenette", dependencies: ["ImageClassificationModels", "Datasets"],
             path: "Examples/MobileNetV1-Imagenette"),
+        .target(
+            name: "MobileNetV2-Imagenette", dependencies: ["ImageClassificationModels", "Datasets"],
+            path: "Examples/MobileNetV2-Imagenette"),
         .target(
             name: "MiniGo", dependencies: ["ModelSupport"], path: "MiniGo", exclude: ["main.swift"]),
         .target(
