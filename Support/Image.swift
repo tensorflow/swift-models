@@ -13,8 +13,8 @@
 // limitations under the License.
 
 import Foundation
-import TensorFlow
 import Swim
+import TensorFlow
 
 public struct Image {
     public enum ByteOrdering {
@@ -26,7 +26,7 @@ public struct Image {
         case rgb
         case grayscale
     }
-    
+
     enum ImageTensor {
         case float(data: Tensor<Float>)
         case uint8(data: Tensor<UInt8>)
@@ -56,7 +56,8 @@ public struct Image {
         } else {
             do {
                 let loadedJpeg = try Swim.Image<RGB, UInt8>(contentsOf: url)
-                let loadedTensor = Tensor<UInt8>(shape: [loadedJpeg.height, loadedJpeg.width, 3], scalars: loadedJpeg.getData())
+                let loadedTensor = Tensor<UInt8>(
+                    shape: [loadedJpeg.height, loadedJpeg.width, 3], scalars: loadedJpeg.getData())
                 self.imageData = .uint8(data: loadedTensor)
             } catch {
                 // TODO: Propagate this error in a future API change.
@@ -79,7 +80,8 @@ public struct Image {
             }
             let height = outputImageData.shape[0]
             let width = outputImageData.shape[1]
-            let image = Swim.Image<Gray, UInt8>(width: width, height: height, data: outputImageData.scalars)
+            let image = Swim.Image<Gray, UInt8>(
+                width: width, height: height, data: outputImageData.scalars)
             do {
                 try image.write(to: url, format: .jpeg(quality: Int(quality)))
             } catch {
@@ -94,7 +96,8 @@ public struct Image {
             }
             let height = outputImageData.shape[0]
             let width = outputImageData.shape[1]
-            let image = Swim.Image<RGB, UInt8>(width: width, height: height, data: outputImageData.scalars)
+            let image = Swim.Image<RGB, UInt8>(
+                width: width, height: height, data: outputImageData.scalars)
             do {
                 try image.write(to: url, format: .jpeg(quality: Int(quality)))
             } catch {
@@ -116,9 +119,11 @@ public struct Image {
     }
 }
 
-public func saveImage(_ tensor: Tensor<Float>, shape: (Int, Int), size: (Int, Int)? = nil,
-                      format: Image.Colorspace = .rgb, directory: String, name: String,
-                      quality: Int64 = 95) throws {
+public func saveImage(
+    _ tensor: Tensor<Float>, shape: (Int, Int), size: (Int, Int)? = nil,
+    format: Image.Colorspace = .rgb, directory: String, name: String,
+    quality: Int64 = 95
+) throws {
     try createDirectoryIfMissing(at: directory)
 
     let channels: Int
@@ -126,7 +131,7 @@ public func saveImage(_ tensor: Tensor<Float>, shape: (Int, Int), size: (Int, In
     case .rgb: channels = 3
     case .grayscale: channels = 1
     }
-    
+
     let reshapedTensor = tensor.reshaped(to: [shape.0, shape.1, channels])
     let image = Image(tensor: reshapedTensor)
     let resizedImage = size != nil ? image.resized(to: (size!.0, size!.1)) : image
