@@ -4,8 +4,7 @@ add_library(FastStyleTransfer
 
   Models/TransformerNet.swift
 
-  Utility/ImportableLayer.swift
-  Utility/Resize.swift)
+  Utility/ImportableLayer.swift)
 set_target_properties(FastStyleTransfer PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
 target_compile_options(FastStyleTransfer PRIVATE

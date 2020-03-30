@@ -6,8 +6,8 @@ The model should be trainable, but so far it's only tested for inference with pr
 ## Example
 Run demo application to apply styles to jpeg images:
 ```
-swift run FastStyleTransferDemo --weights=FastStyleTransfer/Demo/weights/candy --image=FastStyleTransfer/Demo/examples/cat.jpg --output=candy_cat.jpg
-swift run FastStyleTransferDemo --weights=FastStyleTransfer/Demo/weights/mosaic --image=FastStyleTransfer/Demo/examples/cat.jpg --output=mosaic_cat.jpg
+swift run FastStyleTransferDemo --style=candy --image=FastStyleTransfer/Demo/examples/cat.jpg --output=candy_cat.jpg
+swift run FastStyleTransferDemo --style=mosaic --image=FastStyleTransfer/Demo/examples/cat.jpg --output=mosaic_cat.jpg
 ```
 
 <img src="Demo/examples/cat.jpg" height="240" width="240" align="left">
