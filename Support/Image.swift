@@ -14,6 +14,7 @@
 
 import Foundation
 import TensorFlow
+import Swim
 
 public struct Image {
     public enum ByteOrdering {
@@ -21,6 +22,11 @@ public struct Image {
         case rgb
     }
 
+    public enum Colorspace {
+        case rgb
+        case grayscale
+    }
+    
     enum ImageTensor {
         case float(data: Tensor<Float>)
         case uint8(data: Tensor<UInt8>)
@@ -44,17 +50,22 @@ public struct Image {
     }
 
     public init(jpeg url: URL, byteOrdering: ByteOrdering = .rgb) {
-        let loadedFile = _Raw.readFile(filename: StringTensor(url.absoluteString))
-        let loadedJpeg = _Raw.decodeJpeg(contents: loadedFile, channels: 3, dctMethod: "")
         if byteOrdering == .bgr {
-            self.imageData = .uint8(
-                data: _Raw.reverse(loadedJpeg, dims: Tensor<Bool>([false, false, false, true])))
+            // TODO: Add BGR byte reordering.
+            fatalError("BGR byte ordering is currently unsupported.")
         } else {
-            self.imageData = .uint8(data: loadedJpeg)
+            do {
+                let loadedJpeg = try Swim.Image<RGB, UInt8>(contentsOf: url)
+                let loadedTensor = Tensor<UInt8>(shape: [loadedJpeg.height, loadedJpeg.width, 3], scalars: loadedJpeg.getData())
+                self.imageData = .uint8(data: loadedTensor)
+            } catch {
+                // TODO: Propagate this error in a future API change.
+                fatalError("Error during image loading: \(error)")
+            }
         }
     }
 
-    public func save(to url: URL, format: _Raw.Format = .rgb, quality: Int64 = 95) {
+    public func save(to url: URL, format: Colorspace = .rgb, quality: Int64 = 95) {
         let outputImageData: Tensor<UInt8>
         switch format {
         case .grayscale:
@@ -66,52 +77,56 @@ public struct Image {
                 let adjustedData = (data - lowerBound) * (255.0 / (upperBound - lowerBound))
                 outputImageData = Tensor<UInt8>(adjustedData)
             }
+            let height = outputImageData.shape[0]
+            let width = outputImageData.shape[1]
+            let image = Swim.Image<Gray, UInt8>(width: width, height: height, data: outputImageData.scalars)
+            do {
+                try image.write(to: url, format: .jpeg(quality: Int(quality)))
+            } catch {
+                // TODO: Propagate this error in a future API change.
+                fatalError("Error during image saving: \(error)")
+            }
         case .rgb:
             switch self.imageData {
             case let .uint8(data): outputImageData = data
             case let .float(data):
-                outputImageData = Tensor<UInt8>(
-                    _Raw.clipByValue(t: data, clipValueMin: Tensor(0), clipValueMax: Tensor(255)))
+                outputImageData = Tensor<UInt8>(data.clipped(min: 0, max: 255))
             }
-        default:
-            print("Image saving isn't supported for the format \(format).")
-            exit(-1)
+            let height = outputImageData.shape[0]
+            let width = outputImageData.shape[1]
+            let image = Swim.Image<RGB, UInt8>(width: width, height: height, data: outputImageData.scalars)
+            do {
+                try image.write(to: url, format: .jpeg(quality: Int(quality)))
+            } catch {
+                // TODO: Propagate this error in a future API change.
+                fatalError("Error during image saving: \(error)")
+            }
         }
-
-        let encodedJpeg = _Raw.encodeJpeg(
-            image: outputImageData, format: format, quality: quality, xmpMetadata: "")
-        _Raw.writeFile(filename: StringTensor(url.absoluteString), contents: encodedJpeg)
     }
 
     public func resized(to size: (Int, Int)) -> Image {
         switch self.imageData {
         case let .uint8(data):
-            return Image(
-                tensor: _Raw.resizeBilinear(
-                    images: Tensor<UInt8>([data]),
-                    size: Tensor<Int32>([Int32(size.0), Int32(size.1)])).squeezingShape(at: 0))
+            let resizedImage = resize(images: Tensor<Float>(data), size: size, method: .bilinear)
+            return Image(tensor: Tensor<UInt8>(resizedImage))
         case let .float(data):
-            return Image(
-                tensor: _Raw.resizeBilinear(
-                    images: Tensor<Float>([data]),
-                    size: Tensor<Int32>([Int32(size.0), Int32(size.1)])).squeezingShape(at: 0))
+            let resizedImage = resize(images: data, size: size, method: .bilinear)
+            return Image(tensor: resizedImage)
         }
-
     }
 }
 
 public func saveImage(_ tensor: Tensor<Float>, shape: (Int, Int), size: (Int, Int)? = nil,
-                      format: _Raw.Format = .rgb, directory: String, name: String,
+                      format: Image.Colorspace = .rgb, directory: String, name: String,
                       quality: Int64 = 95) throws {
     try createDirectoryIfMissing(at: directory)
+
     let channels: Int
     switch format {
     case .rgb: channels = 3
     case .grayscale: channels = 1
-    default:
-        print("\(format) is not supported yet.")
-        exit(-1)
     }
+    
     let reshapedTensor = tensor.reshaped(to: [shape.0, shape.1, channels])
     let image = Image(tensor: reshapedTensor)
     let resizedImage = size != nil ? image.resized(to: (size!.0, size!.1)) : image

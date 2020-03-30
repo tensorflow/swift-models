@@ -18,6 +18,15 @@
           "revision": "da75a93ac017534e0028e83c0e4fc4610d2acf48",
           "version": "1.7.0"
         }
+      },
+      {
+        "package": "Swim",
+        "repositoryURL": "https://github.com/t-ae/swim.git",
+        "state": {
+          "branch": null,
+          "revision": "aebfbcc2574d741df1c5b19a7601c73e3fc73991",
+          "version": "3.6.1"
+        }
       }
     ]
   },
