@@ -81,6 +81,16 @@ final class ImageClassificationInferenceTests: XCTestCase {
         let mobileNet = MobileNetV2(classCount: 1000)
         let mobileNetResult = mobileNet(inputImageNet)
         XCTAssertEqual(mobileNetResult.shape, [1, 1000])
+
+        // Width multiplier
+        let mobileNet2WMSmall = MobileNetV2(classCount: 10, widthMultiplier: 0.5)
+        let mobileNet2WMSmallResult = mobileNet2WMSmall(inputImageNet)
+        XCTAssertEqual(mobileNet2WMSmallResult.shape, [1, 10])
+
+        // Width multiplier
+        let mobileNet2WMLarge = MobileNetV2(classCount: 10, widthMultiplier: 1.4)
+        let mobileNet2WMLargeResult = mobileNet2WMLarge(inputImageNet)
+        XCTAssertEqual(mobileNet2WMLargeResult.shape, [1, 10])
     }
 
     func testResNet() {

@@ -22,7 +22,8 @@ let package = Package(
         .executable(name: "Custom-CIFAR10", targets: ["Custom-CIFAR10"]),
         .executable(name: "ResNet-CIFAR10", targets: ["ResNet-CIFAR10"]),
         .executable(name: "LeNet-MNIST", targets: ["LeNet-MNIST"]),
-        .executable(name: "MobileNet-Imagenette", targets: ["MobileNet-Imagenette"]),
+        .executable(name: "MobileNetV1-Imagenette", targets: ["MobileNetV1-Imagenette"]),
+        .executable(name: "MobileNetV2-Imagenette", targets: ["MobileNetV2-Imagenette"]),
         .executable(name: "GAN", targets: ["GAN"]),
         .executable(name: "DCGAN", targets: ["DCGAN"]),
         .executable(name: "BERT-CoLA", targets: ["BERT-CoLA"]),
@@ -35,7 +36,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
-        .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.0.1")),
+        .package(
+            url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.0.1")),
         .package(url: "https://github.com/t-ae/swim.git", .exact("3.6.1")),
     ],
     targets: [
@@ -72,8 +74,11 @@ let package = Package(
             name: "LeNet-MNIST", dependencies: ["ImageClassificationModels", "Datasets"],
             path: "Examples/LeNet-MNIST"),
         .target(
-            name: "MobileNet-Imagenette", dependencies: ["ImageClassificationModels", "Datasets"],
-            path: "Examples/MobileNet-Imagenette"),
+            name: "MobileNetV1-Imagenette", dependencies: ["ImageClassificationModels", "Datasets"],
+            path: "Examples/MobileNetV1-Imagenette"),
+        .target(
+            name: "MobileNetV2-Imagenette", dependencies: ["ImageClassificationModels", "Datasets"],
+            path: "Examples/MobileNetV2-Imagenette"),
         .target(
             name: "MiniGo", dependencies: ["ModelSupport"], path: "MiniGo", exclude: ["main.swift"]),
         .target(
@@ -104,7 +109,9 @@ let package = Package(
         .testTarget(name: "FastStyleTransferTests", dependencies: ["FastStyleTransfer"]),
         .target(
             name: "Benchmarks",
-            dependencies: ["Datasets", "ModelSupport", "ImageClassificationModels", "ArgumentParser"],
+            dependencies: [
+                "Datasets", "ModelSupport", "ImageClassificationModels", "ArgumentParser"
+            ],
             path: "Benchmarks"),
         .testTarget(name: "CheckpointTests", dependencies: ["ModelSupport"]),
         .target(
