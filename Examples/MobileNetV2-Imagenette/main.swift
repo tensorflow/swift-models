@@ -17,18 +17,18 @@ import ImageClassificationModels
 import TensorFlow
 
 let imagenette = Imagenette(
-    batchSize: 64,
-    inputSize: .resized320, 
+    batchSize: 16,
+    inputSize: .resized320,
     outputSize: 224
 )
 
-var model = MobileNetV1(classCount: 10)
+var model = MobileNetV2(classCount: 10)
 
-let optimizer = SGD(for: model, learningRate: 0.02, momentum: 0.9)
+let optimizer = SGD(for: model, learningRate: 0.002, momentum: 0.9)
 
 print("Starting training...")
 
-for epoch in 1...10 {
+for epoch in 1...30 {
     Context.local.learningPhase = .training
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
