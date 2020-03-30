@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import TensorFlow
-
 // Return the input with no operation done
 public func identity<C>(_ x: C) -> C { return x }
 
@@ -104,13 +102,11 @@ public struct BatchIterator<C: Collection>: IteratorProtocol, Sequence where C.I
         if (end - pos) < b.batchSize && b.dropLast { return nil }
         // The idea is to have samples processed and collated on the CPU before moving to the host.
         // This part has not been optimized yet
-        return withDevice(.cpu) { () -> C.Element in
-            let samples = Array(pos..<end).concurrentMap(nthreads: Swift.min(b.numWorkers, end-pos)) {
-                b.dataset[indices[$0]]
-            }
-            pos = end
-            return b.collateSamples(b.padSamples(samples))
+        let samples = Array(pos..<end).concurrentMap(nthreads: Swift.min(b.numWorkers, end-pos)) {
+            b.dataset[indices[$0]]
         }
+        pos = end
+        return b.collateSamples(b.padSamples(samples))
     }
 }
 
