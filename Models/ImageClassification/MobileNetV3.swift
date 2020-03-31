@@ -162,7 +162,7 @@ public struct InvertedResidualBlock: Layer {
         seReduceConv = Dense(inputSize: hiddenDimension, outputSize: reducedDimension)
         seExpandConv = Dense(inputSize: reducedDimension, outputSize: hiddenDimension)
         conv2 = Conv2D<Float>(
-            filterShape: (1, 1, hiddenDimension, filters.1),
+            filterShape: (1, 1, hiddenDimension, filterMult.1),
             strides: (1, 1),
             padding: .same)
         batchNormConv1 = BatchNorm(featureCount: hiddenDimension)
