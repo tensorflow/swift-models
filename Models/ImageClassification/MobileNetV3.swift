@@ -69,20 +69,20 @@ public struct InitialInvertedResidualBlock: Layer {
         self.addResLayer = filters.0 == filters.1 && strides == (1, 1)
 
         let filterMult = roundFilterPair(filters: filters, widthMultiplier: widthMultiplier)
-        self.hiddenDimension = filters.0 * 1
+        self.hiddenDimension = filterMult.0 * 1
         let reducedDimension = hiddenDimension / 4
 
         dConv = DepthwiseConv2D<Float>(
-            filterShape: (3, 3, filters.0, 1),
+            filterShape: (3, 3, filterMult.0, 1),
             strides: (1, 1),
             padding: .same)
         seReduceConv = Dense(inputSize: hiddenDimension, outputSize: reducedDimension)
         seExpandConv = Dense(inputSize: reducedDimension, outputSize: hiddenDimension)
         conv2 = Conv2D<Float>(
-            filterShape: (1, 1, filters.0, filterMult.1),
+            filterShape: (1, 1, hiddenDimension, filterMult.1),
             strides: (1, 1),
             padding: .same)
-        batchNormDConv = BatchNorm(featureCount: filters.0)
+        batchNormDConv = BatchNorm(featureCount: filterMult.0)
         batchNormConv2 = BatchNorm(featureCount: filterMult.1)
     }
 
@@ -242,10 +242,11 @@ public struct MobileNetV3Large: Layer {
 
     public init(classCount: Int = 1000, widthMultiplier: Float = 1.0) {
         inputConv = Conv2D<Float>(
-            filterShape: (3, 3, 3, 16),
+            filterShape: (3, 3, 3, makeDivisible(filter: 16, widthMultiplier: widthMultiplier)),
             strides: (2, 2),
             padding: .same)
-        inputConvBatchNorm = BatchNorm(featureCount: 16)
+        inputConvBatchNorm = BatchNorm(
+            featureCount: makeDivisible(filter: 16, widthMultiplier: widthMultiplier))
 
         invertedResidualBlock1 = InitialInvertedResidualBlock(
             filters: (16, 16), widthMultiplier: widthMultiplier)
@@ -364,10 +365,11 @@ public struct MobileNetV3Small: Layer {
 
     public init(classCount: Int = 1000, widthMultiplier: Float = 1.0) {
         inputConv = Conv2D<Float>(
-            filterShape: (3, 3, 3, 16),
+            filterShape: (3, 3, 3, makeDivisible(filter: 16, widthMultiplier: widthMultiplier)),
             strides: (2, 2),
             padding: .same)
-        inputConvBatchNorm = BatchNorm(featureCount: 16)
+        inputConvBatchNorm = BatchNorm(
+            featureCount: makeDivisible(filter: 16, widthMultiplier: widthMultiplier))
 
         invertedResidualBlock1 = InitialInvertedResidualBlock(
             filters: (16, 16), widthMultiplier: widthMultiplier,
