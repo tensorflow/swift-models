@@ -22,7 +22,8 @@ set_target_properties(ModelSupport PROPERTIES
 target_compile_options(ModelSupport PRIVATE
   $<$<BOOL:${BUILD_TESTING}>:-enable-testing>)
 target_link_libraries(ModelSupport PUBLIC
-  SwiftProtobuf)
+  SwiftProtobuf
+  Swim)
 
 
 install(TARGETS ModelSupport
