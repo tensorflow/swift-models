@@ -151,7 +151,10 @@ public struct ResNet: Layer {
             }
         }
 
-        classifier = Dense(inputSize: depth.usesBasicBlocks ? 512 : 2048, outputSize: classCount)
+        let finalFilters = inputFilters * Int(pow(2.0, Double(depth.layerBlockSizes.count - 1)))
+        classifier = Dense(
+            inputSize: depth.usesBasicBlocks ? finalFilters : finalFilters * 4,
+            outputSize: classCount)
     }
 
     @differentiable
@@ -169,12 +172,13 @@ extension ResNet {
         case resNet18
         case resNet34
         case resNet50
+        case resNet56
         case resNet101
         case resNet152
 
         var usesBasicBlocks: Bool {
             switch self {
-            case .resNet18, .resNet34: return true
+            case .resNet18, .resNet34, .resNet56: return true
             default: return false
             }
         }
@@ -184,6 +188,7 @@ extension ResNet {
             case .resNet18: return [2, 2, 2, 2]
             case .resNet34: return [3, 4, 6, 3]
             case .resNet50: return [3, 4, 6, 3]
+            case .resNet56: return [9, 9, 9]
             case .resNet101: return [3, 4, 23, 3]
             case .resNet152: return [3, 8, 36, 3]
             }
