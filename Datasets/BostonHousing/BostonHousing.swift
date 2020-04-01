@@ -33,7 +33,7 @@ public struct BostonHousing {
     public let yTest: Tensor<Float>
 
     static func downloadBostonHousingIfNotPresent() -> String {
-        let remoteURL = URL(string: "https://archive.ics.uci.edu/ml/machine-learning-databases/housing/")!
+        let remoteURL = URL(string: "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/BostonHousing/")!
         let localURL = DatasetUtilities.defaultDirectory.appendingPathComponent("BostonHousing", isDirectory: true)
 
         let downloadPath = localURL.path
