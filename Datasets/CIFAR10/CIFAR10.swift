@@ -31,7 +31,7 @@ public struct CIFAR10: ImageClassificationDataset {
         self.init(
             batchSize: batchSize,
             remoteBinaryArchiveLocation: URL(
-                string: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz")!, 
+                string: "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/CIFAR10/cifar-10-binary.tar.gz")!, 
             normalizing: true)
     }
 

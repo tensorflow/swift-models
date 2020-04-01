@@ -510,7 +510,7 @@ extension BERT {
         /// The URL where this pre-trained model can be downloaded from.
         public var url: URL {
             let bertPrefix = "https://storage.googleapis.com/bert_models/2018_"
-            let robertaPrefix = "https://www.dropbox.com/s"
+            let robertaPrefix = "https://storage.googleapis.com/s4tf-hosted-binaries/checkpoints/Text/RoBERTa"
             let albertPrefix = "https://storage.googleapis.com/tfhub-modules/google/albert"
             switch self {
             case .bertBase(false, false):
@@ -530,9 +530,9 @@ extension BERT {
             case .bertLarge(true, true):
                 return URL(string: "\(bertPrefix)05_30/\(subDirectory).zip")!
             case .robertaBase:
-                return URL(string: "\(robertaPrefix)/12ymhgwbfxm2ozf/base.zip?dl=1")!
+                return URL(string: "\(robertaPrefix)/base.zip")!
             case .robertaLarge:
-                return URL(string: "\(robertaPrefix)/jf6kxmdvxyfl4wz/large.zip?dl=1")!
+                return URL(string: "\(robertaPrefix)/large.zip")!
             case .albertBase, .albertLarge, .albertXLarge, .albertXXLarge:
                 return URL(string: "\(albertPrefix)_\(subDirectory)/1.tar.gz")!
             }
