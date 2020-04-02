@@ -21,6 +21,7 @@ protocol ImageClassificationModel: Layer where Input == Tensor<Float>, Output ==
 }
 
 extension LeNet: ImageClassificationModel {}
+extension ResNet56: ImageClassificationModel {}
 
 class ImageClassificationInference<Model, ClassificationDataset>: Benchmark
 where Model: ImageClassificationModel, ClassificationDataset: ImageClassificationDataset {
