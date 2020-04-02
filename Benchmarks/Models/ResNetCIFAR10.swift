@@ -39,7 +39,7 @@ struct ResNet56: Layer {
     var model: ResNet
     
     init() {
-        model = ResNet(classCount: 10, depth: .resNet56, downsamplingInFirstStage: false, inputFilters: 16)
+        model = ResNet(classCount: 10, depth: .resNet56, downsamplingInFirstStage: false)
     }
     
     @differentiable

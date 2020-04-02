@@ -21,8 +21,7 @@ let batchSize = 10
 let dataset = CIFAR10(batchSize: batchSize)
 
 // Use the network sized for CIFAR-10
-var model = ResNet(
-    classCount: 10, depth: .resNet56, downsamplingInFirstStage: false, inputFilters: 16)
+var model = ResNet(classCount: 10, depth: .resNet56, downsamplingInFirstStage: false)
 
 // the classic ImageNet optimizer setting diverges on CIFAR-10
 // let optimizer = SGD(for: model, learningRate: 0.1, momentum: 0.9)
