@@ -127,26 +127,26 @@ public struct ResNet: Layer {
     ///     3x3 convolution, corresponding to the v1.5 variant of the architecture. 
     public init(
         classCount: Int, depth: Depth, downsamplingInFirstStage: Bool = true,
-        inputFilters: Int? = nil, useLaterStride: Bool = true
+        useLaterStride: Bool = true
     ) {
-        let inputFilterCount: Int
+        let inputFilters: Int
         
         if downsamplingInFirstStage {
-            inputFilterCount = inputFilters ?? 64
+            inputFilters = 64
             initialLayer = ConvBN(
-                filterShape: (7, 7, 3, inputFilterCount), strides: (2, 2), padding: .same)
+                filterShape: (7, 7, 3, inputFilters), strides: (2, 2), padding: .same)
             maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2), padding: .same)
         } else {
-            inputFilterCount = inputFilters ?? 16
-            initialLayer = ConvBN(filterShape: (3, 3, 3, inputFilterCount), padding: .same)
+            inputFilters = 16
+            initialLayer = ConvBN(filterShape: (3, 3, 3, inputFilters), padding: .same)
             maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1))  // no-op
         }
 
-        var lastInputFilterCount = inputFilterCount
+        var lastInputFilterCount = inputFilters
         for (blockSizeIndex, blockSize) in depth.layerBlockSizes.enumerated() {
             for blockIndex in 0..<blockSize {
                 let strides = ((blockSizeIndex > 0) && (blockIndex == 0)) ? (2, 2) : (1, 1)
-                let filters = inputFilterCount * Int(pow(2.0, Double(blockSizeIndex)))
+                let filters = inputFilters * Int(pow(2.0, Double(blockSizeIndex)))
                 let residualBlock = ResidualBlock(
                     inputFilters: lastInputFilterCount, filters: filters, strides: strides,
                     useLaterStride: useLaterStride, isBasic: depth.usesBasicBlocks)
@@ -155,7 +155,7 @@ public struct ResNet: Layer {
             }
         }
 
-        let finalFilters = inputFilterCount * Int(pow(2.0, Double(depth.layerBlockSizes.count - 1)))
+        let finalFilters = inputFilters * Int(pow(2.0, Double(depth.layerBlockSizes.count - 1)))
         classifier = Dense(
             inputSize: depth.usesBasicBlocks ? finalFilters : finalFilters * 4,
             outputSize: classCount)
