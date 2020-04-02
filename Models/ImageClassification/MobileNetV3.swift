@@ -100,7 +100,7 @@ public struct InitialInvertedResidualBlock: Layer {
                 input.shape[0], 1, 1, self.hiddenDimension
             ])
             squeezeExcite = depthwise
-                * sigmoid(seExpandConv(relu(seReduceConv(seAvgPoolReshaped))))
+                * hardSigmoid(seExpandConv(relu(seReduceConv(seAvgPoolReshaped))))
         } else {
             squeezeExcite = depthwise
         }
