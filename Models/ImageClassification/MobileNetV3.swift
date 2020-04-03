@@ -42,10 +42,15 @@ fileprivate func roundFilterPair(filters: (Int, Int), widthMultiplier: Float) ->
     )
 }
 
+public enum ActivationType {
+    case hardSwish
+    case relu
+}
+
 public struct InitialInvertedResidualBlock: Layer {
     @noDerivative public var addResLayer: Bool
     @noDerivative public var useSELayer: Bool = false
-    @noDerivative public var useHardSwish: Bool = false
+    @noDerivative public var activation: ActivationType = .relu
     @noDerivative public var hiddenDimension: Int
 
     public var dConv: DepthwiseConv2D<Float>
@@ -62,10 +67,10 @@ public struct InitialInvertedResidualBlock: Layer {
         strides: (Int, Int) = (1, 1),
         kernel: (Int, Int) = (3, 3),
         seLayer: Bool = false,
-        hSwish: Bool = false
+        activation: ActivationType = .relu
     ) {
         self.useSELayer = seLayer
-        self.useHardSwish = hSwish
+        self.activation = activation
         self.addResLayer = filters.0 == filters.1 && strides == (1, 1)
 
         let filterMult = roundFilterPair(filters: filters, widthMultiplier: widthMultiplier)
@@ -89,11 +94,11 @@ public struct InitialInvertedResidualBlock: Layer {
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         var depthwise = batchNormDConv(dConv(input))
-        if self.useHardSwish {
-            depthwise = hardSwish(depthwise)
-        } else {
-            depthwise = relu(depthwise)
+		switch self.activation {
+	        case .hardSwish: depthwise = hardSwish(depthwise)
+	        case .relu: depthwise = relu(depthwise)
         }
+
         var squeezeExcite: Tensor<Float>
         if self.useSELayer {
             let seAvgPoolReshaped = seAveragePool(depthwise).reshaped(to: [
@@ -120,7 +125,7 @@ public struct InvertedResidualBlock: Layer {
     @noDerivative public let zeroPad = ZeroPadding2D<Float>(padding: ((0, 1), (0, 1)))
     @noDerivative public var hiddenDimension: Int
     @noDerivative public var addResLayer: Bool
-    @noDerivative public var useHardSwish: Bool
+    @noDerivative public var activation: ActivationType = .relu
     @noDerivative public var useSELayer: Bool
 
     public var conv1: Conv2D<Float>
@@ -140,12 +145,12 @@ public struct InvertedResidualBlock: Layer {
         strides: (Int, Int) = (1, 1),
         kernel: (Int, Int) = (3, 3),
         seLayer: Bool = false,
-        hSwish: Bool = false
+        activation: ActivationType = .relu
     ) {
         self.strides = strides
         self.addResLayer = filters.0 == filters.1 && strides == (1, 1)
         self.useSELayer = seLayer
-        self.useHardSwish = hSwish
+        self.activation = activation
 
         let filterMult = roundFilterPair(filters: filters, widthMultiplier: widthMultiplier)
         self.hiddenDimension = Int(Float(filterMult.0) * expansionFactor)
@@ -173,10 +178,9 @@ public struct InvertedResidualBlock: Layer {
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         var piecewise = batchNormConv1(conv1(input))
-        if self.useHardSwish {
-            piecewise = hardSwish(piecewise)
-        } else {
-            piecewise = relu(piecewise)
+		switch self.activation {
+	        case .hardSwish: piecewise = hardSwish(piecewise)
+	        case .relu: piecewise = relu(piecewise)
         }
         var depthwise: Tensor<Float>
         if self.strides == (1, 1) {
@@ -184,10 +188,9 @@ public struct InvertedResidualBlock: Layer {
         } else {
             depthwise = batchNormDConv(dConv(zeroPad(piecewise)))
         }
-        if self.useHardSwish {
-            depthwise = hardSwish(depthwise)
-        } else {
-            depthwise = relu(depthwise)
+		switch self.activation {
+	        case .hardSwish: depthwise = hardSwish(depthwise)
+	        case .relu: depthwise = relu(depthwise)
         }
         var squeezeExcite: Tensor<Float>
         if self.useSELayer {
@@ -269,31 +272,31 @@ public struct MobileNetV3Large: Layer {
             expansionFactor: 3, kernel: (5, 5), seLayer: true)
         invertedResidualBlock7 = InvertedResidualBlock(
             filters: (40, 80), widthMultiplier: widthMultiplier,
-            expansionFactor: 6, strides: (2, 2), hSwish: true)
+            expansionFactor: 6, strides: (2, 2), activation: .hardSwish)
         invertedResidualBlock8 = InvertedResidualBlock(
             filters: (80, 80), widthMultiplier: widthMultiplier,
-            expansionFactor: 2.5, hSwish: true)
+            expansionFactor: 2.5, activation: .hardSwish)
         invertedResidualBlock9 = InvertedResidualBlock(
             filters: (80, 80), widthMultiplier: widthMultiplier,
-            expansionFactor: 184 / 80.0, hSwish: true)
+            expansionFactor: 184 / 80.0, activation: .hardSwish)
         invertedResidualBlock10 = InvertedResidualBlock(
             filters: (80, 80), widthMultiplier: widthMultiplier,
-            expansionFactor: 184 / 80.0, hSwish: true)
+            expansionFactor: 184 / 80.0, activation: .hardSwish)
         invertedResidualBlock11 = InvertedResidualBlock(
             filters: (80, 112), widthMultiplier: widthMultiplier,
-            expansionFactor: 6, seLayer: true, hSwish: true)
+            expansionFactor: 6, seLayer: true, activation: .hardSwish)
         invertedResidualBlock12 = InvertedResidualBlock(
             filters: (112, 112), widthMultiplier: widthMultiplier,
-            expansionFactor: 6, seLayer: true, hSwish: true)
+            expansionFactor: 6, seLayer: true, activation: .hardSwish)
         invertedResidualBlock13 = InvertedResidualBlock(
             filters: (112, 160), widthMultiplier: widthMultiplier,
-            expansionFactor: 6, strides: (2, 2), kernel: (5, 5), seLayer: true, hSwish: true)
+            expansionFactor: 6, strides: (2, 2), kernel: (5, 5), seLayer: true, activation: .hardSwish)
         invertedResidualBlock14 = InvertedResidualBlock(
             filters: (160, 160), widthMultiplier: widthMultiplier,
-            expansionFactor: 6, kernel: (5, 5), seLayer: true, hSwish: true)
+            expansionFactor: 6, kernel: (5, 5), seLayer: true, activation: .hardSwish)
         invertedResidualBlock15 = InvertedResidualBlock(
             filters: (160, 160), widthMultiplier: widthMultiplier,
-            expansionFactor: 6, kernel: (5, 5), seLayer: true, hSwish: true)
+            expansionFactor: 6, kernel: (5, 5), seLayer: true, activation: .hardSwish)
 
         lastConvChannel = makeDivisible(filter: 960, widthMultiplier: widthMultiplier)
         outputConv = Conv2D<Float>(
@@ -387,28 +390,28 @@ public struct MobileNetV3Small: Layer {
             expansionFactor: 88.0 / 24.0)
         invertedResidualBlock4 = InvertedResidualBlock(
             filters: (24, 40), widthMultiplier: widthMultiplier,
-            expansionFactor: 4, strides: (2, 2), kernel: (5, 5), seLayer: true, hSwish: true)
+            expansionFactor: 4, strides: (2, 2), kernel: (5, 5), seLayer: true, activation: .hardSwish)
         invertedResidualBlock5 = InvertedResidualBlock(
             filters: (40, 40), widthMultiplier: widthMultiplier,
-            expansionFactor: 6, kernel: (5, 5), seLayer: true, hSwish: true)
+            expansionFactor: 6, kernel: (5, 5), seLayer: true, activation: .hardSwish)
         invertedResidualBlock6 = InvertedResidualBlock(
             filters: (40, 40), widthMultiplier: widthMultiplier,
-            expansionFactor: 6, kernel: (5, 5), seLayer: true, hSwish: true)
+            expansionFactor: 6, kernel: (5, 5), seLayer: true, activation: .hardSwish)
         invertedResidualBlock7 = InvertedResidualBlock(
             filters: (40, 48), widthMultiplier: widthMultiplier,
-            expansionFactor: 3, kernel: (5, 5), seLayer: true, hSwish: true)
+            expansionFactor: 3, kernel: (5, 5), seLayer: true, activation: .hardSwish)
         invertedResidualBlock8 = InvertedResidualBlock(
             filters: (48, 48), widthMultiplier: widthMultiplier,
-            expansionFactor: 3, kernel: (5, 5), seLayer: true, hSwish: true)
+            expansionFactor: 3, kernel: (5, 5), seLayer: true, activation: .hardSwish)
         invertedResidualBlock9 = InvertedResidualBlock(
             filters: (48, 96), widthMultiplier: widthMultiplier,
-            expansionFactor: 6, strides: (2, 2), kernel: (5, 5), seLayer: true, hSwish: true)
+            expansionFactor: 6, strides: (2, 2), kernel: (5, 5), seLayer: true, activation: .hardSwish)
         invertedResidualBlock10 = InvertedResidualBlock(
             filters: (96, 96), widthMultiplier: widthMultiplier,
-            expansionFactor: 6, kernel: (5, 5), seLayer: true, hSwish: true)
+            expansionFactor: 6, kernel: (5, 5), seLayer: true, activation: .hardSwish)
         invertedResidualBlock11 = InvertedResidualBlock(
             filters: (96, 96), widthMultiplier: widthMultiplier,
-            expansionFactor: 6, kernel: (5, 5), seLayer: true, hSwish: true)
+            expansionFactor: 6, kernel: (5, 5), seLayer: true, activation: .hardSwish)
 
         lastConvChannel = makeDivisible(filter: 576, widthMultiplier: widthMultiplier)
         outputConv = Conv2D<Float>(
