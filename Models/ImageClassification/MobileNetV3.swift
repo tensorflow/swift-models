@@ -236,12 +236,13 @@ public struct MobileNetV3Large: Layer {
 
     public var avgPool = GlobalAvgPool2D<Float>()
     public var finalConv: Conv2D<Float>
+    public var dropoutLayer: Dropout<Float>
     public var classiferConv: Conv2D<Float>
     public var flatten = Flatten<Float>()
 
     @noDerivative public var lastConvChannel: Int
 
-    public init(classCount: Int = 1000, widthMultiplier: Float = 1.0) {
+    public init(classCount: Int = 1000, widthMultiplier: Float = 1.0, dropout: Double = 0.0) {
         inputConv = Conv2D<Float>(
             filterShape: (3, 3, 3, makeDivisible(filter: 16, widthMultiplier: widthMultiplier)),
             strides: (2, 2),
@@ -309,6 +310,7 @@ public struct MobileNetV3Large: Layer {
             filterShape: (1, 1, lastConvChannel, lastPointChannel),
             strides: (1, 1),
             padding: .same)
+		dropoutLayer = Dropout<Float>(probability: dropout)
         classiferConv = Conv2D<Float>(
             filterShape: (1, 1, lastPointChannel, classCount),
             strides: (1, 1),
@@ -333,7 +335,7 @@ public struct MobileNetV3Large: Layer {
         let averagePool = avgPool(outputConvResult).reshaped(to: [
             input.shape[0], 1, 1, self.lastConvChannel
         ])
-        let finalConvResult = hardSwish(finalConv(averagePool))
+        let finalConvResult = dropoutLayer(hardSwish(finalConv(averagePool)))
         return softmax(flatten(classiferConv(finalConvResult)))
     }
 }
@@ -360,12 +362,13 @@ public struct MobileNetV3Small: Layer {
 
     public var avgPool = GlobalAvgPool2D<Float>()
     public var finalConv: Conv2D<Float>
+    public var dropoutLayer: Dropout<Float>
     public var classiferConv: Conv2D<Float>
     public var flatten = Flatten<Float>()
 
     @noDerivative public var lastConvChannel: Int
 
-    public init(classCount: Int = 1000, widthMultiplier: Float = 1.0) {
+    public init(classCount: Int = 1000, widthMultiplier: Float = 1.0, dropout: Double = 0.0) {
         inputConv = Conv2D<Float>(
             filterShape: (3, 3, 3, makeDivisible(filter: 16, widthMultiplier: widthMultiplier)),
             strides: (2, 2),
@@ -422,6 +425,7 @@ public struct MobileNetV3Small: Layer {
             filterShape: (1, 1, lastConvChannel, lastPointChannel),
             strides: (1, 1),
             padding: .same)
+	        dropoutLayer = Dropout<Float>(probability: dropout)
         classiferConv = Conv2D<Float>(
             filterShape: (1, 1, lastPointChannel, classCount),
             strides: (1, 1),
@@ -443,7 +447,7 @@ public struct MobileNetV3Small: Layer {
         let averagePool = avgPool(outputConvResult).reshaped(to: [
             input.shape[0], 1, 1, lastConvChannel
         ])
-        let finalConvResult = hardSwish(finalConv(averagePool))
+        let finalConvResult = dropoutLayer(hardSwish(finalConv(averagePool)))
         return softmax(flatten(classiferConv(finalConvResult)))
     }
 }
