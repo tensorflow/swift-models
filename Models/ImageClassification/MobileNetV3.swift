@@ -287,10 +287,10 @@ public struct MobileNetV3Large: Layer {
             expansionFactor: 6, seLayer: true, hSwish: true)
         invertedResidualBlock13 = InvertedResidualBlock(
             filters: (112, 160), widthMultiplier: widthMultiplier,
-            expansionFactor: 6, kernel: (5, 5), seLayer: true, hSwish: true)
+            expansionFactor: 6, strides: (2, 2), kernel: (5, 5), seLayer: true, hSwish: true)
         invertedResidualBlock14 = InvertedResidualBlock(
             filters: (160, 160), widthMultiplier: widthMultiplier,
-            expansionFactor: 6, strides: (2, 2), kernel: (5, 5), seLayer: true, hSwish: true)
+            expansionFactor: 6, kernel: (5, 5), seLayer: true, hSwish: true)
         invertedResidualBlock15 = InvertedResidualBlock(
             filters: (160, 160), widthMultiplier: widthMultiplier,
             expansionFactor: 6, kernel: (5, 5), seLayer: true, hSwish: true)
