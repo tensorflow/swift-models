@@ -48,22 +48,22 @@ public enum ActivationType {
 }
 
 public struct SqueezeExcitationBlock: Layer {
-	// https://arxiv.org/abs/1709.01507
+    // https://arxiv.org/abs/1709.01507
     public var averagePool = GlobalAvgPool2D<Float>()
     public var reduceConv: Dense<Float>
     public var expandConv: Dense<Float>
     @noDerivative public var inputOutputSize: Int
-    
+
     public init(inputOutputSize: Int, reducedSize: Int) {
-		self.inputOutputSize = inputOutputSize
+        self.inputOutputSize = inputOutputSize
         reduceConv = Dense(inputSize: inputOutputSize, outputSize: reducedSize)
         expandConv = Dense(inputSize: reducedSize, outputSize: inputOutputSize)
     }
-    
+
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let avgPoolReshaped = averagePool(input).reshaped(to: [
-            input.shape[0], 1, 1, self.inputOutputSize
+            input.shape[0], 1, 1, self.inputOutputSize,
         ])
         return input
             * hardSigmoid(expandConv(relu(reduceConv(avgPoolReshaped))))
@@ -77,7 +77,7 @@ public struct InitialInvertedResidualBlock: Layer {
 
     public var dConv: DepthwiseConv2D<Float>
     public var batchNormDConv: BatchNorm<Float>
-	public var seBlock: SqueezeExcitationBlock
+    public var seBlock: SqueezeExcitationBlock
     public var conv2: Conv2D<Float>
     public var batchNormConv2: BatchNorm<Float>
 
@@ -101,7 +101,8 @@ public struct InitialInvertedResidualBlock: Layer {
             filterShape: (3, 3, filterMult.0, 1),
             strides: (1, 1),
             padding: .same)
-		seBlock = SqueezeExcitationBlock(inputOutputSize: hiddenDimension, reducedSize: reducedDimension)
+        seBlock = SqueezeExcitationBlock(
+            inputOutputSize: hiddenDimension, reducedSize: reducedDimension)
         conv2 = Conv2D<Float>(
             filterShape: (1, 1, hiddenDimension, filterMult.1),
             strides: (1, 1),
@@ -113,9 +114,9 @@ public struct InitialInvertedResidualBlock: Layer {
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         var depthwise = batchNormDConv(dConv(input))
-		switch self.activation {
-	        case .hardSwish: depthwise = hardSwish(depthwise)
-	        case .relu: depthwise = relu(depthwise)
+        switch self.activation {
+        case .hardSwish: depthwise = hardSwish(depthwise)
+        case .relu: depthwise = relu(depthwise)
         }
 
         var squeezeExcite: Tensor<Float>
@@ -146,7 +147,7 @@ public struct InvertedResidualBlock: Layer {
     public var batchNormConv1: BatchNorm<Float>
     public var dConv: DepthwiseConv2D<Float>
     public var batchNormDConv: BatchNorm<Float>
-	public var seBlock: SqueezeExcitationBlock
+    public var seBlock: SqueezeExcitationBlock
     public var conv2: Conv2D<Float>
     public var batchNormConv2: BatchNorm<Float>
 
@@ -176,7 +177,8 @@ public struct InvertedResidualBlock: Layer {
             filterShape: (kernel.0, kernel.1, hiddenDimension, 1),
             strides: strides,
             padding: strides == (1, 1) ? .same : .valid)
-		seBlock = SqueezeExcitationBlock(inputOutputSize: hiddenDimension, reducedSize: reducedDimension)
+        seBlock = SqueezeExcitationBlock(
+            inputOutputSize: hiddenDimension, reducedSize: reducedDimension)
         conv2 = Conv2D<Float>(
             filterShape: (1, 1, hiddenDimension, filterMult.1),
             strides: (1, 1),
@@ -189,9 +191,9 @@ public struct InvertedResidualBlock: Layer {
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         var piecewise = batchNormConv1(conv1(input))
-		switch self.activation {
-	        case .hardSwish: piecewise = hardSwish(piecewise)
-	        case .relu: piecewise = relu(piecewise)
+        switch self.activation {
+        case .hardSwish: piecewise = hardSwish(piecewise)
+        case .relu: piecewise = relu(piecewise)
         }
         var depthwise: Tensor<Float>
         if self.strides == (1, 1) {
@@ -199,9 +201,9 @@ public struct InvertedResidualBlock: Layer {
         } else {
             depthwise = batchNormDConv(dConv(zeroPad(piecewise)))
         }
-		switch self.activation {
-	        case .hardSwish: depthwise = hardSwish(depthwise)
-	        case .relu: depthwise = relu(depthwise)
+        switch self.activation {
+        case .hardSwish: depthwise = hardSwish(depthwise)
+        case .relu: depthwise = relu(depthwise)
         }
         var squeezeExcite: Tensor<Float>
         if self.useSELayer {
@@ -297,7 +299,8 @@ public struct MobileNetV3Large: Layer {
             expansionFactor: 6, seLayer: true, activation: .hardSwish)
         invertedResidualBlock13 = InvertedResidualBlock(
             filters: (112, 160), widthMultiplier: widthMultiplier,
-            expansionFactor: 6, strides: (2, 2), kernel: (5, 5), seLayer: true, activation: .hardSwish)
+            expansionFactor: 6, strides: (2, 2), kernel: (5, 5), seLayer: true,
+            activation: .hardSwish)
         invertedResidualBlock14 = InvertedResidualBlock(
             filters: (160, 160), widthMultiplier: widthMultiplier,
             expansionFactor: 6, kernel: (5, 5), seLayer: true, activation: .hardSwish)
@@ -314,13 +317,14 @@ public struct MobileNetV3Large: Layer {
             padding: .same)
         outputConvBatchNorm = BatchNorm(featureCount: lastConvChannel)
 
-        let lastPointChannel = widthMultiplier > 1.0
+        let lastPointChannel =
+            widthMultiplier > 1.0
             ? makeDivisible(filter: 1280, widthMultiplier: widthMultiplier) : 1280
         finalConv = Conv2D<Float>(
             filterShape: (1, 1, lastConvChannel, lastPointChannel),
             strides: (1, 1),
             padding: .same)
-		dropoutLayer = Dropout<Float>(probability: dropout)
+        dropoutLayer = Dropout<Float>(probability: dropout)
         classiferConv = Conv2D<Float>(
             filterShape: (1, 1, lastPointChannel, classCount),
             strides: (1, 1),
@@ -329,7 +333,8 @@ public struct MobileNetV3Large: Layer {
 
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        let initialConv = hardSwish(input.sequenced(through: zeroPad, inputConv, inputConvBatchNorm))
+        let initialConv = hardSwish(
+            input.sequenced(through: zeroPad, inputConv, inputConvBatchNorm))
         let backbone1 = initialConv.sequenced(
             through: invertedResidualBlock1,
             invertedResidualBlock2, invertedResidualBlock3, invertedResidualBlock4,
@@ -343,7 +348,7 @@ public struct MobileNetV3Large: Layer {
             invertedResidualBlock15)
         let outputConvResult = hardSwish(outputConvBatchNorm(outputConv(backbone3)))
         let averagePool = avgPool(outputConvResult).reshaped(to: [
-            input.shape[0], 1, 1, self.lastConvChannel
+            input.shape[0], 1, 1, self.lastConvChannel,
         ])
         let finalConvResult = dropoutLayer(hardSwish(finalConv(averagePool)))
         return softmax(flatten(classiferConv(finalConvResult)))
@@ -397,7 +402,8 @@ public struct MobileNetV3Small: Layer {
             expansionFactor: 88.0 / 24.0)
         invertedResidualBlock4 = InvertedResidualBlock(
             filters: (24, 40), widthMultiplier: widthMultiplier,
-            expansionFactor: 4, strides: (2, 2), kernel: (5, 5), seLayer: true, activation: .hardSwish)
+            expansionFactor: 4, strides: (2, 2), kernel: (5, 5), seLayer: true,
+            activation: .hardSwish)
         invertedResidualBlock5 = InvertedResidualBlock(
             filters: (40, 40), widthMultiplier: widthMultiplier,
             expansionFactor: 6, kernel: (5, 5), seLayer: true, activation: .hardSwish)
@@ -412,7 +418,8 @@ public struct MobileNetV3Small: Layer {
             expansionFactor: 3, kernel: (5, 5), seLayer: true, activation: .hardSwish)
         invertedResidualBlock9 = InvertedResidualBlock(
             filters: (48, 96), widthMultiplier: widthMultiplier,
-            expansionFactor: 6, strides: (2, 2), kernel: (5, 5), seLayer: true, activation: .hardSwish)
+            expansionFactor: 6, strides: (2, 2), kernel: (5, 5), seLayer: true,
+            activation: .hardSwish)
         invertedResidualBlock10 = InvertedResidualBlock(
             filters: (96, 96), widthMultiplier: widthMultiplier,
             expansionFactor: 6, kernel: (5, 5), seLayer: true, activation: .hardSwish)
@@ -429,13 +436,14 @@ public struct MobileNetV3Small: Layer {
             padding: .same)
         outputConvBatchNorm = BatchNorm(featureCount: lastConvChannel)
 
-        let lastPointChannel = widthMultiplier > 1.0
+        let lastPointChannel =
+            widthMultiplier > 1.0
             ? makeDivisible(filter: 1280, widthMultiplier: widthMultiplier) : 1280
         finalConv = Conv2D<Float>(
             filterShape: (1, 1, lastConvChannel, lastPointChannel),
             strides: (1, 1),
             padding: .same)
-	        dropoutLayer = Dropout<Float>(probability: dropout)
+        dropoutLayer = Dropout<Float>(probability: dropout)
         classiferConv = Conv2D<Float>(
             filterShape: (1, 1, lastPointChannel, classCount),
             strides: (1, 1),
@@ -444,7 +452,8 @@ public struct MobileNetV3Small: Layer {
 
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        let initialConv = hardSwish(input.sequenced(through: zeroPad, inputConv, inputConvBatchNorm))
+        let initialConv = hardSwish(
+            input.sequenced(through: zeroPad, inputConv, inputConvBatchNorm))
         let backbone1 = initialConv.sequenced(
             through: invertedResidualBlock1,
             invertedResidualBlock2, invertedResidualBlock3, invertedResidualBlock4,
@@ -455,7 +464,7 @@ public struct MobileNetV3Small: Layer {
             invertedResidualBlock11)
         let outputConvResult = hardSwish(outputConvBatchNorm(outputConv(backbone2)))
         let averagePool = avgPool(outputConvResult).reshaped(to: [
-            input.shape[0], 1, 1, lastConvChannel
+            input.shape[0], 1, 1, lastConvChannel,
         ])
         let finalConvResult = dropoutLayer(hardSwish(finalConv(averagePool)))
         return softmax(flatten(classiferConv(finalConvResult)))
