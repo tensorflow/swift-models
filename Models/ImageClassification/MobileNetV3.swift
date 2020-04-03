@@ -211,6 +211,7 @@ public struct InvertedResidualBlock: Layer {
 }
 
 public struct MobileNetV3Large: Layer {
+    @noDerivative public let zeroPad = ZeroPadding2D<Float>(padding: ((0, 1), (0, 1)))
     public var inputConv: Conv2D<Float>
     public var inputConvBatchNorm: BatchNorm<Float>
 
@@ -316,7 +317,7 @@ public struct MobileNetV3Large: Layer {
 
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        let initialConv = hardSwish(input.sequenced(through: inputConv, inputConvBatchNorm))
+        let initialConv = hardSwish(input.sequenced(through: zeroPad, inputConv, inputConvBatchNorm))
         let backbone1 = initialConv.sequenced(
             through: invertedResidualBlock1,
             invertedResidualBlock2, invertedResidualBlock3, invertedResidualBlock4,
@@ -338,6 +339,7 @@ public struct MobileNetV3Large: Layer {
 }
 
 public struct MobileNetV3Small: Layer {
+    @noDerivative public let zeroPad = ZeroPadding2D<Float>(padding: ((0, 1), (0, 1)))
     public var inputConv: Conv2D<Float>
     public var inputConvBatchNorm: BatchNorm<Float>
 
@@ -428,7 +430,7 @@ public struct MobileNetV3Small: Layer {
 
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        let initialConv = hardSwish(input.sequenced(through: inputConv, inputConvBatchNorm))
+        let initialConv = hardSwish(input.sequenced(through: zeroPad, inputConv, inputConvBatchNorm))
         let backbone1 = initialConv.sequenced(
             through: invertedResidualBlock1,
             invertedResidualBlock2, invertedResidualBlock3, invertedResidualBlock4,
