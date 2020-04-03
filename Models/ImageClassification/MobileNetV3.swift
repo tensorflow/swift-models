@@ -50,14 +50,20 @@ public enum ActivationType {
 public struct SqueezeExcitationBlock: Layer {
     // https://arxiv.org/abs/1709.01507
     public var averagePool = GlobalAvgPool2D<Float>()
-    public var reduceConv: Dense<Float>
-    public var expandConv: Dense<Float>
+    public var reduceConv: Conv2D<Float>
+    public var expandConv: Conv2D<Float>
     @noDerivative public var inputOutputSize: Int
 
     public init(inputOutputSize: Int, reducedSize: Int) {
         self.inputOutputSize = inputOutputSize
-        reduceConv = Dense(inputSize: inputOutputSize, outputSize: reducedSize)
-        expandConv = Dense(inputSize: reducedSize, outputSize: inputOutputSize)
+        reduceConv = Conv2D<Float>(
+            filterShape: (1, 1, inputOutputSize, reducedSize),
+            strides: (1, 1),
+            padding: .same)
+        expandConv = Conv2D<Float>(
+            filterShape: (1, 1, reducedSize, inputOutputSize),
+            strides: (1, 1),
+            padding: .same)
     }
 
     @differentiable
