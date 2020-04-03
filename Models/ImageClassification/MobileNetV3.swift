@@ -47,17 +47,37 @@ public enum ActivationType {
     case relu
 }
 
+public struct SqueezeExcitationBlock: Layer {
+	// https://arxiv.org/abs/1709.01507
+    public var averagePool = GlobalAvgPool2D<Float>()
+    public var reduceConv: Dense<Float>
+    public var expandConv: Dense<Float>
+    @noDerivative public var inputOutputSize: Int
+    
+    public init(inputOutputSize: Int, reducedSize: Int) {
+		self.inputOutputSize = inputOutputSize
+        reduceConv = Dense(inputSize: inputOutputSize, outputSize: reducedSize)
+        expandConv = Dense(inputSize: reducedSize, outputSize: inputOutputSize)
+    }
+    
+    @differentiable
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
+        let avgPoolReshaped = averagePool(input).reshaped(to: [
+            input.shape[0], 1, 1, self.inputOutputSize
+        ])
+        return input
+            * hardSigmoid(expandConv(relu(reduceConv(avgPoolReshaped))))
+    }
+}
+
 public struct InitialInvertedResidualBlock: Layer {
     @noDerivative public var addResLayer: Bool
     @noDerivative public var useSELayer: Bool = false
     @noDerivative public var activation: ActivationType = .relu
-    @noDerivative public var hiddenDimension: Int
 
     public var dConv: DepthwiseConv2D<Float>
     public var batchNormDConv: BatchNorm<Float>
-    public var seAveragePool = GlobalAvgPool2D<Float>()
-    public var seReduceConv: Dense<Float>
-    public var seExpandConv: Dense<Float>
+	public var seBlock: SqueezeExcitationBlock
     public var conv2: Conv2D<Float>
     public var batchNormConv2: BatchNorm<Float>
 
@@ -74,15 +94,14 @@ public struct InitialInvertedResidualBlock: Layer {
         self.addResLayer = filters.0 == filters.1 && strides == (1, 1)
 
         let filterMult = roundFilterPair(filters: filters, widthMultiplier: widthMultiplier)
-        self.hiddenDimension = filterMult.0 * 1
+        let hiddenDimension = filterMult.0 * 1
         let reducedDimension = hiddenDimension / 4
 
         dConv = DepthwiseConv2D<Float>(
             filterShape: (3, 3, filterMult.0, 1),
             strides: (1, 1),
             padding: .same)
-        seReduceConv = Dense(inputSize: hiddenDimension, outputSize: reducedDimension)
-        seExpandConv = Dense(inputSize: reducedDimension, outputSize: hiddenDimension)
+		seBlock = SqueezeExcitationBlock(inputOutputSize: hiddenDimension, reducedSize: reducedDimension)
         conv2 = Conv2D<Float>(
             filterShape: (1, 1, hiddenDimension, filterMult.1),
             strides: (1, 1),
@@ -101,11 +120,7 @@ public struct InitialInvertedResidualBlock: Layer {
 
         var squeezeExcite: Tensor<Float>
         if self.useSELayer {
-            let seAvgPoolReshaped = seAveragePool(depthwise).reshaped(to: [
-                input.shape[0], 1, 1, self.hiddenDimension
-            ])
-            squeezeExcite = depthwise
-                * hardSigmoid(seExpandConv(relu(seReduceConv(seAvgPoolReshaped))))
+            squeezeExcite = seBlock(depthwise)
         } else {
             squeezeExcite = depthwise
         }
@@ -123,7 +138,6 @@ public struct InitialInvertedResidualBlock: Layer {
 public struct InvertedResidualBlock: Layer {
     @noDerivative public var strides: (Int, Int)
     @noDerivative public let zeroPad = ZeroPadding2D<Float>(padding: ((0, 1), (0, 1)))
-    @noDerivative public var hiddenDimension: Int
     @noDerivative public var addResLayer: Bool
     @noDerivative public var activation: ActivationType = .relu
     @noDerivative public var useSELayer: Bool
@@ -132,9 +146,7 @@ public struct InvertedResidualBlock: Layer {
     public var batchNormConv1: BatchNorm<Float>
     public var dConv: DepthwiseConv2D<Float>
     public var batchNormDConv: BatchNorm<Float>
-    public var seAveragePool = GlobalAvgPool2D<Float>()
-    public var seReduceConv: Dense<Float>
-    public var seExpandConv: Dense<Float>
+	public var seBlock: SqueezeExcitationBlock
     public var conv2: Conv2D<Float>
     public var batchNormConv2: BatchNorm<Float>
 
@@ -153,7 +165,7 @@ public struct InvertedResidualBlock: Layer {
         self.activation = activation
 
         let filterMult = roundFilterPair(filters: filters, widthMultiplier: widthMultiplier)
-        self.hiddenDimension = Int(Float(filterMult.0) * expansionFactor)
+        let hiddenDimension = Int(Float(filterMult.0) * expansionFactor)
         let reducedDimension = hiddenDimension / 4
 
         conv1 = Conv2D<Float>(
@@ -164,8 +176,7 @@ public struct InvertedResidualBlock: Layer {
             filterShape: (kernel.0, kernel.1, hiddenDimension, 1),
             strides: strides,
             padding: strides == (1, 1) ? .same : .valid)
-        seReduceConv = Dense(inputSize: hiddenDimension, outputSize: reducedDimension)
-        seExpandConv = Dense(inputSize: reducedDimension, outputSize: hiddenDimension)
+		seBlock = SqueezeExcitationBlock(inputOutputSize: hiddenDimension, reducedSize: reducedDimension)
         conv2 = Conv2D<Float>(
             filterShape: (1, 1, hiddenDimension, filterMult.1),
             strides: (1, 1),
@@ -194,11 +205,7 @@ public struct InvertedResidualBlock: Layer {
         }
         var squeezeExcite: Tensor<Float>
         if self.useSELayer {
-            let seAvgPoolReshaped = seAveragePool(depthwise).reshaped(to: [
-                input.shape[0], 1, 1, self.hiddenDimension
-            ])
-            squeezeExcite = depthwise
-                * hardSigmoid(seExpandConv(relu(seReduceConv(seAvgPoolReshaped))))
+            squeezeExcite = seBlock(depthwise)
         } else {
             squeezeExcite = depthwise
         }
