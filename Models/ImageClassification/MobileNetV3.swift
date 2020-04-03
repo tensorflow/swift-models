@@ -242,7 +242,7 @@ public struct MobileNetV3Large: Layer {
 
     @noDerivative public var lastConvChannel: Int
 
-    public init(classCount: Int = 1000, widthMultiplier: Float = 1.0, dropout: Double = 0.0) {
+    public init(classCount: Int = 1000, widthMultiplier: Float = 1.0, dropout: Double = 0.2) {
         inputConv = Conv2D<Float>(
             filterShape: (3, 3, 3, makeDivisible(filter: 16, widthMultiplier: widthMultiplier)),
             strides: (2, 2),
@@ -368,7 +368,7 @@ public struct MobileNetV3Small: Layer {
 
     @noDerivative public var lastConvChannel: Int
 
-    public init(classCount: Int = 1000, widthMultiplier: Float = 1.0, dropout: Double = 0.0) {
+    public init(classCount: Int = 1000, widthMultiplier: Float = 1.0, dropout: Double = 0.2) {
         inputConv = Conv2D<Float>(
             filterShape: (3, 3, 3, makeDivisible(filter: 16, widthMultiplier: widthMultiplier)),
             strides: (2, 2),
