@@ -109,7 +109,7 @@ let package = Package(
         .target(
             name: "Benchmarks",
             dependencies: [
-                "Datasets", "ModelSupport", "ImageClassificationModels", "ArgumentParser"
+                "Datasets", "ModelSupport", "ImageClassificationModels", .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
             path: "Benchmarks"),
         .testTarget(name: "CheckpointTests", dependencies: ["ModelSupport"]),

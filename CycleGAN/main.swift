@@ -45,7 +45,7 @@ let _ones = Tensorf.one
 
 var step = 0
 
-var sampleImage = trainDatasetA.batcher.dataset[0]
+var sampleImage = trainDatasetA.batcher.dataset[0].expandingShape(at: 0)
 let sampleImageURL = URL(string: FileManager.default.currentDirectoryPath)!.appendingPathComponent("sample.jpg")
 
 // MARK: Train
