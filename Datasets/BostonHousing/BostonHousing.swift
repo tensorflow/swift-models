@@ -22,7 +22,7 @@ import ModelSupport
 import TensorFlow
 
 public struct BostonHousing {
-    public let trainPercentage:Float = 0.8
+    public let trainPercentage: Float = 0.8
     public let numRecords: Int
     public let numColumns: Int
     public let numTrainRecords: Int
@@ -33,27 +33,41 @@ public struct BostonHousing {
     public let yTest: Tensor<Float>
 
     static func downloadBostonHousingIfNotPresent() -> String {
-        let remoteURL = URL(string: "https://archive.ics.uci.edu/ml/machine-learning-databases/housing/")!
-        let localURL = FileManager.default.temporaryDirectory.appendingPathComponent("BostonHousing", isDirectory: true)
-        let _ = DatasetUtilities.downloadResource(
-            filename: "housing", fileExtension: "data",
-            remoteRoot: remoteURL, localStorageDirectory: localURL,
-            extract: false)
+        let remoteURL = URL(
+            string: "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/BostonHousing/")!
+        let localURL = DatasetUtilities.defaultDirectory.appendingPathComponent(
+            "BostonHousing", isDirectory: true)
 
-        return try! String(contentsOf: localURL.appendingPathComponent("housing.data"), encoding: String.Encoding.utf8)
+        let downloadPath = localURL.path
+        let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
+        let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: downloadPath)
+        let directoryEmpty = (contentsOfDir == nil) || (contentsOfDir!.isEmpty)
+
+        if !directoryExists || directoryEmpty {
+            let _ = DatasetUtilities.downloadResource(
+                filename: "housing", fileExtension: "data",
+                remoteRoot: remoteURL, localStorageDirectory: localURL,
+                extract: false)
+        }
+
+        return try! String(
+            contentsOf: localURL.appendingPathComponent("housing.data"),
+            encoding: String.Encoding.utf8)
     }
-    
+
     public init() {
         let data = BostonHousing.downloadBostonHousingIfNotPresent()
 
         // Convert Space Separated CSV with no Header
-        let dataRecords: [[Float]] = data.split(separator: "\n").map{ String($0).split(separator: " ").compactMap{ Float(String($0)) } }
+        let dataRecords: [[Float]] = data.split(separator: "\n").map {
+            String($0).split(separator: " ").compactMap { Float(String($0)) }
+        }
 
         let numRecords = dataRecords.count
         let numColumns = dataRecords[0].count
 
-        let dataFeatures = dataRecords.map{ Array($0[0..<numColumns-1]) }
-        let dataLabels = dataRecords.map{ Array($0[(numColumns-1)...]) }
+        let dataFeatures = dataRecords.map { Array($0[0..<numColumns - 1]) }
+        let dataLabels = dataRecords.map { Array($0[(numColumns - 1)...]) }
 
         self.numRecords = numRecords
         self.numColumns = numColumns
@@ -65,15 +79,17 @@ public struct BostonHousing {
         let yTrain = Array(Array(dataLabels[0..<numTrainRecords]).joined())
         let yTest = Array(Array(dataLabels[numTrainRecords...]).joined())
 
-        let xTrainDeNorm = Tensor<Float>(xTrain).reshaped(to: TensorShape([numTrainRecords, numColumns-1]))
-        let xTestDeNorm = Tensor<Float>(xTest).reshaped(to: TensorShape([numTestRecords, numColumns-1]))
+        let xTrainDeNorm = Tensor<Float>(xTrain).reshaped(
+            to: TensorShape([numTrainRecords, numColumns - 1]))
+        let xTestDeNorm = Tensor<Float>(xTest).reshaped(
+            to: TensorShape([numTestRecords, numColumns - 1]))
 
         // Normalize
         let mean = xTrainDeNorm.mean(alongAxes: 0)
         let std = xTrainDeNorm.standardDeviation(alongAxes: 0)
 
-        self.xTrain = (xTrainDeNorm - mean)/std
-        self.xTest = (xTestDeNorm - mean)/std
+        self.xTrain = (xTrainDeNorm - mean) / std
+        self.xTest = (xTestDeNorm - mean) / std
         self.yTrain = Tensor<Float>(yTrain).reshaped(to: TensorShape([numTrainRecords, 1]))
         self.yTest = Tensor<Float>(yTest).reshaped(to: TensorShape([numTestRecords, 1]))
     }

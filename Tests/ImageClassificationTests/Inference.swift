@@ -81,6 +81,46 @@ final class ImageClassificationInferenceTests: XCTestCase {
         let mobileNet = MobileNetV2(classCount: 1000)
         let mobileNetResult = mobileNet(inputImageNet)
         XCTAssertEqual(mobileNetResult.shape, [1, 1000])
+
+        // Width multiplier
+        let mobileNet2WMSmall = MobileNetV2(classCount: 10, widthMultiplier: 0.5)
+        let mobileNet2WMSmallResult = mobileNet2WMSmall(inputImageNet)
+        XCTAssertEqual(mobileNet2WMSmallResult.shape, [1, 10])
+
+        // Width multiplier
+        let mobileNet2WMLarge = MobileNetV2(classCount: 10, widthMultiplier: 1.4)
+        let mobileNet2WMLargeResult = mobileNet2WMLarge(inputImageNet)
+        XCTAssertEqual(mobileNet2WMLargeResult.shape, [1, 10])
+    }
+
+    func testMobileNetV3() {
+        // ImageNet size
+        let inputImageNet = Tensor<Float>(
+            randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
+            standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
+        let mobileNetLarge = MobileNetV3Large(classCount: 10)
+        let mobileNetLargeResult = mobileNetLarge(inputImageNet)
+        XCTAssertEqual(mobileNetLargeResult.shape, [1, 10])
+
+        let mobileNetSmall = MobileNetV3Small(classCount: 10)
+        let mobileNetSmallResult = mobileNetSmall(inputImageNet)
+        XCTAssertEqual(mobileNetSmallResult.shape, [1, 10])
+
+        let mobileNetLargeAndWide = MobileNetV3Large(classCount: 10, widthMultiplier: 1.4)
+        let mobileNetLargeAndWideResult = mobileNetLargeAndWide(inputImageNet)
+        XCTAssertEqual(mobileNetLargeAndWideResult.shape, [1, 10])
+
+        let mobileNetLargeAndThin = MobileNetV3Large(classCount: 10, widthMultiplier: 0.5)
+        let mobileNetLargeAndThinResult = mobileNetLargeAndThin(inputImageNet)
+        XCTAssertEqual(mobileNetLargeAndThinResult.shape, [1, 10])
+
+        let mobileNetSmallAndWide = MobileNetV3Small(classCount: 10, widthMultiplier: 1.4)
+        let mobileNetSmallAndWideResult = mobileNetSmallAndWide(inputImageNet)
+        XCTAssertEqual(mobileNetSmallAndWideResult.shape, [1, 10])
+
+        let mobileNetSmallAndThin = MobileNetV3Small(classCount: 10, widthMultiplier: 0.5)
+        let mobileNetSmallAndThinResult = mobileNetSmallAndThin(inputImageNet)
+        XCTAssertEqual(mobileNetSmallAndThinResult.shape, [1, 10])
     }
 
     func testResNet() {
@@ -146,7 +186,7 @@ final class ImageClassificationInferenceTests: XCTestCase {
         let input = Tensor<Float>(
             randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
             standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
-        
+
         let resNet18 = ResNetV2(classCount: 1000, depth: .resNet18)
         let resNet18Result = resNet18(input)
         XCTAssertEqual(resNet18Result.shape, [1, 1000])
@@ -154,15 +194,15 @@ final class ImageClassificationInferenceTests: XCTestCase {
         let resNet34 = ResNetV2(classCount: 1000, depth: .resNet34)
         let resNet34Result = resNet34(input)
         XCTAssertEqual(resNet34Result.shape, [1, 1000])
-        
+
         let resNet50 = ResNetV2(classCount: 1000, depth: .resNet50)
         let resNet50Result = resNet50(input)
         XCTAssertEqual(resNet50Result.shape, [1, 1000])
-        
+
         let resNet101 = ResNetV2(classCount: 1000, depth: .resNet101)
         let resNet101Result = resNet101(input)
         XCTAssertEqual(resNet101Result.shape, [1, 1000])
-        
+
         let resNet152 = ResNetV2(classCount: 1000, depth: .resNet152)
         let resNet152Result = resNet152(input)
         XCTAssertEqual(resNet152Result.shape, [1, 1000])
@@ -256,6 +296,7 @@ extension ImageClassificationInferenceTests {
         ("testLeNet", testLeNet),
         ("testMobileNetV1", testMobileNetV1),
         ("testMobileNetV2", testMobileNetV2),
+        ("testMobileNetV3", testMobileNetV3),
         ("testResNet", testResNet),
         ("testResNetV2", testResNetV2),
         ("testSqueezeNetV1_0", testSqueezeNetV1_0),

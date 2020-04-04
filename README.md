@@ -82,22 +82,22 @@ cmake --build /BinaryCache/tensorflow-swift-models
 Windows:
 
 ```
-set SDKROOT=C:/Library/Developer/Platforms/Windows.platform/Developer/SDKs/Windows.sdk
-set DEVELOPER_LIBRARY_DIR=C:/Library/Developer/Platforms/Windows.platform/Developer/Library
+set SDKROOT=%SystemDrive%/Library/Developer/Platforms/Windows.platform/Developer/SDKs/Windows.sdk
+set DEVELOPER_LIBRARY_DIR=%SystemDrive%/Library/Developer/Platforms/Windows.platform/Developer/Library
 : Configure
 "%ProgramFiles%\CMake\bin\cmake.exe"                                                                                                                                                                                                                  ^
-  -B C:/BinaryCache/tensorflow-swift-models                                                                                                                                                                                                           ^
+  -B %SystemDrive%/BinaryCache/tensorflow-swift-models                                                                                                                                                                                                ^
   -D BUILD_SHARED_LIBS=YES                                                                                                                                                                                                                            ^
   -D BUILD_TESTING=YES                                                                                                                                                                                                                                ^
   -D CMAKE_BUILD_TYPE=Release                                                                                                                                                                                                                         ^
-  -D CMAKE_Swift_COMPILER=C:/Library/Developer/Toolchains/unknown-Asserts-development.xctoolchain/usr/bin/swiftc.exe                                                                                                                                  ^
+  -D CMAKE_Swift_COMPILER=%SystemDrive%/Library/Developer/Toolchains/unknown-Asserts-development.xctoolchain/usr/bin/swiftc.exe                                                                                                                       ^
   -D CMAKE_Swift_FLAGS="-sdk %SDKROOT% -I %SDKROOT%/usr/lib/swift -L %SDKROOT%/usr/lib/swift/windows -I %DEVELOPER_LIBRARY_DIR%/XCTest-development/usr/lib/swift/windows/x86_64 -L %DEVELOPER_LIBRARY_DIR%/XCTest-development/usr/lib/swift/windows " ^
   -G Ninja                                                                                                                                                                                                                                            ^
-  -S C:/SourceCache/tensorflow-swift-models
+  -S %SystemDrive%/SourceCache/tensorflow-swift-models
 : Build
-"%ProgramFiles%\CMake\bin\cmake.exe" --build C:/BinaryCache/tensorflow-swift-apis
+"%ProgramFiles%\CMake\bin\cmake.exe" --build %SystemDrive%/BinaryCache/tensorflow-swift-apis
 : Test
-"%ProgramFiles%\CMake\bin\cmake.exe" --build C:/BinaryCache/tensorflow-swift-apis --target test
+"%ProgramFiles%\CMake\bin\cmake.exe" --build %SystemDrive%/BinaryCache/tensorflow-swift-apis --target test
 ```
 
 ## Bugs

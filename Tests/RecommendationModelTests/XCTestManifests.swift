@@ -1,4 +1,4 @@
-// Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+// Copyright 2020 The TensorFlow Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import TensorFlow
-import Batcher
+import XCTest
 
-public protocol ImageClassificationDataset {
-    associatedtype SourceDataSet: Collection 
-    where SourceDataSet.Element == TensorPair<Float, Int32>, SourceDataSet.Index == Int
-    init(batchSize: Int)
-    var training: Batcher<SourceDataSet> { get }
-    var test: Batcher<SourceDataSet> { get }
+#if !os(macOS)
+public func allTests() -> [XCTestCaseEntry] {
+    return [
+        testCase(DLRMTests.allTests),
+    ]
 }
+#endif

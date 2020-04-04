@@ -3,9 +3,6 @@ import Foundation
 
 /// A model that applies style.
 public struct TransformerNet: Layer {
-    public typealias Input = Tensor<Float>
-    public typealias Output = Tensor<Float>
-
     // Convolution & instance normalization layers.
     public var conv1 = ConvLayer(inChannels: 3, outChannels: 32, kernelSize: 9, stride: 1)
     public var in1 = InstanceNorm2D<Float>(featureCount: 32)
@@ -45,7 +42,7 @@ public struct TransformerNet: Layer {
     /// - Parameter input: The input to the layer. Expected layout is BxHxWxC.
     /// - Returns: The output.
     @differentiable
-    public func callAsFunction(_ input: Input) -> Output {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let convolved1 = input.sequenced(through: conv1, in1, relu)
         let convolved2 = convolved1.sequenced(through: conv2, in2, relu)
         let convolved3 = convolved2.sequenced(through: conv3, in3, relu)
@@ -59,9 +56,6 @@ public struct TransformerNet: Layer {
 
 /// Helper layer: convolution with padding.
 public struct ConvLayer: Layer {
-    public typealias Input = Tensor<Float>
-    public typealias Output = Tensor<Float>
-
     /// Padding layer.
     public var reflectionPad: ReflectionPad2D<Float>
     /// Convolution layer.
@@ -87,16 +81,13 @@ public struct ConvLayer: Layer {
     /// - Parameter input: The input to the layer.
     /// - Returns: The output.
     @differentiable
-    public func callAsFunction(_ input: Input) -> Output {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         return input.sequenced(through: reflectionPad, conv2d)
     }
 }
 
 /// Helper layer: residual block.
 public struct ResidualBlock: Layer {
-    public typealias Input = Tensor<Float>
-    public typealias Output = Tensor<Float>
-
     /// Convolution & instance normalization layers.
     public var conv1: ConvLayer
     public var in1: InstanceNorm2D<Float>
@@ -121,7 +112,7 @@ public struct ResidualBlock: Layer {
     /// - Parameter input: The input to the layer.
     /// - Returns: The output.
     @differentiable
-    public func callAsFunction(_ input: Input) -> Output {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         return input + input.sequenced(through: conv1, in1, relu, conv2, in2)
     }
 }
@@ -131,9 +122,6 @@ public struct ResidualBlock: Layer {
 /// Upsamples the input and then does a convolution.
 /// Reference: http://distill.pub/2016/deconv-checkerboard/
 public struct UpsampleConvLayer: Layer {
-    public typealias Input = Tensor<Float>
-    public typealias Output = Tensor<Float>
-
     /// Scale factor.
     @noDerivative public let scaleFactor: Float
     /// Padding layer.
@@ -169,8 +157,11 @@ public struct UpsampleConvLayer: Layer {
     /// - Parameter input: The input to the layer.
     /// - Returns: The output.
     @differentiable
-    public func callAsFunction(_ input: Input) -> Output {
-        let resizedInput = resizeNearestNeighbor(input, scaleFactor: scaleFactor)
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
+        let newHeight = Int(roundf(Float(input.shape[input.rank - 3]) * scaleFactor))
+        let newWidth = Int(roundf(Float(input.shape[input.rank - 2]) * scaleFactor))
+        let resizedInput = resize(
+            images: input, size: (newHeight, newWidth), method: .nearest)
         return resizedInput.sequenced(through: reflectionPad, conv2d)
     }
 }

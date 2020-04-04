@@ -1,8 +1,9 @@
 add_library(ImageClassificationModels
   DenseNet121.swift
   LeNet-5.swift
-  MobileNet.swift
+  MobileNetV1.swift
   MobileNetV2.swift
+  MobileNetV3.swift
   ResNet.swift
   ResNetV2.swift
   SqueezeNet.swift
