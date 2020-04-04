@@ -15,15 +15,11 @@
 import Foundation
 import ModelSupport
 import TensorFlow
+import Batcher
 
 public class Images {
-    struct Elements: TensorGroup {
-        var image: Tensor<Float>
-    }
-
-    let dataset: Dataset<Elements>
-    let count: Int
-
+    var batcher: Batcher<[Tensorf]>
+    
     public init(folderURL: URL) throws {
         let folderContents = try FileManager.default
                                             .contentsOfDirectory(at: folderURL,
@@ -31,20 +27,12 @@ public class Images {
                                                                  options: [.skipsHiddenFiles])
         let imageFiles = folderContents.filter { $0.pathExtension == "jpg" }
 
-        var sourceData: [Float] = []
-
-        var elements = 0
-
-        for imageFile in imageFiles {
-            let imageTensor = Image(jpeg: imageFile).tensor
-
-            sourceData.append(contentsOf: imageTensor.scalars)
-
-            elements += 1
+        let imageTensors = imageFiles.map {
+            Image(jpeg: $0).tensor / 127.5 - 1.0
         }
-
-        let source = Tensor<Float>(shape: [elements, 256, 256, 3], scalars: sourceData) / 127.5 - 1.0
-        dataset = Dataset(elements: Elements(image: source))
-        count = elements
+        
+        self.batcher = Batcher(on: imageTensors,
+                               batchSize: 1,
+                               shuffle: true)
     }
 }
