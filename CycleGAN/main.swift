@@ -14,16 +14,9 @@
 
 import Foundation
 import ModelSupport
-import TensorBoardX
 import TensorFlow
 
 let options = Options.parseOrExit()
-let logDirURL = URL(fileURLWithPath: options.tensorboardLogdir, isDirectory: true)
-let runId = currentRunId(logDir: logDirURL)
-let writerURL = logDirURL.appendingPathComponent(String(runId), isDirectory: true)
-let writer = SummaryWriter(logdir: writerURL)
-
-print("Starting with run id: \(runId)")
 
 let datasetFolder = URL(fileURLWithPath: options.datasetPath, isDirectory: true)
 let trainFolderA = datasetFolder.appendingPathComponent("trainA")
@@ -52,11 +45,8 @@ let _ones = Tensorf.one
 
 var step = 0
 
-var sampleImage: Tensorf = .zero
-for sampleBatch in trainDatasetA.dataset.batched(1) {
-    sampleImage = sampleBatch.image
-    break
-}
+var sampleImage = trainDatasetA.batcher.dataset[0]
+let sampleImageURL = URL(string: FileManager.default.currentDirectoryPath)!.appendingPathComponent("sample.jpg")
 
 // MARK: Train
 
@@ -64,19 +54,13 @@ for epoch in 0 ..< epochs {
     print("Epoch \(epoch) started at: \(Date())")
     Context.local.learningPhase = .training
 
-    let trainingAShuffled = trainDatasetA.dataset
-        .shuffled(sampleCount: trainDatasetA.count,
-                  randomSeed: Int64(epoch))
-    let trainingBShuffled = trainDatasetB.dataset
-        .shuffled(sampleCount: trainDatasetB.count,
-                  randomSeed: Int64(epoch))
-    let zippedAB = zip(trainingAShuffled, trainingBShuffled)
-
-    for batch in zippedAB.batched(batchSize) {
+    let zippedAB = zip(trainDatasetA.batcher.sequenced(), trainDatasetB.batcher.sequenced())
+    
+    for batch in zippedAB {
         Context.local.learningPhase = .training
-
-        let inputX = batch.first.image
-        let inputY = batch.second.image
+        
+        let inputX = batch.0
+        let inputY = batch.1
 
         // we do it outside of GPU scope so that dataset shuffling happens on CPU side
         let concatanatedImages = inputX.concatenated(with: inputY)
@@ -167,23 +151,18 @@ for epoch in 0 ..< epochs {
         optimizerDX.update(&discriminatorX, along: 𝛁discriminatorX)
         optimizerDY.update(&discriminatorY, along: 𝛁discriminatorY)
 
-        writer.addScalars(mainTag: "train_loss",
-                          taggedScalars: [
-                              "GeneratorG": gLoss.scalars[0],
-                              "GeneratorF": fLoss.scalars[0],
-                              "DiscriminatorX": xLoss.scalars[0],
-                              "DiscriminatorY": yLoss.scalars[0],
-                          ],
-                          globalStep: step)
-
         // MARK: Inference
 
         if step % options.sampleLogPeriod == 0 {
             let fakeSample = generatorG(sampleImage) * 0.5 + 0.5
 
-            writer.addImages(tag: "reals", images: sampleImage * 0.5 + 0.5, globalStep: step)
-            writer.addImages(tag: "fakes", images: fakeSample, globalStep: step)
-            writer.flush()
+            let fakeSampleImage = Image(tensor: fakeSample[0] * 255)
+            fakeSampleImage.save(to: sampleImageURL, format: .rgb)
+
+            print("GeneratorG loss: \(gLoss.scalars[0])")
+            print("GeneratorF loss: \(fLoss.scalars[0])")
+            print("DiscriminatorX loss: \(xLoss.scalars[0])")
+            print("DiscriminatorY loss: \(yLoss.scalars[0])")
         }
 
         step += 1
@@ -192,8 +171,8 @@ for epoch in 0 ..< epochs {
 
 // MARK: Final test
 
-let testDatasetA = try Images(folderURL: testFolderA).dataset
-let testDatasetB = try Images(folderURL: testFolderB).dataset
+let testDatasetA = try Images(folderURL: testFolderA).batcher.sequenced()
+let testDatasetB = try Images(folderURL: testFolderB).batcher.sequenced()
 
 let zippedTest = zip(testDatasetA, testDatasetB)
 
@@ -203,9 +182,9 @@ let bResultsFolder = try createDirectoryIfNeeded(path: FileManager.default
                                                                   .currentDirectoryPath + "/testB_results")
 
 var testStep = 0
-for testBatch in zippedTest.batched(1) {
-    let realX = testBatch.first.image
-    let realY = testBatch.second.image
+for testBatch in zippedTest {
+    let realX = testBatch.0
+    let realY = testBatch.1
 
     let fakeY = generatorG(realX)
     let fakeX = generatorF(realY)
