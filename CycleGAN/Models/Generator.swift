@@ -107,20 +107,14 @@ public struct ResNetGenerator<NormalizationType: FeatureChannelInitializable>: L
     @differentiable
     public func callAsFunction(_ input: Tensorf) -> Tensorf {
         var x = input.padded(forSizes: [(0, 0), (3, 3), (3, 3), (0, 0)], mode: .reflect)
-        x = x.sequenced(through: conv1, norm1)
-        x = relu(x)
-        x = x.sequenced(through: conv2, norm2)
-        x = relu(x)
-
-        x = x.sequenced(through: conv3, norm3)
-        x = relu(x)
+        x = relu(x.sequenced(through: conv1, norm1))
+        x = relu(x.sequenced(through: conv2, norm2))
+        x = relu(x.sequenced(through: conv3, norm3))
 
         x = resblocks(x)
 
-        x = x.sequenced(through: upConv1, upNorm1)
-        x = relu(x)
-        x = x.sequenced(through: upConv2, upNorm2)
-        x = relu(x)
+        x = relu(x.sequenced(through: upConv1, upNorm1))
+        x = relu(x.sequenced(through: upConv2, upNorm2))
 
         x = lastConv(x)
         x = tanh(x)
