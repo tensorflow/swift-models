@@ -11,7 +11,7 @@ struct Coco {
     let catToImgs: [String: Any]
 
     init(fromFile fileURL: URL) {
-        self.dataset = CocoMetadata(fromFile: fileURL)
+        self.metadata = try! CocoMetadata(fromFile: fileURL)
         self.anns = [:]
         self.cats = [:]
         self.imgs = [:]
@@ -29,7 +29,7 @@ struct Coco {
     func getImgageIds() {}
 
     /// Load annotations with specified ids.
-    func loadAnnotationss() {}
+    func loadAnnotations() {}
 
     /// Load categories with specified ids.
     func loadCategories() {}

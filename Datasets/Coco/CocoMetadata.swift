@@ -148,6 +148,6 @@ struct CocoMetadata: Decodable {
     init(fromFile fileURL: URL) throws {
         let contents = try String(contentsOfFile: fileURL.path)
         let data = contents.data(using: .utf8)!
-        self = try JSONDecoder().decode(CocoAnnotationsFile.self, from: data)
+        self = try JSONDecoder().decode(CocoMetadata.self, from: data)
     }
 }
