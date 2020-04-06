@@ -1,8 +1,8 @@
 add_library(StbImage
-  StbImage/include/stb_image.h
-  StbImage/include/stb_image_write.h
   StbImage/stb_image_write.c
   StbImage/stb_image.c)
+target_include_directories(StbImage PUBLIC
+  StbImage/include)
 set_target_properties(StbImage PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
 

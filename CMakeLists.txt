@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(Models
-  LANGUAGES Swift)
+  LANGUAGES C Swift)
 
 if(CMAKE_VERSION VERSION_LESS 3.17)
   if(NOT CMAKE_SYSTEM_NAME STREQUAL Windows)
