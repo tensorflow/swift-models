@@ -69,11 +69,14 @@ public struct Image {
                 // TODO: Proper error propagation for this.
                 fatalError("Unable to read image at: \(url.path).")
             }
-            
+
             let data = [UInt8](UnsafeBufferPointer(start: bytes, count: Int(width * height * bpp)))
             stbi_image_free(bytes)
-            let loadedTensor = Tensor<UInt8>(
+            var loadedTensor = Tensor<UInt8>(
                 shape: [Int(height), Int(width), Int(bpp)], scalars: data)
+            if bpp == 1 {
+                loadedTensor = loadedTensor.broadcasted(to: [Int(height), Int(width), 3])
+            }
             self.imageData = .uint8(data: loadedTensor)
         }
     }
