@@ -13,7 +13,7 @@
 // limitations under the License.
 
 import Foundation
-import StbImage
+@_implementationOnly import StbImage
 import TensorFlow
 
 // Image loading and saving is inspired by t-ae's Swim library: https://github.com/t-ae/swim

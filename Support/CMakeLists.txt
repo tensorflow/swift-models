@@ -1,10 +1,4 @@
-add_library(StbImage
-  StbImage/stb_image_write.c
-  StbImage/stb_image.c)
-target_include_directories(StbImage PUBLIC
-  StbImage/include)
-set_target_properties(StbImage PROPERTIES
-  INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
+add_subdirectory(StbImage)
 
 add_library(ModelSupport
   BijectiveDictionary.swift
@@ -33,16 +27,6 @@ target_link_libraries(ModelSupport PUBLIC
   StbImage
   SwiftProtobuf)
 
-
-install(TARGETS StbImage
-  ARCHIVE DESTINATION lib/swift/$<LOWER_CASE:${CMAKE_SYSTEM_NAME}>
-  LIBRARY DESTINATION lib/swift/$<LOWER_CASE:${CMAKE_SYSTEM_NAME}>
-  RUNTIME DESTINATION bin)
-get_swift_host_arch(swift_arch)
-install(FILES
-  $<TARGET_PROPERTY:StbImage,Swift_MODULE_DIRECTORY>/StbImage.swiftdoc
-  $<TARGET_PROPERTY:StbImage,Swift_MODULE_DIRECTORY>/StbImage.swiftmodule
-  DESTINATION lib/swift$<$<NOT:$<BOOL:${BUILD_SHARED_LIBS}>>:_static>/$<LOWER_CASE:${CMAKE_SYSTEM_NAME}>/${swift_arch})
 
 install(TARGETS ModelSupport
   ARCHIVE DESTINATION lib/swift/$<LOWER_CASE:${CMAKE_SYSTEM_NAME}>
