@@ -68,30 +68,6 @@ set_target_properties(SwiftProtobuf PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${BINARY_DIR}/swift)
 add_dependencies(SwiftProtobuf swift-protobuf-build)
 
-ExternalProject_Add(swim
-  GIT_REPOSITORY git://github.com/t-ae/swim.git
-  GIT_TAG 3.6.1
-  CMAKE_ARGS
-    -DBUILD_SHARED_LIBS=YES
-    -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
-    -DCMAKE_Swift_COMPILER=${CMAKE_Swift_COMPILER}
-    -DCMAKE_Swift_FLAGS=${CMAKE_Swift_FLAGS}
-  INSTALL_COMMAND
-    ""
-  BUILD_BYPRODUCTS
-    <BINARY_DIR>/Sources/Swim/${CMAKE_SHARED_LIBRARY_PREFIX}Swim${CMAKE_SHARED_LIBRARY_SUFFIX}
-    <BINARY_DIR>/Sources/Swim/${CMAKE_IMPORT_LIBRARY_PREFIX}Swim${CMAKE_IMPORT_LIBRARY_SUFFIX}
-  STEP_TARGETS build)
-ExternalProject_Get_Property(swim BINARY_DIR)
-
-add_library(Swim SHARED IMPORTED)
-file(MAKE_DIRECTORY ${BINARY_DIR}/swift)
-set_target_properties(Swim PROPERTIES
-  IMPORTED_LOCATION ${BINARY_DIR}/Sources/Swim/${CMAKE_SHARED_LIBRARY_PREFIX}Swim${CMAKE_SHARED_LIBRARY_SUFFIX}
-  IMPORTED_IMPLIB ${BINARY_DIR}/Sources/Swim/${CMAKE_IMPORT_LIBRARY_PREFIX}Swim${CMAKE_IMPORT_LIBRARY_SUFFIX}
-  INTERFACE_INCLUDE_DIRECTORIES ${BINARY_DIR}/swift)
-add_dependencies(Swim swim-build)
-
 add_subdirectory(Support)
 add_subdirectory(Batcher)
 add_subdirectory(Datasets)
