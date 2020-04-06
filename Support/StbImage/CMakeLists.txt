@@ -1,8 +1,8 @@
 add_library(StbImage STATIC
-  StbImage/stb_image_write.c
-  StbImage/stb_image.c)
+  stb_image_write.c
+  stb_image.c)
 target_include_directories(StbImage PUBLIC
-  StbImage/include)
+  include)
 
 
 install(TARGETS StbImage
