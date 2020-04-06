@@ -38,12 +38,14 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
         .package(
             url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.0.1")),
-        .package(url: "https://github.com/t-ae/swim.git", .exact("3.6.1")),
     ],
     targets: [
         .target(name: "Batcher", path: "Batcher"),
         .target(name: "Datasets", dependencies: ["ModelSupport", "Batcher"], path: "Datasets"),
-        .target(name: "ModelSupport", dependencies: ["SwiftProtobuf", "Swim"], path: "Support"),
+        .target(name: "StbImage", path: "Support/StbImage"),
+        .target(
+            name: "ModelSupport", dependencies: ["SwiftProtobuf", "StbImage"], path: "Support",
+            exclude: ["StbImage"]),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "VideoClassificationModels", path: "Models/Spatiotemporal"),
         .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),

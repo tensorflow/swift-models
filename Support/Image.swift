@@ -13,8 +13,11 @@
 // limitations under the License.
 
 import Foundation
-import Swim
+import StbImage
 import TensorFlow
+
+// Image loading and saving is inspired by t-ae's Swim library: https://github.com/t-ae/swim
+// and uses the StbImage image single-file C headers from https://github.com/nothings/stb
 
 public struct Image {
     public enum ByteOrdering {
@@ -54,22 +57,34 @@ public struct Image {
             // TODO: Add BGR byte reordering.
             fatalError("BGR byte ordering is currently unsupported.")
         } else {
-            do {
-                let loadedJpeg = try Swim.Image<RGB, UInt8>(contentsOf: url)
-                let loadedTensor = Tensor<UInt8>(
-                    shape: [loadedJpeg.height, loadedJpeg.width, 3], scalars: loadedJpeg.getData())
-                self.imageData = .uint8(data: loadedTensor)
-            } catch {
-                // TODO: Propagate this error in a future API change.
-                fatalError("Error during image loading: \(error)")
+            guard FileManager.default.fileExists(atPath: url.path) else {
+                // TODO: Proper error propagation for this.
+                fatalError("File does not exist at: \(url.path).")
             }
+            
+            var width: Int32 = 0
+            var height: Int32 = 0
+            var bpp: Int32 = 0
+            guard let bytes = stbi_load(url.path, &width, &height, &bpp, 0) else {
+                // TODO: Proper error propagation for this.
+                fatalError("Unable to read image at: \(url.path).")
+            }
+            
+            let data = [UInt8](UnsafeBufferPointer(start: bytes, count: Int(width * height * bpp)))
+            stbi_image_free(bytes)
+            let loadedTensor = Tensor<UInt8>(
+                shape: [Int(height), Int(width), Int(bpp)], scalars: data)
+            self.imageData = .uint8(data: loadedTensor)
         }
     }
 
     public func save(to url: URL, format: Colorspace = .rgb, quality: Int64 = 95) {
         let outputImageData: Tensor<UInt8>
+        let bpp: Int32
+
         switch format {
         case .grayscale:
+            bpp = 1
             switch self.imageData {
             case let .uint8(data): outputImageData = data
             case let .float(data):
@@ -78,31 +93,23 @@ public struct Image {
                 let adjustedData = (data - lowerBound) * (255.0 / (upperBound - lowerBound))
                 outputImageData = Tensor<UInt8>(adjustedData)
             }
-            let height = outputImageData.shape[0]
-            let width = outputImageData.shape[1]
-            let image = Swim.Image<Gray, UInt8>(
-                width: width, height: height, data: outputImageData.scalars)
-            do {
-                try image.write(to: url, format: .jpeg(quality: Int(quality)))
-            } catch {
-                // TODO: Propagate this error in a future API change.
-                fatalError("Error during image saving: \(error)")
-            }
         case .rgb:
+            bpp = 3
             switch self.imageData {
             case let .uint8(data): outputImageData = data
             case let .float(data):
                 outputImageData = Tensor<UInt8>(data.clipped(min: 0, max: 255))
             }
-            let height = outputImageData.shape[0]
-            let width = outputImageData.shape[1]
-            let image = Swim.Image<RGB, UInt8>(
-                width: width, height: height, data: outputImageData.scalars)
-            do {
-                try image.write(to: url, format: .jpeg(quality: Int(quality)))
-            } catch {
-                // TODO: Propagate this error in a future API change.
-                fatalError("Error during image saving: \(error)")
+        }
+        
+        let height = Int32(outputImageData.shape[0])
+        let width = Int32(outputImageData.shape[1])
+        outputImageData.scalars.withUnsafeBufferPointer { bytes in
+            let status = stbi_write_jpg(
+                url.path, width, height, bpp, bytes.baseAddress!, Int32(quality))
+            guard status != 0 else {
+                // TODO: Proper error propagation for this.
+                fatalError("Unable to save image to: \(url.path).")
             }
         }
     }
