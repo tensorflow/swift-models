@@ -3,7 +3,7 @@ typealias siz = UInt64
 typealias byte = UInt8
 typealias BB = [Double]
 
-struct RLE {
+struct COCORLE {
     var h: siz
     var w: siz
     var m: siz
@@ -17,12 +17,12 @@ struct RLE {
     }
 }
 
-struct RLEs {
-    var R: [RLE]
+struct COCORLEs {
+    var R: [COCORLE]
     var n: siz
 }
 
-struct Masks {
+struct COCOMasks {
     var mask: [byte]
     var h: siz
     var w: siz

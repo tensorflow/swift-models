@@ -1,13 +1,13 @@
 import Foundation
 
-struct CocoInfo: Decodable {
+public struct COCOInfo: Decodable {
     var description: String
     var url: String
     var version: String
     var year: Int
     var contributor: String
     var date_created: String
-    init(
+    public init(
         description: String, url: String, version: String, year: Int, contributor: String,
         date_created: String
     ) {
@@ -19,17 +19,17 @@ struct CocoInfo: Decodable {
         self.date_created = date_created
     }
 }
-struct CocoLicense: Decodable {
+public struct COCOLicense: Decodable {
     var url: String
     var id: Int
     var name: String
-    init(url: String, id: Int, name: String) {
+    public init(url: String, id: Int, name: String) {
         self.url = url
         self.id = id
         self.name = name
     }
 }
-struct CocoImage: Decodable {
+public struct COCOImage: Decodable {
     var license: Int
     var file_name: String
     var coco_url: String
@@ -38,7 +38,7 @@ struct CocoImage: Decodable {
     var date_captured: String
     var flickr_url: String
     var id: Int
-    init(
+    public init(
         license: Int, file_name: String, coco_url: String, height: Int, width: Int,
         date_captured: String, flickr_url: String, id: Int
     ) {
@@ -52,52 +52,52 @@ struct CocoImage: Decodable {
         self.id = id
     }
 }
-struct CocoSize: Decodable {
+public struct COCOSize: Decodable {
     var _1: Int
     var _2: Int
-    init(_1: Int, _2: Int) {
+    public init(_1: Int, _2: Int) {
         self._1 = _1
         self._2 = _2
     }
 }
-struct CocoBoundingBox: Decodable {
+public struct COCOBoundingBox: Decodable {
     var _1: Float
     var _2: Float
     var _3: Float
     var _4: Float
-    init(_1: Float, _2: Float, _3: Float, _4: Float) {
+    public init(_1: Float, _2: Float, _3: Float, _4: Float) {
         self._1 = _1
         self._2 = _2
         self._3 = _3
         self._4 = _4
     }
 }
-enum CocoSegmentation {
+public enum COCOSegmentation {
     case polygon(values: [[Float]])
-    case uncompressedRLE(counts: [Int], size: CocoSize)
-    case compressedRLE(counts: String, size: CocoSize)
+    case uncompressedRLE(counts: [Int], size: COCOSize)
+    case compressedRLE(counts: String, size: COCOSize)
 }
-extension CocoSegmentation: Decodable {
+extension COCOSegmentation: Decodable {
     // TODO: implement decoder
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         self = .polygon(values: [])
     }
 }
-struct CocoAnnotation: Decodable {
+public struct COCOAnnotation: Decodable {
     var image_id: Int
     var id: Int
     var caption: String
-    var segmentation: CocoSegmentation
+    var segmentation: COCOSegmentation
     var area: Float
     var iscrowd: Int
-    var bbox: CocoBoundingBox
+    var bbox: COCOBoundingBox
     var category_id: Int
     var ignore: Int
     var num_keypoints: Int
     var keypoints: [Int]
-    init(
-        image_id: Int, id: Int, caption: String, segmentation: CocoSegmentation, area: Float,
-        iscrowd: Int, bbox: CocoBoundingBox, category_id: Int, ignore: Int, num_keypoints: Int,
+    public init(
+        image_id: Int, id: Int, caption: String, segmentation: COCOSegmentation, area: Float,
+        iscrowd: Int, bbox: COCOBoundingBox, category_id: Int, ignore: Int, num_keypoints: Int,
         keypoints: [Int]
     ) {
         self.image_id = image_id
@@ -113,13 +113,15 @@ struct CocoAnnotation: Decodable {
         self.keypoints = keypoints
     }
 }
-struct CocoCategory: Decodable {
+public struct COCOCategory: Decodable {
     var supercategory: String
     var id: Int
     var name: String
     var keypoints: [String]
-    var skeleton: [CocoSize]
-    init(supercategory: String, id: Int, name: String, keypoints: [String], skeleton: [CocoSize]) {
+    var skeleton: [COCOSize]
+    public init(
+        supercategory: String, id: Int, name: String, keypoints: [String], skeleton: [COCOSize]
+    ) {
         self.supercategory = supercategory
         self.id = id
         self.name = name
@@ -127,16 +129,16 @@ struct CocoCategory: Decodable {
         self.skeleton = skeleton
     }
 }
-struct CocoMetadata: Decodable {
-    var info: CocoInfo
-    var licenses: [CocoLicense]
-    var images: [CocoImage]
-    var annotations: [CocoAnnotation]
+public struct COCOMetadata: Decodable {
+    var info: COCOInfo
+    var licenses: [COCOLicense]
+    var images: [COCOImage]
+    var annotations: [COCOAnnotation]
     var type: String
-    var categories: [CocoCategory]
-    init(
-        info: CocoInfo, licenses: [CocoLicense], images: [CocoImage], annotations: [CocoAnnotation],
-        type: String, categories: [CocoCategory]
+    var categories: [COCOCategory]
+    public init(
+        info: COCOInfo, licenses: [COCOLicense], images: [COCOImage], annotations: [COCOAnnotation],
+        type: String, categories: [COCOCategory]
     ) {
         self.info = info
         self.licenses = licenses
@@ -145,9 +147,9 @@ struct CocoMetadata: Decodable {
         self.type = type
         self.categories = categories
     }
-    init(fromFile fileURL: URL) throws {
+    public init(fromFile fileURL: URL) throws {
         let contents = try String(contentsOfFile: fileURL.path)
         let data = contents.data(using: .utf8)!
-        self = try JSONDecoder().decode(CocoMetadata.self, from: data)
+        self = try JSONDecoder().decode(COCOMetadata.self, from: data)
     }
 }
