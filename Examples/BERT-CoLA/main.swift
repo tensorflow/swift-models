@@ -19,9 +19,11 @@ import TensorFlow
 import TextModels
 
 let bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
-let workspaceURL = URL(fileURLWithPath: "bert_models", isDirectory: true,
-                       relativeTo: URL(fileURLWithPath: NSTemporaryDirectory(),
-                                       isDirectory: true))
+let workspaceURL = URL(
+    fileURLWithPath: "bert_models", isDirectory: true,
+    relativeTo: URL(
+        fileURLWithPath: NSTemporaryDirectory(),
+        isDirectory: true))
 let bert = try BERT.PreTrainedModel.load(bertPretrained)(from: workspaceURL)
 var bertClassifier = BERTClassifier(bert: bert, classCount: 1)
 
@@ -46,7 +48,7 @@ let exampleMapFn: (CoLA.Example) -> CoLA.DataBatch = { example -> CoLA.DataBatch
         maxSequenceLength: maxSequenceLength)
     return CoLA.DataBatch(
         inputs: textBatch, labels: example.isAcceptable.map { Tensor($0 ? 1 : 0) })
-    }
+}
 
 var cola = try CoLA(
     exampleMap: exampleMapFn,
