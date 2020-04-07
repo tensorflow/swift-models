@@ -17,9 +17,7 @@ import TensorFlow
 
 let batchSize = 100
 
-let dataset = CIFAR10()
-let testBatches = dataset.testDataset.batched(batchSize)
-
+let dataset = CIFAR10(batchSize: batchSize)
 var model = KerasModel()
 let optimizer = RMSProp(for: model, learningRate: 0.0001, decay: 1e-6)
 
@@ -29,10 +27,8 @@ for epoch in 1...100 {
     Context.local.learningPhase = .training
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
-    let trainingShuffled = dataset.trainingDataset.shuffled(
-        sampleCount: dataset.trainingExampleCount, randomSeed: Int64(epoch))
-    for batch in trainingShuffled.batched(batchSize) {
-        let (labels, images) = (batch.label, batch.data)
+    for batch in dataset.training.sequenced() {
+        let (images, labels) = (batch.first, batch.second)
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
             let logits = model(images)
             return softmaxCrossEntropy(logits: logits, labels: labels)
@@ -47,8 +43,8 @@ for epoch in 1...100 {
     var testBatchCount = 0
     var correctGuessCount = 0
     var totalGuessCount = 0
-    for batch in testBatches {
-        let (labels, images) = (batch.label, batch.data)
+    for batch in dataset.test.sequenced() {
+        let (images, labels) = (batch.first, batch.second)
         let logits = model(images)
         testLossSum += softmaxCrossEntropy(logits: logits, labels: labels).scalarized()
         testBatchCount += 1

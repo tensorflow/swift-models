@@ -16,6 +16,7 @@ import Datasets
 import Foundation
 import ModelSupport
 import TensorFlow
+import Batcher
 
 let epochCount = 10
 let batchSize = 100
@@ -23,7 +24,7 @@ let imageHeight = 28
 let imageWidth = 28
 
 let outputFolder = "./output/"
-let dataset = FashionMNIST(flattening: true)
+let dataset = FashionMNIST(batchSize: batchSize, flattening: true)
 // An autoencoder.
 var autoencoder = Sequential {
     // The encoder.
@@ -39,13 +40,13 @@ var autoencoder = Sequential {
 }
 let optimizer = RMSProp(for: autoencoder)
 
-let individualTestImages = dataset.testDataset.batched(1)
-var testImageIterator = individualTestImages.makeIterator()
+let individualTestImages = Batcher(on: dataset.test.dataset, batchSize: 1)
+var testImageIterator = individualTestImages.sequenced()
 
 // Training loop
 for epoch in 1...epochCount {
     if let nextIndividualImage = testImageIterator.next() {
-        let sampleTensor = nextIndividualImage.data
+        let sampleTensor = nextIndividualImage.first
         let sampleImage = Tensor(
             shape: [1, imageHeight * imageWidth], scalars: sampleTensor.scalars)
 
@@ -66,10 +67,8 @@ for epoch in 1...epochCount {
         print("[Epoch: \(epoch)] Loss: \(sampleLoss)")
     }
 
-    let trainingShuffled = dataset.trainingDataset.shuffled(
-        sampleCount: dataset.trainingExampleCount, randomSeed: Int64(epoch))
-    for batch in trainingShuffled.batched(batchSize) {
-        let x = batch.data
+    for batch in dataset.training.sequenced() {
+        let x = batch.first
 
         let 𝛁model = TensorFlow.gradient(at: autoencoder) { autoencoder -> Tensor<Float> in
             let image = autoencoder(x)

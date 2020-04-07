@@ -15,26 +15,6 @@
 import TensorFlow
 import Batcher
 
-public struct LabeledExample: TensorGroup, KeyPathIterable, Collatable {
-    public var label: Tensor<Int32>
-    public var data: Tensor<Float>
-
-    public init(label: Tensor<Int32>, data: Tensor<Float>) {
-        self.label = label
-        self.data = data
-    }
-
-    public init<C: RandomAccessCollection>(
-        _handles: C
-    ) where C.Element: _AnyTensorHandle {
-        precondition(_handles.count == 2)
-        let labelIndex = _handles.startIndex
-        let dataIndex = _handles.index(labelIndex, offsetBy: 1)
-        label = Tensor<Int32>(handle: TensorHandle<Int32>(handle: _handles[labelIndex]))
-        data = Tensor<Float>(handle: TensorHandle<Float>(handle: _handles[dataIndex]))
-    }
-}
-
 /// A generic tuple of two tensors `Tensor`.
 /// 
 /// - Note: `TensorPair` has a generic name and provides little semantic information, to conform to
@@ -45,6 +25,7 @@ public struct TensorPair<S1: TensorFlowScalar, S2: TensorFlowScalar>: Collatable
     public var first: Tensor<S1>
     public var second: Tensor<S2>
     
+    /// Creates from `first` and `second` tensors.
     public init(first: Tensor<S1>, second: Tensor<S2>) {
         self.first = first
         self.second = second

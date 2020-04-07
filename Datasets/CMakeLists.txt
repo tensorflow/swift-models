@@ -7,7 +7,6 @@ add_library(Datasets
   ImageClassificationDataset.swift
   Imagenette/Imagenette.swift
   Imagenette/Imagewoof.swift
-  LabeledExample.swift
   LanguageModelDataset.swift
   MNIST/MNISTDatasetHandler.swift
   MNIST/MNIST.swift
@@ -15,7 +14,9 @@ add_library(Datasets
   MNIST/KuzushijiMNIST.swift
   BostonHousing/BostonHousing.swift
   TextUnsupervised/TextUnsupervised.swift
-  MovieLens/MovieLens.swift)
+  MovieLens/MovieLens.swift
+  TensorPair.swift
+  TextUnsupervised/TextUnsupervised.swift)
 target_link_libraries(Datasets PUBLIC
   Batcher
   ModelSupport)
