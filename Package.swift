@@ -1,4 +1,4 @@
-// swift-tools-version:5.0
+// swift-tools-version:5.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -33,11 +33,11 @@ let package = Package(
         .executable(name: "MiniGoDemo", targets: ["MiniGoDemo"]),
         .executable(name: "GPT2-Inference", targets: ["GPT2-Inference"]),
         .executable(name: "GPT2-WikiText2", targets: ["GPT2-WikiText2"]),
+        .executable(name: "CycleGAN", targets: ["CycleGAN"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
-        .package(
-            url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.0.1")),
+        .package(name: "SwiftProtobuf", url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
+        .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.0.1")),
     ],
     targets: [
         .target(name: "Batcher", path: "Batcher"),
@@ -109,12 +109,17 @@ let package = Package(
         .target(
             name: "Benchmarks",
             dependencies: [
-                "Datasets", "ModelSupport", "ImageClassificationModels", "ArgumentParser"
+                "Datasets", "ModelSupport", "ImageClassificationModels", .product(name: "ArgumentParser", package: "swift-argument-parser")
             ],
             path: "Benchmarks"),
         .testTarget(name: "CheckpointTests", dependencies: ["ModelSupport"]),
         .target(
             name: "BERT-CoLA", dependencies: ["TextModels", "Datasets"], path: "Examples/BERT-CoLA"),
         .testTarget(name: "SupportTests", dependencies: ["ModelSupport"]),
+        .target(
+            name: "CycleGAN",
+            dependencies: ["Batcher", .product(name: "ArgumentParser", package: "swift-argument-parser"), "ModelSupport"],
+            path: "CycleGAN"
+        )
     ]
 )
