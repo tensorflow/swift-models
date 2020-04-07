@@ -42,10 +42,10 @@ let package = Package(
     targets: [
         .target(name: "Batcher", path: "Batcher"),
         .target(name: "Datasets", dependencies: ["ModelSupport", "Batcher"], path: "Datasets"),
-        .target(name: "StbImage", path: "Support/StbImage"),
+        .target(name: "STBImage", path: "Support/STBImage"),
         .target(
-            name: "ModelSupport", dependencies: ["SwiftProtobuf", "StbImage"], path: "Support",
-            exclude: ["StbImage"]),
+            name: "ModelSupport", dependencies: ["SwiftProtobuf", "STBImage"], path: "Support",
+            exclude: ["STBImage"]),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "VideoClassificationModels", path: "Models/Spatiotemporal"),
         .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),

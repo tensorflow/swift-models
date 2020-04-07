@@ -13,11 +13,11 @@
 // limitations under the License.
 
 import Foundation
-@_implementationOnly import StbImage
+@_implementationOnly import STBImage
 import TensorFlow
 
 // Image loading and saving is inspired by t-ae's Swim library: https://github.com/t-ae/swim
-// and uses the StbImage image single-file C headers from https://github.com/nothings/stb
+// and uses the stb_image single-file C headers from https://github.com/nothings/stb .
 
 public struct Image {
     public enum ByteOrdering {

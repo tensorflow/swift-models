@@ -1,5 +1,0 @@
-module StbImage {
-    header "include/stb_image.h"
-    header "include/stb_image_write.h"
-    export *
-}
