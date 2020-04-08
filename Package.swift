@@ -121,7 +121,7 @@ let package = Package(
         .testTarget(name: "SupportTests", dependencies: ["ModelSupport"]),
         .target(
             name: "CycleGAN",
-            dependencies: ["Batcher", .product(name: "ArgumentParser", package: "swift-argument-parser"), "ModelSupport"],
+            dependencies: ["Batcher", .product(name: "ArgumentParser", package: "swift-argument-parser"), "ModelSupport", "Datasets"],
             path: "CycleGAN"
         )
     ]
