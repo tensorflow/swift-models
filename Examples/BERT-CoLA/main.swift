@@ -72,14 +72,14 @@ var optimizer = WeightDecayedAdam(
     maxGradientGlobalNorm: 1)
 
 print("Training BERT for the CoLA task!")
-for epoch in 1...10 {
+for epoch in 1...3 {
     print("[Epoch \(epoch)]")
     Context.local.learningPhase = .training
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
+    var trainingDataIterator = cola.trainDataIterator
 
-    for _ in 1...10 {
-        let batch = withDevice(.cpu) { cola.trainDataIterator.next()! }
+    while let batch = withDevice(.cpu, perform: { trainingDataIterator.next() }) {
         let (documents, labels) = (batch.inputs, Tensor<Float>(batch.labels!))
         let (loss, gradients) = valueWithGradient(at: bertClassifier) { model -> Tensor<Float> in
             let logits = model(documents)
@@ -101,8 +101,8 @@ for epoch in 1...10 {
     }
 
     Context.local.learningPhase = .inference
-    var testLossSum: Float = 0
-    var testBatchCount = 0
+    var devLossSum: Float = 0
+    var devBatchCount = 0
     var devDataIterator = cola.devDataIterator
     var devPredictedLabels = [Bool]()
     var devGroundTruth = [Bool]()
@@ -114,8 +114,8 @@ for epoch in 1...10 {
             labels: Tensor<Float>(labels),
             reduction: { $0.mean() }
         )
-        testLossSum += loss.scalarized()
-        testBatchCount += 1
+        devLossSum += loss.scalarized()
+        devBatchCount += 1
 
         let predictedLabels = sigmoid(logits.squeezingShape(at: -1)) .>= 0.5
         devPredictedLabels.append(contentsOf: predictedLabels.scalars)
@@ -129,7 +129,7 @@ for epoch in 1...10 {
     print(
         """
           MCC: \(mcc)
-          Eval loss: \(testLossSum / Float(testBatchCount))
+          Eval loss: \(devLossSum / Float(devBatchCount))
         """
     )
 }
