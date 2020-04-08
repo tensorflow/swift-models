@@ -3,15 +3,17 @@ import Foundation
 /// Coco dataset API that loads annotation file and prepares 
 /// data structures for data set access.
 public struct COCO {
-    let metadata: COCOMetadata
+    let metadata: Any
     let anns: [String: Any]
     let cats: [String: Any]
     let imgs: [String: Any]
     let imgToAnns: [String: Any]
     let catToImgs: [String: Any]
 
-    public init(fromFile fileURL: URL) {
-        self.metadata = try! COCOMetadata(fromFile: fileURL)
+    public init(fromFile fileURL: URL) throws {
+        let contents = try String(contentsOfFile: fileURL.path)
+        let data = contents.data(using: .utf8)!
+        self.metadata = try JSONSerialization.jsonObject(with: data)
         self.anns = [:]
         self.cats = [:]
         self.imgs = [:]

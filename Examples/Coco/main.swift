@@ -19,16 +19,11 @@ let fileNames = [
     //"pascal_val2012.json",
     //"person_keypoints_train2017.json",
     //"person_keypoints_val2017.json",
-    "stuff_train2017.json",
-    //"stuff_val2017.json",
+    // "stuff_train2017.json",
+    "stuff_val2017.json"
 ]
 
 for fileName in fileNames {
     let fileURL = URL(fileURLWithPath: "pycocotools/annotations/\(fileName)")
-    // Variant 1: codable json
-    let metadata = COCO(fromFile: fileURL)
-    // Variant 2: untyped json
-    // let contents = try String(contentsOfFile: fileURL.path)
-    // let data = contents.data(using: .utf8)!
-    // let metadata = try! JSONSerialization.jsonObject(with: data)
+    let metadata = try! COCO(fromFile: fileURL)
 }
