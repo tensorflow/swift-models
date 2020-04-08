@@ -205,11 +205,44 @@ public struct COCO {
     }
 
     /// Convert segmentation in an annotation to RLE.
-    func annotationToRLE() {}
+    func annotationToRLE(_ ann: Annotation) -> RLE {
+        let imgId = ann["image_id"] as! ImageId
+        let img = self.imgs[imgId]!
+        let h = img["height"] as! Int
+        let w = img["weight"] as! Int
+        let segm = ann["segmentation"]
+        if let polygon = segm as? [[Float]] {
+            return RLE(fromPolygon: polygon, height: h, width: w)
+        } else {
+            let segmObj = segm as! [String: Any]
+            let segmCounts = segmObj["counts"]!
+            let segmSize = segmObj["size"] as! [Int]
+            if let uncompressedCounts = segmCounts as? [Int] {
+                return RLE(
+                    fromUncompressed: uncompressedCounts, size: segmSize, height: h, width: w)
+            } else {
+                let compressedCounts = segmCounts as! String
+                return RLE(fromCompressed: compressedCounts, size: segmSize, height: h, width: w)
+            }
+        }
+
+    }
 
     /// Convert segmentation in an anotation to binary mask.
-    func annotationToMask() {}
+    func annotationToMask(_ ann: Annotation) -> Mask {
+        return Mask(fromRLE: annotationToRLE(ann))
+    }
 
     /// Download images from mscoco.org server.
     func downloadImages() {}
+
+    public struct RLE {
+        init(fromPolygon: [[Float]], height: Int, width: Int) {}
+        init(fromUncompressed: [Int], size: [Int], height: Int, width: Int) {}
+        init(fromCompressed: String, size: [Int], height: Int, width: Int) {}
+    }
+
+    public struct Mask {
+        init(fromRLE rle: RLE) {}
+    }
 }
