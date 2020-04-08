@@ -1,4 +1,5 @@
 add_library(SupportTests
+  ImageTests.swift
   SupportTests.swift
   XCTestManifests.swift)
 set_target_properties(SupportTests PROPERTIES
