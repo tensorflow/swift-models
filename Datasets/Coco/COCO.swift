@@ -4,6 +4,7 @@ import Foundation
 /// data structures for data set access.
 public struct COCO {
     public typealias Metadata = [String: Any]
+    public typealias Info = [String: Any]
     public typealias Annotation = [String: Any]
     public typealias AnnotationId = Int
     public typealias Image = [String: Any]
@@ -12,6 +13,7 @@ public struct COCO {
     public typealias CategoryId = Int
 
     public var metadata: Metadata
+    public var info: Info
     public var anns: [AnnotationId: Annotation]
     public var cats: [CategoryId: Category]
     public var imgs: [ImageId: Image]
@@ -23,6 +25,7 @@ public struct COCO {
         let data = contents.data(using: .utf8)!
         let parsed = try JSONSerialization.jsonObject(with: data)
         self.metadata = parsed as! Metadata
+        self.info = [:]
         self.anns = [:]
         self.cats = [:]
         self.imgs = [:]
@@ -32,6 +35,9 @@ public struct COCO {
     }
 
     mutating func createIndex() {
+        if let info = metadata["info"] {
+            self.info = info as! Info
+        }
         if let annotations = metadata["annotations"] {
             let anns = annotations as! [Annotation]
             for ann in anns {

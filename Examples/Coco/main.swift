@@ -27,6 +27,10 @@ for fileName in fileNames {
     let fileURL = URL(fileURLWithPath: "pycocotools/annotations/\(fileName)")
     let coco = try! COCO(fromFile: fileURL)
     print("Loaded COCO dataset from \(fileName)")
+    print("Info:")
+    for (k, v) in coco.info {
+        print("  \(k): \(v)")
+    }
     print("Categories: \(coco.cats.count)")
     print("Images: \(coco.imgs.count)")
     print("Annotations: \(coco.anns.count)")
