@@ -194,7 +194,7 @@ extension CoLA {
                             textBatches: $0.map { $0.inputs }, maxLength: maxSequenceLength),
                         labels: nil)
                 },
-                dropRemainder : dropRemainder
+                dropRemainder: dropRemainder
             )
     }
 }
