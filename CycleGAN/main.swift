@@ -15,14 +15,45 @@
 import Foundation
 import ModelSupport
 import TensorFlow
+import Datasets
 
 let options = Options.parseOrExit()
 
-let datasetFolder = URL(fileURLWithPath: options.datasetPath, isDirectory: true)
-let trainFolderA = datasetFolder.appendingPathComponent("trainA")
-let trainFolderB = datasetFolder.appendingPathComponent("trainB")
-let testFolderA = datasetFolder.appendingPathComponent("testA")
-let testFolderB = datasetFolder.appendingPathComponent("testB")
+var datasetFolder: URL
+var trainFolderA: URL
+var trainFolderB: URL
+var testFolderA: URL
+var testFolderB: URL
+
+if options.datasetPath.length != 0 {
+	datasetFolder = URL(fileURLWithPath: options.datasetPath, isDirectory: true)
+	trainFolderA = datasetFolder.appendingPathComponent("trainA")
+	trainFolderB = datasetFolder.appendingPathComponent("trainB")
+	testFolderA = datasetFolder.appendingPathComponent("testA")
+	testFolderB = datasetFolder.appendingPathComponent("testB")
+} else {
+	func downloadZebraDataSetIfNotPresent(to directory: URL) {
+	    let downloadPath = directory.appendingPathComponent("horse2zebra").path
+	    let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
+	    let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: downloadPath)
+	    let directoryEmpty = (contentsOfDir == nil) || (contentsOfDir!.isEmpty)
+
+	    guard !directoryExists || directoryEmpty else { return }
+
+	    let location = URL(
+	        string: "https://people.eecs.berkeley.edu/~taesung_park/CycleGAN/datasets/horse2zebra.zip")!
+	    let _ = DatasetUtilities.downloadResource(
+	        filename: "horse2zebra", fileExtension: "zip",
+	        remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
+	}
+
+	datasetFolder = DatasetUtilities.defaultDirectory.appendingPathComponent("CycleGAN", isDirectory: true)
+	downloadZebraDataSetIfNotPresent(to: datasetFolder)
+	trainFolderA = datasetFolder.appendingPathComponent("horse2zebra/trainA")
+	trainFolderB = datasetFolder.appendingPathComponent("horse2zebra/trainB")
+	testFolderA = datasetFolder.appendingPathComponent("horse2zebra/testA")
+	testFolderB = datasetFolder.appendingPathComponent("horse2zebra/testB")
+}
 
 let trainDatasetA = try Images(folderURL: trainFolderA)
 let trainDatasetB = try Images(folderURL: trainFolderB)

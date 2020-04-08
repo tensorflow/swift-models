@@ -15,7 +15,7 @@
 import ArgumentParser
 
 struct Options: ParsableArguments {
-    @Option(default: "./dataset", help: ArgumentHelp("Path to the dataset folder", valueName: "dataset-path"))
+    @Option(default: "", help: ArgumentHelp("Path to the dataset folder", valueName: "dataset-path"))
     var datasetPath: String
 
     @Option(default: 50, help: ArgumentHelp("Number of epochs", valueName: "epochs"))
