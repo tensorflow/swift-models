@@ -3,18 +3,26 @@ import Foundation
 /// Coco dataset API that loads annotation file and prepares 
 /// data structures for data set access.
 public struct COCO {
-    let metadata: [String: Any]
-    let anns: [String: Any]
-    let cats: [String: Any]
-    let imgs: [String: Any]
-    let imgToAnns: [String: [Any]]
-    let catToImgs: [String: [Any]]
+    public typealias Metadata = [String: Any]
+    public typealias Annotation = [String: Any]
+    public typealias AnnotationId = Int
+    public typealias Image = [String: Any]
+    public typealias ImageId = Int
+    public typealias Category = [String: Any]
+    public typealias CategoryId = Int
+
+    public var metadata: Metadata
+    public var anns: [AnnotationId: Annotation]
+    public var cats: [CategoryId: Category]
+    public var imgs: [ImageId: Image]
+    public var imgToAnns: [ImageId: [Annotation]]
+    public var catToImgs: [CategoryId: [ImageId]]
 
     public init(fromFile fileURL: URL) throws {
         let contents = try String(contentsOfFile: fileURL.path)
         let data = contents.data(using: .utf8)!
         let parsed = try JSONSerialization.jsonObject(with: data)
-        self.metadata = parsed as [String: Any] 
+        self.metadata = parsed as! Metadata
         self.anns = [:]
         self.cats = [:]
         self.imgs = [:]
@@ -23,15 +31,37 @@ public struct COCO {
         self.createIndex()
     }
 
-    func createIndex() {
+    mutating func createIndex() {
         if let annotations = metadata["annotations"] {
-            let anns = annotations as [[String: Any]]
+            let anns = annotations as! [Annotation]
+            for ann in anns {
+                let ann_id = ann["id"] as! AnnotationId
+                let image_id = ann["image_id"] as! ImageId
+                self.imgToAnns[image_id, default: []].append(ann)
+                self.anns[ann_id] = ann
+            }
         }
         if let images = metadata["images"] {
+            let imgs = images as! [Image]
+            for img in imgs {
+                let img_id = img["id"] as! ImageId
+                self.imgs[img_id] = img
+            }
         }
         if let categories = metadata["categories"] {
+            let cats = categories as! [Category]
+            for cat in cats {
+                let cat_id = cat["id"] as! CategoryId
+                self.cats[cat_id] = cat
+            }
         }
         if let annotations = metadata["annotations"] {
+            let anns = annotations as! [Annotation]
+            for ann in anns {
+                let cat_id = ann["category_id"] as! CategoryId
+                let image_id = ann["image_id"] as! ImageId
+                self.catToImgs[cat_id, default: []].append(image_id)
+            }
         }
     }
 

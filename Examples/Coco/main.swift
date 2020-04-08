@@ -1,5 +1,5 @@
-import Foundation
 import Datasets
+import Foundation
 import SwiftProtobuf
 
 let fileNames = [
@@ -25,5 +25,9 @@ let fileNames = [
 
 for fileName in fileNames {
     let fileURL = URL(fileURLWithPath: "pycocotools/annotations/\(fileName)")
-    let metadata = try! COCO(fromFile: fileURL)
+    let coco = try! COCO(fromFile: fileURL)
+    print("Loaded COCO dataset from \(fileName)")
+    print("Categories: \(coco.cats.count)")
+    print("Images: \(coco.imgs.count)")
+    print("Annotations: \(coco.anns.count)")
 }
