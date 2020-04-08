@@ -41,22 +41,23 @@ public struct MovieLens {
     public let items: [Float]
     public let numUsers: Int
     public let numItems: Int
-    public let trainMatrix: [TensorPair<Int32,Float>]
-    public let user2id: [Float:Int]
-    public let id2user: [Int:Float]
-    public let item2id: [Float:Int]
+    public let trainMatrix: [TensorPair<Int32, Float>]
+    public let user2id: [Float: Int]
+    public let id2user: [Int: Float]
+    public let item2id: [Float: Int]
     public let id2item: [Int:Float]
     public let trainNegSampling: Tensor<Float>
 
-    static func downloadMovieLensDatasetIfNotPresent() -> URL{
-        let localURL = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+    static func downloadMovieLensDatasetIfNotPresent() -> URL {
+        let localURL = DatasetUtilities.defaultDirectory.appendingPathComponent("MovieLens", isDirectory: true)
         let dataFolder = DatasetUtilities.downloadResource(
             filename: "ml-100k",
             fileExtension: "zip",
             remoteRoot: URL(string: "http://files.grouplens.org/datasets/movielens/")!,
-            localStorageDirectory: localURL.appendingPathComponent("data/", isDirectory: true))
+        localStorageDirectory: localURL)
 
-        return dataFolder}
+        return dataFolder
+    }
 
     public init() {
         let trainFiles  = try! String(contentsOf: MovieLens.downloadMovieLensDatasetIfNotPresent().appendingPathComponent("u1.base"), encoding: .utf8)
@@ -82,7 +83,7 @@ public struct MovieLens {
 
         var dataset:[TensorPair<Int32,Float>] = []
 
-        for element in trainData{
+        for element in trainData {
             let uIndex = user2id[element[0]]!
             let iIndex = item2id[element[1]]!
             let rating = element[2]
@@ -91,15 +92,15 @@ public struct MovieLens {
             }
         }
 
-        for element in trainData{
+        for element in trainData {
             let uIndex = user2id[element[0]]!
             let iIndex = item2id[element[1]]!
             let x = Tensor<Int32>([Int32(uIndex), Int32(iIndex)])
             dataset.append(TensorPair<Int32, Float>(first:x, second: [1]))
 
-            for _ in 0...3{
+            for _ in 0...3 {
               var iIndex = Int.random(in:itemIndex)
-              while(trainNegSampling[uIndex][iIndex].scalarized() == 1.0){
+              while(trainNegSampling[uIndex][iIndex].scalarized() == 1.0) {
                 iIndex = Int.random(in:itemIndex)
               }
               let x = Tensor<Int32>([Int32(uIndex), Int32(iIndex)])

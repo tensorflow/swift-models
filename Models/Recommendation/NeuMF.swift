@@ -13,10 +13,10 @@
 // limitations under the License.
 
 import TensorFlow
-/// NeuMF is recommendation model which is combination of Matrix Factorization and Multi-layer Perceptron
+/// NeuMF is a recommendation model that combines matrix factorization and a multi-layer perceptron.
 ///
 /// Original Paper:
-/// "Neural Collaborative Filtering∗"
+/// "Neural Collaborative Filtering"
 /// Xiangnan He, Lizi Liao, Hanwang Zhang, Liqiang Nie, Xia Hu, Tat-Seng Chua
 /// https://arxiv.org/pdf/1708.05031.pdf
 
@@ -39,17 +39,17 @@ public struct NeuMF: Module {
     public var dense3: Dense<Scalar>
     public var finalDense: Dense<Scalar>
 
-    /// Initialize the NeuMF models as per the dataset from the given hyperparameters.
+    /// Initializes a NeuMF model as per the dataset from the given hyperparameters.
     ///
     /// -Parameters
-    /// - numUsers: Total number of users in dataset.
-    /// - numItems: Total number of items in dataset.
-    /// - mfDim: Embedding size of Matrix Factorization model.
-    /// - mfReg: Regularization for Matrix Factorization embeddings.
-    /// - mlpLayerSizes: The size of layers in Multi Layer Perceptron model.
-    /// - mlpLayerRegs: Regularization for each Multi Layer Perceptron layer.
+    /// - numUsers: Total number of users in the dataset.
+    /// - numItems: Total number of items in the dataset.
+    /// - mfDim: Embedding size of the matrix factorization model.
+    /// - mfReg: Regularization for the matrix factorization embeddings.
+    /// - mlpLayerSizes: The sizes of the layers in the multi-layer perceptron model.
+    /// - mlpLayerRegs: Regularization for each multi-layer perceptron layer.
     ///
-    ///  Note: The first MLP layer is the concatenation of user and item embeddings So mlpLayerSizes[0]/2 is the embedding size.
+    ///  Note: The first MLP layer is the concatenation of user and item embeddings, so mlpLayerSizes[0]/2 is the embedding size.
 
     public init(
         numUsers: Int,
@@ -69,19 +69,15 @@ public struct NeuMF: Module {
         precondition(mlpLayerSizes[0]%2 == 0, "Input of first MLP layers must be multiple of 2")
         precondition(mlpLayerSizes.count == mlpLayerRegs.count, "Size of MLP layers and MLP reqularization must be equal")
 
-        //TODO: regularization
-        //Embedding Layer
-        // User MF embedding
+        // TODO: regularization
+        // Embedding Layer
         self.mfUserEmbed = Embedding<Scalar>(vocabularySize: self.numUsers, embeddingSize: self.mfDim)
-        // Item MF embedding
         self.mfItemEmbed = Embedding<Scalar>(vocabularySize: self.numItems, embeddingSize: self.mfDim)
-        // User MLP embedding
         self.mlpUserEmbed = Embedding<Scalar>(vocabularySize: self.numUsers, embeddingSize: self.mlpLayerSizes[0]/2)
-        // Item MLP embedding
         self.mlpItemEmbed = Embedding<Scalar>(vocabularySize: self.numItems, embeddingSize: self.mlpLayerSizes[0]/2)
 
-        //TODO: Extend it for n layers by using for loop
-        //Currently only for 3 layers
+        // TODO: Extend it for n layers by using for loop
+        // Currently only for 4 layers
         dense1 = Dense(inputSize: self.mlpLayerSizes[0], outputSize: self.mlpLayerSizes[1], activation: relu)
         dense2 = Dense(inputSize: self.mlpLayerSizes[1], outputSize: self.mlpLayerSizes[2], activation: relu)
         dense3 = Dense(inputSize: self.mlpLayerSizes[2], outputSize: self.mlpLayerSizes[3], activation: relu)
@@ -101,7 +97,7 @@ public struct NeuMF: Module {
             let userEmbedMf = self.mfUserEmbed(userIndices)
             let itemEmbedMf = self.mfItemEmbed(itemIndices)
 
-            //Concatenate MF and MLP parts
+            // Concatenate MF and MLP parts
             let mfVector = userEmbedMf*itemEmbedMf
             var mlpVector = userEmbedMlp.concatenated(with:itemEmbedMlp,alongAxis:-1)
 
