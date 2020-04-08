@@ -178,13 +178,31 @@ public struct COCO {
     }
 
     /// Load annotations with specified ids.
-    func loadAnnotations() {}
+    func loadAnnotations(ids: [AnnotationId] = []) -> [Annotation] {
+        var anns: [Annotation] = []
+        for id in ids {
+            anns.append(self.anns[id]!)
+        }
+        return anns
+    }
 
     /// Load categories with specified ids.
-    func loadCategories() {}
+    func loadCategories(ids: [CategoryId] = []) -> [Category] {
+        var cats: [Category] = []
+        for id in ids {
+            cats.append(self.cats[id]!)
+        }
+        return cats
+    }
 
     /// Load images with specified ids.
-    func loadImages() {}
+    func loadImages(ids: [ImageId] = []) -> [Image] {
+        var imgs: [Image] = []
+        for id in ids {
+            imgs.append(self.imgs[id]!)
+        }
+        return imgs
+    }
 
     /// Convert segmentation in an annotation to RLE.
     func annotationToRLE() {}
