@@ -98,9 +98,30 @@ func loadCIFARFile(named name: String, in directory: URL, normalizing: Bool = tr
     // Transpose from the CIFAR-provided N(CHW) to TF's default NHWC.
     var imageTensor = Tensor<Float>(images.transposed(permutation: [0, 2, 3, 1]))
 
+    // The value of mean and std were calculated with the following Swift code:
+    // ```
+    // import TensorFlow
+    // import Datasets
+    // import Foundation
+    // let urlString = "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/CIFAR10/cifar-10-binary.tar.gz"
+    // let cifar = CIFAR10(batchSize: 50000,
+    //                     remoteBinaryArchiveLocation: URL(string: urlString)!,
+    //                     normalizing: false)
+    // for batch in cifar.training.sequenced() {
+    //     let images = Tensor<Double>(batch.first) / 255.0
+    //     let mom = images.moments(squeezingAxes: [0,1,2])
+    //     print("mean: \(mom.mean) std: \(sqrt(mom.variance))")
+    // }
+    // ```
     if normalizing {
-        let mean = Tensor<Float>([0.485, 0.456, 0.406])
-        let std = Tensor<Float>([0.229, 0.224, 0.225])
+        let mean = Tensor<Float>(
+                [0.4913996898,
+                 0.4821584196,
+                 0.4465309242])
+        let std = Tensor<Float>(
+                [0.2470322324,
+                 0.2434851280,
+                 0.2615878417])
         imageTensor = ((imageTensor / 255.0) - mean) / std
     }
     
