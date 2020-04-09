@@ -235,8 +235,8 @@ public struct COCO {
 }
 
 public struct Mask {
-    static func merge(_ rles: [RLE]) -> RLE {
-        fatalError("todo")
+    static func merge(_ rles: [RLE], intersect: Bool = false) -> RLE {
+        return RLE(merging: rles, intersect: intersect)
     }
 
     static func fromBoundingBoxes(_ bboxes: [[Double]], width w: Int, height h: Int) -> [RLE] {
@@ -258,7 +258,20 @@ public struct Mask {
     }
 
     static func fromUncompressedRLEs(_ arr: [[String: Any]], width w: Int, height h: Int) -> [RLE] {
-        fatalError("todo")
+        var rles: [RLE] = []
+        for elem in arr {
+            let counts = elem["counts"] as! [Int]
+            let m = counts.count
+            var cnts = [UInt32](repeating: 0, count: m)
+            for i in 0..<m {
+                cnts[i] = UInt32(counts[i])
+            }
+            let size = elem["size"] as! [Int]
+            let h = size[0]
+            let w = size[1]
+            rles.append(RLE(width: w, height: h, m: cnts.count, counts: cnts))
+        }
+        return rles
     }
 
     static func fromObject(_ obj: Any, width w: Int, height h: Int) -> [RLE] {
