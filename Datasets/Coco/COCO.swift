@@ -61,8 +61,8 @@ public struct COCO {
                 self.cats[cat_id] = cat
             }
         }
-        if let annotations = dataset["annotations"] {
-            let anns = annotations as! [Annotation]
+        if dataset["annotations"] != nil && dataset["categories"] != nil {
+            let anns = dataset["annotations"] as! [Annotation]
             for ann in anns {
                 let cat_id = ann["category_id"] as! CategoryId
                 let image_id = ann["image_id"] as! ImageId
@@ -72,7 +72,7 @@ public struct COCO {
     }
 
     /// Get annotation ids that satisfy given filter conditions.
-    func getAnnotationIds(
+    public func getAnnotationIds(
         imageIds: [ImageId] = [],
         categoryIds: [CategoryId] = [],
         areaRange: [[Double]] = [],
@@ -123,13 +123,13 @@ public struct COCO {
     }
 
     /// A helper function that decides if one area is less than the other.
-    private func areaLessThan(_ left: [Double], _ right: [Double]) -> Bool {
+    func areaLessThan(_ left: [Double], _ right: [Double]) -> Bool {
         // TODO: 
         return false
     }
 
     /// Get category ids that satisfy given filter conditions.
-    func getCategoryIds(
+    public func getCategoryIds(
         categoryNames: [String] = [],
         supercategoryNames: [String] = [],
         categoryIds: [CategoryId] = []
@@ -158,7 +158,7 @@ public struct COCO {
     }
 
     /// Get image ids that satisfy given filter conditions.
-    func getImageIds(
+    public func getImageIds(
         imageIds: [ImageId] = [],
         categoryIds: [CategoryId] = []
     ) -> [ImageId] {
@@ -178,7 +178,7 @@ public struct COCO {
     }
 
     /// Load annotations with specified ids.
-    func loadAnnotations(ids: [AnnotationId] = []) -> [Annotation] {
+    public func loadAnnotations(ids: [AnnotationId] = []) -> [Annotation] {
         var anns: [Annotation] = []
         for id in ids {
             anns.append(self.anns[id]!)
@@ -187,7 +187,7 @@ public struct COCO {
     }
 
     /// Load categories with specified ids.
-    func loadCategories(ids: [CategoryId] = []) -> [Category] {
+    public func loadCategories(ids: [CategoryId] = []) -> [Category] {
         var cats: [Category] = []
         for id in ids {
             cats.append(self.cats[id]!)
@@ -196,7 +196,7 @@ public struct COCO {
     }
 
     /// Load images with specified ids.
-    func loadImages(ids: [ImageId] = []) -> [Image] {
+    public func loadImages(ids: [ImageId] = []) -> [Image] {
         var imgs: [Image] = []
         for id in ids {
             imgs.append(self.imgs[id]!)
@@ -205,11 +205,11 @@ public struct COCO {
     }
 
     /// Convert segmentation in an annotation to RLE.
-    func annotationToRLE(_ ann: Annotation) -> RLE {
+    public func annotationToRLE(_ ann: Annotation) -> RLE {
         let imgId = ann["image_id"] as! ImageId
         let img = self.imgs[imgId]!
         let h = img["height"] as! Int
-        let w = img["weight"] as! Int
+        let w = img["width"] as! Int
         let segm = ann["segmentation"]
         if let polygon = segm as? [Any] {
             let rles = Mask.fromObject(polygon, width: w, height: h)
@@ -217,6 +217,8 @@ public struct COCO {
         } else if let segmDict = segm as? [String: Any] {
             if segmDict["counts"] is [Any] {
                 return Mask.fromObject(segmDict, width: w, height: h)[0]
+            } else if let countsStr = segmDict["counts"] as? String {
+                return RLE(fromString: countsStr, width: w, height: h)
             } else {
                 fatalError("unrecognized annotation: \(ann)")
             }
@@ -226,12 +228,14 @@ public struct COCO {
     }
 
     /// Convert segmentation in an anotation to binary mask.
-    func annotationToMask(_ ann: Annotation) -> Mask {
+    public func annotationToMask(_ ann: Annotation) -> Mask {
         fatalError("todo")
     }
 
     /// Download images from mscoco.org server.
-    func downloadImages() {}
+    public func downloadImages() {
+        fatalError("todo")
+    }
 }
 
 public struct Mask {
@@ -320,6 +324,39 @@ public struct RLE {
         self.counts = counts
     }
 
+    init(fromString str: String, width w: Int, height h: Int) {
+        let data = str.data(using: .utf8)!
+        let bytes = [UInt8](data)
+        self.init(fromBytes: bytes, width: w, height: h)
+    }
+
+    init(fromBytes bytes: [UInt8], width w: Int, height h: Int) {
+        var m: Int = 0
+        var p: Int = 0
+        var cnts = [UInt32](repeating: 0, count: bytes.count)
+        while p < bytes.count {
+            var x: Int = 0
+            var k: Int = 0
+            var more: Int = 1
+            while more != 0 {
+                let c = Int8(bitPattern: bytes[p]) - 48
+                x |= (Int(c) & 0x1f) << 5 * k
+                more = Int(c) & 0x20
+                p += 1
+                k += 1
+                if more == 0 && (c & 0x10) != 0 {
+                    x |= -1 << 5 * k
+                }
+            }
+            if m > 2 {
+                x += Int(cnts[m - 2])
+            }
+            cnts[m] = UInt32(truncatingIfNeeded: x)
+            m += 1
+        }
+        self.init(width: w, height: h, m: m, counts: cnts)
+    }
+
     init(fromBoundingBox bb: [Double], width w: Int, height h: Int) {
         let xs = bb[0]
         let ys = bb[1]
@@ -367,14 +404,16 @@ public struct RLE {
                 for d in 0...dx {
                     t = flip ? dx - d : d
                     u[m] = t + xs
-                    v[m] = Int(Double(ys) + s * Double(t) + 0.5)
+                    let vm = Double(ys) + s * Double(t) + 0.5
+                    v[m] = vm.isNaN ? 0 : Int(vm)
                     m += 1
                 }
             } else {
                 for d in 0...dy {
                     t = flip ? dy - d : d
                     v[m] = t + ys
-                    u[m] = Int(Double(xs) + s * Double(t) + 0.5)
+                    let um = Double(xs) + s * Double(t) + 0.5
+                    u[m] = um.isNaN ? 0 : Int(um)
                     m += 1
                 }
             }
