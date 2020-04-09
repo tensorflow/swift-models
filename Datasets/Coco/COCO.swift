@@ -214,14 +214,20 @@ public struct COCO {
         if let polygon = segm as? [Any] {
             let rles = Mask.fromObject(polygon, width: w, height: h)
             return Mask.merge(rles)
+        } else if let segmDict = segm as? [String: Any] {
+            if segmDict["counts"] is [Any] {
+                return Mask.fromObject(segmDict, width: w, height: h)[0]
+            } else {
+                fatalError("unrecognized annotation: \(ann)")
+            }
         } else {
-            fatalError("todo")
+            fatalError("unrecognized annotation: \(ann)")
         }
     }
 
     /// Convert segmentation in an anotation to binary mask.
     func annotationToMask(_ ann: Annotation) -> Mask {
-        return Mask(fromRLE: annotationToRLE(ann))
+        fatalError("todo")
     }
 
     /// Download images from mscoco.org server.
@@ -229,8 +235,6 @@ public struct COCO {
 }
 
 public struct Mask {
-    init(fromRLE rle: RLE) {}
-
     static func merge(_ rles: [RLE]) -> RLE {
         fatalError("todo")
     }
@@ -416,5 +420,82 @@ public struct RLE {
             }
         }
         self.init(width: w, height: h, m: m, counts: b)
+    }
+
+    init(merging rles: [RLE], intersect: Bool) {
+        var c: UInt32
+        var ca: UInt32
+        var cb: UInt32
+        var cc: UInt32
+        var ct: UInt32
+        var v: Bool
+        var va: Bool
+        var vb: Bool
+        var vp: Bool
+        var a: Int
+        var b: Int
+        var w: Int = rles[0].width
+        var h: Int = rles[0].height
+        var m: Int = rles[0].m
+        var A: RLE
+        var B: RLE
+        let n = rles.count
+        if n == 0 { self.init(width: 0, height: 0, m: 0, counts: []) }
+        if n == 1 { self.init(width: w, height: h, m: m, counts: rles[0].counts) }
+        var cnts = [UInt32](repeating: 0, count: h * w + 1)
+        for a in 0..<m {
+            cnts[a] = rles[0].counts[a]
+        }
+        for i in 1..<n {
+            B = rles[i]
+            if B.height != h || B.width != w {
+                h = 0
+                w = 0
+                m = 0
+                break
+            }
+            A = RLE(width: w, height: h, m: m, counts: cnts)
+            ca = A.counts[0]
+            cb = B.counts[0]
+            v = false
+            va = false
+            vb = false
+            m = 0
+            a = 1
+            b = 1
+            cc = 0
+            ct = 1
+            while ct > 0 {
+                c = min(ca, cb)
+                cc += c
+                ct = 0
+                ca -= c
+                if ca == 0 && a < A.m {
+                    ca = A.counts[a]
+                    a += 1
+                    va = !va
+                }
+                ct += ca
+                cb -= c
+                if cb == 0 && b < B.m {
+                    cb = B.counts[b]
+                    b += 1
+                    vb = !vb
+                }
+                ct += cb
+                vp = v
+                if intersect {
+                    v = va && vb
+                } else {
+                    v = va || vb
+                }
+                if v != vp || ct == 0 {
+                    cnts[m] = cc
+                    m += 1
+                    cc = 0
+                }
+            }
+        }
+        self.init(width: w, height: h, m: m, counts: cnts)
     }
 }
