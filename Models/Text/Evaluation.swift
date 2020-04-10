@@ -36,12 +36,6 @@ public func matthewsCorrelationCoefficient(predictions: [Bool], groundTruth: [Bo
     case (true, true): tp += 1
     }
   }
-  // NOTE: Consider removing these debug print statements later.
-  print("Total predictions: \(predictions.count)")
-  print("True positives: \(tp)")
-  print("True negatives: \(tn)")
-  print("False positives: \(fp)")
-  print("False negatives: \(tn)")
   let nominator = Float(tp * tn - fp * fn)
   let denominator = Float((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)).squareRoot()
   return denominator != 0 ? nominator / denominator : 0

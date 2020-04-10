@@ -32,16 +32,15 @@ public struct CoLA {
     public let batchSize: Int
 
     public typealias ExampleIterator = IndexingIterator<[Example]>
-    public typealias RepeatExampleIterator = ShuffleIterator<RepeatIterator<ExampleIterator>>
     public typealias TrainDataIterator = PrefetchIterator<
-        GroupedIterator<MapIterator<RepeatExampleIterator, DataBatch>>
+        GroupedIterator<MapIterator<ExampleIterator, DataBatch>>
     >
     public typealias DevDataIterator = GroupedIterator<MapIterator<ExampleIterator, DataBatch>>
-    private typealias TestDataIterator = DevDataIterator
+    public typealias TestDataIterator = DevDataIterator
 
     public var trainDataIterator: TrainDataIterator
     public var devDataIterator: DevDataIterator
-    private var testDataIterator: TestDataIterator
+    public var testDataIterator: TestDataIterator
 }
 
 //===-----------------------------------------------------------------------------------------===//
@@ -158,8 +157,6 @@ extension CoLA {
 
         // Create the data iterators used for training and evaluating.
         self.trainDataIterator = trainExamples.shuffled().makeIterator()  // TODO: [RNG] Seed support.
-            .repeated()
-            .shuffled(bufferSize: 1000)
             .map(exampleMap)
             .grouped(
                 keyFn: { _ in 0 },
@@ -197,7 +194,7 @@ extension CoLA {
                             textBatches: $0.map { $0.inputs }, maxLength: maxSequenceLength),
                         labels: nil)
                 },
-                dropRemainder : dropRemainder
+                dropRemainder: dropRemainder
             )
     }
 }
