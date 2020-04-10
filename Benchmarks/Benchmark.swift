@@ -16,7 +16,7 @@ import Foundation
 
 protocol Benchmark {
     var exampleCount: Int { get }
-    func run()
+    func run() -> [Double]
 }
 
 /// Performs the specified benchmark over a certain number of iterations and provides the result to a callback function.
@@ -25,21 +25,32 @@ func measure(
     benchmark: Benchmark
 ) -> BenchmarkResults {
     var timings: [Double] = []
-    for _ in 0..<configuration.settings.iterations {
-        let timing = time(benchmark.run)
-        timings.append(timing)
+    let iterations = configuration.settings.iterations
+    for _ in 0..<iterations {
+        var timedSteps = benchmark.run()
+        timedSteps.removeFirst(configuration.settings.warmupBatches)
+        timings.append(contentsOf: timedSteps)
     }
 
     return BenchmarkResults(
         configuration: configuration, timings: timings, exampleCount: benchmark.exampleCount)
 }
 
+// Returns an uptime-based timestamp in milliseconds.
+func timestampInMilliseconds() -> Double {
+    let divisor: Double = 1_000_000
+    return Double(DispatchTime.now().uptimeNanoseconds) / divisor
+}
+
+/// Calculates and returns the time in milliseconds since the given timestamp.
+func durationInMilliseconds(since timestamp: Double) -> Double {
+    let now = timestampInMilliseconds()
+    return now - timestamp
+}
+
 /// Returns the time elapsed while running `body` in milliseconds.
 func time(_ body: () -> Void) -> Double {
-    let divisor: Double = 1_000_000
-    let start = Double(DispatchTime.now().uptimeNanoseconds) / divisor
+    let start = timestampInMilliseconds()
     body()
-    let end = Double(DispatchTime.now().uptimeNanoseconds) / divisor
-    let elapsed = end - start
-    return elapsed
+    return durationInMilliseconds(since: start)
 }

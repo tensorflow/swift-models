@@ -16,15 +16,5 @@ struct BenchmarkSettings: Codable {
     let batches: Int
     let batchSize: Int
     let iterations: Int
-    let epochs: Int
-
-    func withDefaults(_ defaults: BenchmarkSettings) -> BenchmarkSettings {
-        let newBatches = batches == -1 ? defaults.batches : batches
-        let newBatchSize = batchSize == -1 ? defaults.batchSize : batchSize
-        let newIterations = iterations == -1 ? defaults.iterations : iterations
-        let newEpochs = epochs == -1 ? defaults.epochs : epochs
-        return BenchmarkSettings(
-            batches: newBatches, batchSize: newBatchSize,
-            iterations: newIterations, epochs: newEpochs)
-    }
+    let warmupBatches: Int
 }

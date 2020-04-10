@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let benchmarkModels: [String: BenchmarkModel] = [
-    "LeNetMNIST": LeNetMNIST(),
-    "ResNetCIFAR10": ResNetCIFAR10(),
+let benchmarkModels: [String: BenchmarkModel.Type] = [
+    LeNetMNIST.name: LeNetMNIST.self,
+    ResNetCIFAR10.name: ResNetCIFAR10.self,
 ]

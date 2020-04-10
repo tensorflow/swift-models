@@ -25,7 +25,7 @@ extension BenchmarkResults {
             let batches = configuration.settings.batches
             let batchSize = configuration.settings.batchSize
             return timings.map { Double(batches * batchSize) / ($0 / 1000.0) }
-        case .trainingTime:
+        case .trainingThroughput:
             return timings
         }
     }

@@ -49,9 +49,14 @@ where Model: ImageClassificationModel, ClassificationDataset: ImageClassificatio
         }
     }
 
-    func run() {
+    func run() -> [Double] {
+        var batchTimings: [Double] = []
         for _ in 0..<batches {
-            let _ = model(images)
+            let batchTime = time{
+                let _ = model(images)
+            }
+            batchTimings.append(batchTime)
         }
+        return batchTimings
     }
 }

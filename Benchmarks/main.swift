@@ -17,36 +17,26 @@ import ModelSupport
 
 /// Collect benchmark results and print them to stdout using a given printing style
 func runBenchmark(
-    named name: String,
+    _ benchmarkModel: BenchmarkModel.Type,
     settings: BenchmarkSettings,
     variety: BenchmarkVariety,
     style: PrintingStyle
 ) {
-    if let benchmarkModel = benchmarkModels[name] {
-        var bench: Benchmark
-        var benchSettings: BenchmarkSettings
-        switch variety {
-        case .inferenceThroughput:
-            benchSettings =
-                settings.withDefaults(benchmarkModel.defaultInferenceSettings)
-            bench = benchmarkModel.makeInferenceBenchmark(settings: benchSettings)
-        case .trainingTime:
-            benchSettings =
-                settings.withDefaults(benchmarkModel.defaultTrainingSettings)
-            bench = benchmarkModel.makeTrainingBenchmark(settings: benchSettings)
-        }
-        let configuration = BenchmarkConfiguration(
-            name: name,
-            variety: variety,
-            settings: benchSettings)
-        let results = measure(
-            configuration: configuration,
-            benchmark: bench)
-        results.print(using: style)
-    } else {
-        printError("No registered inference benchmark with a name: \(name)")
-        printError("Consider running `list` command to see all available benchmarks.")
+    var benchmark: Benchmark
+    switch variety {
+    case .inferenceThroughput:
+        benchmark = benchmarkModel.makeInferenceBenchmark(settings: settings)
+    case .trainingThroughput:
+        benchmark = benchmarkModel.makeTrainingBenchmark(settings: settings)
     }
+    let configuration = BenchmarkConfiguration(
+        name: benchmarkModel.name,
+        variety: variety,
+        settings: settings)
+    let results = measure(
+        configuration: configuration,
+        benchmark: benchmark)
+    results.print(using: style)
 }
 
 struct BenchmarkCommand: ParsableCommand {
@@ -78,14 +68,14 @@ extension BenchmarkCommand {
                 let trainingConfiguration =
                     BenchmarkConfiguration(
                         name: name,
-                        variety: .trainingTime,
-                        settings: benchModel.defaultTrainingSettings)
+                        variety: .trainingThroughput,
+                        settings: benchModel.defaults(for: .trainingThroughput))
                 trainingConfiguration.print(using: style)
                 let inferenceConfiguration =
                     BenchmarkConfiguration(
                         name: name,
                         variety: .inferenceThroughput,
-                        settings: benchModel.defaultInferenceSettings)
+                        settings: benchModel.defaults(for: .inferenceThroughput))
                 inferenceConfiguration.print(using: style)
             }
         }
@@ -105,20 +95,23 @@ extension BenchmarkCommand {
         @Flag(help: "Run inference benchmark.")
         var inference: Bool
 
-        @Option(default: "", help: "Name of the benchmark to run.")
-        var benchmark: String
+        @Option(help: "Name of the benchmark to run.")
+        var benchmark: String?
 
-        @Option(default: -1, help: "Number of batches.")
-        var batches: Int
+        @Option(help: "Number of batches.")
+        var batches: Int?
 
-        @Option(name: .customLong("batchSize"), default: -1, help: "Size of a single batch.")
-        var batchSize: Int
+        @Option(name: .customLong("batchSize"), help: "Size of a single batch.")
+        var batchSize: Int?
 
-        @Option(default: -1, help: "Number of benchmark iterations.")
-        var iterations: Int
+        @Option(help: "Number of benchmark iterations.")
+        var iterations: Int?
 
-        @Option(default: -1, help: "Number of training epochs.")
-        var epochs: Int
+        @Option(help: "Number of training epochs.")
+        var epochs: Int?
+
+        @Option(help: "Number of batches to use as a warmup period.")
+        var warmupBatches: Int?
 
         @Flag(name: .customLong("json"), help: "Output json instead of plain text.")
         var useJSON: Bool
@@ -133,23 +126,44 @@ extension BenchmarkCommand {
                 throw ValidationError(
                     "Can't specify both --training and --inference benchmark variety.")
             }
+            
+            guard !((batches != nil) && (epochs != nil)) else {
+                throw ValidationError(
+                    "Can't specify both the number of batches and epochs.")
+            }
 
-            guard !benchmark.isEmpty else {
+            guard benchmark != nil else {
                 throw ValidationError("Must provide a --benchmark to run.")
+            }
+            
+            guard benchmarkModels[benchmark!] != nil else {
+                throw ValidationError(
+                    "No registered inference benchmark with a name: \(benchmark!). Consider running the `list` command to see all available benchmarks.")
             }
         }
 
         func run() throws {
             let style: PrintingStyle = useJSON ? .json : .plainText
+            let variety: BenchmarkVariety = training ? .trainingThroughput : .inferenceThroughput
+            let benchmarkModel = benchmarkModels[benchmark!]!
+            let defaults = benchmarkModel.defaults(for: variety)
+            let batchSizeToUse = batchSize ?? defaults.batchSize
+            let specifiedBatches: Int?
+            if let epochs = epochs {
+                specifiedBatches = epochs * (benchmarkModel.examplesPerEpoch(for: variety)
+                    / batchSizeToUse)
+            } else {
+                specifiedBatches = batches
+            }
+            
             let settings = BenchmarkSettings(
-                batches: batches,
-                batchSize: batchSize,
-                iterations: iterations,
-                epochs: epochs)
+                batches: specifiedBatches ?? defaults.batches,
+                batchSize: batchSizeToUse,
+                iterations: iterations ?? defaults.iterations,
+                warmupBatches: warmupBatches ?? defaults.warmupBatches)
 
-            let variety: BenchmarkVariety = training ? .trainingTime : .inferenceThroughput
             runBenchmark(
-                named: benchmark,
+                benchmarkModel,
                 settings: settings,
                 variety: variety,
                 style: style
@@ -171,15 +185,15 @@ extension BenchmarkCommand {
 
         func run() throws {
             let style: PrintingStyle = useJSON ? .json : .plainText
-            for (name, benchmarkModel) in benchmarkModels {
+            for (_, benchmarkModel) in benchmarkModels {
                 runBenchmark(
-                    named: name,
-                    settings: benchmarkModel.defaultTrainingSettings,
-                    variety: .trainingTime,
+                    benchmarkModel,
+                    settings: benchmarkModel.defaults(for: .trainingThroughput),
+                    variety: .trainingThroughput,
                     style: style)
                 runBenchmark(
-                    named: name,
-                    settings: benchmarkModel.defaultInferenceSettings,
+                    benchmarkModel,
+                    settings: benchmarkModel.defaults(for: .inferenceThroughput),
                     variety: .inferenceThroughput,
                     style: style)
             }

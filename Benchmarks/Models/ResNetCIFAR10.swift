@@ -16,21 +16,30 @@ import Datasets
 import ImageClassificationModels
 import TensorFlow
 
-struct ResNetCIFAR10: BenchmarkModel {
+enum ResNetCIFAR10: BenchmarkModel {
+    static var name: String { "ResNetCIFAR10" }
 
-    var defaultInferenceSettings: BenchmarkSettings {
-        return BenchmarkSettings(batches: 1000, batchSize: 1, iterations: 10, epochs: -1)
+    static func examplesPerEpoch(for variety: BenchmarkVariety) -> Int {
+        switch(variety) {
+        case .inferenceThroughput: return 10000
+        case .trainingThroughput: return 50000
+        }
     }
 
-    func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark {
+    static func defaults(for variety: BenchmarkVariety) -> BenchmarkSettings {
+        switch(variety) {
+        case .inferenceThroughput:
+            return BenchmarkSettings(batches: 1000, batchSize: 1, iterations: 10, warmupBatches: 1)
+        case .trainingThroughput:
+            return BenchmarkSettings(batches: 110, batchSize: 128, iterations: 1, warmupBatches: 1)
+        }
+    }
+
+    static func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark {
         return ImageClassificationInference<ResNet56, CIFAR10>(settings: settings)
     }
 
-    var defaultTrainingSettings: BenchmarkSettings {
-        return BenchmarkSettings(batches: -1, batchSize: 128, iterations: 10, epochs: 1)
-    }
-
-    func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark {
+    static func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark {
         return ImageClassificationTraining<ResNet56, CIFAR10>(settings: settings)
     }
 }

@@ -30,8 +30,6 @@ extension BenchmarkResults {
     }
 
     private func printAsPlainText() {
-        let average = self.interpretedTimings.average
-        let standardDeviation = self.interpretedTimings.standardDeviation
         let configuration = self.configuration
         let settings = configuration.settings
 
@@ -39,17 +37,20 @@ extension BenchmarkResults {
         case .inferenceThroughput:
             Swift.print("Benchmark: \(configuration.name)")
             Swift.print("\tVariety: \(configuration.variety.rawValue)")
-            Swift.print("\tAfter \(settings.iterations) iterations:")
-            Swift.print(
-                "\tSamples per second: \(String(format: "%.2f", average)), standard deviation: \(String(format: "%.2f", standardDeviation))"
-            )
-        case .trainingTime:
+            Swift.print("\tAfter \(settings.iterations) iteration(s):")
+            Swift.print("\tSamples per second:")
+            self.interpretedTimings.printStatistics(indentation: 2)
+        case .trainingThroughput:
             Swift.print("Benchmark: \(configuration.name)")
             Swift.print("\tVariety: \(configuration.variety.rawValue)")
-            Swift.print("\tAfter \(settings.iterations) iterations:")
-            Swift.print(
-                "\tAverage: \(String(format: "%.2f", average)) ms, standard deviation: \(String(format: "%.2f", standardDeviation)) ms"
-            )
+            Swift.print("\tAfter \(settings.iterations) iteration(s):")
+            Swift.print("\tStep time:")
+            self.interpretedTimings.printStatistics(indentation: 2)
+            Swift.print("\tSamples per second:")
+            let samplesPerSecond = self.interpretedTimings.map {
+                Double(settings.batchSize) / ($0 / 1000.0)
+            }
+            samplesPerSecond.printStatistics(indentation: 2)
         }
     }
 
@@ -74,23 +75,15 @@ extension BenchmarkConfiguration {
         result += self.name
         result += " "
         switch self.variety {
-        case .trainingTime:
+        case .trainingThroughput:
             result += "--training "
         case .inferenceThroughput:
             result += "--inference "
         }
-        if settings.batches != -1 {
-            result += "--batches \(settings.batches) "
-        }
-        if settings.batchSize != -1 {
-            result += "--batchSize \(settings.batchSize) "
-        }
-        if settings.iterations != -1 {
-            result += "--iterations \(settings.iterations) "
-        }
-        if settings.epochs != -1 {
-            result += "--epochs \(settings.epochs) "
-        }
+        result += "--batches \(settings.batches) "
+        result += "--batchSize \(settings.batchSize) "
+        result += "--iterations \(settings.iterations) "
+        result += "--warmupBatches \(settings.warmupBatches) "
         Swift.print(result)
     }
 
@@ -127,5 +120,13 @@ extension Array where Element == Double {
     /// The standard deviation of elements.
     var standardDeviation: Element {
         return Double.sqrt(variance)
+    }
+    
+    func printStatistics(indentation: Int) {
+        let tabs = String(repeating: "\t", count: indentation)
+        Swift.print("\(tabs)Min\(String(format: "%.2f", self.min()!))")
+        Swift.print("\(tabs)Max\(String(format: "%.2f", self.max()!))")
+        Swift.print("\(tabs)Average\(String(format: "%.2f", self.average))")
+        Swift.print("\(tabs)Standard deviation: \(String(format: "%.2f", self.standardDeviation))")
     }
 }
