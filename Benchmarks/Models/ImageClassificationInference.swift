@@ -27,7 +27,7 @@ class ImageClassificationInference<Model, ClassificationDataset>: Benchmark
 where Model: ImageClassificationModel, ClassificationDataset: ImageClassificationDataset {
     let dataset: ClassificationDataset
     var model: Model
-    let images: Tensor<Float>
+    let images: Tensor<Float>?
     let batches: Int
     let batchSize: Int
 
@@ -40,22 +40,29 @@ where Model: ImageClassificationModel, ClassificationDataset: ImageClassificatio
         self.batchSize = settings.batchSize
         self.dataset = ClassificationDataset(batchSize: settings.batchSize)
         self.model = Model()
-        if let providedImages = images {
-            self.images = providedImages
-        } else {
-            self.images = Tensor<Float>(
-                randomNormal: [batchSize, 28, 28, 1], mean: Tensor<Float>(0.5),
-                standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
-        }
+        self.images = images
     }
 
     func run() -> [Double] {
         var batchTimings: [Double] = []
-        for _ in 0..<batches {
-            let batchTime = time{
-                let _ = model(images)
+        if let images = images {
+            for _ in 0..<batches {
+                let batchTime = time{
+                    let _ = model(images)
+                }
+                batchTimings.append(batchTime)
             }
-            batchTimings.append(batchTime)
+        } else {
+            var currentBatch = 0
+            for batch in dataset.test.sequenced() {
+                if (currentBatch >= self.batches) { break }
+                let images = batch.first
+                let batchTime = time{
+                    let _ = model(images)
+                }
+                batchTimings.append(batchTime)
+                currentBatch += 1
+            }
         }
         return batchTimings
     }

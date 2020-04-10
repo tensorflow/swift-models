@@ -15,7 +15,7 @@
 import Foundation
 
 protocol Benchmark {
-    var exampleCount: Int { get }
+    var batchSize: Int { get }
     func run() -> [Double]
 }
 
@@ -25,15 +25,18 @@ func measure(
     benchmark: Benchmark
 ) -> BenchmarkResults {
     var timings: [Double] = []
+    var warmup: [Double] = []
     let iterations = configuration.settings.iterations
     for _ in 0..<iterations {
         var timedSteps = benchmark.run()
+        warmup.append(contentsOf: timedSteps.prefix(configuration.settings.warmupBatches))
         timedSteps.removeFirst(configuration.settings.warmupBatches)
         timings.append(contentsOf: timedSteps)
     }
 
     return BenchmarkResults(
-        configuration: configuration, timings: timings, exampleCount: benchmark.exampleCount)
+        configuration: configuration, warmup: warmup, timings: timings,
+        batchSize: benchmark.batchSize)
 }
 
 // Returns an uptime-based timestamp in milliseconds.

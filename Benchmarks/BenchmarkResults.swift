@@ -14,19 +14,7 @@
 
 struct BenchmarkResults: Codable {
     let configuration: BenchmarkConfiguration
+    let warmup: [Double]
     let timings: [Double]
-    let exampleCount: Int
-}
-
-extension BenchmarkResults {
-    var interpretedTimings: [Double] {
-        switch configuration.variety {
-        case .inferenceThroughput:
-            let batches = configuration.settings.batches
-            let batchSize = configuration.settings.batchSize
-            return timings.map { Double(batches * batchSize) / ($0 / 1000.0) }
-        case .trainingThroughput:
-            return timings
-        }
-    }
+    let batchSize: Int
 }
