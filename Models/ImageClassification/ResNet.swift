@@ -22,7 +22,7 @@ import TensorFlow
 // (aka Option (B) in https://arxiv.org/abs/1812.01187).
 //
 // The structure of this implementation was inspired by the Flax ResNet example:
-// https://github.com/google-research/flax/blob/prerelease/examples/imagenet/models.py
+// https://github.com/google/flax/blob/master/examples/imagenet/models.py
 
 public struct ConvBN: Layer {
     public var conv: Conv2D<Float>
