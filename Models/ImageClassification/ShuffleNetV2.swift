@@ -70,10 +70,7 @@ public struct InvertedResidual: Layer {
             )
             BatchNorm<Float>(featureCount: branchChannels)
         }
-        var inputChannels = branchChannels
-        if includeBranch {
-            inputChannels = filters.0
-        }
+        var inputChannels = includeBranch ? filters.0: branchChannels
         conv1 = Conv2D<Float>(
             filterShape: (1, 1, inputChannels, branchChannels), strides: (1, 1), padding: .valid,
             useBias: false
