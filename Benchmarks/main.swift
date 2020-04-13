@@ -110,7 +110,8 @@ extension BenchmarkCommand {
         @Option(help: "Number of training epochs.")
         var epochs: Int?
 
-        @Option(help: "Number of batches to use as a warmup period.")
+        @Option(name: .customLong("warmupBatches"),
+                help: "Number of batches to use as a warmup period.")
         var warmupBatches: Int?
 
         @Flag(name: .customLong("json"), help: "Output json instead of plain text.")

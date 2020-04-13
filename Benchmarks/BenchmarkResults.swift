@@ -14,7 +14,8 @@
 
 struct BenchmarkResults: Codable {
     let configuration: BenchmarkConfiguration
-    let warmup: [Double]
     let timings: [Double]
+    let warmupTime: Double
+    let totalTime: Double
     let batchSize: Int
 }

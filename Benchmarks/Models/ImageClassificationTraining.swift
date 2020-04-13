@@ -35,6 +35,8 @@ where
     }
 
     func run() -> [Double] {
+        // Include model and optimizer initialization time in first batch, to be part of warmup.
+        var beforeBatch = timestampInMilliseconds()
         var model = Model()
         // TODO: Split out the optimizer as a separate specification.
         let optimizer = SGD(for: model, learningRate: 0.1)
@@ -45,7 +47,6 @@ where
         while (currentBatch < self.batches) {
             for batch in dataset.training.sequenced() {
                 if (currentBatch >= self.batches) { break }
-                let beforeBatch = timestampInMilliseconds()
                 let (images, labels) = (batch.first, batch.second)
                 
                 // Discard remainder batches that are not the same size as the others 
@@ -58,6 +59,7 @@ where
                 optimizer.update(&model, along: 𝛁model)
                 batchTimings.append(durationInMilliseconds(since: beforeBatch))
                 currentBatch += 1
+                beforeBatch = timestampInMilliseconds()
             }
         }
         return batchTimings

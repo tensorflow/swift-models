@@ -27,16 +27,19 @@ func measure(
     var timings: [Double] = []
     var warmup: [Double] = []
     let iterations = configuration.settings.iterations
+    let start = timestampInMilliseconds()
     for _ in 0..<iterations {
         var timedSteps = benchmark.run()
         warmup.append(contentsOf: timedSteps.prefix(configuration.settings.warmupBatches))
         timedSteps.removeFirst(configuration.settings.warmupBatches)
         timings.append(contentsOf: timedSteps)
     }
+    let warmupTime = warmup.reduce(0.0, +)
+    let totalTime = durationInMilliseconds(since: start)
 
     return BenchmarkResults(
-        configuration: configuration, warmup: warmup, timings: timings,
-        batchSize: benchmark.batchSize)
+        configuration: configuration, timings: timings, warmupTime: warmupTime,
+        totalTime: totalTime, batchSize: benchmark.batchSize)
 }
 
 // Returns an uptime-based timestamp in milliseconds.

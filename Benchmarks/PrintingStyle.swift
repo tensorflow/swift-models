@@ -35,16 +35,22 @@ extension BenchmarkResults {
         
         Swift.print("Benchmark: \(configuration.name)")
         Swift.print("\tVariety: \(configuration.variety.rawValue)")
-        Swift.print("\tAfter \(settings.iterations) iteration(s) of \(settings.batches) batches:")
-        Swift.print("\tSamples per second:")
-        let samplesPerSecond = self.timings.map {
+        Swift.print("\tAfter \(settings.iterations) iteration(s) of \(self.timings.count) batches:")
+        let timeAfterWarmup = self.totalTime - self.warmupTime
+        let totalExamples = self.timings.count * settings.batchSize
+        let averageExamplesPerSecond = Double(totalExamples) / (Double(timeAfterWarmup) / 1000.0)
+        Swift.print(
+            "\tAverage examples per second: \(String(format: "%.2f", averageExamplesPerSecond))")
+        Swift.print("\tInstantaneous examples per second:")
+        let examplesPerSecond = self.timings.map {
             Double(settings.batchSize) / ($0 / 1000.0)
         }
-        samplesPerSecond.printStatistics(indentation: 2)
-        Swift.print("\tStep time:")
+        examplesPerSecond.printStatistics(indentation: 2)
+        Swift.print("\tStep time (ms):")
         self.timings.printStatistics(indentation: 2)
-        Swift.print("\tWarmup time:")
-        self.warmup.printStatistics(indentation: 2)
+        Swift.print("\tTotal time: \(String(format: "%.2f", self.totalTime)) ms")
+        Swift.print("\tWarmup time: \(String(format: "%.2f", self.warmupTime)) ms")
+        Swift.print("\tTime after warmup: \(String(format: "%.2f", timeAfterWarmup)) ms")
     }
 
     private func printAsJSON() {
