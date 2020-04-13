@@ -12,7 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let benchmarkModels: [String: BenchmarkModel.Type] = [
-    LeNetMNIST.name: LeNetMNIST.self,
-    ResNetCIFAR10.name: ResNetCIFAR10.self,
+let benchmarkModels = Dictionary([LeNetMNIST.self, ResNetCIFAR10.self].map { ($0.name, $0) })
 ]
