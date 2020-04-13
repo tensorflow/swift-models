@@ -68,6 +68,7 @@ set_target_properties(SwiftProtobuf PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${BINARY_DIR}/swift)
 add_dependencies(SwiftProtobuf swift-protobuf-build)
 
+add_subdirectory(Autoencoder)
 add_subdirectory(Support)
 add_subdirectory(Batcher)
 add_subdirectory(Datasets)
