@@ -75,7 +75,7 @@ public struct COCO {
     public func getAnnotationIds(
         imageIds: [ImageId] = [],
         categoryIds: [CategoryId] = [],
-        areaRange: [[Double]] = [],
+        areaRange: [Double] = [],
         isCrowd: Int? = nil
     ) -> [AnnotationId] {
         let filterByImageId = imageIds.count != 0
@@ -105,8 +105,8 @@ public struct COCO {
                 }
             }
             if filterByAreaRange {
-                let area = ann["area"] as! [Double]
-                if !areaLessThan(areaRange[0], area) || !areaLessThan(area, areaRange[1]) {
+                let area = ann["area"] as! Double
+                if !(area > areaRange[0] && area < areaRange[1]) {
                     continue
                 }
             }
@@ -120,12 +120,6 @@ public struct COCO {
             annIds.append(id)
         }
         return annIds
-    }
-
-    /// A helper function that decides if one area is less than the other.
-    func areaLessThan(_ left: [Double], _ right: [Double]) -> Bool {
-        // TODO: 
-        return false
     }
 
     /// Get category ids that satisfy given filter conditions.
@@ -225,16 +219,6 @@ public struct COCO {
         } else {
             fatalError("unrecognized annotation: \(ann)")
         }
-    }
-
-    /// Convert segmentation in an anotation to binary mask.
-    public func annotationToMask(_ ann: Annotation) -> Mask {
-        fatalError("todo")
-    }
-
-    /// Download images from mscoco.org server.
-    public func downloadImages() {
-        fatalError("todo")
     }
 }
 
