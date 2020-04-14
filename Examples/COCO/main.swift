@@ -33,12 +33,10 @@ for fileName in fileNames {
     for (k, v) in coco.info {
         print("  \(k): \(v)")
     }
-    print("Categories: \(coco.cats.count)")
-    print("Images: \(coco.imgs.count)")
-    print("Annotations: \(coco.anns.count)")
-    var i = 0
-    for (_, ann) in coco.anns {
-        i += 1
+    print("Categories: \(coco.categories.count)")
+    print("Images: \(coco.images.count)")
+    print("Annotations: \(coco.annotations.count)")
+    for (_, ann) in coco.annotations {
         if ann["caption"] == nil {
             let rle = coco.annotationToRLE(ann)
         }

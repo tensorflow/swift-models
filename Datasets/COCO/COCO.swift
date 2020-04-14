@@ -14,11 +14,11 @@ public struct COCO {
 
     public var dataset: Dataset
     public var info: Info
-    public var anns: [AnnotationId: Annotation]
-    public var cats: [CategoryId: Category]
-    public var imgs: [ImageId: Image]
-    public var imgToAnns: [ImageId: [Annotation]]
-    public var catToImgs: [CategoryId: [ImageId]]
+    public var annotations: [AnnotationId: Annotation]
+    public var categories: [CategoryId: Category]
+    public var images: [ImageId: Image]
+    public var imageToAnnotations: [ImageId: [Annotation]]
+    public var categoryToImages: [CategoryId: [ImageId]]
 
     public init(fromFile fileURL: URL) throws {
         let contents = try String(contentsOfFile: fileURL.path)
@@ -26,11 +26,11 @@ public struct COCO {
         let parsed = try JSONSerialization.jsonObject(with: data)
         self.dataset = parsed as! Dataset
         self.info = [:]
-        self.anns = [:]
-        self.cats = [:]
-        self.imgs = [:]
-        self.imgToAnns = [:]
-        self.catToImgs = [:]
+        self.annotations = [:]
+        self.categories = [:]
+        self.images = [:]
+        self.imageToAnnotations = [:]
+        self.categoryToImages = [:]
         self.createIndex()
     }
 
@@ -43,22 +43,22 @@ public struct COCO {
             for ann in anns {
                 let ann_id = ann["id"] as! AnnotationId
                 let image_id = ann["image_id"] as! ImageId
-                self.imgToAnns[image_id, default: []].append(ann)
-                self.anns[ann_id] = ann
+                self.imageToAnnotations[image_id, default: []].append(ann)
+                self.annotations[ann_id] = ann
             }
         }
         if let images = dataset["images"] {
             let imgs = images as! [Image]
             for img in imgs {
                 let img_id = img["id"] as! ImageId
-                self.imgs[img_id] = img
+                self.images[img_id] = img
             }
         }
         if let categories = dataset["categories"] {
             let cats = categories as! [Category]
             for cat in cats {
                 let cat_id = cat["id"] as! CategoryId
-                self.cats[cat_id] = cat
+                self.categories[cat_id] = cat
             }
         }
         if dataset["annotations"] != nil && dataset["categories"] != nil {
@@ -66,7 +66,7 @@ public struct COCO {
             for ann in anns {
                 let cat_id = ann["category_id"] as! CategoryId
                 let image_id = ann["image_id"] as! ImageId
-                self.catToImgs[cat_id, default: []].append(image_id)
+                self.categoryToImages[cat_id, default: []].append(image_id)
             }
         }
     }
@@ -86,7 +86,7 @@ public struct COCO {
         var anns: [Annotation] = []
         if filterByImageId {
             for imageId in imageIds {
-                if let imageAnns = self.imgToAnns[imageId] {
+                if let imageAnns = self.imageToAnnotations[imageId] {
                     for imageAnn in imageAnns {
                         anns.append(imageAnn)
                     }
@@ -163,14 +163,14 @@ public struct COCO {
         categoryIds: [CategoryId] = []
     ) -> [ImageId] {
         if imageIds.count == 0 && categoryIds.count == 0 {
-            return Array(self.imgs.keys)
+            return Array(self.images.keys)
         } else {
             var ids = Set(imageIds)
             for (i, catId) in categoryIds.enumerated() {
                 if i == 0 && ids.count == 0 {
-                    ids = Set(self.catToImgs[catId]!)
+                    ids = Set(self.categoryToImages[catId]!)
                 } else {
-                    ids = ids.intersection(Set(self.catToImgs[catId]!))
+                    ids = ids.intersection(Set(self.categoryToImages[catId]!))
                 }
             }
             return Array(ids)
@@ -181,7 +181,7 @@ public struct COCO {
     public func loadAnnotations(ids: [AnnotationId] = []) -> [Annotation] {
         var anns: [Annotation] = []
         for id in ids {
-            anns.append(self.anns[id]!)
+            anns.append(self.annotations[id]!)
         }
         return anns
     }
@@ -190,7 +190,7 @@ public struct COCO {
     public func loadCategories(ids: [CategoryId] = []) -> [Category] {
         var cats: [Category] = []
         for id in ids {
-            cats.append(self.cats[id]!)
+            cats.append(self.categories[id]!)
         }
         return cats
     }
@@ -199,7 +199,7 @@ public struct COCO {
     public func loadImages(ids: [ImageId] = []) -> [Image] {
         var imgs: [Image] = []
         for id in ids {
-            imgs.append(self.imgs[id]!)
+            imgs.append(self.images[id]!)
         }
         return imgs
     }
@@ -207,7 +207,7 @@ public struct COCO {
     /// Convert segmentation in an annotation to RLE.
     public func annotationToRLE(_ ann: Annotation) -> RLE {
         let imgId = ann["image_id"] as! ImageId
-        let img = self.imgs[imgId]!
+        let img = self.images[imgId]!
         let h = img["height"] as! Int
         let w = img["width"] as! Int
         let segm = ann["segmentation"]
