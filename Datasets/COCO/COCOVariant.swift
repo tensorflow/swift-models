@@ -6,7 +6,7 @@ public struct COCOVariant {
         URL(string: "http://images.cocodataset.org/annotations/annotations_trainval2017.zip")!
 
     static func downloadIfNotPresent(from location: URL, to directory: URL) {
-        let downloadPath = directory.path
+        let downloadPath = directory.appendingPathComponent("annotations").path
         let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
         let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: downloadPath)
         let directoryEmpty = (contentsOfDir == nil) || (contentsOfDir!.isEmpty)
@@ -27,7 +27,7 @@ public struct COCOVariant {
 
     public static func defaultDirectory() -> URL {
         return DatasetUtilities.defaultDirectory
-            .appendingPathComponent("COCO-annotations_trainval2017", isDirectory: true)
+            .appendingPathComponent("COCO", isDirectory: true)
     }
 
     public static func loadCaptionsTrain2017(to directory: URL = defaultDirectory()) -> COCO {
