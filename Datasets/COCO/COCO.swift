@@ -1,5 +1,7 @@
 import Foundation
 
+// Code below is ported from https://github.com/cocodataset/cocoapi
+
 /// Coco dataset API that loads annotation file and prepares 
 /// data structures for data set access.
 public struct COCO {
