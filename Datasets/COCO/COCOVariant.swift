@@ -6,7 +6,7 @@ public struct COCOVariant {
         URL(string: "http://images.cocodataset.org/annotations/annotations_trainval2017.zip")!
 
     static func downloadIfNotPresent(from location: URL, to directory: URL) {
-        let downloadPath = directory.appendingPathComponent("COCO-annotations_trainval2017").path
+        let downloadPath = directory.path
         let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
         let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: downloadPath)
         let directoryEmpty = (contentsOfDir == nil) || (contentsOfDir!.isEmpty)

@@ -1,6 +1,7 @@
 add_library(DatasetsTests
   BostonHousing/BostonHousingTests.swift
   CIFAR10/CIFAR10Tests.swift
+  COCO/COCOTests.swift
   Imagenette/ImagenetteTests.swift
   MNIST/MNISTTests.swift
   TextUnsupervised/TextUnsupervisedTests.swift
