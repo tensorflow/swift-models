@@ -492,8 +492,14 @@ public struct RLE {
         var A: RLE
         var B: RLE
         let n = rles.count
-        if n == 0 { self.init(width: 0, height: 0, m: 0, counts: []) }
-        if n == 1 { self.init(width: w, height: h, m: m, counts: rles[0].counts) }
+        if n == 0 {
+            self.init(width: 0, height: 0, m: 0, counts: [])
+            return
+        }
+        if n == 1 {
+            self.init(width: w, height: h, m: m, counts: rles[0].counts)
+            return
+        }
         var cnts = [UInt32](repeating: 0, count: h * w + 1)
         for a in 0..<m {
             cnts[a] = rles[0].counts[a]
