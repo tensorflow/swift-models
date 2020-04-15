@@ -123,6 +123,11 @@ let package = Package(
             name: "CycleGAN",
             dependencies: ["Batcher", .product(name: "ArgumentParser", package: "swift-argument-parser"), "ModelSupport", "Datasets"],
             path: "CycleGAN"
+        ),
+        .target(
+            name: "pix2pix",
+            dependencies: ["Batcher", .product(name: "ArgumentParser", package: "swift-argument-parser"), "ModelSupport", "Datasets"],
+            path: "pix2pix"
         )
     ]
 )
