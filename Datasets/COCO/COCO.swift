@@ -222,9 +222,50 @@ public struct COCO {
             fatalError("unrecognized annotation: \(ann)")
         }
     }
+
+    public func annotationToMask(_ ann: Annotation) -> Mask {
+        let rle = annotationToRLE(ann)
+        let mask = Mask(fromRLE: rle)
+        return mask
+    }
 }
 
 public struct Mask {
+    var width: Int
+    var height: Int
+    var n: Int
+    var mask: [Bool]
+
+    init(width w: Int, height h: Int, n: Int, mask: [Bool]) {
+        self.width = w
+        self.height = h
+        self.n = n
+        self.mask = mask
+    }
+
+    init(fromRLE rle: RLE) {
+        self.init(fromRLEs: [rle])
+    }
+
+    init(fromRLEs rles: [RLE]) {
+        let w = rles[0].width
+        let h = rles[0].height
+        let n = rles.count
+        var mask = [Bool](repeating: false, count: w * h * n)
+        var cursor: Int = 0
+        for i in 0..<n {
+            var v: Bool = false
+            for j in 0..<rles[i].m {
+                for _ in 0..<rles[i].counts[j] {
+                    mask[cursor] = v
+                    cursor += 1
+                }
+                v = !v
+            }
+        }
+        self.init(width: w, height: h, n: n, mask: mask)
+    }
+
     static func merge(_ rles: [RLE], intersect: Bool = false) -> RLE {
         return RLE(merging: rles, intersect: intersect)
     }

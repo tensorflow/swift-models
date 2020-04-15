@@ -13,6 +13,7 @@ print("Images: \(coco.images.count)")
 print("Annotations: \(coco.annotations.count)")
 for (_, ann) in coco.annotations {
     if ann["caption"] == nil {
-        let rle = coco.annotationToRLE(ann)
+        let _ = coco.annotationToRLE(ann)
+        let _ = coco.annotationToMask(ann)
     }
 }
