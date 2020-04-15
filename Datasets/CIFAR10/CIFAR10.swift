@@ -20,30 +20,38 @@
 import Foundation
 import ModelSupport
 import TensorFlow
+import Batcher
 
 public struct CIFAR10: ImageClassificationDataset {
-    public let trainingDataset: Dataset<LabeledExample>
-    public let testDataset: Dataset<LabeledExample>
-    public let trainingExampleCount = 50000
-    public let testExampleCount = 10000
+    public typealias SourceDataSet = [TensorPair<Float, Int32>]
+    public let training: Batcher<SourceDataSet>
+    public let test: Batcher<SourceDataSet>
 
-    public init() {
-        self.init( 
+    public init(batchSize: Int) {
+        self.init(
+            batchSize: batchSize,
             remoteBinaryArchiveLocation: URL(
-                string: "https://www.cs.toronto.edu/~kriz/cifar-10-binary.tar.gz")!, normalizing: true)
+                string: "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/CIFAR10/cifar-10-binary.tar.gz")!, 
+            normalizing: true)
     }
 
     public init(
+        batchSize: Int,
         remoteBinaryArchiveLocation: URL, 
-        localStorageDirectory: URL = FileManager.default.temporaryDirectory.appendingPathComponent(
-                "CIFAR10", isDirectory: true), 
+        localStorageDirectory: URL = DatasetUtilities.defaultDirectory
+                .appendingPathComponent("CIFAR10", isDirectory: true), 
         normalizing: Bool) 
     {
         downloadCIFAR10IfNotPresent(from: remoteBinaryArchiveLocation, to: localStorageDirectory)
-        self.trainingDataset = Dataset<LabeledExample>(
-            elements: loadCIFARTrainingFiles(localStorageDirectory: localStorageDirectory, normalizing: normalizing))
-        self.testDataset = Dataset<LabeledExample>(
-            elements: loadCIFARTestFile(localStorageDirectory: localStorageDirectory, normalizing: normalizing))
+        self.training = Batcher(
+            on: loadCIFARTrainingFiles(localStorageDirectory: localStorageDirectory, normalizing: normalizing),
+            batchSize: batchSize,
+            numWorkers: 1, //No need to use parallelism since everything is loaded in memory
+            shuffle: true)
+        self.test = Batcher(
+            on: loadCIFARTestFile(localStorageDirectory: localStorageDirectory, normalizing: normalizing),
+            batchSize: batchSize,
+            numWorkers: 1) //No need to use parallelism since everything is loaded in memory
     }
 }
 
@@ -60,7 +68,7 @@ func downloadCIFAR10IfNotPresent(from location: URL, to directory: URL) {
         remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
 }
 
-func loadCIFARFile(named name: String, in directory: URL, normalizing: Bool = true) -> LabeledExample {
+func loadCIFARFile(named name: String, in directory: URL, normalizing: Bool = true) -> [TensorPair<Float, Int32>] {
     let path = directory.appendingPathComponent("cifar-10-batches-bin/\(name)").path
 
     let imageCount = 10000
@@ -90,26 +98,44 @@ func loadCIFARFile(named name: String, in directory: URL, normalizing: Bool = tr
     // Transpose from the CIFAR-provided N(CHW) to TF's default NHWC.
     var imageTensor = Tensor<Float>(images.transposed(permutation: [0, 2, 3, 1]))
 
+    // The value of mean and std were calculated with the following Swift code:
+    // ```
+    // import TensorFlow
+    // import Datasets
+    // import Foundation
+    // let urlString = "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/CIFAR10/cifar-10-binary.tar.gz"
+    // let cifar = CIFAR10(batchSize: 50000,
+    //                     remoteBinaryArchiveLocation: URL(string: urlString)!,
+    //                     normalizing: false)
+    // for batch in cifar.training.sequenced() {
+    //     let images = Tensor<Double>(batch.first) / 255.0
+    //     let mom = images.moments(squeezingAxes: [0,1,2])
+    //     print("mean: \(mom.mean) std: \(sqrt(mom.variance))")
+    // }
+    // ```
     if normalizing {
-        let mean = Tensor<Float>([0.485, 0.456, 0.406])
-        let std = Tensor<Float>([0.229, 0.224, 0.225])
+        let mean = Tensor<Float>(
+                [0.4913996898,
+                 0.4821584196,
+                 0.4465309242])
+        let std = Tensor<Float>(
+                [0.2470322324,
+                 0.2434851280,
+                 0.2615878417])
         imageTensor = ((imageTensor / 255.0) - mean) / std
     }
     
-    return LabeledExample(label: Tensor<Int32>(labelTensor), data: imageTensor)
+    return (0..<imageCount).map { TensorPair(first: imageTensor[$0], second: Tensor<Int32>(labelTensor[$0])) }
         
 }
 
-func loadCIFARTrainingFiles(localStorageDirectory: URL, normalizing: Bool = true) -> LabeledExample {
+func loadCIFARTrainingFiles(localStorageDirectory: URL, normalizing: Bool = true) -> [TensorPair<Float, Int32>] {
     let data = (1..<6).map {
         loadCIFARFile(named: "data_batch_\($0).bin", in: localStorageDirectory, normalizing: normalizing)
     }
-    return LabeledExample(
-        label: Tensor(concatenating: data.map { $0.label }, alongAxis: 0),
-        data: Tensor(concatenating: data.map { $0.data }, alongAxis: 0)
-    )
+    return data.reduce([], +)
 }
 
-func loadCIFARTestFile(localStorageDirectory: URL, normalizing: Bool = true) -> LabeledExample {
+func loadCIFARTestFile(localStorageDirectory: URL, normalizing: Bool = true) -> [TensorPair<Float, Int32>] {
     return loadCIFARFile(named: "test_batch.bin", in: localStorageDirectory, normalizing: normalizing)
 }

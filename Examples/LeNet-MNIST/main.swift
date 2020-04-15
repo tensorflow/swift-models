@@ -18,7 +18,7 @@ import Datasets
 let epochCount = 12
 let batchSize = 128
 
-let dataset = MNIST()
+let dataset = MNIST(batchSize: batchSize)
 // The LeNet-5 model, equivalent to `LeNet` in `ImageClassificationModels`.
 var classifier = Sequential {
     Conv2D<Float>(filterShape: (5, 5, 1, 6), padding: .same, activation: relu)
@@ -42,25 +42,21 @@ struct Statistics {
     var batches: Int = 0
 }
 
-let testBatches = dataset.testDataset.batched(batchSize)
-
 // The training loop.
 for epoch in 1...epochCount {
     var trainStats = Statistics()
     var testStats = Statistics()
-    let trainingShuffled = dataset.trainingDataset.shuffled(
-        sampleCount: dataset.trainingExampleCount, randomSeed: Int64(epoch))
-
+    
     Context.local.learningPhase = .training
-    for batch in trainingShuffled.batched(batchSize) {
-        let (labels, images) = (batch.label, batch.data)
+    for batch in dataset.training.sequenced() {
+        let (images, labels) = (batch.first, batch.second)
         // Compute the gradient with respect to the model.
         let 𝛁model = TensorFlow.gradient(at: classifier) { classifier -> Tensor<Float> in
             let ŷ = classifier(images)
             let correctPredictions = ŷ.argmax(squeezingAxis: 1) .== labels
             trainStats.correctGuessCount += Int(
                 Tensor<Int32>(correctPredictions).sum().scalarized())
-            trainStats.totalGuessCount += batch.data.shape[0]
+            trainStats.totalGuessCount += batch.first.shape[0]
             let loss = softmaxCrossEntropy(logits: ŷ, labels: labels)
             trainStats.totalLoss += loss.scalarized()
             trainStats.batches += 1
@@ -71,13 +67,13 @@ for epoch in 1...epochCount {
     }
 
     Context.local.learningPhase = .inference
-    for batch in testBatches {
-        let (labels, images) = (batch.label, batch.data)
+    for batch in dataset.test.sequenced() {
+        let (images, labels) = (batch.first, batch.second)
         // Compute loss on test set
         let ŷ = classifier(images)
         let correctPredictions = ŷ.argmax(squeezingAxis: 1) .== labels
         testStats.correctGuessCount += Int(Tensor<Int32>(correctPredictions).sum().scalarized())
-        testStats.totalGuessCount += batch.data.shape[0]
+        testStats.totalGuessCount += batch.first.shape[0]
         let loss = softmaxCrossEntropy(logits: ŷ, labels: labels)
         testStats.totalLoss += loss.scalarized()
         testStats.batches += 1

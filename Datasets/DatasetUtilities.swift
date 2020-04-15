@@ -22,6 +22,10 @@ import ModelSupport
 public enum DatasetUtilities {
     public static let currentWorkingDirectoryURL = URL(
         fileURLWithPath: FileManager.default.currentDirectoryPath)
+        
+    public static let defaultDirectory = try! FileManager.default.url(
+            for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+            .appendingPathComponent("swift-models").appendingPathComponent("datasets")
 
     @discardableResult
     public static func downloadResource(
@@ -102,58 +106,9 @@ public enum DatasetUtilities {
         printError("Archive saved to: \(archiveLocation.path)")
 
         if extract {
-            extractArchive(for: resource)
-        }
-    }
-
-    static func extractArchive(for resource: ResourceDefinition) {
-        printError("Extracting archive...")
-
-        let archivePath = resource.archiveURL.path
-
-        #if os(macOS)
-            var binaryLocation = "/usr/bin/"
-        #else
-            var binaryLocation = "/bin/"
-        #endif
-
-        let toolName: String
-        let arguments: [String]
-        switch resource.fileExtension {
-        case "gz":
-            toolName = "gunzip"
-            arguments = [archivePath]
-        case "tar.gz", "tgz":
-            toolName = "tar"
-            arguments = ["xzf", archivePath, "-C", resource.localStorageDirectory.path]
-        case "zip":
-            binaryLocation = "/usr/bin/"
-            toolName = "unzip"
-            arguments = [archivePath, "-d", resource.localStorageDirectory.path]
-        default:
-            printError("Unable to find archiver for extension \(resource.fileExtension).")
-            exit(-1)
-        }
-        let toolLocation = "\(binaryLocation)\(toolName)"
-
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: toolLocation)
-        task.arguments = arguments
-        do {
-            try task.run()
-            task.waitUntilExit()
-        } catch {
-            printError("Failed to extract \(archivePath) with error: \(error)")
-            exit(-1)
-        }
-
-        if FileManager.default.fileExists(atPath: archivePath) {
-            do {
-                try FileManager.default.removeItem(atPath: archivePath)
-            } catch {
-                printError("Could not remove archive, error: \(error)")
-                exit(-1)
-            }
+            extractArchive(
+                at: resource.archiveURL, to: resource.localStorageDirectory,
+                fileExtension: resource.fileExtension, deleteArchiveWhenDone: true)
         }
     }
 }

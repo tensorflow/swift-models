@@ -14,13 +14,16 @@
 
 import Datasets
 import Foundation
+import ModelSupport
 import TensorFlow
 import TextModels
 
 let bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
-let workspaceURL = URL(fileURLWithPath: "bert_models", isDirectory: true,
-                       relativeTo: URL(fileURLWithPath: NSTemporaryDirectory(),
-                                       isDirectory: true))
+let workspaceURL = URL(
+    fileURLWithPath: "bert_models", isDirectory: true,
+    relativeTo: URL(
+        fileURLWithPath: NSTemporaryDirectory(),
+        isDirectory: true))
 let bert = try BERT.PreTrainedModel.load(bertPretrained)(from: workspaceURL)
 var bertClassifier = BERTClassifier(bert: bert, classCount: 1)
 
@@ -35,11 +38,26 @@ var bertClassifier = BERTClassifier(bert: bert, classCount: 1)
 // it is done to improve memory usage and computational efficiency when dealing with sequences of
 // varied lengths. Note that this is not used in the original BERT implementation released by
 // Google and so the batch size setting here is expected to differ from that one.
-var colaTask = try CoLA(
-    for: bertClassifier,
+let maxSequenceLength = 128
+let batchSize = 1024
+
+// Create a function that converts examples to data batches.
+let exampleMapFn: (CoLA.Example) -> CoLA.DataBatch = { example -> CoLA.DataBatch in
+    let textBatch = bertClassifier.bert.preprocess(
+        sequences: [example.sentence],
+        maxSequenceLength: maxSequenceLength)
+    return CoLA.DataBatch(
+        inputs: textBatch, labels: example.isAcceptable.map { Tensor($0 ? 1 : 0) })
+}
+
+var cola = try CoLA(
+    exampleMap: exampleMapFn,
     taskDirectoryURL: workspaceURL,
-    maxSequenceLength: 128,
-    batchSize: 1024)
+    maxSequenceLength: maxSequenceLength,
+    batchSize: batchSize,
+    dropRemainder: true)
+
+print("Dataset acquired.")
 
 var optimizer = WeightDecayedAdam(
     for: bertClassifier,
@@ -54,11 +72,64 @@ var optimizer = WeightDecayedAdam(
     maxGradientGlobalNorm: 1)
 
 print("Training BERT for the CoLA task!")
-for step in 0... {
-    let loss = colaTask.update(classifier: &bertClassifier, using: &optimizer)
-    print("[Step: \(step)]\tLoss: \(loss)")
-    if step > 0 && step.isMultiple(of: 10) {
-        print("Evaluate BERT for the CoLA task:")
-        print(colaTask.evaluate(using: bertClassifier))
+for epoch in 1...3 {
+    print("[Epoch \(epoch)]")
+    Context.local.learningPhase = .training
+    var trainingLossSum: Float = 0
+    var trainingBatchCount = 0
+    var trainingDataIterator = cola.trainDataIterator
+
+    while let batch = withDevice(.cpu, perform: { trainingDataIterator.next() }) {
+        let (documents, labels) = (batch.inputs, Tensor<Float>(batch.labels!))
+        let (loss, gradients) = valueWithGradient(at: bertClassifier) { model -> Tensor<Float> in
+            let logits = model(documents)
+            return sigmoidCrossEntropy(
+                logits: logits.squeezingShape(at: -1),
+                labels: labels,
+                reduction: { $0.mean() })
+        }
+
+        trainingLossSum += loss.scalarized()
+        trainingBatchCount += 1
+        optimizer.update(&bertClassifier, along: gradients)
+
+        print(
+            """
+              Training loss: \(trainingLossSum / Float(trainingBatchCount))
+            """
+        )
     }
+
+    Context.local.learningPhase = .inference
+    var devLossSum: Float = 0
+    var devBatchCount = 0
+    var devDataIterator = cola.devDataIterator
+    var devPredictedLabels = [Bool]()
+    var devGroundTruth = [Bool]()
+    while let batch = withDevice(.cpu, perform: { devDataIterator.next() }) {
+        let (documents, labels) = (batch.inputs, batch.labels!)
+        let logits = bertClassifier(documents)
+        let loss = sigmoidCrossEntropy(
+            logits: logits.squeezingShape(at: -1),
+            labels: Tensor<Float>(labels),
+            reduction: { $0.mean() }
+        )
+        devLossSum += loss.scalarized()
+        devBatchCount += 1
+
+        let predictedLabels = sigmoid(logits.squeezingShape(at: -1)) .>= 0.5
+        devPredictedLabels.append(contentsOf: predictedLabels.scalars)
+        devGroundTruth.append(contentsOf: labels.scalars.map { $0 == 1 })
+    }
+
+    let mcc = matthewsCorrelationCoefficient(
+        predictions: devPredictedLabels,
+        groundTruth: devGroundTruth)
+
+    print(
+        """
+          MCC: \(mcc)
+          Eval loss: \(devLossSum / Float(devBatchCount))
+        """
+    )
 }

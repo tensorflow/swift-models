@@ -1,5 +1,6 @@
 add_library(CheckpointTests
   CheckpointIndexReaderTests.swift
+  CheckpointReaderTests.swift
   CheckpointWriterTests.swift
   SnappyDecompressionTests.swift
   XCTestManifests.swift)

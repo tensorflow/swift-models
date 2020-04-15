@@ -21,6 +21,7 @@ protocol ImageClassificationModel: Layer where Input == Tensor<Float>, Output ==
 }
 
 extension LeNet: ImageClassificationModel {}
+extension ResNet56: ImageClassificationModel {}
 
 class ImageClassificationInference<Model, ClassificationDataset>: Benchmark
 where Model: ImageClassificationModel, ClassificationDataset: ImageClassificationDataset {
@@ -37,7 +38,7 @@ where Model: ImageClassificationModel, ClassificationDataset: ImageClassificatio
     init(settings: BenchmarkSettings, images: Tensor<Float>? = nil) {
         self.batches = settings.batches
         self.batchSize = settings.batchSize
-        self.dataset = ClassificationDataset()
+        self.dataset = ClassificationDataset(batchSize: settings.batchSize)
         self.model = Model()
         if let providedImages = images {
             self.images = providedImages

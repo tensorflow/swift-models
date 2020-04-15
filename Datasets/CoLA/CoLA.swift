@@ -32,16 +32,15 @@ public struct CoLA {
     public let batchSize: Int
 
     public typealias ExampleIterator = IndexingIterator<[Example]>
-    public typealias RepeatExampleIterator = ShuffleIterator<RepeatIterator<ExampleIterator>>
     public typealias TrainDataIterator = PrefetchIterator<
-        GroupedIterator<MapIterator<RepeatExampleIterator, DataBatch>>
+        GroupedIterator<MapIterator<ExampleIterator, DataBatch>>
     >
     public typealias DevDataIterator = GroupedIterator<MapIterator<ExampleIterator, DataBatch>>
-    private typealias TestDataIterator = DevDataIterator
+    public typealias TestDataIterator = DevDataIterator
 
     public var trainDataIterator: TrainDataIterator
     public var devDataIterator: DevDataIterator
-    private var testDataIterator: TestDataIterator
+    public var testDataIterator: TestDataIterator
 }
 
 //===-----------------------------------------------------------------------------------------===//
@@ -115,7 +114,8 @@ extension CoLA {
         exampleMap: @escaping (Example) -> DataBatch,
         taskDirectoryURL: URL,
         maxSequenceLength: Int,
-        batchSize: Int
+        batchSize: Int,
+        dropRemainder: Bool
     ) throws {
         self.directoryURL = taskDirectoryURL.appendingPathComponent("CoLA")
         let dataURL = directoryURL.appendingPathComponent("data")
@@ -157,8 +157,6 @@ extension CoLA {
 
         // Create the data iterators used for training and evaluating.
         self.trainDataIterator = trainExamples.shuffled().makeIterator()  // TODO: [RNG] Seed support.
-            .repeated()
-            .shuffled(bufferSize: 1000)
             .map(exampleMap)
             .grouped(
                 keyFn: { _ in 0 },
@@ -168,7 +166,8 @@ extension CoLA {
                         inputs: padAndBatch(
                             textBatches: $0.map { $0.inputs }, maxLength: maxSequenceLength),
                         labels: Tensor.batch($0.map { $0.labels! }))
-                }
+                },
+                dropRemainder: dropRemainder
             )
             .prefetched(count: 2)
         self.devDataIterator = devExamples.makeIterator()
@@ -181,7 +180,9 @@ extension CoLA {
                         inputs: padAndBatch(
                             textBatches: $0.map { $0.inputs }, maxLength: maxSequenceLength),
                         labels: Tensor.batch($0.map { $0.labels! }))
-                })
+                },
+                dropRemainder: dropRemainder
+            )
         self.testDataIterator = testExamples.makeIterator()
             .map(exampleMap)
             .grouped(
@@ -192,6 +193,8 @@ extension CoLA {
                         inputs: padAndBatch(
                             textBatches: $0.map { $0.inputs }, maxLength: maxSequenceLength),
                         labels: nil)
-                })
+                },
+                dropRemainder: dropRemainder
+            )
     }
 }

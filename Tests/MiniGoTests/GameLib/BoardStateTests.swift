@@ -17,7 +17,7 @@ import XCTest
 @testable import MiniGo
 
 final class BoardStateTests: XCTestCase {
-    func testEmtpyBoard() throws {
+    func testEmptyBoard() throws {
         let configuration = GameConfiguration(size: 2, komi: 0.1)
         let boardState = BoardState(gameConfiguration: configuration)
         XCTAssertEqual(.black, boardState.nextPlayerColor)
@@ -281,7 +281,7 @@ extension BoardStateTests {
 
 extension BoardStateTests {
     static var allTests = [
-        ("testEmtpyBoard", testEmtpyBoard),
+        ("testEmptyBoard", testEmptyBoard),
         ("testPassing", testPassing),
         ("testPlacingNewStone", testPlacingNewStone),
         ("testStateBeforeKo", testStateBeforeKo),

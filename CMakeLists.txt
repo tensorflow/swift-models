@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.16)
 project(Models
-  LANGUAGES Swift)
+  LANGUAGES C Swift)
+
+if(CMAKE_VERSION VERSION_LESS 3.17)
+  if(NOT CMAKE_SYSTEM_NAME STREQUAL Windows)
+    set(CMAKE_EXECUTABLE_RUNTIME_Swift_FLAG "-Xlinker -rpath -Xlinker ")
+    set(CMAKE_EXECUTABLE_RUNTIME_Swift_FLAG_SEP "")
+  endif()
+endif()
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules)
 
@@ -69,7 +76,6 @@ add_subdirectory(MiniGo)
 add_subdirectory(GAN)
 add_subdirectory(DCGAN)
 add_subdirectory(FastStyleTransfer)
-add_subdirectory(Transformer)
 add_subdirectory(Examples)
 
 if(BUILD_TESTING)
