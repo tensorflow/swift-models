@@ -75,7 +75,7 @@ public func collectURLs(
                 files += collectURLs(under: content, recurse: recurse, filtering: extensions)
             } else if content.isFileURL
                 && (extensions == nil
-                    || extensions!.contains(dirContents[0].pathExtension.lowercased()))
+                    || extensions!.contains(content.pathExtension.lowercased()))
             {
                 files.append(content)
             }
