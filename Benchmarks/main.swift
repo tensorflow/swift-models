@@ -95,6 +95,12 @@ extension BenchmarkCommand {
         @Flag(help: "Run inference benchmark.")
         var inference: Bool
 
+        @Flag(help: "Use synthetic data.")
+        var synthetic: Bool
+
+        @Flag(help: "Use real data.")
+        var real: Bool
+
         @Option(help: "Name of the benchmark to run.")
         var benchmark: String?
 
@@ -128,6 +134,11 @@ extension BenchmarkCommand {
                     "Can't specify both --training and --inference benchmark variety.")
             }
             
+            guard !(real && synthetic) else {
+                throw ValidationError(
+                    "Can't specify both --real and --synthetic data sources.")
+            }
+
             guard !((batches != nil) && (epochs != nil)) else {
                 throw ValidationError(
                     "Can't specify both the number of batches and epochs.")
@@ -161,7 +172,8 @@ extension BenchmarkCommand {
                 batches: specifiedBatches ?? defaults.batches,
                 batchSize: batchSizeToUse,
                 iterations: iterations ?? defaults.iterations,
-                warmupBatches: warmupBatches ?? defaults.warmupBatches)
+                warmupBatches: warmupBatches ?? defaults.warmupBatches,
+                synthetic: synthetic)
 
             runBenchmark(
                 benchmarkModel,

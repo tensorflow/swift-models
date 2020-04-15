@@ -12,15 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Batcher
 import Datasets
 import TensorFlow
 
+// TODO: Ease the tight restriction on Batcher data sources to allow for lazy datasets.
 struct ImageClassificationTraining<Model, ClassificationDataset>: Benchmark
 where
     Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == Float,
-    ClassificationDataset: ImageClassificationDataset
+    ClassificationDataset: ImageClassificationDataset,
+    ClassificationDataset.SourceDataSet == [TensorPair<Float, Int32>]
 {
-    let dataset: ClassificationDataset
+    let trainingDataset: Batcher<[TensorPair<Float, Int32>]>
     let batches: Int
     let batchSize: Int
 
@@ -31,7 +34,15 @@ where
     init(settings: BenchmarkSettings) {
         self.batches = settings.batches
         self.batchSize = settings.batchSize
-        self.dataset = ClassificationDataset(batchSize: settings.batchSize)
+        if settings.synthetic {
+            let syntheticDataset = SyntheticImageDataset(
+                    batchSize: settings.batchSize, batches: settings.batches,
+                    labels: Model.outputLabels, dimensions: Model.preferredInputDimensions)
+            self.trainingDataset = syntheticDataset.training
+        } else {
+            let classificationDataset = ClassificationDataset(batchSize: settings.batchSize)
+            self.trainingDataset = classificationDataset.training
+        }
     }
 
     func run() -> [Double] {
@@ -45,7 +56,7 @@ where
         
         Context.local.learningPhase = .training
         while (currentBatch < self.batches) {
-            for batch in dataset.training.sequenced() {
+            for batch in trainingDataset.sequenced() {
                 if (currentBatch >= self.batches) { break }
                 let (images, labels) = (batch.first, batch.second)
                 

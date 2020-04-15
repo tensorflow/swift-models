@@ -79,6 +79,11 @@ extension BenchmarkConfiguration {
         case .inferenceThroughput:
             result += "--inference "
         }
+        if self.settings.synthetic {
+            result += "--synthetic "
+        } else {
+            result += "--real "
+        }
         result += "--batches \(settings.batches) "
         result += "--batchSize \(settings.batchSize) "
         result += "--iterations \(settings.iterations) "

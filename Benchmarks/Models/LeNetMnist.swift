@@ -28,9 +28,11 @@ enum LeNetMNIST: BenchmarkModel {
     static func defaults(for variety: BenchmarkVariety) -> BenchmarkSettings {
         switch(variety) {
         case .inferenceThroughput:
-            return BenchmarkSettings(batches: 1000, batchSize: 128, iterations: 10, warmupBatches: 1)
+            return BenchmarkSettings(batches: 1000, batchSize: 128, iterations: 10,
+                                     warmupBatches: 1, synthetic: false)
         case .trainingThroughput:
-            return BenchmarkSettings(batches: 110, batchSize: 128, iterations: 1, warmupBatches: 1)
+            return BenchmarkSettings(batches: 110, batchSize: 128, iterations: 1, warmupBatches: 1,
+                                     synthetic: false)
         }
     }
 
@@ -41,4 +43,9 @@ enum LeNetMNIST: BenchmarkModel {
     static func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark {
         return ImageClassificationTraining<LeNet, MNIST>(settings: settings)
     }
+}
+
+extension LeNet: ImageClassificationModel {
+    static var preferredInputDimensions: [Int] { [28, 28, 1] }
+    static var outputLabels: Int { 10 }
 }

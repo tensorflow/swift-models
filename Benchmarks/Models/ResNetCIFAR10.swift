@@ -29,9 +29,11 @@ enum ResNetCIFAR10: BenchmarkModel {
     static func defaults(for variety: BenchmarkVariety) -> BenchmarkSettings {
         switch(variety) {
         case .inferenceThroughput:
-            return BenchmarkSettings(batches: 1000, batchSize: 128, iterations: 10, warmupBatches: 1)
+            return BenchmarkSettings(batches: 1000, batchSize: 128, iterations: 10,
+                                     warmupBatches: 1, synthetic: false)
         case .trainingThroughput:
-            return BenchmarkSettings(batches: 110, batchSize: 128, iterations: 1, warmupBatches: 1)
+            return BenchmarkSettings(batches: 110, batchSize: 128, iterations: 1, warmupBatches: 1,
+                                     synthetic: false)
         }
     }
 
@@ -55,4 +57,9 @@ struct ResNet56: Layer {
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         return model(input)
     }
+}
+
+extension ResNet56: ImageClassificationModel {
+    static var preferredInputDimensions: [Int] { [32, 32, 3] }
+    static var outputLabels: Int { 10 }
 }

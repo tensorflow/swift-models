@@ -17,4 +17,5 @@ struct BenchmarkSettings: Codable {
     let batchSize: Int
     let iterations: Int
     let warmupBatches: Int
+    let synthetic: Bool
 }

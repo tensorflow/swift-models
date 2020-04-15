@@ -12,22 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Batcher
 import Datasets
 import ImageClassificationModels
 import TensorFlow
 
 protocol ImageClassificationModel: Layer where Input == Tensor<Float>, Output == Tensor<Float> {
     init()
+    static var preferredInputDimensions: [Int] { get }
+    static var outputLabels: Int { get }
 }
 
-extension LeNet: ImageClassificationModel {}
-extension ResNet56: ImageClassificationModel {}
-
+// TODO: Ease the tight restriction on Batcher data sources to allow for lazy datasets.
 class ImageClassificationInference<Model, ClassificationDataset>: Benchmark
-where Model: ImageClassificationModel, ClassificationDataset: ImageClassificationDataset {
-    let dataset: ClassificationDataset
+where Model: ImageClassificationModel, ClassificationDataset: ImageClassificationDataset,
+      ClassificationDataset.SourceDataSet == [TensorPair<Float, Int32>] {
+    let testDataset: Batcher<[TensorPair<Float, Int32>]>
     var model: Model
-    let images: Tensor<Float>?
     let batches: Int
     let batchSize: Int
 
@@ -35,34 +36,32 @@ where Model: ImageClassificationModel, ClassificationDataset: ImageClassificatio
         return batches * batchSize
     }
 
-    init(settings: BenchmarkSettings, images: Tensor<Float>? = nil) {
+    init(settings: BenchmarkSettings) {
         self.batches = settings.batches
         self.batchSize = settings.batchSize
-        self.dataset = ClassificationDataset(batchSize: settings.batchSize)
         self.model = Model()
-        self.images = images
+        if settings.synthetic {
+            let syntheticDataset = SyntheticImageDataset(
+                    batchSize: settings.batchSize, batches: settings.batches,
+                    labels: Model.outputLabels, dimensions: Model.preferredInputDimensions)
+            self.testDataset = syntheticDataset.test
+        } else {
+            let classificationDataset = ClassificationDataset(batchSize: settings.batchSize)
+            self.testDataset = classificationDataset.test
+        }
     }
 
     func run() -> [Double] {
         var batchTimings: [Double] = []
-        if let images = images {
-            for _ in 0..<batches {
-                let batchTime = time{
-                    let _ = model(images)
-                }
-                batchTimings.append(batchTime)
+        var currentBatch = 0
+        for batch in testDataset.sequenced() {
+            if (currentBatch >= self.batches) { break }
+            let images = batch.first
+            let batchTime = time{
+                let _ = model(images)
             }
-        } else {
-            var currentBatch = 0
-            for batch in dataset.test.sequenced() {
-                if (currentBatch >= self.batches) { break }
-                let images = batch.first
-                let batchTime = time{
-                    let _ = model(images)
-                }
-                batchTimings.append(batchTime)
-                currentBatch += 1
-            }
+            batchTimings.append(batchTime)
+            currentBatch += 1
         }
         return batchTimings
     }
