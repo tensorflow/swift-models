@@ -22,7 +22,7 @@ import TensorFlow
 // Force unwrapping with `!` does not provide source location when unwrapping `nil`, so we instead
 // make a utility function for debuggability.
 fileprivate extension Optional {
-    func unwrapped(file: StaticString = #file, line: UInt = #line) -> Wrapped {
+    func unwrapped(file: StaticString = #filePath, line: UInt = #line) -> Wrapped {
         guard let unwrapped = self else {
             fatalError("Value is nil", file: file, line: line)
         }
