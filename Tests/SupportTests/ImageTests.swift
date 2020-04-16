@@ -17,7 +17,7 @@ import ModelSupport
 import TensorFlow
 
 final class ImageTests: XCTestCase {
-    let resourceBaseLocation = URL(fileURLWithPath: #file).deletingLastPathComponent()
+    let resourceBaseLocation = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         .appendingPathComponent("Images")
     let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
         "TestImages", isDirectory: true)

@@ -18,7 +18,7 @@ import XCTest
 @testable import ModelSupport
 
 final class CheckpointIndexReaderTests: XCTestCase {
-    let resourceBaseLocation = URL(fileURLWithPath: #file).deletingLastPathComponent()
+    let resourceBaseLocation = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         .appendingPathComponent("IndexFiles")
 
     func testLoadingMiniGo() {

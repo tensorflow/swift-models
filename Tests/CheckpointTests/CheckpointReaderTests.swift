@@ -18,7 +18,7 @@ import XCTest
 @testable import ModelSupport
 
 final class CheckpointReaderTests: XCTestCase {
-    let resourceBaseLocation = URL(fileURLWithPath: #file).deletingLastPathComponent()
+    let resourceBaseLocation = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         .appendingPathComponent("SavedModels")
 
     func testLocalSavedModel() {
