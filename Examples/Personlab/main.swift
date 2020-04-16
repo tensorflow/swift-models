@@ -16,12 +16,23 @@ var normalizedImagesTensor = image.tensor * (2.0 / 255.0) - 1.0
 
 // Define backbone
 var conv_0 = Conv2D<Float>(
-    filterShape: (3, 3, 3, 24),
+    filter: ckpt.load(from: "Conv2d_0/weights"),
+    bias: ckpt.load(from: "Conv2d_0/biases"),
+    activation: relu6,
     strides: (2, 2),
     padding: .same
 )
-conv_0.bias = Tensor(ckpt.loadTensor(named: "MobilenetV1/Conv2d_0/biases"))
-conv_0.filter = Tensor(ckpt.loadTensor(named: "MobilenetV1/Conv2d_0/weights"))
 
-var convOutput = relu6( conv_0(normalizedImagesTensor))
-h(convOutput)
+var conv_1 = DepthwiseSeparableConvBlock(
+    depthWiseFilter: ckpt.load(from: "Conv2d_1_depthwise/depthwise_weights"),
+    depthWiseBias: ckpt.load(from: "Conv2d_1_depthwise/biases"),
+    pointWiseFilter: ckpt.load(from: "Conv2d_1_pointwise/weights"),
+    pointWiseBias: ckpt.load(from: "Conv2d_1_pointwise/biases"),
+    strides: (1, 1)
+)
+
+var x = conv_0(normalizedImagesTensor)
+x = conv_1(x)
+
+
+h(x)
