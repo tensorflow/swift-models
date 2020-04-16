@@ -3,7 +3,7 @@ import Foundation
 import TensorFlow
 import XCTest
 
-final class COCOTests: XCTestCase {
+final class COCOVariantTests: XCTestCase {
     func testLoadCaptionsTrain2017() {
         let coco = COCOVariant.loadCaptionsTrain2017()
         verify(coco)
