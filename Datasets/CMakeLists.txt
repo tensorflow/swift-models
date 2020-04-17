@@ -1,11 +1,12 @@
 add_library(Datasets
   CIFAR10/CIFAR10.swift
   DatasetUtilities.swift
+  COCO/COCO.swift
+  COCO/COCODataset.swift
+  COCO/COCOVariant.swift
   CoLA/Batchable.swift
   CoLA/CoLA.swift
   CoLA/DataUtilities.swift
-  COCO/COCO.swift
-  COCO/COCOVariant.swift
   ImageClassificationDataset.swift
   Imagenette/Imagenette.swift
   Imagenette/Imagewoof.swift
