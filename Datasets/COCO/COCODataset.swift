@@ -13,7 +13,7 @@ public struct COCODataset: ObjectDetectionDataset {
         self.batchSize = batchSize
         self.trainingExamples =
             loadCOCOExamples(
-                from: COCOVariant.loadInstancesTrain2017(),
+                from: COCOVariant.loadTrain(),
                 includeMasks: includeMasks,
                 batchSize: batchSize,
                 numWorkers: numWorkers)
@@ -25,7 +25,7 @@ public struct COCODataset: ObjectDetectionDataset {
                 shuffle: true)
         self.testExamples =
             loadCOCOExamples(
-                from: COCOVariant.loadInstancesVal2017(),
+                from: COCOVariant.loadVal(),
                 includeMasks: includeMasks,
                 batchSize: batchSize,
                 numWorkers: numWorkers)
@@ -63,9 +63,12 @@ func loadCOCOExamples(from coco: COCO, includeMasks: Bool, batchSize: Int, numWo
 }
 
 func loadCOCOExample(coco: COCO, image: COCO.Image, includeMasks: Bool) -> ObjectDetectionExample {
+    let imgDir = coco.imagesDirectory
     let imgW = image["width"] as! Int
     let imgH = image["height"] as! Int
-    let imgUrl = URL(string: image["file_name"] as! String)!
+    let imgFileName = image["file_name"] as! String
+    let imgPath = imgDir.appendingPathComponent(imgFileName).path
+    let imgUrl = URL(string: imgPath)!
     let imgId = image["id"] as! Int
     let img = LazyImage(width: imgW, height: imgH, url: imgUrl)
     let annotations: [COCO.Annotation]

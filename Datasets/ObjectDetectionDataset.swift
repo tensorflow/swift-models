@@ -1,30 +1,36 @@
 import Batcher
 import Foundation
+import TensorFlow
+import ModelSupport
 
 public struct LazyImage {
-    let width: Int
-    let height: Int
-    let url: URL
+    public let width: Int
+    public let height: Int
+    public let url: URL
 
-    init(width w: Int, height h: Int, url u: URL) {
+    public init(width w: Int, height h: Int, url u: URL) {
         self.width = w
         self.height = h
         self.url = u
     }
+
+    public func tensor() -> Tensor<Float> {
+        return Image(jpeg: url).tensor
+    }
 }
 
 public struct LabeledObject {
-    let xMin: Float
-    let xMax: Float
-    let yMin: Float
-    let yMax: Float
-    let className: String
-    let classId: Int
-    let isCrowd: Int?
-    let area: Float
-    let maskRLE: RLE?
+    public let xMin: Float
+    public let xMax: Float
+    public let yMin: Float
+    public let yMax: Float
+    public let className: String
+    public let classId: Int
+    public let isCrowd: Int?
+    public let area: Float
+    public let maskRLE: RLE?
 
-    init(
+    public init(
         xMin x0: Float, xMax x1: Float,
         yMin y0: Float, yMax y1: Float,
         className: String, classId: Int,
@@ -43,10 +49,10 @@ public struct LabeledObject {
 }
 
 public struct ObjectDetectionExample: Collatable, KeyPathIterable {
-    let image: LazyImage
-    let objects: [LabeledObject]
+    public let image: LazyImage
+    public let objects: [LabeledObject]
 
-    init(image: LazyImage, objects: [LabeledObject]) {
+    public init(image: LazyImage, objects: [LabeledObject]) {
         self.image = image
         self.objects = objects
     }
