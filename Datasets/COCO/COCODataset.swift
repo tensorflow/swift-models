@@ -1,26 +1,13 @@
 import Batcher
 import Foundation
 
-public struct COCODataset {
+public struct COCODataset: ObjectDetectionDataset {
     public typealias SourceDataSet = [ObjectDetectionExample]
     public let batchSize: Int
     public let trainingExamples: SourceDataSet
+    public let training: Batcher<SourceDataSet>
     public let testExamples: SourceDataSet
-
-    public lazy var training: Batcher<SourceDataSet> = {
-        return Batcher(
-            on: trainingExamples,
-            batchSize: batchSize, numWorkers: 1,
-            shuffle: true)
-    }()
-
-    public lazy var test: Batcher<SourceDataSet> = {
-        return Batcher(
-            on: testExamples,
-            batchSize: batchSize,
-            numWorkers: 1,
-            shuffle: true)
-    }()
+    public let test: Batcher<SourceDataSet>
 
     public init(batchSize: Int) {
         self.init(batchSize: batchSize, includeMasks: false)
@@ -32,10 +19,21 @@ public struct COCODataset {
             loadCOCOExamples(
                 from: COCOVariant.loadInstancesTrain2017(),
                 includeMasks: includeMasks)
+        self.training =
+            Batcher(
+                on: trainingExamples,
+                batchSize: batchSize, numWorkers: 1,
+                shuffle: true)
         self.testExamples =
             loadCOCOExamples(
                 from: COCOVariant.loadInstancesVal2017(),
                 includeMasks: includeMasks)
+        self.test =
+            Batcher(
+                on: testExamples,
+                batchSize: batchSize,
+                numWorkers: 1,
+                shuffle: true)
     }
 }
 
@@ -48,7 +46,12 @@ func loadCOCOExamples(from coco: COCO, includeMasks: Bool = false) -> [ObjectDet
         let imgUrl = URL(string: image["file_name"] as! String)!
         let imgId = image["id"] as! Int
         let img = LazyImage(width: imgW, height: imgH, url: imgUrl)
-        let annotations = coco.imageToAnnotations[imgId]!
+        let annotations: [COCO.Annotation]
+        if let anns = coco.imageToAnnotations[imgId] {
+            annotations = anns
+        } else {
+            annotations = []
+        }
         var objects: [LabeledObject] = []
         objects.reserveCapacity(annotations.count)
         for annotation in annotations {
@@ -69,7 +72,8 @@ func loadCOCOExamples(from coco: COCO, includeMasks: Bool = false) -> [ObjectDet
             }
             let area = Float(annotation["area"] as! Double)
             let classId = annotation["category_id"] as! Int
-            let className = coco.annotations[classId]!["name"] as! String
+            let classInfo = coco.categories[classId]!
+            let className = classInfo["name"] as! String
             let mask: Mask?
             if includeMasks {
                 mask = coco.annotationToMask(annotation)
