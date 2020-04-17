@@ -16,12 +16,12 @@ public struct COCO {
 
     public var imagesDirectory: URL
     public var metadata: Metadata
-    public var info: Info
-    public var annotations: [AnnotationId: Annotation]
-    public var categories: [CategoryId: Category]
-    public var images: [ImageId: Image]
-    public var imageToAnnotations: [ImageId: [Annotation]]
-    public var categoryToImages: [CategoryId: [ImageId]]
+    public var info: Info = [:]
+    public var annotations: [AnnotationId: Annotation] = [:]
+    public var categories: [CategoryId: Category] = [:]
+    public var images: [ImageId: Image] = [:]
+    public var imageToAnnotations: [ImageId: [Annotation]] = [:]
+    public var categoryToImages: [CategoryId: [ImageId]] = [:]
 
     public init(fromFile fileURL: URL, imagesDirectory imgDir: URL) throws {
         let contents = try String(contentsOfFile: fileURL.path)
@@ -29,12 +29,6 @@ public struct COCO {
         let parsed = try JSONSerialization.jsonObject(with: data)
         self.metadata = parsed as! Metadata
         self.imagesDirectory = imgDir
-        self.info = [:]
-        self.annotations = [:]
-        self.categories = [:]
-        self.images = [:]
-        self.imageToAnnotations = [:]
-        self.categoryToImages = [:]
         self.createIndex()
     }
 
@@ -42,25 +36,22 @@ public struct COCO {
         if let info = metadata["info"] {
             self.info = info as! Info
         }
-        if let annotations = metadata["annotations"] {
-            let anns = annotations as! [Annotation]
-            for ann in anns {
+        if let annotations = metadata["annotations"] as? [Annotation] {
+            for ann in annotations {
                 let ann_id = ann["id"] as! AnnotationId
                 let image_id = ann["image_id"] as! ImageId
                 self.imageToAnnotations[image_id, default: []].append(ann)
                 self.annotations[ann_id] = ann
             }
         }
-        if let images = metadata["images"] {
-            let imgs = images as! [Image]
-            for img in imgs {
+        if let images = metadata["images"] as? [Image] {
+            for img in images {
                 let img_id = img["id"] as! ImageId
                 self.images[img_id] = img
             }
         }
-        if let categories = metadata["categories"] {
-            let cats = categories as! [Category]
-            for cat in cats {
+        if let categories = metadata["categories"] as? [Category] {
+            for cat in categories {
                 let cat_id = cat["id"] as! CategoryId
                 self.categories[cat_id] = cat
             }
@@ -78,7 +69,7 @@ public struct COCO {
     /// Get annotation ids that satisfy given filter conditions.
     public func getAnnotationIds(
         imageIds: [ImageId] = [],
-        categoryIds: [CategoryId] = [],
+        categoryIds: Set<CategoryId> = [],
         areaRange: [Double] = [],
         isCrowd: Int? = nil
     ) -> [AnnotationId] {
@@ -128,9 +119,9 @@ public struct COCO {
 
     /// Get category ids that satisfy given filter conditions.
     public func getCategoryIds(
-        categoryNames: [String] = [],
-        supercategoryNames: [String] = [],
-        categoryIds: [CategoryId] = []
+        categoryNames: Set<String> = [],
+        supercategoryNames: Set<String> = [],
+        categoryIds: Set<CategoryId> = []
     ) -> [CategoryId] {
         let filterByName = categoryNames.count != 0
         let filterBySupercategory = supercategoryNames.count != 0

@@ -1,7 +1,7 @@
 import Batcher
 import Foundation
-import TensorFlow
 import ModelSupport
+import TensorFlow
 
 public struct LazyImage {
     public let width: Int
