@@ -5,13 +5,13 @@ import XCTest
 
 final class COCODatasetTests: XCTestCase {
     func testExamplesNoMasks() {
-        let dataset = COCODataset(batchSize: 32, includeMasks: false)
+        let dataset = COCODataset(includeMasks: false, batchSize: 32, numWorkers: 8)
         XCTAssertTrue(dataset.trainingExamples.count > 0)
         XCTAssertTrue(dataset.testExamples.count > 0)
     }
 
     func testExamplesIncludingMasks() {
-        let dataset = COCODataset(batchSize: 32, includeMasks: true)
+        let dataset = COCODataset(includeMasks: true, batchSize: 32, numWorkers: 8)
         XCTAssertTrue(dataset.trainingExamples.count > 0)
         XCTAssertTrue(dataset.testExamples.count > 0)
     }

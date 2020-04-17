@@ -1,11 +1,11 @@
 import Foundation
 
-// Code below is ported from https://github.com/cocodataset/cocoapi
+// Code below is ported from https://github.com/cocometadata/cocoapi
 
-/// Coco dataset API that loads annotation file and prepares 
+/// Coco metadata API that loads annotation file and prepares 
 /// data structures for data set access.
 public struct COCO {
-    public typealias Dataset = [String: Any]
+    public typealias Metadata = [String: Any]
     public typealias Info = [String: Any]
     public typealias Annotation = [String: Any]
     public typealias AnnotationId = Int
@@ -14,7 +14,7 @@ public struct COCO {
     public typealias Category = [String: Any]
     public typealias CategoryId = Int
 
-    public var dataset: Dataset
+    public var metadata: Metadata
     public var info: Info
     public var annotations: [AnnotationId: Annotation]
     public var categories: [CategoryId: Category]
@@ -26,7 +26,7 @@ public struct COCO {
         let contents = try String(contentsOfFile: fileURL.path)
         let data = contents.data(using: .utf8)!
         let parsed = try JSONSerialization.jsonObject(with: data)
-        self.dataset = parsed as! Dataset
+        self.metadata = parsed as! Metadata
         self.info = [:]
         self.annotations = [:]
         self.categories = [:]
@@ -37,10 +37,10 @@ public struct COCO {
     }
 
     mutating func createIndex() {
-        if let info = dataset["info"] {
+        if let info = metadata["info"] {
             self.info = info as! Info
         }
-        if let annotations = dataset["annotations"] {
+        if let annotations = metadata["annotations"] {
             let anns = annotations as! [Annotation]
             for ann in anns {
                 let ann_id = ann["id"] as! AnnotationId
@@ -49,22 +49,22 @@ public struct COCO {
                 self.annotations[ann_id] = ann
             }
         }
-        if let images = dataset["images"] {
+        if let images = metadata["images"] {
             let imgs = images as! [Image]
             for img in imgs {
                 let img_id = img["id"] as! ImageId
                 self.images[img_id] = img
             }
         }
-        if let categories = dataset["categories"] {
+        if let categories = metadata["categories"] {
             let cats = categories as! [Category]
             for cat in cats {
                 let cat_id = cat["id"] as! CategoryId
                 self.categories[cat_id] = cat
             }
         }
-        if dataset["annotations"] != nil && dataset["categories"] != nil {
-            let anns = dataset["annotations"] as! [Annotation]
+        if metadata["annotations"] != nil && metadata["categories"] != nil {
+            let anns = metadata["annotations"] as! [Annotation]
             for ann in anns {
                 let cat_id = ann["category_id"] as! CategoryId
                 let image_id = ann["image_id"] as! ImageId
@@ -95,7 +95,7 @@ public struct COCO {
                 }
             }
         } else {
-            anns = self.dataset["annotations"] as! [Annotation]
+            anns = self.metadata["annotations"] as! [Annotation]
         }
 
         var annIds: [AnnotationId] = []
@@ -134,7 +134,7 @@ public struct COCO {
         let filterBySupercategory = supercategoryNames.count != 0
         let filterById = categoryIds.count != 0
         var categoryIds: [CategoryId] = []
-        let cats = self.dataset["categories"] as! [Category]
+        let cats = self.metadata["categories"] as! [Category]
         for cat in cats {
             let name = cat["name"] as! String
             let supercategory = cat["supercategory"] as! String
@@ -343,6 +343,10 @@ public struct RLE {
     var height: Int = 0
     var m: Int = 0
     var counts: [UInt32] = []
+
+    var mask: Mask {
+        return Mask(fromRLE: self)
+    }
 
     init(width w: Int, height h: Int, m: Int, counts: [UInt32]) {
         self.width = w

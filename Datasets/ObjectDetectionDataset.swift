@@ -1,8 +1,8 @@
-import Foundation
 import Batcher
+import Foundation
 
 public struct LazyImage {
-    let width: Int 
+    let width: Int
     let height: Int
     let url: URL
 
@@ -13,7 +13,7 @@ public struct LazyImage {
     }
 }
 
-public struct LabeledObject { 
+public struct LabeledObject {
     let xMin: Float
     let xMax: Float
     let yMin: Float
@@ -22,21 +22,23 @@ public struct LabeledObject {
     let classId: Int
     let isCrowd: Int?
     let area: Float
-    let mask: Mask?
+    let maskRLE: RLE?
 
-    init(xMin x0: Float, xMax x1: Float, 
-         yMin y0: Float, yMax y1: Float,
-         className: String, classId: Int,
-         isCrowd: Int?, area: Float, mask: Mask?) {
-       self.xMin = x0
-       self.xMax = x1
-       self.yMin = y0
-       self.yMax = y1
-       self.className = className
-       self.classId = classId
-       self.isCrowd = isCrowd
-       self.area = area
-       self.mask = mask
+    init(
+        xMin x0: Float, xMax x1: Float,
+        yMin y0: Float, yMax y1: Float,
+        className: String, classId: Int,
+        isCrowd: Int?, area: Float, maskRLE: RLE?
+    ) {
+        self.xMin = x0
+        self.xMax = x1
+        self.yMin = y0
+        self.yMax = y1
+        self.className = className
+        self.classId = classId
+        self.isCrowd = isCrowd
+        self.area = area
+        self.maskRLE = maskRLE
     }
 }
 
@@ -53,7 +55,7 @@ public struct ObjectDetectionExample: Collatable, KeyPathIterable {
 public protocol ObjectDetectionDataset {
     associatedtype SourceDataSet: Collection
     where SourceDataSet.Element == ObjectDetectionExample, SourceDataSet.Index == Int
-    init(batchSize: Int)
+    init(includeMasks: Bool, batchSize: Int, numWorkers: Int)
     var training: Batcher<SourceDataSet> { get }
     var test: Batcher<SourceDataSet> { get }
 }
