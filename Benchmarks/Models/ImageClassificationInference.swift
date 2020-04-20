@@ -35,7 +35,10 @@ where Model: ImageClassificationModel, ClassificationDataset: ImageClassificatio
         return batches * batchSize
     }
 
-    init(settings: BenchmarkSettings, images: Tensor<Float>? = nil) {
+    init(
+        settings: BenchmarkSettings, images: Tensor<Float>? = nil, imageSize: (Int, Int),
+        imageDepth: Int
+    ) {
         self.batches = settings.batches
         self.batchSize = settings.batchSize
         self.dataset = ClassificationDataset(batchSize: settings.batchSize)
@@ -44,7 +47,8 @@ where Model: ImageClassificationModel, ClassificationDataset: ImageClassificatio
             self.images = providedImages
         } else {
             self.images = Tensor<Float>(
-                randomNormal: [batchSize, 28, 28, 1], mean: Tensor<Float>(0.5),
+                randomNormal: [batchSize, imageSize.0, imageSize.1, imageDepth],
+                mean: Tensor<Float>(0.5),
                 standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
         }
     }

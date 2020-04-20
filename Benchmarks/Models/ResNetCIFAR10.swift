@@ -23,7 +23,8 @@ struct ResNetCIFAR10: BenchmarkModel {
     }
 
     func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return ImageClassificationInference<ResNet56, CIFAR10>(settings: settings)
+        return ImageClassificationInference<ResNet56, CIFAR10>(
+            settings: settings, imageSize: (32, 32), imageDepth: 3)
     }
 
     var defaultTrainingSettings: BenchmarkSettings {
@@ -37,11 +38,11 @@ struct ResNetCIFAR10: BenchmarkModel {
 
 struct ResNet56: Layer {
     var model: ResNet
-    
+
     init() {
         model = ResNet(classCount: 10, depth: .resNet56, downsamplingInFirstStage: false)
     }
-    
+
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         return model(input)

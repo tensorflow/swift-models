@@ -22,7 +22,8 @@ struct LeNetMNIST: BenchmarkModel {
     }
 
     func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return ImageClassificationInference<LeNet, MNIST>(settings: settings)
+        return ImageClassificationInference<LeNet, MNIST>(
+            settings: settings, imageSize: (28, 28), imageDepth: 1)
     }
 
     var defaultTrainingSettings: BenchmarkSettings {
