@@ -78,7 +78,7 @@ public struct TextUnsupervised {
         bpe: BytePairEncoder,
         variant: TextUnsupervisedVariant = TextUnsupervisedVariant.wikiText2,
         trainingBatchSize: Int = 8, validationBatchSize: Int = 4, sequenceLength: Int = 1024,
-        trainingDocumentSize: Int = 4, validationDocumentSize: Int = 4
+        trainingDocumentCount: Int = 4, validationDocumentCount: Int = 4
     ) {
         do {
             self.bpe = bpe
@@ -99,11 +99,11 @@ public struct TextUnsupervised {
             self.trainingDataset = try TextUnsupervised.loadTraining(
                 localStorageDirectory: localStorageDirectory, bpe: bpe,
                 variantDetails: variantDetails, batchSize: trainingBatchSize,
-                sequenceLength: sequenceLength, documentSize: trainingDocumentSize)
+                sequenceLength: sequenceLength, documentCount: trainingDocumentCount)
             self.validationDataset = try TextUnsupervised.loadValidation(
                 localStorageDirectory: localStorageDirectory, bpe: bpe,
                 variantDetails: variantDetails, batchSize: validationBatchSize,
-                sequenceLength: sequenceLength, documentSize: validationDocumentSize)
+                sequenceLength: sequenceLength, documentCount: validationDocumentCount)
         } catch {
             fatalError("Could not load dataset for \(variant): \(error)")
         }
@@ -146,13 +146,13 @@ public struct TextUnsupervised {
     private static func loadDirectory(
         named name: String, in directory: URL, bpe: BytePairEncoder,
         variantDetails: TextUnsupervisedVariantDetails, batchSize: Int, sequenceLength: Int,
-        documentSize: Int = 4
+        documentCount: Int = 4
     ) throws -> LanguageModelDataset<[[Int]]> {
         downloadIfNotPresent(to: directory, variantDetails: variantDetails)
         let path = directory.appendingPathComponent("\(variantDetails.filename)/\(name).csv")
 
         let documentsFull = try readCSV(in: path)
-        let documents = Array(documentsFull[0..<documentSize])
+        let documents = Array(documentsFull[0..<min(documentCount, documentsFull.count)])
 
         let embeddings = documents.map { embedding(for: $0, bpe: bpe) }
         let lengths = embeddings.map { $0.count }
@@ -169,7 +169,7 @@ public struct TextUnsupervised {
     private static func loadTraining(
         localStorageDirectory: URL, bpe: BytePairEncoder,
         variantDetails: TextUnsupervisedVariantDetails, batchSize: Int, sequenceLength: Int,
-        documentSize: Int
+        documentCount: Int
     )
         throws
         -> LanguageModelDataset<[[Int]]>
@@ -177,13 +177,13 @@ public struct TextUnsupervised {
         return try loadDirectory(
             named: variantDetails.trainingDirectoryName, in: localStorageDirectory, bpe: bpe,
             variantDetails: variantDetails, batchSize: batchSize, sequenceLength: sequenceLength,
-            documentSize: documentSize)
+            documentCount: documentCount)
     }
 
     private static func loadValidation(
         localStorageDirectory: URL, bpe: BytePairEncoder,
         variantDetails: TextUnsupervisedVariantDetails, batchSize: Int, sequenceLength: Int,
-        documentSize: Int
+        documentCount: Int
     )
         throws
         -> LanguageModelDataset<[[Int]]>
@@ -191,6 +191,6 @@ public struct TextUnsupervised {
         return try loadDirectory(
             named: variantDetails.validationDirectoryName, in: localStorageDirectory, bpe: bpe,
             variantDetails: variantDetails, batchSize: batchSize, sequenceLength: sequenceLength,
-            documentSize: documentSize)
+            documentCount: documentCount)
     }
 }
