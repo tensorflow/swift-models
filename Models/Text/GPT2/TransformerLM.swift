@@ -43,7 +43,7 @@ func timeDistributed(_ input: Tensor<Float>, _ weight: Tensor<Float>) -> Tensor<
 struct FeedForward: Layer {
     var dense1: TimeDistributed
     var dense2: TimeDistributed
-    @noDerivative let dropout: Dropout<Float>
+    @noDerivative var dropout: Dropout<Float>
 
     init(size: Int, hidden: Int, dropProbability: Double) {
         dense1 = TimeDistributed(
@@ -116,7 +116,8 @@ func causallyMasked(_ dotProducts: Tensor<Float>, enable: Bool = false) -> Tenso
         return dotProducts
     }
     let (queryTimeSteps, keyTimeSteps) = (dotProducts.shape[1], dotProducts.shape[2])
-    let ones = Tensor<Float>(ones: [1, queryTimeSteps, keyTimeSteps])
+    let device = dotProducts.device
+    let ones = Tensor<Float>(repeating: 1, shape: [1, queryTimeSteps, keyTimeSteps], on: device)
     let mask = ones.bandPart(
         subdiagonalCount: -1, superdiagonalCount: queryTimeSteps - keyTimeSteps)
     return dotProducts * mask - 1e10 * (1 - mask)
@@ -131,9 +132,9 @@ func _vjpCausallyMasked(_ dotProducts: Tensor<Float>, enable: Bool)
 }
 
 struct Attention: ParameterlessLayer {
-    @noDerivative let dropout: Dropout<Float>
-    @noDerivative let scale: Tensor<Float>
-    @noDerivative let causal: Bool
+    @noDerivative var dropout: Dropout<Float>
+    @noDerivative var scale: Tensor<Float>
+    @noDerivative var causal: Bool
 
     init(size: Int, causal: Bool = false, dropProbability: Double) {
         scale = Tensor(sqrtf(Float(size)))
@@ -214,7 +215,7 @@ struct MultiHeadAttentionGPT2: Layer {
     var attention: Attention
     var wqkv: TimeDistributed
     var wo: TimeDistributed
-    @noDerivative let headCount: Int
+    @noDerivative var headCount: Int
 
     init(attention: Attention, size: Int, headCount: Int) {
         self.attention = attention

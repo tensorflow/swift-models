@@ -207,9 +207,11 @@ extension BytePairEncoder {
         switch variant {
         case .gpt2:
             for match in matches {
-                let start = token.index(token.startIndex, offsetBy: match.range.lowerBound)
-                let end = token.index(token.startIndex, offsetBy: match.range.upperBound)
-                parts.append(String(token[start..<end]))
+                let start = token.index(token.startIndex, offsetBy: match.range.lowerBound, limitedBy: token.endIndex)
+                let end = token.index(token.startIndex, offsetBy: match.range.upperBound, limitedBy: token.endIndex)
+                if start != nil && end != nil {
+                  parts.append(String(token[start!..<end!]))
+                }
             }
         case .roberta, .none:
             var lastEnd = token.startIndex
