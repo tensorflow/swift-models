@@ -24,7 +24,7 @@ import TensorFlow
 fileprivate extension Optional {
     func unwrapped(file: StaticString = #filePath, line: UInt = #line) -> Wrapped {
         guard let unwrapped = self else {
-            fatalError("Value is nil", file: file, line: line)
+            fatalError("Value is nil", file: (file), line: line)
         }
         return unwrapped
     }
