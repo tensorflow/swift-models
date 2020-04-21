@@ -15,21 +15,37 @@
 import Datasets
 import ImageClassificationModels
 
-struct LeNetMNIST: BenchmarkModel {
+enum LeNetMNIST: BenchmarkModel {
+    static var name: String { "LeNetMNIST" }
 
-    var defaultInferenceSettings: BenchmarkSettings {
-        return BenchmarkSettings(batches: 1000, batchSize: 1, iterations: 10, epochs: -1)
+    static func examplesPerEpoch(for variety: BenchmarkVariety) -> Int {
+        switch(variety) {
+        case .inferenceThroughput: return 10000
+        case .trainingThroughput: return 60000
+        }
     }
 
-    func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark {
+    static func defaults(for variety: BenchmarkVariety) -> BenchmarkSettings {
+        switch(variety) {
+        case .inferenceThroughput:
+            return BenchmarkSettings(batches: 1000, batchSize: 128, iterations: 10,
+                                     warmupBatches: 1, synthetic: false)
+        case .trainingThroughput:
+            return BenchmarkSettings(batches: 110, batchSize: 128, iterations: 1, warmupBatches: 1,
+                                     synthetic: false)
+        }
+    }
+
+    static func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark {
         return ImageClassificationInference<LeNet, MNIST>(settings: settings)
     }
 
-    var defaultTrainingSettings: BenchmarkSettings {
-        return BenchmarkSettings(batches: -1, batchSize: 128, iterations: 10, epochs: 1)
-    }
-
-    func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark {
+    static func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark {
         return ImageClassificationTraining<LeNet, MNIST>(settings: settings)
     }
+}
+
+extension LeNet: ImageClassificationModel {
+    static var preferredInputDimensions: [Int] { [28, 28, 1] }
+    static var outputLabels: Int { 10 }
 }

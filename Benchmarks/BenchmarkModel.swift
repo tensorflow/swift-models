@@ -14,15 +14,18 @@
 
 /// Protocol that contains benchmark factory methods for a given model. 
 protocol BenchmarkModel {
-    /// Settings to use in inference benchmark if no custom flags are given.
-    var defaultInferenceSettings: BenchmarkSettings { get }
+    /// A string identifier for this model, to be used in logging and at the command line.
+    static var name: String { get }
+    
+    /// The number of examples per epoch in the training or test dataset for this benchmark.
+    static func examplesPerEpoch(for variety: BenchmarkVariety) -> Int
+
+    /// Settings to use in a specific benchmark if no custom flags are given.
+    static func defaults(for variety: BenchmarkVariety) -> BenchmarkSettings
 
     /// Create an instance of inference  benchmark with given settings.
-    func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark
-
-    /// Settings to use in training benchmark if no custom flags are given.
-    var defaultTrainingSettings: BenchmarkSettings { get }
+    static func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark
 
     /// Create an instance of training benchmark with given settings.
-    func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark
+    static func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark
 }

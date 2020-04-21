@@ -30,27 +30,27 @@ extension BenchmarkResults {
     }
 
     private func printAsPlainText() {
-        let average = self.interpretedTimings.average
-        let standardDeviation = self.interpretedTimings.standardDeviation
         let configuration = self.configuration
         let settings = configuration.settings
-
-        switch configuration.variety {
-        case .inferenceThroughput:
-            Swift.print("Benchmark: \(configuration.name)")
-            Swift.print("\tVariety: \(configuration.variety.rawValue)")
-            Swift.print("\tAfter \(settings.iterations) iterations:")
-            Swift.print(
-                "\tSamples per second: \(String(format: "%.2f", average)), standard deviation: \(String(format: "%.2f", standardDeviation))"
-            )
-        case .trainingTime:
-            Swift.print("Benchmark: \(configuration.name)")
-            Swift.print("\tVariety: \(configuration.variety.rawValue)")
-            Swift.print("\tAfter \(settings.iterations) iterations:")
-            Swift.print(
-                "\tAverage: \(String(format: "%.2f", average)) ms, standard deviation: \(String(format: "%.2f", standardDeviation)) ms"
-            )
+        
+        Swift.print("Benchmark: \(configuration.name)")
+        Swift.print("\tVariety: \(configuration.variety.rawValue)")
+        Swift.print("\tAfter \(settings.iterations) iteration(s) of \(self.timings.count) batches:")
+        let timeAfterWarmup = self.totalTime - self.warmupTime
+        let totalExamples = self.timings.count * settings.batchSize
+        let averageExamplesPerSecond = Double(totalExamples) / (Double(timeAfterWarmup) / 1000.0)
+        Swift.print(
+            "\tAverage examples per second: \(String(format: "%.2f", averageExamplesPerSecond))")
+        Swift.print("\tInstantaneous examples per second:")
+        let examplesPerSecond = self.timings.map {
+            Double(settings.batchSize) / ($0 / 1000.0)
         }
+        examplesPerSecond.printStatistics(indentation: 2)
+        Swift.print("\tStep time (ms):")
+        self.timings.printStatistics(indentation: 2)
+        Swift.print("\tTotal time: \(String(format: "%.2f", self.totalTime)) ms")
+        Swift.print("\tWarmup time: \(String(format: "%.2f", self.warmupTime)) ms")
+        Swift.print("\tTime after warmup: \(String(format: "%.2f", timeAfterWarmup)) ms")
     }
 
     private func printAsJSON() {
@@ -74,23 +74,20 @@ extension BenchmarkConfiguration {
         result += self.name
         result += " "
         switch self.variety {
-        case .trainingTime:
+        case .trainingThroughput:
             result += "--training "
         case .inferenceThroughput:
             result += "--inference "
         }
-        if settings.batches != -1 {
-            result += "--batches \(settings.batches) "
+        if self.settings.synthetic {
+            result += "--synthetic "
+        } else {
+            result += "--real "
         }
-        if settings.batchSize != -1 {
-            result += "--batchSize \(settings.batchSize) "
-        }
-        if settings.iterations != -1 {
-            result += "--iterations \(settings.iterations) "
-        }
-        if settings.epochs != -1 {
-            result += "--epochs \(settings.epochs) "
-        }
+        result += "--batches \(settings.batches) "
+        result += "--batchSize \(settings.batchSize) "
+        result += "--iterations \(settings.iterations) "
+        result += "--warmupBatches \(settings.warmupBatches) "
         Swift.print(result)
     }
 
@@ -127,5 +124,13 @@ extension Array where Element == Double {
     /// The standard deviation of elements.
     var standardDeviation: Element {
         return Double.sqrt(variance)
+    }
+    
+    func printStatistics(indentation: Int) {
+        let tabs = String(repeating: "\t", count: indentation)
+        Swift.print("\(tabs)Average: \(String(format: "%.2f", self.average))")
+        Swift.print("\(tabs)Min: \(String(format: "%.2f", self.min()!))")
+        Swift.print("\(tabs)Max: \(String(format: "%.2f", self.max()!))")
+        Swift.print("\(tabs)Standard deviation: \(String(format: "%.2f", self.standardDeviation))")
     }
 }

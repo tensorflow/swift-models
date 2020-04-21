@@ -14,5 +14,5 @@
 
 enum BenchmarkVariety: String, Codable {
     case inferenceThroughput = "inference"
-    case trainingTime = "training"
+    case trainingThroughput = "training"
 }

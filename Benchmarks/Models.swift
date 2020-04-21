@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let benchmarkModels: [String: BenchmarkModel] = [
-    "LeNetMNIST": LeNetMNIST(),
-    "ResNetCIFAR10": ResNetCIFAR10(),
+let benchmarkModelTypes: [BenchmarkModel.Type] = [
+    LeNetMNIST.self,
+    ResNetCIFAR10.self,
 ]
+let benchmarkModels = Dictionary(uniqueKeysWithValues: benchmarkModelTypes.map { ($0.name, $0) })
