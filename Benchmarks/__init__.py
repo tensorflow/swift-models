@@ -86,7 +86,7 @@ def extract_metrics(result, variety):
   batch_count = len(timings_s)
 
   timings_s = np.array(timings) / 1000
-  wall_time = total_time
+  wall_time = total_time / 1000.0
 
   # Average examples per second across the entire benchmark run,
   # including warmup period. Assumes a single warmup batch.
