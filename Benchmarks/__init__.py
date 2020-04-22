@@ -79,24 +79,25 @@ def extract_metrics(result, variety):
   """
 
   timings = result['timings']
-  warmup = result['warmup']
   batch_size = result['batchSize']
+  warmup_time = result['warmupTime']
+  total_time = result['totalTime']
+  training_time = total_time - warmup_time
+  batch_count = len(timings_s)
 
-  # 50th percentile of a single iteration's running time in seconds.
   timings_s = np.array(timings) / 1000
-  wall_time = np.percentile(timings_s, 50)
+  wall_time = total_time
 
-  # Average examples per second across the entire
-  # benchmark run. Doesn't account for warm-up.
-  total_time_s = sum(timings_s) + sum(warmup)
-  total_num_examples = batch_size * (len(timings_s) + len(warmup))
+  # Average examples per second across the entire benchmark run,
+  # including warmup period. Assumes a single warmup batch.
+  total_time_s = total_time / 1000.0
+  total_num_examples = batch_size * (batch_count + 1)
   average_examples_per_second = total_num_examples / total_time_s
 
   # Examples per second, calculated after warmup period
-  # of the measurements. First half of measurements
-  # is dropped to account for warm-up.
-  warm_time_s = sum(timings_s)
-  warm_num_examples = batch_size * len(timings_s)
+  # of the measurements.
+  warm_time_s = training_time / 1000.0
+  warm_num_examples = batch_size * batch_count
   examples_per_second = warm_num_examples / warm_time_s
 
   metrics = [{
@@ -105,6 +106,18 @@ def extract_metrics(result, variety):
   }, {
       'name': 'avg_exp_per_second',
       'value': average_examples_per_second
+  }, {
+      'name': 'startup_time',
+      'value': warmup_time / 1000.0
+  }, {
+      'name': 'step_time_median',
+      'value': np.median(timings_s)
+  }, {
+      'name': 'step_time_min',
+      'value': np.min(timings_s)
+  }, {
+      'name': 'step_time_max',
+      'value': np.max(timings_s)
   }]
 
   return (wall_time, metrics)
