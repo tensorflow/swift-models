@@ -12,10 +12,23 @@ public struct COCOVariant {
             string:
                 "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/COCO/annotations-val2017.zip"
         )!
+    static let testAnnotationsURL =
+        URL(
+            string:
+                "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/COCO/annotations-test2017.zip"
+        )!
+    static let testDevAnnotationsURL =
+        URL(
+            string:
+                "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/COCO/annotations-test-dev2017.zip"
+        )!
+
     static let trainImagesURL =
         URL(string: "http://images.cocodataset.org/zips/train2017.zip")!
     static let valImagesURL =
         URL(string: "http://images.cocodataset.org/zips/val2017.zip")!
+    static let testImagesURL =
+        URL(string: "http://images.cocodataset.org/zips/test2017.zip")!
 
     static func downloadIfNotPresent(
         from location: URL,
@@ -71,5 +84,31 @@ public struct COCOVariant {
             directory,
             annotations: "annotations-val2017/instances_val2017.json",
             images: "val2017")
+    }
+
+    public static func loadTest(to directory: URL = defaultDirectory()) -> COCO {
+        downloadIfNotPresent(
+            from: testAnnotationsURL, to: directory,
+            filename: "annotations-test2017")
+        downloadIfNotPresent(
+            from: testImagesURL, to: directory,
+            filename: "test2017")
+        return loadJSON(
+            directory,
+            annotations: "annotations-test2017/image_info_test2017.json",
+            images: "test2017")
+    }
+
+    public static func loadTestDev(to directory: URL = defaultDirectory()) -> COCO {
+        downloadIfNotPresent(
+            from: testDevAnnotationsURL, to: directory,
+            filename: "annotations-test-dev2017")
+        downloadIfNotPresent(
+            from: testImagesURL, to: directory,
+            filename: "test2017")
+        return loadJSON(
+            directory,
+            annotations: "annotations-test-dev2017/image_info_test-dev2017.json",
+            images: "test2017")
     }
 }
