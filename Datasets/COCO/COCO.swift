@@ -14,7 +14,7 @@ public struct COCO {
     public typealias Category = [String: Any]
     public typealias CategoryId = Int
 
-    public var imagesDirectory: URL
+    public var imagesDirectory: URL?
     public var metadata: Metadata
     public var info: Info = [:]
     public var annotations: [AnnotationId: Annotation] = [:]
@@ -23,7 +23,7 @@ public struct COCO {
     public var imageToAnnotations: [ImageId: [Annotation]] = [:]
     public var categoryToImages: [CategoryId: [ImageId]] = [:]
 
-    public init(fromFile fileURL: URL, imagesDirectory imgDir: URL) throws {
+    public init(fromFile fileURL: URL, imagesDirectory imgDir: URL?) throws {
         let contents = try String(contentsOfFile: fileURL.path)
         let data = contents.data(using: .utf8)!
         let parsed = try JSONSerialization.jsonObject(with: data)

@@ -65,8 +65,11 @@ func loadCOCOExample(coco: COCO, image: COCO.Image, includeMasks: Bool) -> Objec
     let imgW = image["width"] as! Int
     let imgH = image["height"] as! Int
     let imgFileName = image["file_name"] as! String
-    let imgPath = imgDir.appendingPathComponent(imgFileName).path
-    let imgUrl = URL(string: imgPath)!
+    var imgUrl: URL? = nil
+    if imgDir != nil {
+        let imgPath = imgDir!.appendingPathComponent(imgFileName).path
+        imgUrl = URL(string: imgPath)!
+    }
     let imgId = image["id"] as! Int
     let img = LazyImage(width: imgW, height: imgH, url: imgUrl)
     let annotations: [COCO.Annotation]

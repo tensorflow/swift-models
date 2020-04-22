@@ -6,16 +6,20 @@ import TensorFlow
 public struct LazyImage {
     public let width: Int
     public let height: Int
-    public let url: URL
+    public let url: URL?
 
-    public init(width w: Int, height h: Int, url u: URL) {
+    public init(width w: Int, height h: Int, url u: URL?) {
         self.width = w
         self.height = h
         self.url = u
     }
 
-    public func tensor() -> Tensor<Float> {
-        return Image(jpeg: url).tensor
+    public func tensor() -> Tensor<Float>? {
+        if url != nil {
+            return Image(jpeg: url!).tensor
+        } else {
+            return nil
+        }
     }
 }
 
@@ -61,7 +65,7 @@ public struct ObjectDetectionExample: Collatable, KeyPathIterable {
 public protocol ObjectDetectionDataset {
     associatedtype SourceDataSet: Collection
     where SourceDataSet.Element == ObjectDetectionExample, SourceDataSet.Index == Int
-    init(includeMasks: Bool, batchSize: Int, numWorkers: Int)
+
     var training: Batcher<SourceDataSet> { get }
     var test: Batcher<SourceDataSet> { get }
 }

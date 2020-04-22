@@ -47,10 +47,13 @@ public struct COCOVariant {
             remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
     }
 
-    static func loadJSON(_ directory: URL, annotations: String, images: String) -> COCO {
+    static func loadJSON(_ directory: URL, annotations: String, images: String?) -> COCO {
         let jsonPath = directory.appendingPathComponent(annotations).path
         let jsonURL = URL(string: jsonPath)!
-        let imagesDirectory = directory.appendingPathComponent(images)
+        var imagesDirectory: URL? = nil
+        if images != nil {
+            imagesDirectory = directory.appendingPathComponent(images!)
+        }
         let coco = try! COCO(fromFile: jsonURL, imagesDirectory: imagesDirectory)
         return coco
     }
@@ -60,55 +63,75 @@ public struct COCOVariant {
             .appendingPathComponent("COCO", isDirectory: true)
     }
 
-    public static func loadTrain(to directory: URL = defaultDirectory()) -> COCO {
+    public static func loadTrain(
+        to directory: URL = defaultDirectory(),
+        downloadImages: Bool = false
+    ) -> COCO {
         downloadIfNotPresent(
             from: trainAnnotationsURL, to: directory,
             filename: "annotations-train2017")
-        downloadIfNotPresent(
-            from: trainImagesURL, to: directory,
-            filename: "train2017")
+        if downloadImages {
+            downloadIfNotPresent(
+                from: trainImagesURL, to: directory,
+                filename: "train2017")
+        }
         return loadJSON(
             directory,
             annotations: "annotations-train2017/instances_train2017.json",
-            images: "train2017")
+            images: downloadImages ? "train2017" : nil)
     }
 
-    public static func loadVal(to directory: URL = defaultDirectory()) -> COCO {
+    public static func loadVal(
+        to directory: URL = defaultDirectory(),
+        downloadImages: Bool = false
+    ) -> COCO {
         downloadIfNotPresent(
             from: valAnnotationsURL, to: directory,
             filename: "annotations-val2017")
-        downloadIfNotPresent(
-            from: valImagesURL, to: directory,
-            filename: "val2017")
+        if downloadImages {
+            downloadIfNotPresent(
+                from: valImagesURL, to: directory,
+                filename: "val2017")
+        }
         return loadJSON(
             directory,
             annotations: "annotations-val2017/instances_val2017.json",
-            images: "val2017")
+            images: downloadImages ? "val2017" : nil)
     }
 
-    public static func loadTest(to directory: URL = defaultDirectory()) -> COCO {
+    public static func loadTest(
+        to directory: URL = defaultDirectory(),
+        downloadImages: Bool = false
+    ) -> COCO {
         downloadIfNotPresent(
             from: testAnnotationsURL, to: directory,
             filename: "annotations-test2017")
-        downloadIfNotPresent(
-            from: testImagesURL, to: directory,
-            filename: "test2017")
+        if downloadImages {
+            downloadIfNotPresent(
+                from: testImagesURL, to: directory,
+                filename: "test2017")
+        }
         return loadJSON(
             directory,
             annotations: "annotations-test2017/image_info_test2017.json",
-            images: "test2017")
+            images: downloadImages ? "test2017" : nil)
     }
 
-    public static func loadTestDev(to directory: URL = defaultDirectory()) -> COCO {
+    public static func loadTestDev(
+        to directory: URL = defaultDirectory(),
+        downloadImages: Bool = false
+    ) -> COCO {
         downloadIfNotPresent(
             from: testDevAnnotationsURL, to: directory,
             filename: "annotations-test-dev2017")
-        downloadIfNotPresent(
-            from: testImagesURL, to: directory,
-            filename: "test2017")
+        if downloadImages {
+            downloadIfNotPresent(
+                from: testImagesURL, to: directory,
+                filename: "test2017")
+        }
         return loadJSON(
             directory,
             annotations: "annotations-test-dev2017/image_info_test-dev2017.json",
-            images: "test2017")
+            images: downloadImages ? "test2017" : nil)
     }
 }
