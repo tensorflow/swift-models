@@ -31,7 +31,7 @@ final class COCOVariantTests: XCTestCase {
     static var allTests = [
         // We exclude full train dataset to avoid downloading
         // too much data during the swift-models CI runs.
-        ("testLoadTestTrain", testLoadTrain),
+        // ("testLoadTestTrain", testLoadTrain),
         ("testLoadTestVal", testLoadVal),
         ("testLoadTest", testLoadTest),
         ("testLoadTestDev", testLoadTestDev),
