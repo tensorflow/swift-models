@@ -83,7 +83,7 @@ def extract_metrics(result, variety):
   warmup_time = result['warmupTime']
   total_time = result['totalTime']
   training_time = total_time - warmup_time
-  batch_count = len(timings_s)
+  batch_count = len(timings)
 
   timings_s = np.array(timings) / 1000
   wall_time = total_time / 1000.0
