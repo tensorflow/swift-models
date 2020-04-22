@@ -3,14 +3,12 @@ import Foundation
 
 public struct COCODataset: ObjectDetectionDataset {
     public typealias SourceDataSet = [ObjectDetectionExample]
-    public let batchSize: Int
     public let trainingExamples: SourceDataSet
     public let training: Batcher<SourceDataSet>
     public let testExamples: SourceDataSet
     public let test: Batcher<SourceDataSet>
 
     public init(includeMasks: Bool, batchSize: Int, numWorkers: Int) {
-        self.batchSize = batchSize
         self.trainingExamples =
             loadCOCOExamples(
                 from: COCOVariant.loadTrain(),
