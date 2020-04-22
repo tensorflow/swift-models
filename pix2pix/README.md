@@ -1,6 +1,6 @@
 # pix2pix
 
-This repositery tries to closely resemble original pix2pix paper with the same architecture and hyper-parameters, but using Swift for TensorFlow. Results seem to be close to what original authors claimed to achieve, this is what a generator outputs after 7 hours of training using single GTX 1080 card.
+This example tries to closely resemble [the original pix2pix paper](https://arxiv.org/abs/1611.07004) with the same architecture and hyper-parameters, but using Swift for TensorFlow. Results seem to be close to what the original authors claimed to achieve, this is what a generator outputs after 7 hours of training using single GTX 1080 card:
 
 ![](https://i.imgur.com/Od9dfe8.jpg)
 ![](https://i.imgur.com/zQxPCAd.jpg)
