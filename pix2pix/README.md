@@ -8,7 +8,7 @@ This example tries to closely resemble [the original pix2pix paper](https://arxi
 In order to run the project you have to just call 
 
 ```bash
-swift run -c release
+swift run -c release pix2pix
 ```
 
 You will need a tensorboard installation in order to run the project. 
