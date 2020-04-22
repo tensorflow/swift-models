@@ -2,8 +2,16 @@ import Foundation
 import ModelSupport
 
 public struct COCOVariant {
-    static let annotationsURL =
-        URL(string: "http://images.cocodataset.org/annotations/annotations_trainval2017.zip")!
+    static let trainAnnotationsURL =
+        URL(
+            string:
+                "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/COCO/annotations-train2017.zip"
+        )!
+    static let valAnnotationsURL =
+        URL(
+            string:
+                "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/COCO/annotations-val2017.zip"
+        )!
     static let trainImagesURL =
         URL(string: "http://images.cocodataset.org/zips/train2017.zip")!
     static let valImagesURL =
@@ -12,10 +20,9 @@ public struct COCOVariant {
     static func downloadIfNotPresent(
         from location: URL,
         to directory: URL,
-        filename: String,
-        extracted subdir: String
+        filename: String
     ) {
-        let downloadPath = directory.appendingPathComponent(subdir).path
+        let downloadPath = directory.appendingPathComponent(filename).path
         let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
         let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: downloadPath)
         let directoryEmpty = (contentsOfDir == nil) || (contentsOfDir!.isEmpty)
@@ -42,25 +49,27 @@ public struct COCOVariant {
 
     public static func loadTrain(to directory: URL = defaultDirectory()) -> COCO {
         downloadIfNotPresent(
-            from: annotationsURL, to: directory, filename: "annotations_trainval2017",
-            extracted: "annotations")
+            from: trainAnnotationsURL, to: directory,
+            filename: "annotations-train2017")
         downloadIfNotPresent(
-            from: trainImagesURL, to: directory, filename: "train2017", extracted: "train2017")
+            from: trainImagesURL, to: directory,
+            filename: "train2017")
         return loadJSON(
             directory,
-            annotations: "annotations/instances_train2017.json",
+            annotations: "annotations-train2017/instances_train2017.json",
             images: "train2017")
     }
 
     public static func loadVal(to directory: URL = defaultDirectory()) -> COCO {
         downloadIfNotPresent(
-            from: annotationsURL, to: directory, filename: "annotations_trainval2017",
-            extracted: "annotations")
+            from: valAnnotationsURL, to: directory,
+            filename: "annotations-val2017")
         downloadIfNotPresent(
-            from: valImagesURL, to: directory, filename: "val2017", extracted: "val2017")
+            from: valImagesURL, to: directory,
+            filename: "val2017")
         return loadJSON(
             directory,
-            annotations: "annotations/instances_val2017.json",
+            annotations: "annotations-val2017/instances_val2017.json",
             images: "val2017")
     }
 }
