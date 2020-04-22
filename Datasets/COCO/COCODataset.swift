@@ -8,10 +8,13 @@ public struct COCODataset: ObjectDetectionDataset {
     public let testExamples: SourceDataSet
     public let test: Batcher<SourceDataSet>
 
-    public init(includeMasks: Bool, batchSize: Int, numWorkers: Int) {
+    public init(
+        training: COCO, test: COCO,
+        includeMasks: Bool, batchSize: Int, numWorkers: Int
+    ) {
         self.trainingExamples =
             loadCOCOExamples(
-                from: COCOVariant.loadTrain(),
+                from: training,
                 includeMasks: includeMasks,
                 batchSize: batchSize,
                 numWorkers: numWorkers)
@@ -23,7 +26,7 @@ public struct COCODataset: ObjectDetectionDataset {
                 shuffle: true)
         self.testExamples =
             loadCOCOExamples(
-                from: COCOVariant.loadVal(),
+                from: test,
                 includeMasks: includeMasks,
                 batchSize: batchSize,
                 numWorkers: numWorkers)

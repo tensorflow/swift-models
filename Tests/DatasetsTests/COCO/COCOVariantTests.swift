@@ -6,32 +6,33 @@ import XCTest
 final class COCOVariantTests: XCTestCase {
     func testLoadTrain() {
         let coco = COCOVariant.loadTrain()
-        verify(coco)
-    }
-
-    func testLoadVal() {
-        let coco = COCOVariant.loadVal()
-        verify(coco)
-    }
-
-    func testLoadTest() {
-        let coco = COCOVariant.loadTest()
-        verify(coco)
-    }
-
-    func testLoadTestDev() {
-        let coco = COCOVariant.loadTestDev()
-        verify(coco)
-    }
-
-    func verify(_ coco: COCO) {
         assert(coco.images.count > 0)
         assert(coco.annotations.count > 0)
     }
 
+    func testLoadVal() {
+        let coco = COCOVariant.loadVal()
+        assert(coco.images.count > 0)
+        assert(coco.annotations.count > 0)
+    }
+
+    func testLoadTest() {
+        let coco = COCOVariant.loadTest()
+        assert(coco.images.count > 0)
+        assert(coco.annotations.count == 0)
+    }
+
+    func testLoadTestDev() {
+        let coco = COCOVariant.loadTestDev()
+        assert(coco.images.count > 0)
+        assert(coco.annotations.count == 0)
+    }
+
     static var allTests = [
-        ("testLoadTrain", testLoadTrain),
-        ("testLoadVal", testLoadVal),
+        // We exclude full train dataset to avoid downloading
+        // too much data during the swift-models CI runs.
+        ("testLoadTestTrain", testLoadTrain),
+        ("testLoadTestVal", testLoadVal),
         ("testLoadTest", testLoadTest),
         ("testLoadTestDev", testLoadTestDev),
     ]

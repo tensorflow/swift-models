@@ -5,20 +5,30 @@ import XCTest
 
 final class COCODatasetTests: XCTestCase {
     func testExamplesNoMasks() {
-        let dataset = COCODataset(includeMasks: false, batchSize: 32, numWorkers: 8)
+        // We use val/test variants here, instead of train/val, 
+        // to avoid fetching the full training data during CI runs.
+        let dataset = COCODataset(
+            training: COCOVariant.loadVal(),
+            test: COCOVariant.loadTest(),
+            includeMasks: false, batchSize: 32, numWorkers: 8)
         verify(dataset.trainingExamples)
         verify(dataset.testExamples)
     }
 
     func testExamplesIncludingMasks() {
-        let dataset = COCODataset(includeMasks: true, batchSize: 32, numWorkers: 8)
+        // We use val/test variants here, instead of train/val, 
+        // to avoid fetching the full training data during CI runs.
+        let dataset = COCODataset(
+            training: COCOVariant.loadVal(),
+            test: COCOVariant.loadTest(),
+            includeMasks: true, batchSize: 32, numWorkers: 8)
         verify(dataset.trainingExamples)
         verify(dataset.testExamples)
     }
 
     func verify(_ examples: [ObjectDetectionExample]) {
         XCTAssertTrue(examples.count > 0)
-        XCTAssertTrue(examples[0].image.tensor().shape.count > 0)
+        XCTAssertTrue(examples[0].image.width != 0)
     }
 
     static var allTests = [
