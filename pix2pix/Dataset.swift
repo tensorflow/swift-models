@@ -24,13 +24,13 @@ public class PairedImages {
             self.target = .init(stacking: collating.map(\.target))
         }
         
-        public init(source: Tensorf, target: Tensorf) {
+        public init(source: Tensor<Float>, target: Tensor<Float>) {
             self.source = source
             self.target = target
         }
         
-        var source: Tensorf
-        var target: Tensorf
+        var source: Tensor<Float>
+        var target: Tensor<Float>
     }
     var batcher: Batcher<[ImagePair]>
     

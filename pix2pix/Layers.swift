@@ -16,7 +16,7 @@ import Foundation
 
 public struct Identity: ParameterlessLayer {
     @differentiable
-    public func callAsFunction(_ input: Tensorf) -> Tensorf {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         input
     }
 }
@@ -58,8 +58,8 @@ public struct InstanceNorm2D<Scalar: TensorFlowFloatingPoint>: Layer {
 }
 
 public struct ConvLayer: Layer {
-    public typealias Input = Tensorf
-    public typealias Output = Tensorf
+    public typealias Input = Tensor<Float>
+    public typealias Output = Tensor<Float>
 
     /// Padding layer.
     public var pad: ZeroPadding2D<Float>
@@ -79,7 +79,7 @@ public struct ConvLayer: Layer {
     
         conv2d = Conv2D(filterShape: (kernelSize, kernelSize, inChannels, outChannels),
                         strides: (stride, stride),
-                        filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
+                        filterInitializer: { Tensor<Float>(randomNormal: $0, standardDeviation: Tensor<Float>(0.02)) })
     }
 
     /// Returns the output obtained from applying the layer to the given input.
@@ -103,19 +103,19 @@ public struct UNetSkipConnectionInnermost: Layer {
         self.downConv = Conv2D(filterShape: (4, 4, inChannels, innerChannels),
                                strides: (2, 2),
                                padding: .same,
-                               filterInitializer: { Tensorf(randomNormal: $0,
-                                                            standardDeviation: Tensorf(0.02)) })
+                               filterInitializer: { Tensor<Float>(randomNormal: $0,
+                                                            standardDeviation: Tensor<Float>(0.02)) })
         self.upNorm = BatchNorm(featureCount: outChannels)
         
         self.upConv = TransposedConv2D(filterShape: (4, 4, innerChannels, outChannels),
                                        strides: (2, 2),
                                        padding: .same,
-                                       filterInitializer: { Tensorf(randomNormal: $0,
-                                                                    standardDeviation: Tensorf(0.02)) })
+                                       filterInitializer: { Tensor<Float>(randomNormal: $0,
+                                                                    standardDeviation: Tensor<Float>(0.02)) })
     }
     
     @differentiable
-    public func callAsFunction(_ input: Tensorf) -> Tensorf {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         var x = leakyRelu(input)
         x = self.downConv(x)
         x = relu(x)
@@ -126,7 +126,7 @@ public struct UNetSkipConnectionInnermost: Layer {
 }
 
 
-public struct UNetSkipConnection<Sublayer: Layer>: Layer where Sublayer.TangentVector.VectorSpaceScalar == Float, Sublayer.Input == Tensorf, Sublayer.Output == Tensorf {
+public struct UNetSkipConnection<Sublayer: Layer>: Layer where Sublayer.TangentVector.VectorSpaceScalar == Float, Sublayer.Input == Tensor<Float>, Sublayer.Output == Tensor<Float> {
     public var downConv: Conv2D<Float>
     public var downNorm: BatchNorm<Float>
     public var upConv: TransposedConv2D<Float>
@@ -144,15 +144,15 @@ public struct UNetSkipConnection<Sublayer: Layer>: Layer where Sublayer.TangentV
         self.downConv = Conv2D(filterShape: (4, 4, inChannels, innerChannels),
                                strides: (2, 2),
                                padding: .same,
-                               filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
+                               filterInitializer: { Tensor<Float>(randomNormal: $0, standardDeviation: Tensor<Float>(0.02)) })
         self.downNorm = BatchNorm(featureCount: innerChannels)
         self.upNorm = BatchNorm(featureCount: outChannels)
         
         self.upConv = TransposedConv2D(filterShape: (4, 4, outChannels, innerChannels * 2),
                                        strides: (2, 2),
                                        padding: .same,
-                                       filterInitializer: { Tensorf(randomNormal: $0,
-                                                                    standardDeviation: Tensorf(0.02)) })
+                                       filterInitializer: { Tensor<Float>(randomNormal: $0,
+                                                                    standardDeviation: Tensor<Float>(0.02)) })
     
         self.submodule = submodule
         
@@ -160,7 +160,7 @@ public struct UNetSkipConnection<Sublayer: Layer>: Layer where Sublayer.TangentV
     }
     
     @differentiable
-    public func callAsFunction(_ input: Tensorf) -> Tensorf {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         var x = leakyRelu(input)
         x = x.sequenced(through: self.downConv, self.downNorm, self.submodule)
         x = relu(x)
@@ -174,7 +174,7 @@ public struct UNetSkipConnection<Sublayer: Layer>: Layer where Sublayer.TangentV
     }
 }
 
-public struct UNetSkipConnectionOutermost<Sublayer: Layer>: Layer where Sublayer.TangentVector.VectorSpaceScalar == Float, Sublayer.Input == Tensorf, Sublayer.Output == Tensorf {
+public struct UNetSkipConnectionOutermost<Sublayer: Layer>: Layer where Sublayer.TangentVector.VectorSpaceScalar == Float, Sublayer.Input == Tensor<Float>, Sublayer.Output == Tensor<Float> {
     public var downConv: Conv2D<Float>
     public var upConv: TransposedConv2D<Float>
     
@@ -187,20 +187,20 @@ public struct UNetSkipConnectionOutermost<Sublayer: Layer>: Layer where Sublayer
         self.downConv = Conv2D(filterShape: (4, 4, inChannels, innerChannels),
                                strides: (2, 2),
                                padding: .same,
-                               filterInitializer: { Tensorf(randomNormal: $0,
-                                                            standardDeviation: Tensorf(0.02)) })
+                               filterInitializer: { Tensor<Float>(randomNormal: $0,
+                                                            standardDeviation: Tensor<Float>(0.02)) })
         self.upConv = TransposedConv2D(filterShape: (4, 4, outChannels, innerChannels * 2),
                                        strides: (2, 2),
                                        padding: .same,
                                        activation: tanh,
-                                       filterInitializer: { Tensorf(randomNormal: $0,
-                                                                    standardDeviation: Tensorf(0.02)) })
+                                       filterInitializer: { Tensor<Float>(randomNormal: $0,
+                                                                    standardDeviation: Tensor<Float>(0.02)) })
     
         self.submodule = submodule
     }
     
     @differentiable
-    public func callAsFunction(_ input: Tensorf) -> Tensorf {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         var x = input.sequenced(through: self.downConv, self.submodule)
         x = relu(x)
         x = self.upConv(x)

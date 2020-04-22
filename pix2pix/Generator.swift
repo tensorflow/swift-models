@@ -41,7 +41,7 @@ public struct NetG: Layer {
     }
 
     @differentiable
-    public func callAsFunction(_ input: Tensorf) -> Tensorf {
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         return self.module(input)
     }
 }

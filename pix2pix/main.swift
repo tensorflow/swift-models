@@ -62,7 +62,7 @@ let optimizerG = Adam(for: generator, learningRate: 0.0002, beta1: 0.5)
 let optimizerD = Adam(for: discriminator, learningRate: 0.0002, beta1: 0.5)
 
 let batchSize = 1
-let lambdaL1 = Tensorf(100)
+let lambdaL1 = Tensor<Float>(100)
 
 let trainDataset = try PairedImages(folderAURL: trainFolderA, folderBURL: trainFolderB)
 let testDataset = try PairedImages(folderAURL: testFolderA, folderBURL: testFolderB)
@@ -75,8 +75,8 @@ var step = 0
 for epoch in 0..<options.epochs {
     print("Epoch \(epoch) started at: \(Date())")
     
-    var discriminatorTotalLoss = Tensorf(0)
-    var generatorTotalLoss = Tensorf(0)
+    var discriminatorTotalLoss = Tensor<Float>(0)
+    var generatorTotalLoss = Tensor<Float>(0)
     var discriminatorCount = 0
     
     for batch in trainDataset.batcher.sequenced() {
@@ -96,13 +96,13 @@ for epoch in 0..<options.epochs {
         let sourceImages = croppedImages[0].expandingShape(at: 0)
         let targetImages = croppedImages[1].expandingShape(at: 0)
         
-        let generatorGradient = TensorFlow.gradient(at: generator) { g -> Tensorf in
+        let generatorGradient = TensorFlow.gradient(at: generator) { g -> Tensor<Float> in
             let fakeImages = g(sourceImages)
             let fakeAB = sourceImages.concatenated(with: fakeImages, alongAxis: 3)
             let fakePrediction = discriminator(fakeAB)
             
             let ganLoss = sigmoidCrossEntropy(logits: fakePrediction,
-                                              labels: Tensorf.one.broadcasted(to: fakePrediction.shape))
+                                              labels: Tensor<Float>.one.broadcasted(to: fakePrediction.shape))
             let l1Loss = meanAbsoluteError(predicted: fakeImages,
                                            expected: targetImages) * lambdaL1
             
@@ -111,18 +111,18 @@ for epoch in 0..<options.epochs {
         }
         
         let fakeImages = generator(sourceImages)
-        let descriminatorGradient = TensorFlow.gradient(at: discriminator) { d -> Tensorf in
+        let descriminatorGradient = TensorFlow.gradient(at: discriminator) { d -> Tensor<Float> in
             let fakeAB = sourceImages.concatenated(with: fakeImages,
                                                    alongAxis: 3)
             let fakePrediction = d(fakeAB)
             let fakeLoss = sigmoidCrossEntropy(logits: fakePrediction,
-                                               labels: Tensorf.zero.broadcasted(to: fakePrediction.shape))
+                                               labels: Tensor<Float>.zero.broadcasted(to: fakePrediction.shape))
             
             let realAB = sourceImages.concatenated(with: targetImages,
                                                    alongAxis: 3)
             let realPrediction = d(realAB)
             let realLoss = sigmoidCrossEntropy(logits: realPrediction,
-                                               labels: Tensorf.one.broadcasted(to: fakePrediction.shape))
+                                               labels: Tensor<Float>.one.broadcasted(to: fakePrediction.shape))
             
             discriminatorTotalLoss += (fakeLoss + realLoss) * 0.5
             
@@ -154,7 +154,7 @@ for epoch in 0..<options.epochs {
 
 Context.local.learningPhase = .inference
 
-var totalLoss = Tensorf(0)
+var totalLoss = Tensor<Float>(0)
 var count = 0
 
 let resultsFolder = try createDirectoryIfNeeded(path: FileManager.default.currentDirectoryPath + "/results")
