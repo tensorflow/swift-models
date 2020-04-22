@@ -15,6 +15,7 @@ add_library(Datasets
   MNIST/MNIST.swift
   MNIST/FashionMNIST.swift
   MNIST/KuzushijiMNIST.swift
+  ObjectDetectionDataset.swift
   BostonHousing/BostonHousing.swift
   TensorPair.swift
   TextUnsupervised/TextUnsupervised.swift)
