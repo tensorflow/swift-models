@@ -185,6 +185,8 @@ for epoch in 0 ..< epochs {
         // MARK: Inference
 
         if step % options.sampleLogPeriod == 0 {
+            Context.local.learningPhase = .inference
+            
             let fakeSample = generatorG(sampleImage) * 0.5 + 0.5
 
             let fakeSampleImage = Image(tensor: fakeSample[0] * 255)
