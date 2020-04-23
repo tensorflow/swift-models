@@ -19,3 +19,11 @@ let backbone = MobileNetLikeBackbone(checkpoint: ckpt)
 let personlabHeads = PersonlabHeads(checkpoint: ckpt)
 
 var results = personlabHeads(backbone(normalizedImagesTensor))
+
+
+var priorityQueueTest = Heap<Int>(elements:[10, 22, 3, 1, 5, 7, 7, 3] , priorityFunction: >)
+print(priorityQueueTest.dequeue()!)
+print(priorityQueueTest.dequeue()!)
+print(priorityQueueTest.dequeue()!)
+print(priorityQueueTest.dequeue()!)
+print(priorityQueueTest.dequeue()!)
