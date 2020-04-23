@@ -52,7 +52,7 @@ public struct LabeledObject {
     }
 }
 
-public struct ObjectDetectionExample: Collatable, KeyPathIterable {
+public struct ObjectDetectionExample: _Collatable, KeyPathIterable {
     public let image: LazyImage
     public let objects: [LabeledObject]
 

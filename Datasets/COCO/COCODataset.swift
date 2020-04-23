@@ -46,7 +46,7 @@ func loadCOCOExamples(from coco: COCO, includeMasks: Bool, batchSize: Int, numWo
     let batchCount: Int = images.count / batchSize + 1
     let n = min(numWorkers, batchCount)
     let batches = Array(0..<batchCount)
-    let examples: [[ObjectDetectionExample]] = batches.concurrentMap(nthreads: n) { batchIdx in
+    let examples: [[ObjectDetectionExample]] = batches._concurrentMap(nthreads: n) { batchIdx in
         var examples: [ObjectDetectionExample] = []
         for i in 0..<batchSize {
             let idx = batchSize * batchIdx + i

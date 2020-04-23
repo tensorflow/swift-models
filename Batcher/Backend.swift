@@ -31,7 +31,7 @@ public final class ThreadSafe<A> {
 }
 
 public extension Array {
-    func concurrentMap<B>(nthreads:Int?=nil, _ transform: (Element) -> B) -> [B] {
+    func _concurrentMap<B>(nthreads:Int?=nil, _ transform: (Element) -> B) -> [B] {
         let result = ThreadSafe(Array<B?>(repeating: nil, count: count))
         let nt = nthreads ?? count
         let cs = (count-1)/nt+1

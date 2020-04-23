@@ -18,10 +18,10 @@ import TensorFlow
 import Batcher
 
 public class PairedImages {
-    public struct ImagePair: Collatable {
-        public init(collating: [PairedImages.ImagePair]) {
-            self.source = .init(stacking: collating.map(\.source))
-            self.target = .init(stacking: collating.map(\.target))
+    public struct ImagePair: _Collatable {
+        public init(oldCollating: [PairedImages.ImagePair]) {
+            self.source = .init(stacking: oldCollating.map(\.source))
+            self.target = .init(stacking: oldCollating.map(\.target))
         }
         
         public init(source: Tensor<Float>, target: Tensor<Float>) {

@@ -22,8 +22,8 @@ public func defaultSample<C: Collection>(on dataset: inout C, shuffled: Bool) ->
 }
 
 // Default collate function for samples that conform to Collatable
-public func defaultCollate<S: Collatable>(_ batch: [S]) -> S {
-    return S(collating: batch)
+public func defaultCollate<S: _Collatable>(_ batch: [S]) -> S {
+    return S(oldCollating: batch)
 }
 
 // Main struct to collate the samples from a dataset into a batch
@@ -102,7 +102,7 @@ public struct BatchIterator<C: Collection>: IteratorProtocol, Sequence where C.I
         if (end - pos) < b.batchSize && b.dropLast { return nil }
         // The idea is to have samples processed and collated on the CPU before moving to the host.
         // This part has not been optimized yet
-        let samples = Array(pos..<end).concurrentMap(nthreads: Swift.min(b.numWorkers, end-pos)) {
+        let samples = Array(pos..<end)._concurrentMap(nthreads: Swift.min(b.numWorkers, end-pos)) {
             b.dataset[indices[$0]]
         }
         pos = end
@@ -110,8 +110,8 @@ public struct BatchIterator<C: Collection>: IteratorProtocol, Sequence where C.I
     }
 }
 
-// Add default collateSamples when the dataset elements conform to Collatable
-public extension Batcher where C.Element: Collatable {
+// Add default collateSamples when the dataset elements conform to _Collatable
+public extension Batcher where C.Element: _Collatable {
     init(
         on dataset: C, 
         batchSize: Int, 
