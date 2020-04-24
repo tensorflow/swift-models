@@ -25,7 +25,7 @@ let trainFolderB: URL
 let testFolderA: URL
 let testFolderB: URL
 
-if options.datasetPath.length != 0 {
+if !options.datasetPath.isEmpty {
     datasetFolder = URL(fileURLWithPath: options.datasetPath, isDirectory: true)
     trainFolderA = datasetFolder.appendingPathComponent("trainA")
     trainFolderB = datasetFolder.appendingPathComponent("trainB")
