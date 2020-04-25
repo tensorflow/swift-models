@@ -195,12 +195,12 @@ public struct TransformerEncoderLayer: Layer, Regularizable {
         TangentVector(
             multiHeadAttention: multiHeadAttention.regularizationValue,
             attentionWeight: attentionWeight,
-            attentionBias: Tensor(Scalar(0)),
+            attentionBias: Tensor(Scalar(0), on: attentionBias.device),
             attentionLayerNorm: attentionLayerNorm.regularizationValue,
             intermediateWeight: intermediateWeight,
-            intermediateBias: Tensor(Scalar(0)),
+            intermediateBias: Tensor(Scalar(0), on: intermediateBias.device),
             outputWeight: outputWeight,
-            outputBias: Tensor(Scalar(0)),
+            outputBias: Tensor(Scalar(0), on: outputBias.device),
             outputLayerNorm: outputLayerNorm.regularizationValue)
     }
 

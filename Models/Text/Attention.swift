@@ -97,11 +97,11 @@ public struct MultiHeadAttention: Layer, Regularizable {
     public var regularizationValue: TangentVector {
         TangentVector(
         queryWeight: queryWeight,
-        queryBias: Tensor(Scalar(0)),
+        queryBias: Tensor(Scalar(0), on: queryBias.device),
         keyWeight: keyWeight,
-        keyBias: Tensor(Scalar(0)),
+        keyBias: Tensor(Scalar(0), on: keyBias.device),
         valueWeight: valueWeight,
-        valueBias: Tensor(Scalar(0)))
+        valueBias: Tensor(Scalar(0), on: valueBias.device))
     }
 
     /// Creates a multi-head attention layer.

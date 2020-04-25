@@ -24,13 +24,13 @@ public protocol Regularizable: Differentiable {
 
 extension Dense: Regularizable {
     public var regularizationValue: TangentVector {
-        TangentVector(weight: weight, bias: Tensor(Scalar(0)))
+        TangentVector(weight: weight, bias: Tensor(Scalar(0), on: bias.device))
     }
 }
 
 extension LayerNorm: Regularizable {
     public var regularizationValue: TangentVector {
-        TangentVector(offset: Tensor(Scalar(0)), scale: Tensor(Scalar(0)))
+        TangentVector(offset: Tensor(Scalar(0), on: offset.device), scale: Tensor(Scalar(0), on: scale.device))
     }
 }
 
@@ -105,6 +105,18 @@ where Model.TangentVector: VectorProtocol & PointwiseMultiplicative &
         self.beta2 = beta2
         self.epsilon = epsilon
         self.maxGradientGlobalNorm = maxGradientGlobalNorm
+    }
+
+    public init(copying other: WeightDecayedAdam, to device: Device) {
+        self.learningRate = other.learningRate
+        self.weightDecayRate = other.weightDecayRate
+        self.useBiasCorrection = other.useBiasCorrection
+        self.beta1 = other.beta1
+        self.beta2 = other.beta2
+        self.epsilon = other.epsilon
+        self.maxGradientGlobalNorm = other.maxGradientGlobalNorm
+        self.firstMoments = .init(copying: other.firstMoments, to: device)
+        self.secondMoments = .init(copying: other.secondMoments, to: device)
     }
 
     public mutating func update(_ model: inout Model, along direction: Model.TangentVector) {
