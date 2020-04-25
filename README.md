@@ -95,9 +95,9 @@ set DEVELOPER_LIBRARY_DIR=%SystemDrive%/Library/Developer/Platforms/Windows.plat
   -G Ninja                                                                                                                                                                                                                                            ^
   -S %SystemDrive%/SourceCache/tensorflow-swift-models
 : Build
-"%ProgramFiles%\CMake\bin\cmake.exe" --build %SystemDrive%/BinaryCache/tensorflow-swift-apis
+"%ProgramFiles%\CMake\bin\cmake.exe" --build %SystemDrive%/BinaryCache/tensorflow-swift-models
 : Test
-"%ProgramFiles%\CMake\bin\cmake.exe" --build %SystemDrive%/BinaryCache/tensorflow-swift-apis --target test
+"%ProgramFiles%\CMake\bin\cmake.exe" --build %SystemDrive%/BinaryCache/tensorflow-swift-models --target test
 ```
 
 ## Bugs
