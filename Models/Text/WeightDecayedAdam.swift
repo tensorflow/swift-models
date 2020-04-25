@@ -30,7 +30,9 @@ extension Dense: Regularizable {
 
 extension LayerNorm: Regularizable {
     public var regularizationValue: TangentVector {
-        TangentVector(offset: Tensor(Scalar(0), on: offset.device), scale: Tensor(Scalar(0), on: scale.device))
+        TangentVector(
+            offset: Tensor(Scalar(0), on: offset.device), scale: Tensor(Scalar(0), on: scale.device)
+        )
     }
 }
 
@@ -50,10 +52,12 @@ public protocol Optimizer {
 /// Reference: ["Adam - A Method for Stochastic Optimization"](
 /// https://arxiv.org/abs/1412.6980v8)
 public struct WeightDecayedAdam<Model: Regularizable, LearningRate: ScheduledParameter>: Optimizer
-where Model.TangentVector: VectorProtocol & PointwiseMultiplicative &
-                           ElementaryFunctions & KeyPathIterable,
-      Model.TangentVector.VectorSpaceScalar == Float,
-      LearningRate.Scalar == Float {
+where
+    Model.TangentVector: VectorProtocol & PointwiseMultiplicative & ElementaryFunctions
+        & KeyPathIterable,
+    Model.TangentVector.VectorSpaceScalar == Float,
+    LearningRate.Scalar == Float
+{
     /// The learning rate to use when updating models.
     public var learningRate: LearningRate
 

@@ -53,8 +53,9 @@ public struct TransformerEncoder: Layer, Regularizable {
     public var encoderLayers: [TransformerEncoderLayer]
 
     public var regularizationValue: TangentVector {
-        TangentVector(encoderLayers: [TransformerEncoderLayer].TangentVector(
-            encoderLayers.map { $0.regularizationValue }))
+        TangentVector(
+            encoderLayers: [TransformerEncoderLayer].TangentVector(
+                encoderLayers.map { $0.regularizationValue }))
     }
 
     /// Creates a transformer encoder.
@@ -139,8 +140,8 @@ public struct TransformerEncoder: Layer, Regularizable {
         // same depth as hidden size of the transformer.
         precondition(
             input.sequence.shape[2] == hiddenSize,
-            "The depth of the input tensor (\(input.sequence.shape[2]) is different " +
-                "than the hidden size (\(hiddenSize).")
+            "The depth of the input tensor (\(input.sequence.shape[2]) is different "
+                + "than the hidden size (\(hiddenSize).")
 
         // We keep the representation as a 2-D tensor to avoid reshaping it back and forth from a
         // 3-D tensor to a 2-D tensor. Reshapes are normally free on GPUs/CPUs but may not be free
@@ -148,10 +149,11 @@ public struct TransformerEncoder: Layer, Regularizable {
         var transformerInput = input.sequence.reshapedToMatrix()
         let batchSize = input.sequence.shape[0]
         for layerIndex in 0..<(withoutDerivative(at: encoderLayers) { $0.count }) {
-            transformerInput = encoderLayers[layerIndex](TransformerInput(
-                sequence: transformerInput,
-                attentionMask: input.attentionMask,
-                batchSize: batchSize))
+            transformerInput = encoderLayers[layerIndex](
+                TransformerInput(
+                    sequence: transformerInput,
+                    attentionMask: input.attentionMask,
+                    batchSize: batchSize))
         }
 
         return transformerInput.reshapedFromMatrix(originalShape: input.sequence.shape)
@@ -253,8 +255,8 @@ public struct TransformerEncoderLayer: Layer, Regularizable {
     ) {
         precondition(
             hiddenSize % attentionHeadCount == 0,
-            "The hidden size of the transformer (\(hiddenSize)) must be a multiple of the " +
-                "attention head count (\(attentionHeadCount)).")
+            "The hidden size of the transformer (\(hiddenSize)) must be a multiple of the "
+                + "attention head count (\(attentionHeadCount)).")
         self.hiddenSize = hiddenSize
         self.intermediateActivation = intermediateActivation
         self.multiHeadAttention = MultiHeadAttention(
