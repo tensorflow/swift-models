@@ -19,38 +19,38 @@ import TensorFlow
 // Karen Simonyan, Andrew Zisserman
 // https://arxiv.org/abs/1409.1556
 
-public struct VGGBlock: Layer {
-    var blocks: [Conv2D<Float>] = []
-    var maxpool = MaxPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
+public struct VGGBlock: Layer, Foo {
+    var blocks: [Self.Conv2D] = []
+    var maxpool = MaxPool2D(poolSize: (2, 2), strides: (2, 2))
 
     public init(featureCounts: (Int, Int, Int, Int), blockCount: Int) {
-        self.blocks = [Conv2D<Float>(filterShape: (3, 3, featureCounts.0, featureCounts.1),
+        self.blocks = [Conv2D(filterShape: (3, 3, featureCounts.0, featureCounts.1),
             padding: .same,
             activation: relu)]
         for _ in 1..<blockCount {
-            self.blocks += [Conv2D<Float>(filterShape: (3, 3, featureCounts.2, featureCounts.3),
+            self.blocks += [Conv2D(filterShape: (3, 3, featureCounts.2, featureCounts.3),
                 padding: .same,
                 activation: relu)]
         }
     }
 
     @differentiable
-    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
+    public func callAsFunction(_ input: TensorF) -> TensorF {
         return maxpool(blocks.differentiableReduce(input) { $1($0) })
     }
 }
 
-public struct VGG16: Layer {
+public struct VGG16: Layer, Foo {
     var layer1: VGGBlock
     var layer2: VGGBlock
     var layer3: VGGBlock
     var layer4: VGGBlock
     var layer5: VGGBlock
 
-    var flatten = Flatten<Float>()
-    var dense1 = Dense<Float>(inputSize: 512 * 7 * 7, outputSize: 4096, activation: relu)
-    var dense2 = Dense<Float>(inputSize: 4096, outputSize: 4096, activation: relu)
-    var output: Dense<Float>
+    var flatten = Flatten()
+    var dense1 = Dense(inputSize: 512 * 7 * 7, outputSize: 4096, activation: relu)
+    var dense2 = Dense(inputSize: 4096, outputSize: 4096, activation: relu)
+    var output: Self.Dense
 
     public init(classCount: Int = 1000) {
         layer1 = VGGBlock(featureCounts: (3, 64, 64, 64), blockCount: 2)

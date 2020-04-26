@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import TensorFlow
+import ModelSupport
 
 // Original Paper:
 // "Gradient-Based Learning Applied to Document Recognition"
@@ -22,21 +23,32 @@ import TensorFlow
 // Note: this implementation connects all the feature maps in the second convolutional layer.
 // Additionally, ReLU is used instead of sigmoid activations.
 
-public struct LeNet: Layer {
-    public var conv1 = Conv2D<Float>(filterShape: (5, 5, 1, 6), padding: .same, activation: relu)
-    public var pool1 = AvgPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
-    public var conv2 = Conv2D<Float>(filterShape: (5, 5, 6, 16), activation: relu)
-    public var pool2 = AvgPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
-    public var flatten = Flatten<Float>()
-    public var fc1 = Dense<Float>(inputSize: 400, outputSize: 120, activation: relu)
-    public var fc2 = Dense<Float>(inputSize: 120, outputSize: 84, activation: relu)
-    public var fc3 = Dense<Float>(inputSize: 84, outputSize: 10)
+
+public struct LeNet: Layer, Foo {
+    public var conv1 = Conv2D(filterShape: (5, 5, 1, 6), padding: .same, activation: relu)
+    public var pool1 = AvgPool2D(poolSize: (2, 2), strides: (2, 2))
+    public var conv2 = Conv2D(filterShape: (5, 5, 6, 16), activation: relu)
+    public var pool2 = AvgPool2D(poolSize: (2, 2), strides: (2, 2))
+    public var flatten = Flatten()
+    public var fc1 = Dense(inputSize: 400, outputSize: 120, activation: relu)
+    public var fc2 = Dense(inputSize: 120, outputSize: 84, activation: relu)
+    public var fc3 = Dense(inputSize: 84, outputSize: 10)
 
     public init() {}
 
     @differentiable
-    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
+    public func callAsFunction(_ input: TensorF) -> TensorF {
         let convolved = input.sequenced(through: conv1, pool1, conv2, pool2)
         return convolved.sequenced(through: flatten, fc1, fc2, fc3)
     }
+}
+
+// Can't move this to another module apparently...
+public protocol Foo {
+  typealias Conv2D = TensorFlow.Conv2D<Float>
+  typealias AvgPool2D = TensorFlow.AvgPool2D<Float>
+  typealias MaxPool2D = TensorFlow.MaxPool2D<Float>
+  typealias Flatten = TensorFlow.Flatten<Float>
+  typealias Dense = TensorFlow.Dense<Float>
+  typealias TensorF = TensorFlow.Tensor<Float>
 }
