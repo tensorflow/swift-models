@@ -52,13 +52,30 @@ where Model: ImageClassificationModel, ClassificationDataset: ImageClassificatio
     }
 
     func run(backend: Backend) -> [Double] {
+        let device: Device
+        switch backend {
+        case .eager: device = Device.defaultTFEager
+        case .x10: device = Device.defaultXLA
+        }
+        model.move(to: device)
+        LazyTensorBarrier()
+
         var batchTimings: [Double] = []
         var currentBatch = 0
         for batch in testDataset.sequenced() {
             if (currentBatch >= self.batches) { break }
             let images = batch.first
+            let deviceImages: Tensor<Float>
+            switch backend {
+            case .eager:
+                deviceImages = images
+            case .x10:
+                deviceImages = Tensor(copying: images, to: device)
+            }
+
             let batchTime = time{
-                let _ = model(images)
+                let _ = model(deviceImages)
+                LazyTensorBarrier()
             }
             batchTimings.append(batchTime)
             currentBatch += 1
