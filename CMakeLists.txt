@@ -21,7 +21,7 @@ include(SwiftSupport)
 if(CMAKE_SYSTEM_NAME STREQUAL Windows)
   ExternalProject_Add(swift-win32
     GIT_REPOSITORY git://github.com/compnerd/swift-win32.git
-    GIT_TAG 91ad76252c5ea7be992d23c8ca7710c81fc9dca8
+    GIT_TAG d4613fb66fcd7814549b5f13cc30ab31bfd95b97
     CMAKE_ARGS
       -DBUILD_SHARED_LIBS=YES
       -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
