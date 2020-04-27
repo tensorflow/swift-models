@@ -1,5 +1,6 @@
 // Slightly modified version of: https://www.raywenderlich.com/586-swift-algorithm-club-heap-and-priority-queue-data-structure
 
+// TODO: Make iterable!
 struct Heap<Element> {
   var elements : [Element]
   let priorityFunction : (Element, Element) -> Bool

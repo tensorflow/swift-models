@@ -19,46 +19,39 @@ struct PoseDecoder {
     // Batch size hardcoded to 1 at the moment, we could fix this with a for loop easily though,
     // as I don't think it makes sense to vectorize this along batch size.
     var poses = [Pose]()
-    for heatmapY in 0..<heatmap.shape[0] {
-      for heatmapX in 0..<heatmap.shape[1] {
-        for keypointIndex in 0..<heatmap.shape[2] {
-          let rootKeypoint = Keypoint(
-            heatmapY: heatmapY,
-            heatmapX: heatmapX,
-            index: keypointIndex,
-            score: heatmap[heatmapY, heatmapX, keypointIndex].scalarized(),
-            offsets: offsets
-          )
-          print("root", rootKeypoint)
+    var keypointPriorityQueue = getKeypointPriorityQueue()
+    while keypointPriorityQueue.count > 0 {
+      let rootKeypoint = keypointPriorityQueue.dequeue()!
+      if rootKeypoint.isWithinRadiusOfCorrespondingPoint(in: poses) {
+        continue
+      }
 
-          if rootKeypoint.score < config.keypointScoreThreshold { continue }
-          if !scoreIsMaximumInLocalWindow(at: rootKeypoint)  { continue }
+      var pose = Pose()
+      pose.add(rootKeypoint)
 
-          var pose = Pose()
-          pose.add(rootKeypoint)
+      // Recursivelly parse keypoint tree going in forward direction
+      print("Going forward")
+      recursivellyAddNextKeypoint(
+        after: rootKeypoint,
+        into: &pose,
+        following: getSucceedingtKeypointIndex
+      )
 
-          // Recursivelly parse keypoint tree going in forward direction
-          recursivellyAddNextKeypoint(
-            after: rootKeypoint,
-            into: &pose,
-            following: getSucceedingtKeypointIndex
-          )
+      // Recursivelly parse keypoint tree going in backward direction
+      print("Going backward")
+      recursivellyAddNextKeypoint(
+        after: rootKeypoint,
+        into: &pose,
+        following: getPrecedingKeypointIndex
+      )
 
-          // Recursivelly parse keypoint tree going in backward direction
-          recursivellyAddNextKeypoint(
-            after: rootKeypoint,
-            into: &pose,
-            following: getPrecedingKeypointIndex
-          )
-
-          poses.append(pose)
-          print("pose", pose)
-          readLine()
-          print()
-        }
+      if getPoseScore(for: pose, considering: poses) > config.poseScoreThreshold {
+        poses.append(pose)
+        print("pose", pose)
+        readLine()
+        print()
       }
     }
-
     return poses
   }
 
@@ -158,4 +151,37 @@ struct PoseDecoder {
     return Int(clamped)
   }
 
+  func getKeypointPriorityQueue() -> Heap<Keypoint> {
+    var keypointPriorityQueue = Heap<Keypoint>(priorityFunction: {$0.score < $1.score})
+    for heatmapY in 0..<heatmap.shape[0] {
+      for heatmapX in 0..<heatmap.shape[1] {
+        for keypointIndex in 0..<heatmap.shape[2] {
+          let rootKeypoint = Keypoint(
+            heatmapY: heatmapY,
+            heatmapX: heatmapX,
+            index: keypointIndex,
+            score: heatmap[heatmapY, heatmapX, keypointIndex].scalarized(),
+            offsets: offsets
+          )
+          print("root", rootKeypoint)
+
+          if rootKeypoint.score < config.keypointScoreThreshold
+          || !scoreIsMaximumInLocalWindow(at: rootKeypoint)  {
+            keypointPriorityQueue.enqueue(rootKeypoint)
+          }
+        }
+      }
+    }
+    return keypointPriorityQueue
+  }
+
+  func getPoseScore(for pose: Pose, considering poses: [Pose]) -> Float {
+    var notOverlappedKeypointScoreAccumulator: Float = 0
+    for keypoint in pose.keypoints {
+      if keypoint!.isWithinRadiusOfCorrespondingPoint(in: poses) {
+        notOverlappedKeypointScoreAccumulator += keypoint!.score
+      }
+    }
+    return notOverlappedKeypointScoreAccumulator
+  }
 }

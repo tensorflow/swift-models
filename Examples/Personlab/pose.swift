@@ -19,6 +19,16 @@ struct Keypoint {
     self.index = index
     self.score = score
   }
+
+  func isWithinRadiusOfCorrespondingPoint(in poses: [Pose], radius: Float = config.nmsRadius) -> Bool {
+    return poses.contains {
+      let correspondingKeypoint = $0.getKeypoint(with: self.index)!
+      let dy = correspondingKeypoint.y - self.y
+      let dx = correspondingKeypoint.x - self.x
+      let squaredDistance = dy * dy + dx * dx
+      return squaredDistance < radius
+    }
+  }
 }
 
 enum KeypointIndex: Int, CaseIterable {
@@ -177,13 +187,13 @@ let keypointPairToDisplacementIndexMap: [Set<KeypointIndex>: Int] = [
 /// Implementation just wraps a list, but doing this defines intent more clearly 
 /// than just using a random list of keypoints through the code base.
 struct Pose  {
-  var pose: [Keypoint?] = Array(repeating: nil, count: KeypointIndex.allCases.count)
+  var keypoints: [Keypoint?] = Array(repeating: nil, count: KeypointIndex.allCases.count)
 
   mutating func add(_ keypoint: Keypoint) {
-    pose[keypoint.index.rawValue] = keypoint
+    keypoints[keypoint.index.rawValue] = keypoint
   }
 
   func getKeypoint(with index: KeypointIndex) -> Keypoint? {
-    return pose[index.rawValue]
+    return keypoints[index.rawValue]
   }
 }

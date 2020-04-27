@@ -9,9 +9,9 @@ struct Config {
 
     // Decoder
     let outputStride = 16
-    let personScoreThreshold: Float = 0.15
+    let poseScoreThreshold: Float = 0.15
     let keypointScoreThreshold: Float = 0.15
-    let nmsRadius = 20
+    let nmsRadius: Float = 20.0
     let keypointLocalMaximumRadius = 1  // TODO: what? they use 1 in implementation but not in paper
     
 }
