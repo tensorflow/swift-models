@@ -15,10 +15,10 @@ struct PoseDecoder {
   }
 
   // TODO: Call as a function? Seem kinda obscene, lol.
-  func decode() {
+  func decode() -> [Pose] {
     // Batch size hardcoded to 1 at the moment, we could fix this with a for loop easily though,
     // as I don't think it makes sense to vectorize this along batch size.
-    let poses = [Pose]()
+    var poses = [Pose]()
     for heatmapY in 0..<heatmap.shape[0] {
       for heatmapX in 0..<heatmap.shape[1] {
         for keypointIndex in 0..<heatmap.shape[2] {
@@ -29,6 +29,7 @@ struct PoseDecoder {
             score: heatmap[heatmapY, heatmapX, keypointIndex].scalarized(),
             offsets: offsets
           )
+          print("root", rootKeypoint)
 
           if rootKeypoint.score < config.keypointScoreThreshold { continue }
           if !scoreIsMaximumInLocalWindow(at: rootKeypoint)  { continue }
@@ -36,48 +37,118 @@ struct PoseDecoder {
           var pose = Pose()
           pose.add(rootKeypoint)
 
-          // Follow keypoint structure going forward
-          recursivellyAddNextKeypoint(from: rootKeypoint, into: &pose)
+          // Follow keypoint tree going in forward direction
+          recursivellyAddNextKeypoint(after: rootKeypoint, into: &pose)
 
-          // Follow keypoint structure going backward
+          // Follow keypoint tree going in backward direction
+          // recursivellyAddNextKeypoint(before: rootKeypoint, into: &pose)
+          poses.append(pose)
+          print("pose", pose)
+          readLine()
+          print()
         }
       }
     }
+
+    return poses
   }
 
-  func recursivellyAddNextKeypoint(from previousKeypoint: Keypoint, into pose: inout Pose) {
+  func recursivellyAddNextKeypoint(after previousKeypoint: Keypoint, into pose: inout Pose) {
     for nextKeypointIndex in getKeypointIndex(following: previousKeypoint.index) {
       if nextKeypointIndex != nil {
-        let (nextY, nextX) = followDisplacement(from: previousKeypoint, using: displacementsFwd)
-        let newKeypoint = Keypoint(
-          y: nextY,
-          x: nextX,
-          index: nextKeypointIndex!,
-          score: heatmap[nextY, nextX, nextKeypointIndex!.rawValue].scalarized()
+        print("previous", previousKeypoint)
+        let nextKeypoint = followDisplacement(
+          from: previousKeypoint,
+          to: nextKeypointIndex!,
+          using: displacementsFwd
         )
-        pose.add(newKeypoint)
-        recursivellyAddNextKeypoint(from: newKeypoint, into: &pose)
+        print("next", nextKeypoint)
+        print()
+        pose.add(nextKeypoint)
+        recursivellyAddNextKeypoint(after: nextKeypoint, into: &pose)
       }
     }
   }
 
-  func followDisplacement(from keypoint: Keypoint, using displacements: Tensor<Float>) -> (y: Int, x: Int) {
+  func followDisplacement(
+    from previousKeypoint: Keypoint,
+    to nextKeypointIndex: KeypointIndex,
+    using displacements: Tensor<Float>
+  ) -> Keypoint {
+    let numberOfForwardDisplacements = displacements.shape[2] / 2
+    let displacementIndexY = keypointPairToDisplacementIndexMap[
+      Set([previousKeypoint.index, nextKeypointIndex])
+    ]!
+    let displacementIndexX = displacementIndexY + numberOfForwardDisplacements
 
+
+    let displacementY = displacements[
+      getUnstridedIndex(y: previousKeypoint.y),
+      getUnstridedIndex(x: previousKeypoint.x),
+      displacementIndexY
+    ].scalarized()
+    let displacementX = displacements[
+      getUnstridedIndex(y: previousKeypoint.y),
+      getUnstridedIndex(x: previousKeypoint.x),
+      displacementIndexX
+    ].scalarized()
+
+    let displacedY = previousKeypoint.y + displacementY
+    let displacedX = previousKeypoint.x + displacementX
+
+    let yOffset = offsets[
+      getUnstridedIndex(y: displacedY),
+      getUnstridedIndex(x: displacedX),
+      nextKeypointIndex.rawValue
+    ].scalarized()
+    let xOffset = offsets[
+      getUnstridedIndex(y: displacedY),
+      getUnstridedIndex(x: displacedX),
+      nextKeypointIndex.rawValue + KeypointIndex.allCases.count
+    ].scalarized()
+
+    let nextY = displacedY + yOffset
+    let nextX = displacedX + xOffset
+
+    return Keypoint(
+      y: nextY,
+      x: nextX,
+      index: nextKeypointIndex,
+      score: heatmap[
+        getUnstridedIndex(y: nextY), getUnstridedIndex(x: nextX), nextKeypointIndex.rawValue
+      ].scalarized()
+    )
   }
 
   func scoreIsMaximumInLocalWindow(at keypoint: Keypoint) -> Bool {
-    let yStart = max(keypoint.heatmapY - config.keypointLocalMaximumRadius, 0)  // TODO: Added a + 1 here, check if correct
-    let yEnd = min(keypoint.heatmapY + config.keypointLocalMaximumRadius + 1, heatmap.shape[0])
-    for windowY in yStart...yEnd {
-      let xStart = max(keypoint.heatmapX - config.keypointLocalMaximumRadius, 0)  // TODO: Added a + 1 here, check if correct
-      let xEnd = min(keypoint.heatmapX + config.keypointLocalMaximumRadius + 1, heatmap.shape[1])
-      for windowX in xStart...xEnd {
+    let unstridedIndexY = getUnstridedIndex(y: keypoint.y)
+    let yStart = max(unstridedIndexY - config.keypointLocalMaximumRadius, 0)
+    let yEnd = min(unstridedIndexY + config.keypointLocalMaximumRadius, heatmap.shape[0]) // NOTE: removed a + 1
+    // print("y", keypoint.y, yStart, unstridedIndexY, yEnd)
+    for windowY in yStart..<yEnd {
+      let unstridedIndexX = getUnstridedIndex(x: keypoint.x)
+      let xStart = max(unstridedIndexX - config.keypointLocalMaximumRadius, 0)
+      let xEnd = min(unstridedIndexX + config.keypointLocalMaximumRadius, heatmap.shape[1]) // NOTE: removed a + 1
+      // print("x", keypoint.x, xStart, unstridedIndexX, xEnd)
+      for windowX in xStart..<xEnd {
         if heatmap[windowY, windowX, keypoint.index.rawValue].scalarized() > keypoint.score {
           return false
         }
       }
     }
     return true
+  }
+
+  func getUnstridedIndex(y: Float) -> Int {
+    let downScaled = y / Float(config.outputStride)
+    let clamped = min(max(0, downScaled), Float(heatmap.shape[0]))
+    return Int(clamped)
+  }
+
+  func getUnstridedIndex(x: Float) -> Int {
+    let downScaled = x / Float(config.outputStride)
+    let clamped = min(max(0, downScaled), Float(heatmap.shape[1]))
+    return Int(clamped)
   }
 
 }

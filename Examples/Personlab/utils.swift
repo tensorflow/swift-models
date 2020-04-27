@@ -12,7 +12,7 @@ struct Config {
     let personScoreThreshold: Float = 0.15
     let keypointScoreThreshold: Float = 0.15
     let nmsRadius = 20
-    let keypointLocalMaximumRadius = 1
+    let keypointLocalMaximumRadius = 1  // TODO: what? they use 1 in implementation but not in paper
     
 }
 

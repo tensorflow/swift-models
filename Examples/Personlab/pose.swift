@@ -1,32 +1,23 @@
 import TensorFlow
 
 struct Keypoint {
-  static var heatmapHeight: Int = 0
-  static var heatmapWeight: Int = 0
   let y: Float
   let x: Float
   let index: KeypointIndex
   let score: Float
 
   init(heatmapY: Int, heatmapX: Int, index: Int, score: Float, offsets: Tensor<Float>) {
-    assert(Keypoint.heatmapHeight != 0, "You gotta set Keypoint.heatmapHeight")
     self.y = Float(heatmapY) * Float(config.outputStride) + offsets[heatmapY, heatmapX, index].scalarized()
     self.x = Float(heatmapX) * Float(config.outputStride) + offsets[heatmapY, heatmapX, index + KeypointIndex.allCases.count].scalarized()
     self.index = KeypointIndex(rawValue: index)!
     self.score = score
-
   }
 
-  var heatmapY: Int {
-    let downScaled = y / Float(config.outputStride)
-    let clamped = max(min(0, downScaled), Float(Keypoint.heatmapHeight))
-    return Int(clamped)
-  }
-
-  var heatmapX: Int {
-    let downScaled = x / Float(config.outputStride)
-    let clamped = max(min(0, downScaled), Float(Keypoint.heatmapHeight))
-    return Int(clamped)
+  init(y: Float, x: Float, index: KeypointIndex, score: Float) {
+    self.y = y
+    self.x = x
+    self.index = index
+    self.score = score
   }
 }
 
@@ -50,6 +41,7 @@ enum KeypointIndex: Int, CaseIterable {
   case rightAnkle
 }
 
+// TODO: Add default and remove 4 nil cases
 func getKeypointIndex(following keypointId: KeypointIndex) -> [KeypointIndex?] {
   switch keypointId {
   case .nose: return [.leftShoulder, .rightShoulder]
@@ -71,6 +63,29 @@ func getKeypointIndex(following keypointId: KeypointIndex) -> [KeypointIndex?] {
   case .rightAnkle: return [nil]
   }
 }
+
+// NOTE: Excelent type inference swift holy shit!
+/// Maps a pair of keypoint indexes to the appropiate index to be used
+/// to get the displacement in the displacement tensors.
+let keypointPairToDisplacementIndexMap: [Set<KeypointIndex>: Int] = [
+  Set([.nose, .leftEye]): 0,
+  Set([.leftEye, .leftEar]): 1,
+  Set([.nose, .rightEye]): 2,
+  Set([.rightEye, .rightEar]): 3,
+  Set([.nose, .leftShoulder]): 4,
+  Set([.leftShoulder, .leftElbow]): 5,
+  Set([.leftElbow, .leftWrist]): 6,
+  Set([.leftShoulder, .leftHip]): 7,
+  Set([.leftHip, .leftKnee]): 8,
+  Set([.leftKnee, .leftAnkle]): 9,
+  Set([.nose, .rightShoulder]): 10,
+  Set([.rightShoulder, .rightElbow]): 11,
+  Set([.rightElbow, .rightWrist]): 12,
+  Set([.rightShoulder, .rightHip]): 13,
+  Set([.rightHip, .rightKnee]): 14,
+  Set([.rightKnee, .rightAnkle]): 15
+]
+  
 
 
 func getKeypointIds(before keypointId: KeypointIndex) -> [KeypointIndex?] {
