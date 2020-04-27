@@ -58,7 +58,6 @@ where Model: ImageClassificationModel, ClassificationDataset: ImageClassificatio
         case .x10: device = Device.defaultXLA
         }
         model.move(to: device)
-        LazyTensorBarrier()
 
         var batchTimings: [Double] = []
         var currentBatch = 0

@@ -61,7 +61,6 @@ where
         optimizer = SGD(copying: optimizer, to: device)
         var batchTimings: [Double] = []
         var currentBatch = 0
-        LazyTensorBarrier()
 
         // Run a blank iteration through the entire dataset to force loading of all data from disk.
         for _ in trainingDataset.sequenced() {}
