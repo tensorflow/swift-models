@@ -135,9 +135,10 @@ def extract_metrics(result, variety, backend):
 
 def run_swift_benchmark(name, variety, backend):
   print('running swift benchmark {} ({})'.format(name, variety))
+  # TODO: Remove the need for 2 warmup batches when we have better-shaped zero tangent vectors.
   output = subp.check_output([
       'swift', 'run', '-c', 'release', 'Benchmarks', 'measure', '--benchmark',
-      name, '--' + variety, '--' + backend, '--json'
+      name, '--' + variety, '--' + backend, '--warmupBatches 2', '--json'
   ], cwd=cwd)
   result = json.loads(output)
   print('got json result back from swift: ')
