@@ -17,18 +17,19 @@ import TensorFlow
 public protocol EasyLayers {
   typealias Conv2D = TensorFlow.Conv2D<Float>
   typealias AvgPool2D = TensorFlow.AvgPool2D<Float>
+  typealias MaxPool2D = TensorFlow.MaxPool2D<Float>
   typealias Flatten = TensorFlow.Flatten<Float>
   typealias Dense = TensorFlow.Dense<Float>
   typealias TensorF = TensorFlow.Tensor<Float>
 }
 
 
-/*
-// Tinkercruft...
+// Something closer to the actual design...
 public protocol TypedModel: Layer {
   associatedtype Scalar: TensorFlowScalar
   
   typealias Tensor = TensorFlow.Tensor<Scalar>
+  typealias TensorF = TensorFlow.Tensor<Float>
   typealias TTensor = TensorFlow.Tensor
 }
 
@@ -40,4 +41,3 @@ public extension TypedModel where Scalar: TensorFlowFloatingPoint {
 }
 
 public protocol FloatModel: TypedModel where Scalar == Float {}
-*/

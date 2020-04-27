@@ -13,13 +13,14 @@
 // limitations under the License.
 
 import TensorFlow
+import ModelSupport
 
 // Original Paper:
 // "Very Deep Convolutional Networks for Large-Scale Image Recognition"
 // Karen Simonyan, Andrew Zisserman
 // https://arxiv.org/abs/1409.1556
 
-public struct VGGBlock: Layer, Foo {
+public struct VGGBlock: Layer, EasyLayers {
     var blocks: [Self.Conv2D] = []
     var maxpool = MaxPool2D(poolSize: (2, 2), strides: (2, 2))
 
@@ -40,7 +41,7 @@ public struct VGGBlock: Layer, Foo {
     }
 }
 
-public struct VGG16: Layer, Foo {
+public struct VGG16: Layer, EasyLayers {
     var layer1: VGGBlock
     var layer2: VGGBlock
     var layer3: VGGBlock
