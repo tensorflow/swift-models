@@ -346,7 +346,7 @@ public struct TransformerLM: Module {
     @differentiable
     public func callAsFunction(_ tokens: Tensor<Int32>) -> Tensor<Float> {
         let positions = { (0..<tokens.shape[1]).map { Int32($0) } }()
-        let positionsTensor = Tensor<Int32>(shape: [1, tokens.shape[1]], scalars: positions)
+        let positionsTensor = Tensor<Int32>(shape: [1, tokens.shape[1]], scalars: positions, on: tokens.device)
         var h = embedding(tokens)
         h = h + positionalEmbeddings.gathering(atIndices: positionsTensor)
         h = layers.differentiableReduce(h) { $1($0) }
