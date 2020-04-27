@@ -42,7 +42,7 @@ enum KeypointIndex: Int, CaseIterable {
 }
 
 // TODO: Add default and remove 4 nil cases
-func getKeypointIndex(following keypointId: KeypointIndex) -> [KeypointIndex?] {
+func getSucceedingtKeypointIndex(_ keypointId: KeypointIndex) -> [KeypointIndex?] {
   switch keypointId {
   case .nose: return [.leftShoulder, .rightShoulder]
   case .leftEye: return [.nose]
@@ -61,6 +61,28 @@ func getKeypointIndex(following keypointId: KeypointIndex) -> [KeypointIndex?] {
   case .rightKnee: return [.rightAnkle]
   case .leftAnkle: return [nil]
   case .rightAnkle: return [nil]
+  }
+}
+  
+func getPrecedingKeypointIndex(_ keypointId: KeypointIndex) -> [KeypointIndex?] {
+  switch keypointId {
+  case .nose: return [.leftEye, .rightEye]
+  case .leftEye: return [.leftEar]
+  case .rightEye: return [.rightEar]
+  case .leftEar: return [nil]
+  case .rightEar: return [nil]
+  case .leftShoulder: return [.nose]
+  case .rightShoulder: return [.nose]
+  case .leftElbow: return [.leftShoulder]
+  case .rightElbow: return [.rightShoulder]
+  case .leftWrist: return [.leftElbow]
+  case .rightWrist: return [.rightElbow]
+  case .leftHip: return [.leftShoulder]
+  case .rightHip: return [.rightShoulder]
+  case .leftKnee: return [.leftHip]
+  case .rightKnee: return [.rightHip]
+  case .leftAnkle: return [.leftKnee]
+  case .rightAnkle: return [.rightKnee]
   }
 }
 
@@ -85,47 +107,6 @@ let keypointPairToDisplacementIndexMap: [Set<KeypointIndex>: Int] = [
   Set([.rightHip, .rightKnee]): 14,
   Set([.rightKnee, .rightAnkle]): 15
 ]
-  
-
-
-func getKeypointIds(before keypointId: KeypointIndex) -> [KeypointIndex?] {
-  switch keypointId {
-  case .nose:
-    return [.leftEye, .rightEye]
-  case .leftEye:
-    return [.leftEar]
-  case .rightEye:
-    return [.rightEar]
-  case .leftEar:
-    return [nil]
-  case .rightEar:
-    return [nil]
-  case .leftShoulder:
-    return [.nose]
-  case .rightShoulder:
-    return [.nose]
-  case .leftElbow:
-    return [.leftShoulder]
-  case .rightElbow:
-    return [.rightShoulder]
-  case .leftWrist:
-    return [.leftElbow]
-  case .rightWrist:
-    return [.rightElbow]
-  case .leftHip:
-    return [.leftShoulder]
-  case .rightHip:
-    return [.rightShoulder]
-  case .leftKnee:
-    return [.leftHip]
-  case .rightKnee:
-    return [.rightHip]
-  case .leftAnkle:
-    return [.leftKnee]
-  case .rightAnkle:
-    return [.rightKnee]
-  }
-}
 
 // let previousJointsMap: [[KeypointId?]] = [
 //   [.leftEye, .rightEye],  // nose

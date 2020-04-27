@@ -37,11 +37,20 @@ struct PoseDecoder {
           var pose = Pose()
           pose.add(rootKeypoint)
 
-          // Follow keypoint tree going in forward direction
-          recursivellyAddNextKeypoint(after: rootKeypoint, into: &pose)
+          // Recursivelly parse keypoint tree going in forward direction
+          recursivellyAddNextKeypoint(
+            after: rootKeypoint,
+            into: &pose,
+            following: getSucceedingtKeypointIndex
+          )
 
-          // Follow keypoint tree going in backward direction
-          // recursivellyAddNextKeypoint(before: rootKeypoint, into: &pose)
+          // Recursivelly parse keypoint tree going in backward direction
+          recursivellyAddNextKeypoint(
+            after: rootKeypoint,
+            into: &pose,
+            following: getPrecedingKeypointIndex
+          )
+
           poses.append(pose)
           print("pose", pose)
           readLine()
@@ -53,8 +62,11 @@ struct PoseDecoder {
     return poses
   }
 
-  func recursivellyAddNextKeypoint(after previousKeypoint: Keypoint, into pose: inout Pose) {
-    for nextKeypointIndex in getKeypointIndex(following: previousKeypoint.index) {
+  func recursivellyAddNextKeypoint(
+    after previousKeypoint: Keypoint,
+    into pose: inout Pose,
+    following getNextKeypoint: (KeypointIndex) -> [KeypointIndex?]) {
+    for nextKeypointIndex in getNextKeypoint(previousKeypoint.index) {
       if nextKeypointIndex != nil {
         print("previous", previousKeypoint)
         let nextKeypoint = followDisplacement(
@@ -65,7 +77,7 @@ struct PoseDecoder {
         print("next", nextKeypoint)
         print()
         pose.add(nextKeypoint)
-        recursivellyAddNextKeypoint(after: nextKeypoint, into: &pose)
+        recursivellyAddNextKeypoint(after: nextKeypoint, into: &pose, following: getNextKeypoint)
       }
     }
   }
@@ -75,13 +87,10 @@ struct PoseDecoder {
     to nextKeypointIndex: KeypointIndex,
     using displacements: Tensor<Float>
   ) -> Keypoint {
-    let numberOfForwardDisplacements = displacements.shape[2] / 2
     let displacementIndexY = keypointPairToDisplacementIndexMap[
       Set([previousKeypoint.index, nextKeypointIndex])
     ]!
-    let displacementIndexX = displacementIndexY + numberOfForwardDisplacements
-
-
+    let displacementIndexX = displacementIndexY + displacements.shape[2] / 2
     let displacementY = displacements[
       getUnstridedIndex(y: previousKeypoint.y),
       getUnstridedIndex(x: previousKeypoint.x),
@@ -124,12 +133,10 @@ struct PoseDecoder {
     let unstridedIndexY = getUnstridedIndex(y: keypoint.y)
     let yStart = max(unstridedIndexY - config.keypointLocalMaximumRadius, 0)
     let yEnd = min(unstridedIndexY + config.keypointLocalMaximumRadius, heatmap.shape[0]) // NOTE: removed a + 1
-    // print("y", keypoint.y, yStart, unstridedIndexY, yEnd)
     for windowY in yStart..<yEnd {
       let unstridedIndexX = getUnstridedIndex(x: keypoint.x)
       let xStart = max(unstridedIndexX - config.keypointLocalMaximumRadius, 0)
       let xEnd = min(unstridedIndexX + config.keypointLocalMaximumRadius, heatmap.shape[1]) // NOTE: removed a + 1
-      // print("x", keypoint.x, xStart, unstridedIndexX, xEnd)
       for windowX in xStart..<xEnd {
         if heatmap[windowY, windowX, keypoint.index.rawValue].scalarized() > keypoint.score {
           return false
