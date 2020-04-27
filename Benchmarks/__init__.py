@@ -45,13 +45,23 @@ class SwiftBenchmark(tf.test.Benchmark):
     pass
 
   def training(self):
-    """Runner-ccallable benchmark entry point for training benchmark."""
-    result = run_swift_benchmark(name=self.benchmark_name, variety='training')
+    """Runner-callable benchmark entry point for eager training benchmark."""
+    result = run_swift_benchmark(name=self.benchmark_name, variety='training', backend='eager')
     self.report_benchmark(**result)
 
   def inference(self):
-    """Runner-callable benchmark entry point for inference benchmark."""
-    result = run_swift_benchmark(name=self.benchmark_name, variety='inference')
+    """Runner-callable benchmark entry point for eager inference benchmark."""
+    result = run_swift_benchmark(name=self.benchmark_name, variety='inference', backend='eager')
+    self.report_benchmark(**result)
+
+  def training_x10(self):
+    """Runner-callable benchmark entry point for x10 training benchmark."""
+    result = run_swift_benchmark(name=self.benchmark_name, variety='training', backend='x10')
+    self.report_benchmark(**result)
+
+  def inference_x10(self):
+    """Runner-callable benchmark entry point for x10 inference benchmark."""
+    result = run_swift_benchmark(name=self.benchmark_name, variety='inference', backend='x10')
     self.report_benchmark(**result)
 
 
@@ -71,7 +81,7 @@ def extract_extras(settings):
   return
 
 
-def extract_metrics(result, variety):
+def extract_metrics(result, variety, backend):
   """Extract PerfZero metrics based on the measurements.
 
   Extracts metrics such as number of examples per second,
@@ -123,17 +133,18 @@ def extract_metrics(result, variety):
   return (wall_time, metrics)
 
 
-def run_swift_benchmark(name, variety):
+def run_swift_benchmark(name, variety, backend):
   print('running swift benchmark {} ({})'.format(name, variety))
+  # TODO: Remove the need for 2 warmup batches when we have better-shaped zero tangent vectors.
   output = subp.check_output([
       'swift', 'run', '-c', 'release', 'Benchmarks', 'measure', '--benchmark',
-      name, '--' + variety, '--json'
+      name, '--' + variety, '--' + backend, '--warmupBatches 2', '--json'
   ], cwd=cwd)
   result = json.loads(output)
   print('got json result back from swift: ')
   print(result)
   settings = result['configuration']['settings']
-  wall_time, metrics = extract_metrics(result, variety)
+  wall_time, metrics = extract_metrics(result, variety, backend)
   return {
       'iters': settings['iterations'],
       'wall_time': wall_time,

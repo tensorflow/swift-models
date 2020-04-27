@@ -101,6 +101,12 @@ extension BenchmarkCommand {
         @Flag(help: "Use real data.")
         var real: Bool
 
+        @Flag(help: "Use eager backend.")
+        var eager: Bool
+
+        @Flag(help: "Use X10 backend.")
+        var x10: Bool
+
         @Option(help: "Name of the benchmark to run.")
         var benchmark: String?
 
@@ -139,6 +145,11 @@ extension BenchmarkCommand {
                     "Can't specify both --real and --synthetic data sources.")
             }
 
+            guard !(eager && x10) else {
+                throw ValidationError(
+                    "Can't specify both --eager and --x10 backends.")
+            }
+
             guard !((batches != nil) && (epochs != nil)) else {
                 throw ValidationError(
                     "Can't specify both the number of batches and epochs.")
@@ -157,6 +168,7 @@ extension BenchmarkCommand {
         func run() throws {
             let style: PrintingStyle = useJSON ? .json : .plainText
             let variety: BenchmarkVariety = training ? .trainingThroughput : .inferenceThroughput
+            let backend: Backend = x10 ? .x10 : .eager
             let benchmarkModel = benchmarkModels[benchmark!]!
             let defaults = benchmarkModel.defaults(for: variety)
             let batchSizeToUse = batchSize ?? defaults.batchSize
@@ -173,7 +185,7 @@ extension BenchmarkCommand {
                 batchSize: batchSizeToUse,
                 iterations: iterations ?? defaults.iterations,
                 warmupBatches: warmupBatches ?? defaults.warmupBatches,
-                synthetic: synthetic)
+                synthetic: synthetic, backend: backend)
 
             runBenchmark(
                 benchmarkModel,
