@@ -29,10 +29,10 @@ enum LeNetMNIST: BenchmarkModel {
         switch(variety) {
         case .inferenceThroughput:
             return BenchmarkSettings(batches: 1000, batchSize: 128, iterations: 10,
-                                     warmupBatches: 1, synthetic: false)
+                                     warmupBatches: 1, synthetic: false, backend: .eager)
         case .trainingThroughput:
             return BenchmarkSettings(batches: 110, batchSize: 128, iterations: 1, warmupBatches: 1,
-                                     synthetic: false)
+                                     synthetic: false, backend: .eager)
         }
     }
 

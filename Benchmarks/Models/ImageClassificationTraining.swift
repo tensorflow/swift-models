@@ -45,29 +45,52 @@ where
         }
     }
 
-    func run() -> [Double] {
+    func run(backend: Backend) -> [Double] {
+        let device: Device
+        switch backend {
+        case .eager: device = Device.defaultTFEager
+        case .x10: device = Device.defaultXLA
+        }
+
         // Include model and optimizer initialization time in first batch, to be part of warmup.
         var beforeBatch = timestampInMilliseconds()
         var model = Model()
+        model.move(to: device)
         // TODO: Split out the optimizer as a separate specification.
-        let optimizer = SGD(for: model, learningRate: 0.1)
+        var optimizer = SGD(for: model, learningRate: 0.1)
+        optimizer = SGD(copying: optimizer, to: device)
         var batchTimings: [Double] = []
         var currentBatch = 0
+        LazyTensorBarrier()
+
+        // Run a blank iteration through the entire dataset to force loading of all data from disk.
+        for _ in trainingDataset.sequenced() {}
         
         Context.local.learningPhase = .training
         while (currentBatch < self.batches) {
             for batch in trainingDataset.sequenced() {
                 if (currentBatch >= self.batches) { break }
                 let (images, labels) = (batch.first, batch.second)
+                let deviceImages: Tensor<Float>
+                let deviceLabels: Tensor<Int32>
+                switch backend {
+                case .eager:
+                    deviceImages = images
+                    deviceLabels = labels
+                case .x10:
+                    deviceImages = Tensor(copying: images, to: device)
+                    deviceLabels = Tensor(copying: labels, to: device)
+                }
                 
                 // Discard remainder batches that are not the same size as the others 
                 guard images.shape[0] == self.batchSize else { continue }
                 
                 let 𝛁model = TensorFlow.gradient(at: model) { model -> Tensor<Float> in
-                    let logits = model(images)
-                    return softmaxCrossEntropy(logits: logits, labels: labels)
+                    let logits = model(deviceImages)
+                    return softmaxCrossEntropy(logits: logits, labels: deviceLabels)
                 }
                 optimizer.update(&model, along: 𝛁model)
+                LazyTensorBarrier()
                 batchTimings.append(durationInMilliseconds(since: beforeBatch))
                 currentBatch += 1
                 beforeBatch = timestampInMilliseconds()

@@ -51,7 +51,7 @@ where Model: ImageClassificationModel, ClassificationDataset: ImageClassificatio
         }
     }
 
-    func run() -> [Double] {
+    func run(backend: Backend) -> [Double] {
         var batchTimings: [Double] = []
         var currentBatch = 0
         for batch in testDataset.sequenced() {
