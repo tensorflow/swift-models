@@ -56,6 +56,9 @@ let package = Package(
         .target(
             name: "Autoencoder2D", dependencies: ["Datasets", "ModelSupport"],
             path: "Autoencoder/Autoencoder2D"),
+        .target(
+            name: "VariationalAutoencoder1D", dependencies: ["Datasets", "ModelSupport"],
+            path: "Autoencoder/VAE1D"),
         .target(name: "Catch", path: "Catch"),
         .target(name: "Gym-FrozenLake", path: "Gym/FrozenLake"),
         .target(name: "Gym-CartPole", path: "Gym/CartPole"),

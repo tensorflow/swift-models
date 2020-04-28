@@ -86,6 +86,7 @@ set_target_properties(SwiftProtobuf PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
 add_dependencies(SwiftProtobuf swift-protobuf-install)
 
+add_subdirectory(Autoencoder)
 add_subdirectory(Support)
 add_subdirectory(Batcher)
 add_subdirectory(Datasets)
