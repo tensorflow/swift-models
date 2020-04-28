@@ -13,22 +13,25 @@
 // limitations under the License.
 
 import Foundation
-import TensorFlow
 import ModelSupport
+import TensorFlow
 
 public typealias Activation<Scalar: TensorFlowFloatingPoint> =
     @differentiable (Tensor<Scalar>) -> Tensor<Scalar>
 
 extension KeyPathIterable {
     public mutating func clipByGlobalNorm<Scalar: TensorFlowFloatingPoint>(clipNorm: Scalar) {
-        let clipNorm = Tensor<Scalar>(clipNorm)
-        var globalNorm = Tensor<Scalar>(zeros: [])
+        var globalNorm: Tensor<Scalar>? = nil
         for kp in self.recursivelyAllWritableKeyPaths(to: Tensor<Scalar>.self) {
-            globalNorm += self[keyPath: kp].squared().sum()
+            let tmp = self[keyPath: kp].squared().sum()
+            globalNorm = (globalNorm != nil) ? globalNorm! + tmp : tmp
         }
-        globalNorm = sqrt(globalNorm)
-        for kp in self.recursivelyAllWritableKeyPaths(to: Tensor<Scalar>.self) {
-            self[keyPath: kp] *= clipNorm / max(globalNorm, clipNorm)
+        if var globalNorm = globalNorm {
+            globalNorm = sqrt(globalNorm)
+            let clipNorm = Tensor<Scalar>(clipNorm, on: globalNorm.device)
+            for kp in self.recursivelyAllWritableKeyPaths(to: Tensor<Scalar>.self) {
+                self[keyPath: kp] *= clipNorm / max(globalNorm, clipNorm)
+            }
         }
     }
 }
@@ -43,16 +46,18 @@ extension Tensor {
     /// Returns this previously-reshaped rank-2 tensor reshaped back to its original shape.
     @differentiable(wrt: self where Scalar: TensorFlowFloatingPoint)
     internal func reshapedFromMatrix(originalShape: TensorShape) -> Tensor {
-        reshaped(to: TensorShape(
-            originalShape[0..<originalShape.count - 1].dimensions + [shape[rank - 1]]))
+        reshaped(
+            to: TensorShape(
+                originalShape[0..<originalShape.count - 1].dimensions + [shape[rank - 1]]))
     }
 
     /// Returns this previously-reshaped rank-2 tensor reshaped back to its original shape.
     @differentiable(wrt: self where Scalar: TensorFlowFloatingPoint)
     internal func reshapedFromMatrix(originalShape: Tensor<Int32>) -> Tensor {
-        reshaped(toShape: Tensor<Int32>(concatenating: [
-            originalShape[0..<originalShape.shape[0] - 1],
-            Tensor<Int32>([Int32(shape[rank - 1])])
-        ]))
+        reshaped(
+            toShape: Tensor<Int32>(concatenating: [
+                originalShape[0..<originalShape.shape[0] - 1],
+                Tensor<Int32>([Int32(shape[rank - 1])], on: device),
+            ]))
     }
 }
