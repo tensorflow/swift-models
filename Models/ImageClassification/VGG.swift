@@ -20,7 +20,7 @@ import ModelSupport
 // Karen Simonyan, Andrew Zisserman
 // https://arxiv.org/abs/1409.1556
 
-public struct VGGBlock: Layer, EasyLayers {
+public struct VGGBlock: FloatModel {
     var blocks: [Self.Conv2D] = []
     var maxpool = MaxPool2D(poolSize: (2, 2), strides: (2, 2))
 
@@ -41,7 +41,7 @@ public struct VGGBlock: Layer, EasyLayers {
     }
 }
 
-public struct VGG16: Layer, EasyLayers {
+public struct VGG16: FloatModel {
     var layer1: VGGBlock
     var layer2: VGGBlock
     var layer3: VGGBlock
@@ -69,17 +69,17 @@ public struct VGG16: Layer, EasyLayers {
     }
 }
 
-public struct VGG19: Layer {
+public struct VGG19: FloatModel {
     var layer1: VGGBlock
     var layer2: VGGBlock
     var layer3: VGGBlock
     var layer4: VGGBlock
     var layer5: VGGBlock
 
-    var flatten = Flatten<Float>()
-    var dense1 = Dense<Float>(inputSize: 512 * 7 * 7, outputSize: 4096, activation: relu)
-    var dense2 = Dense<Float>(inputSize: 4096, outputSize: 4096, activation: relu)
-    var output: Dense<Float>
+    var flatten = Flatten()
+    var dense1 = Dense(inputSize: 512 * 7 * 7, outputSize: 4096, activation: relu)
+    var dense2 = Dense(inputSize: 4096, outputSize: 4096, activation: relu)
+    var output: Self.Dense
 
     public init(classCount: Int = 1000) {
         layer1 = VGGBlock(featureCounts: (3, 64, 64, 64), blockCount: 2)

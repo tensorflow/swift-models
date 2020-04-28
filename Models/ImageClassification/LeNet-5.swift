@@ -22,7 +22,7 @@ import ModelSupport
 //
 // Note: this implementation connects all the feature maps in the second convolutional layer.
 // Additionally, ReLU is used instead of sigmoid activations.
-public struct LeNet: Layer, FloatModel {
+public struct LeNet: FloatModel {
     public var conv1 = Conv2D(filterShape: (5, 5, 1, 6), padding: .same, activation: relu)
     public var pool1 = AvgPool2D(poolSize: (2, 2), strides: (2, 2))
     public var conv2 = Conv2D(filterShape: (5, 5, 6, 16), activation: relu)
@@ -34,8 +34,10 @@ public struct LeNet: Layer, FloatModel {
 
     public init() {}
 
+    public typealias Tensor = TensorF  // Lines below do not compile without this!
+
     @differentiable
-    public func callAsFunction(_ input: TensorF) -> TensorF {
+    public func callAsFunction(_ input: Tensor) -> Tensor {
         let convolved = input.sequenced(through: conv1, pool1, conv2, pool2)
         return convolved.sequenced(through: flatten, fc1, fc2, fc3)
     }

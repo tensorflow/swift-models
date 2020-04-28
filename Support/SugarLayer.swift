@@ -14,21 +14,11 @@
 
 import TensorFlow
 
-public protocol EasyLayers {
-  typealias Conv2D = TensorFlow.Conv2D<Float>
-  typealias AvgPool2D = TensorFlow.AvgPool2D<Float>
-  typealias MaxPool2D = TensorFlow.MaxPool2D<Float>
-  typealias Flatten = TensorFlow.Flatten<Float>
-  typealias Dense = TensorFlow.Dense<Float>
-  typealias TensorF = TensorFlow.Tensor<Float>
-}
-
-
-// Something closer to the actual design...
+/// A model composed of a variety of layers all using the same scalar type.
 public protocol TypedModel: Layer {
   associatedtype Scalar: TensorFlowScalar
   
-  typealias Tensor = TensorFlow.Tensor<Scalar>
+  typealias Tensor = TensorFlow.Tensor<Scalar>  // For some reason, this doesn't work!
   typealias TensorF = TensorFlow.Tensor<Float>
   typealias TTensor = TensorFlow.Tensor
 }
@@ -36,8 +26,11 @@ public protocol TypedModel: Layer {
 public extension TypedModel where Scalar: TensorFlowFloatingPoint {
   typealias Conv2D = TensorFlow.Conv2D<Scalar>
   typealias AvgPool2D = TensorFlow.AvgPool2D<Scalar>
+  typealias MaxPool2D = TensorFlow.MaxPool2D<Scalar>
   typealias Flatten = TensorFlow.Flatten<Scalar>
   typealias Dense = TensorFlow.Dense<Scalar>
 }
 
+/// A model composed of a variety of layers, where each one is parameterized
+/// by `Float`.
 public protocol FloatModel: TypedModel where Scalar == Float {}
