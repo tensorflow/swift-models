@@ -179,13 +179,13 @@ extension BenchmarkCommand {
             } else {
                 specifiedBatches = batches
             }
-            
+            let syntheticDataset = (synthetic || real) ? synthetic : defaults.synthetic
             let settings = BenchmarkSettings(
                 batches: specifiedBatches ?? defaults.batches,
                 batchSize: batchSizeToUse,
                 iterations: iterations ?? defaults.iterations,
                 warmupBatches: warmupBatches ?? defaults.warmupBatches,
-                synthetic: synthetic, backend: backend)
+                synthetic: syntheticDataset, backend: backend)
 
             runBenchmark(
                 benchmarkModel,
