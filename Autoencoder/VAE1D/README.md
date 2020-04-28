@@ -24,7 +24,7 @@ installed. Make sure you've added the correct version of `swift` to your path.
 To train the model, run:
 
 ```
-swift run -c release VAE1D
+swift run -c release VariationalAutoencoder1D
 ```
 
 ## Key implementations

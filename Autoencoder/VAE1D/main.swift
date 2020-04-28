@@ -28,8 +28,8 @@ let imageWidth = 28
 let outputFolder = "./output/"
 let dataset = MNIST(batchSize: 128, flattening: true)
 
-let inputDim = 784 // 28*28 for any MNIST
-let hiddenDim = 400 
+let inputDim = 784  // 28*28 for any MNIST
+let hiddenDim = 400
 let latentDim = 20
 
 // Variational Autoencoder
@@ -43,11 +43,13 @@ public struct VAE: Layer {
     public var decoderDense2: Dense<Float>
 
     public init() {
-        self.encoderDense1 = Dense<Float>(inputSize: inputDim, outputSize: hiddenDim, activation: relu)
+        self.encoderDense1 = Dense<Float>(
+            inputSize: inputDim, outputSize: hiddenDim, activation: relu)
         self.encoderDense2_1 = Dense<Float>(inputSize: hiddenDim, outputSize: latentDim)
         self.encoderDense2_2 = Dense<Float>(inputSize: hiddenDim, outputSize: latentDim)
-        
-        self.decoderDense1 = Dense<Float>(inputSize: latentDim, outputSize: hiddenDim, activation: relu)
+
+        self.decoderDense1 = Dense<Float>(
+            inputSize: latentDim, outputSize: hiddenDim, activation: relu)
         self.decoderDense2 = Dense<Float>(inputSize: hiddenDim, outputSize: inputDim)
     }
 
@@ -73,8 +75,10 @@ var vae = VAE()
 let optimizer = Adam(for: vae, learningRate: 1e-3)
 
 // Loss function: sum of the KL divergence of the embeddings and the cross entropy loss between the input and it's reconstruction. 
-func vaeLossFunction(input: Tensor<Float>, output: Tensor<Float>, mu: Tensor<Float>, logVar: Tensor<Float>) -> Tensor<Float> {
-    let crossEntropy = sigmoidCrossEntropy(logits: output, labels: input, reduction: _sum)   
+func vaeLossFunction(
+    input: Tensor<Float>, output: Tensor<Float>, mu: Tensor<Float>, logVar: Tensor<Float>
+) -> Tensor<Float> {
+    let crossEntropy = sigmoidCrossEntropy(logits: output, labels: input, reduction: _sum)
     let klDivergence = -0.5 * (1 + logVar - pow(mu, 2) - exp(logVar)).sum()
     return crossEntropy + klDivergence
 }
@@ -107,7 +111,8 @@ for epoch in 1...epochCount {
             }
         }
 
-        let sampleLoss = vaeLossFunction(input: sampleImage, output: testImage, mu: testMu, logVar: testLogVar)
+        let sampleLoss = vaeLossFunction(
+            input: sampleImage, output: testImage, mu: testMu, logVar: testLogVar)
         print("[Epoch: \(epoch)] Loss: \(sampleLoss)")
     }
 
@@ -118,7 +123,7 @@ for epoch in 1...epochCount {
             let outputs = vae(x)
             let output = outputs[0]
             let mu = outputs[1]
-            let logVar  = outputs[2]
+            let logVar = outputs[2]
             return vaeLossFunction(input: x, output: output, mu: mu, logVar: logVar)
         }
 
