@@ -83,14 +83,16 @@ func vaeLossFunction(
     return crossEntropy + klDivergence
 }
 
-let individualTestImages = dataset.testDataset.batched(1)
-var testImageIterator = individualTestImages.makeIterator()
+// TODO: Find a cleaner way of extracting individual images that doesn't require a second dataset.
+let singleImageDataset = MNIST(batchSize: 1, flattening: true)
+let individualTestImages = singleImageDataset.test
+var testImageIterator = individualTestImages.sequenced()
 
 // Training loop
 for epoch in 1...epochCount {
     // Test for each epoch
     if let nextIndividualImage = testImageIterator.next() {
-        let sampleTensor = nextIndividualImage.data
+        let sampleTensor = nextIndividualImage.first
         let sampleImage = Tensor(
             shape: [1, imageHeight * imageWidth], scalars: sampleTensor.scalars)
 
