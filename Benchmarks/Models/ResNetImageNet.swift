@@ -61,7 +61,7 @@ struct ResNet50: Layer {
     }
 }
 
-extension ResNet56: ImageClassificationModel {
+extension ResNet50: ImageClassificationModel {
     static var preferredInputDimensions: [Int] { [224, 224, 3] }
     static var outputLabels: Int { 1000 }
 }
