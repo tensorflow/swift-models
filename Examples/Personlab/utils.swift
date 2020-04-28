@@ -10,7 +10,7 @@ struct Config {
     // Decoder
     let outputStride = 16
     let poseScoreThreshold: Float = 0.15
-    let keypointScoreThreshold: Float = 0.15
+    let keypointScoreThreshold: Float = 0.1
     let nmsRadius: Float = 20.0
     let keypointLocalMaximumRadius = 1  // TODO: what? they use 1 in implementation but not in paper
     
@@ -26,5 +26,5 @@ extension CheckpointReader {
 
 /// Usef for copying model from Python Tensorflow 1.5 version
 func hash(_ tensor: Tensor<Float>) {
-    print("[\(tensor.flattened().sum()), \(tensor[0, 0, 0, 0]) \(tensor[0, -1, 1, 1]), \(tensor[0, 1, -1, 0]), \(tensor[0, -1, -1, -1])]")
+    print("[\(tensor.flattened().sum()), \(tensor[0, 0, 0]) \(tensor[0, -1, 1]), \(tensor[0, 1, 0]), \(tensor[0, -1, -1])]")
 }

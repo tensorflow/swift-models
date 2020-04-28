@@ -21,13 +21,16 @@ struct Keypoint {
   }
 
   func isWithinRadiusOfCorrespondingPoint(in poses: [Pose], radius: Float = config.nmsRadius) -> Bool {
-    return poses.contains {
-      let correspondingKeypoint = $0.getKeypoint(with: self.index)!
+//     print("pose", self)
+    let contains = poses.contains { pose in
+      let correspondingKeypoint = pose.getKeypoint(with: self.index)!
+      // print(correspondingKeypoint)
       let dy = correspondingKeypoint.y - self.y
       let dx = correspondingKeypoint.x - self.x
       let squaredDistance = dy * dy + dx * dx
       return squaredDistance < radius
     }
+    return contains
   }
 }
 
@@ -53,13 +56,13 @@ enum KeypointIndex: Int, CaseIterable {
 
 enum Direction { case fwd, bwd }
 
-func getNextOutwardKeypoint(_ keypointId: KeypointIndex) -> [(KeypointIndex, Direction)] {
+func getNextKeypoint(_ keypointId: KeypointIndex) -> [(KeypointIndex, Direction)] {
   switch keypointId {
-  case .nose: return [(.leftEye, .bwd), (.rightEye, .bwd), (.leftShoulder, .fwd), (.rightShoulder, .fwd)]
-  case .leftEye: return [(.nose, .fwd), (.leftEar, .bwd)]
-  case .rightEye: return [(.nose, .fwd), (.rightEar, .bwd)]
-  case .leftEar: return [(.leftEye, .fwd)]
-  case .rightEar: return [(.rightEye, .fwd)]
+  case .nose: return [(.leftEye, .fwd), (.rightEye, .fwd), (.leftShoulder, .fwd), (.rightShoulder, .fwd)]
+  case .leftEye: return [(.nose, .bwd), (.leftEar, .fwd)]
+  case .rightEye: return [(.nose, .bwd), (.rightEar, .fwd)]
+  case .leftEar: return [(.leftEye, .bwd)]
+  case .rightEar: return [(.rightEye, .bwd)]
   case .leftShoulder: return [(.leftHip, .fwd), (.leftElbow, .fwd), (.nose, .bwd)]
   case .rightShoulder: return [(.rightHip, .fwd), (.rightElbow, .fwd), (.nose, .bwd)]
   case .leftElbow: return [(.leftWrist, .fwd), (.leftShoulder, .bwd)]
@@ -219,5 +222,15 @@ struct Pose  {
 
   func getKeypoint(with index: KeypointIndex) -> Keypoint? {
     return keypoints[index.rawValue]
+  }
+}
+
+extension Pose: CustomStringConvertible {
+  var description: String {
+    var description = ""
+    for keypoint in keypoints {
+      description.append("\(keypoint!.index) - \(keypoint!.score) | \(keypoint!.y) - \(keypoint!.x)\n")
+    }
+    return description
   }
 }

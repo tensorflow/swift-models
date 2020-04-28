@@ -21,4 +21,7 @@ let personlabHeads = PersonlabHeads(checkpoint: ckpt)
 var convnetResults = personlabHeads(backbone(normalizedImagesTensor))
 let poseDecoder = PoseDecoder(for: convnetResults, with: config)
 var poses = poseDecoder.decode()
-print(poses)
+for pose in poses {
+  print(pose)
+}
+print(poses.count)

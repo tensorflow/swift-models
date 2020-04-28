@@ -29,11 +29,13 @@ struct PoseDecoder {
       var pose = Pose()
       pose.add(rootKeypoint)
 
+      print("root", rootKeypoint)
       // Recursivelly parse keypoint tree going in forward direction
       recursivellyAddNextKeypoint(
         after: rootKeypoint,
         into: &pose
       )
+      print(pose)
 
       if getPoseScore(for: pose, considering: poses) > config.poseScoreThreshold {
         poses.append(pose)
@@ -43,7 +45,7 @@ struct PoseDecoder {
   }
 
   func recursivellyAddNextKeypoint(after previousKeypoint: Keypoint, into pose: inout Pose) {
-    for (nextKeypointIndex, direction) in getNextOutwardKeypoint(previousKeypoint.index) {
+    for (nextKeypointIndex, direction) in getNextKeypoint(previousKeypoint.index) {
       if pose.getKeypoint(with: nextKeypointIndex) == nil {
         let nextKeypoint = followDisplacement(
           from: previousKeypoint,
@@ -56,15 +58,11 @@ struct PoseDecoder {
     }
   }
 
-  func followDisplacement(
-    from previousKeypoint: Keypoint,
-    to nextKeypointIndex: KeypointIndex,
-    using displacements: Tensor<Float>
-  ) -> Keypoint {
-    let displacementIndexY = keypointPairToDisplacementIndexMap[
-      Set([previousKeypoint.index, nextKeypointIndex])
-    ]!
+  func followDisplacement(from previousKeypoint: Keypoint, to nextKeypointIndex: KeypointIndex, using displacements: Tensor<Float>) -> Keypoint {
+
+    let displacementIndexY = keypointPairToDisplacementIndexMap[Set([previousKeypoint.index, nextKeypointIndex])]!
     let displacementIndexX = displacementIndexY + displacements.shape[2] / 2
+
     let displacementY = displacements[
       getUnstridedIndex(y: previousKeypoint.y),
       getUnstridedIndex(x: previousKeypoint.x),
@@ -90,29 +88,48 @@ struct PoseDecoder {
       nextKeypointIndex.rawValue + KeypointIndex.allCases.count
     ].scalarized()
 
-    let nextY = displacedY + yOffset
-    let nextX = displacedX + xOffset
+    // If we are getting the offset from an exact point in the heatmap, we should add this
+    // offset parting from that exact point in the heatmap, so we just nearest neighbour
+    // interpolate it back, then re strech using output stride, and then add said offset.
+    let nextY = Float(getUnstridedIndex(y: displacedY) * config.outputStride) + yOffset
+    let nextX = Float(getUnstridedIndex(x: displacedX) * config.outputStride) + xOffset
 
+    print(displacements.flattened().sum())
+    print(getUnstridedIndex(y: previousKeypoint.y),getUnstridedIndex(y: previousKeypoint.x))
+    print(displacementIndexY, displacementIndexX)
+    print("displaced", displacementY,displacementX)
+    print("displaced_indices", getUnstridedIndex(y: displacedY),getUnstridedIndex(x: displacedX))
+    print(displacedY,displacedX)
+    print(yOffset,xOffset)
+    print(nextY,nextX)
+    print("this", getUnstridedIndex(y: nextY), getUnstridedIndex(x: nextX))
+    print(Keypoint(
+      y: nextY,
+      x: nextX,
+      index: nextKeypointIndex,
+      score: heatmap[
+        getUnstridedIndex(y: displacedY), getUnstridedIndex(x: displacedX), nextKeypointIndex.rawValue
+      ].scalarized()
+    ))
+    // readLine()
     return Keypoint(
       y: nextY,
       x: nextX,
       index: nextKeypointIndex,
       score: heatmap[
-        getUnstridedIndex(y: nextY), getUnstridedIndex(x: nextX), nextKeypointIndex.rawValue
+        getUnstridedIndex(y: displacedY), getUnstridedIndex(x: displacedX), nextKeypointIndex.rawValue
       ].scalarized()
     )
   }
 
-  func scoreIsMaximumInLocalWindow(at keypoint: Keypoint) -> Bool {
-    let unstridedIndexY = getUnstridedIndex(y: keypoint.y)
-    let yStart = max(unstridedIndexY - config.keypointLocalMaximumRadius, 0)
-    let yEnd = min(unstridedIndexY + config.keypointLocalMaximumRadius, heatmap.shape[0]) // NOTE: removed a + 1
-    for windowY in yStart..<yEnd {
-      let unstridedIndexX = getUnstridedIndex(x: keypoint.x)
-      let xStart = max(unstridedIndexX - config.keypointLocalMaximumRadius, 0)
-      let xEnd = min(unstridedIndexX + config.keypointLocalMaximumRadius, heatmap.shape[1]) // NOTE: removed a + 1
-      for windowX in xStart..<xEnd {
-        if heatmap[windowY, windowX, keypoint.index.rawValue].scalarized() > keypoint.score {
+  func scoreIsMaximumInLocalWindow(heatmapY: Int, heatmapX: Int, score: Float, keypointIndex: Int) -> Bool {
+    let yStart = max(heatmapY - config.keypointLocalMaximumRadius, 0)
+    let yEnd = min(heatmapY + config.keypointLocalMaximumRadius, heatmap.shape[0] - 1)
+    for windowY in yStart...yEnd {
+      let xStart = max(heatmapX - config.keypointLocalMaximumRadius, 0)
+      let xEnd = min(heatmapX + config.keypointLocalMaximumRadius, heatmap.shape[1] - 1)
+      for windowX in xStart...xEnd {
+        if heatmap[windowY, windowX, keypointIndex].scalarized() > score {
           return false
         }
       }
@@ -122,32 +139,39 @@ struct PoseDecoder {
 
   func getUnstridedIndex(y: Float) -> Int {
     let downScaled = y / Float(config.outputStride)
-    let clamped = min(max(0, downScaled), Float(heatmap.shape[0] - 1))
+    let clamped = min(max(0, downScaled.rounded()), Float(heatmap.shape[0] - 1))
     return Int(clamped)
   }
 
   func getUnstridedIndex(x: Float) -> Int {
     let downScaled = x / Float(config.outputStride)
-    let clamped = min(max(0, downScaled), Float(heatmap.shape[1] - 1))
+    let clamped = min(max(0, downScaled.rounded()), Float(heatmap.shape[1] - 1))
     return Int(clamped)
   }
 
   func getKeypointPriorityQueue() -> Heap<Keypoint> {
-    var keypointPriorityQueue = Heap<Keypoint>(priorityFunction: {$0.score < $1.score})
+    var keypointPriorityQueue = Heap<Keypoint>(priorityFunction: {$0.score > $1.score})  // TODO: Check order
     for heatmapY in 0..<heatmap.shape[0] {
       for heatmapX in 0..<heatmap.shape[1] {
         for keypointIndex in 0..<heatmap.shape[2] {
-          let rootKeypoint = Keypoint(
+          let score = heatmap[heatmapY, heatmapX, keypointIndex].scalarized()
+
+          if score < config.keypointScoreThreshold { continue }
+          if scoreIsMaximumInLocalWindow(
             heatmapY: heatmapY,
             heatmapX: heatmapX,
-            index: keypointIndex,
-            score: heatmap[heatmapY, heatmapX, keypointIndex].scalarized(),
-            offsets: offsets
-          )
-
-          if rootKeypoint.score < config.keypointScoreThreshold
-          || !scoreIsMaximumInLocalWindow(at: rootKeypoint)  {
-            keypointPriorityQueue.enqueue(rootKeypoint)
+            score: score,
+            keypointIndex: keypointIndex
+          )  {
+            keypointPriorityQueue.enqueue(
+              Keypoint(
+                heatmapY: heatmapY,
+                heatmapX: heatmapX,
+                index: keypointIndex,
+                score: score,
+                offsets: offsets
+              )
+            )
           }
         }
       }
@@ -158,10 +182,10 @@ struct PoseDecoder {
   func getPoseScore(for pose: Pose, considering poses: [Pose]) -> Float {
     var notOverlappedKeypointScoreAccumulator: Float = 0
     for keypoint in pose.keypoints {
-      if keypoint!.isWithinRadiusOfCorrespondingPoint(in: poses) {
+      if !keypoint!.isWithinRadiusOfCorrespondingPoint(in: poses) {
         notOverlappedKeypointScoreAccumulator += keypoint!.score
       }
     }
-    return notOverlappedKeypointScoreAccumulator
+    return notOverlappedKeypointScoreAccumulator / Float(KeypointIndex.allCases.count)
   }
 }
