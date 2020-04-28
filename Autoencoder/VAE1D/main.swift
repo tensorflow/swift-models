@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/// Based on the paper: "Auto-Encoding Variational Bayes"
-// By Diederik P Kingma and Max Welling
+// Based on the paper: "Auto-Encoding Variational Bayes"
+// by Diederik P Kingma and Max Welling
 // Reference implementation: https://github.com/pytorch/examples/blob/master/vae/main.py
 
 import Datasets
@@ -22,12 +22,11 @@ import ModelSupport
 import TensorFlow
 
 let epochCount = 10
-let batchSize = 128
 let imageHeight = 28
 let imageWidth = 28
 
 let outputFolder = "./output/"
-let dataset = MNIST(flattening: true)
+let dataset = MNIST(batchSize: 128, flattening: true)
 
 let inputDim = 784 // 28*28 for any MNIST
 let hiddenDim = 400 
@@ -112,10 +111,8 @@ for epoch in 1...epochCount {
         print("[Epoch: \(epoch)] Loss: \(sampleLoss)")
     }
 
-    let trainingShuffled = dataset.trainingDataset.shuffled(
-        sampleCount: dataset.trainingExampleCount, randomSeed: Int64(epoch))
-    for batch in trainingShuffled.batched(batchSize) {
-        let x = batch.data
+    for batch in dataset.training.sequenced() {
+        let x = batch.first
 
         let 𝛁model = TensorFlow.gradient(at: vae) { vae -> Tensor<Float> in
             let outputs = vae(x)
