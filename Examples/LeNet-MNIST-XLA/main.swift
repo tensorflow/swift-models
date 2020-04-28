@@ -1,0 +1,105 @@
+// Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+import Datasets
+import TensorFlow
+
+let epochCount = 12
+let batchSize = 128
+
+let dataset = MNIST(batchSize: batchSize)
+// The LeNet-5 model, equivalent to `LeNet` in `ImageClassificationModels`.
+var classifier = Sequential {
+    Conv2D<Float>(filterShape: (5, 5, 1, 6), padding: .same, activation: relu)
+    AvgPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
+    Conv2D<Float>(filterShape: (5, 5, 6, 16), activation: relu)
+    AvgPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
+    Flatten<Float>()
+    Dense<Float>(inputSize: 400, outputSize: 120, activation: relu)
+    Dense<Float>(inputSize: 120, outputSize: 84, activation: relu)
+    Dense<Float>(inputSize: 84, outputSize: 10)
+}
+
+var optimizer = SGD(for: classifier, learningRate: 0.1)
+
+let device = Device.defaultXLA
+classifier.move(to: device)
+optimizer = SGD(copying: optimizer, to: device)
+
+print("Beginning training...")
+
+struct Statistics {
+    var correctGuessCount: Int = 0
+    var totalGuessCount: Int = 0
+    var totalLoss: Float = 0
+    var batches: Int = 0
+}
+
+// The training loop.
+for epoch in 1...epochCount {
+    var trainStats = Statistics()
+    var testStats = Statistics()
+
+    Context.local.learningPhase = .training
+    for batch in dataset.training.sequenced() {
+        let (images, labels) = (batch.first, batch.second)
+        let deviceImages = Tensor(copying: images, to: device)
+        let deviceLabels = Tensor(copying: labels, to: device)
+        // Compute the gradient with respect to the model.
+        let 𝛁model = TensorFlow.gradient(at: classifier) { classifier -> Tensor<Float> in
+            let ŷ = classifier(deviceImages)
+            let correctPredictions = ŷ.argmax(squeezingAxis: 1) .== deviceLabels
+            trainStats.correctGuessCount += Int(
+                Tensor<Int32>(correctPredictions).sum().scalarized())
+            trainStats.totalGuessCount += batch.first.shape[0]
+            let loss = softmaxCrossEntropy(logits: ŷ, labels: deviceLabels)
+            trainStats.totalLoss += loss.scalarized()
+            trainStats.batches += 1
+            return loss
+        }
+        // Update the model's differentiable variables along the gradient vector.
+        optimizer.update(&classifier, along: 𝛁model)
+        LazyTensorBarrier()
+    }
+
+    Context.local.learningPhase = .inference
+    for batch in dataset.test.sequenced() {
+        let (images, labels) = (batch.first, batch.second)
+        let deviceImages = Tensor(copying: images, to: device)
+        let deviceLabels = Tensor(copying: labels, to: device)
+        // Compute loss on test set
+        let ŷ = classifier(deviceImages)
+        let correctPredictions = ŷ.argmax(squeezingAxis: 1) .== deviceLabels
+        testStats.correctGuessCount += Int(Tensor<Int32>(correctPredictions).sum().scalarized())
+        testStats.totalGuessCount += batch.first.shape[0]
+        let loss = softmaxCrossEntropy(logits: ŷ, labels: deviceLabels)
+        testStats.totalLoss += loss.scalarized()
+        testStats.batches += 1
+    }
+
+    LazyTensorBarrier()
+
+    let trainAccuracy = Float(trainStats.correctGuessCount) / Float(trainStats.totalGuessCount)
+    let testAccuracy = Float(testStats.correctGuessCount) / Float(testStats.totalGuessCount)
+    print(
+        """
+        [Epoch \(epoch)] \
+        Training Loss: \(trainStats.totalLoss / Float(trainStats.batches)), \
+        Training Accuracy: \(trainStats.correctGuessCount)/\(trainStats.totalGuessCount) \
+        (\(trainAccuracy)), \
+        Test Loss: \(testStats.totalLoss / Float(testStats.batches)), \
+        Test Accuracy: \(testStats.correctGuessCount)/\(testStats.totalGuessCount) \
+        (\(testAccuracy))
+        """)
+}

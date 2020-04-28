@@ -22,6 +22,7 @@ let package = Package(
         .executable(name: "Custom-CIFAR10", targets: ["Custom-CIFAR10"]),
         .executable(name: "ResNet-CIFAR10", targets: ["ResNet-CIFAR10"]),
         .executable(name: "LeNet-MNIST", targets: ["LeNet-MNIST"]),
+        .executable(name: "LeNet-MNIST-XLA", targets: ["LeNet-MNIST-XLA"]),
         .executable(name: "MobileNetV1-Imagenette", targets: ["MobileNetV1-Imagenette"]),
         .executable(name: "MobileNetV2-Imagenette", targets: ["MobileNetV2-Imagenette"]),
         .executable(name: "GAN", targets: ["GAN"]),
@@ -75,6 +76,9 @@ let package = Package(
         .target(
             name: "LeNet-MNIST", dependencies: ["ImageClassificationModels", "Datasets"],
             path: "Examples/LeNet-MNIST"),
+        .target(
+            name: "LeNet-MNIST-XLA", dependencies: ["ImageClassificationModels", "Datasets"],
+            path: "Examples/LeNet-MNIST-XLA"),
         .target(
             name: "MobileNetV1-Imagenette", dependencies: ["ImageClassificationModels", "Datasets"],
             path: "Examples/MobileNetV1-Imagenette"),
