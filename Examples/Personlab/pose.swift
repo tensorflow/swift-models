@@ -51,6 +51,30 @@ enum KeypointIndex: Int, CaseIterable {
   case rightAnkle
 }
 
+enum Direction { case fwd, bwd }
+
+func getNextOutwardKeypoint(_ keypointId: KeypointIndex) -> [(KeypointIndex, Direction)] {
+  switch keypointId {
+  case .nose: return [(.leftEye, .bwd), (.rightEye, .bwd), (.leftShoulder, .fwd), (.rightShoulder, .fwd)]
+  case .leftEye: return [(.nose, .fwd), (.leftEar, .bwd)]
+  case .rightEye: return [(.nose, .fwd), (.rightEar, .bwd)]
+  case .leftEar: return [(.leftEye, .fwd)]
+  case .rightEar: return [(.rightEye, .fwd)]
+  case .leftShoulder: return [(.leftHip, .fwd), (.leftElbow, .fwd), (.nose, .bwd)]
+  case .rightShoulder: return [(.rightHip, .fwd), (.rightElbow, .fwd), (.nose, .bwd)]
+  case .leftElbow: return [(.leftWrist, .fwd), (.leftShoulder, .bwd)]
+  case .rightElbow: return [(.rightWrist, .fwd), (.rightShoulder, .bwd)]
+  case .leftWrist: return [(.leftElbow, .bwd)]
+  case .rightWrist: return [(.rightElbow, .bwd)]
+  case .leftHip: return [(.leftKnee, .fwd), (.leftShoulder, .bwd)]
+  case .rightHip: return [(.rightKnee, .fwd), (.rightShoulder, .bwd)]
+  case .leftKnee: return [(.leftAnkle, .fwd), (.leftHip, .bwd)]
+  case .rightKnee: return [(.rightAnkle, .fwd), (.rightHip, .bwd)]
+  case .leftAnkle: return [(.leftKnee, .bwd)]
+  case .rightAnkle: return [(.rightKnee, .bwd)]
+  }
+}
+
 // TODO: Add default and remove 4 nil cases
 func getSucceedingtKeypointIndex(_ keypointId: KeypointIndex) -> [KeypointIndex?] {
   switch keypointId {

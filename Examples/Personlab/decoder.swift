@@ -30,47 +30,28 @@ struct PoseDecoder {
       pose.add(rootKeypoint)
 
       // Recursivelly parse keypoint tree going in forward direction
-      print("Going forward")
       recursivellyAddNextKeypoint(
         after: rootKeypoint,
-        into: &pose,
-        following: getSucceedingtKeypointIndex
-      )
-
-      // Recursivelly parse keypoint tree going in backward direction
-      print("Going backward")
-      recursivellyAddNextKeypoint(
-        after: rootKeypoint,
-        into: &pose,
-        following: getPrecedingKeypointIndex
+        into: &pose
       )
 
       if getPoseScore(for: pose, considering: poses) > config.poseScoreThreshold {
         poses.append(pose)
-        print("pose", pose)
-        readLine()
-        print()
       }
     }
     return poses
   }
 
-  func recursivellyAddNextKeypoint(
-    after previousKeypoint: Keypoint,
-    into pose: inout Pose,
-    following getNextKeypoint: (KeypointIndex) -> [KeypointIndex?]) {
-    for nextKeypointIndex in getNextKeypoint(previousKeypoint.index) {
-      if nextKeypointIndex != nil {
-        print("previous", previousKeypoint)
+  func recursivellyAddNextKeypoint(after previousKeypoint: Keypoint, into pose: inout Pose) {
+    for (nextKeypointIndex, direction) in getNextOutwardKeypoint(previousKeypoint.index) {
+      if pose.getKeypoint(with: nextKeypointIndex) == nil {
         let nextKeypoint = followDisplacement(
           from: previousKeypoint,
-          to: nextKeypointIndex!,
-          using: displacementsFwd
+          to: nextKeypointIndex,
+          using: direction == .fwd ? displacementsFwd : displacementsBwd
         )
-        print("next", nextKeypoint)
-        print()
         pose.add(nextKeypoint)
-        recursivellyAddNextKeypoint(after: nextKeypoint, into: &pose, following: getNextKeypoint)
+        recursivellyAddNextKeypoint(after: nextKeypoint, into: &pose)
       }
     }
   }
@@ -141,13 +122,13 @@ struct PoseDecoder {
 
   func getUnstridedIndex(y: Float) -> Int {
     let downScaled = y / Float(config.outputStride)
-    let clamped = min(max(0, downScaled), Float(heatmap.shape[0]))
+    let clamped = min(max(0, downScaled), Float(heatmap.shape[0] - 1))
     return Int(clamped)
   }
 
   func getUnstridedIndex(x: Float) -> Int {
     let downScaled = x / Float(config.outputStride)
-    let clamped = min(max(0, downScaled), Float(heatmap.shape[1]))
+    let clamped = min(max(0, downScaled), Float(heatmap.shape[1] - 1))
     return Int(clamped)
   }
 
@@ -163,7 +144,6 @@ struct PoseDecoder {
             score: heatmap[heatmapY, heatmapX, keypointIndex].scalarized(),
             offsets: offsets
           )
-          print("root", rootKeypoint)
 
           if rootKeypoint.score < config.keypointScoreThreshold
           || !scoreIsMaximumInLocalWindow(at: rootKeypoint)  {
