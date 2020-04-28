@@ -22,15 +22,15 @@
 import Foundation
 import TensorFlow
 
-extension Sequence where Element : Collection {
-    subscript(column column : Element.Index) -> [ Element.Iterator.Element ] {
-        return map {$0[ column ]}
+extension Sequence where Element: Collection {
+    subscript(column column: Element.Index) -> [Element.Iterator.Element] {
+        return map { $0[column] }
     }
 }
 extension Sequence where Iterator.Element: Hashable {
-    func unique() -> [Iterator.Element]{
+    func unique() -> [Iterator.Element] {
         var seen: Set<Iterator.Element> = []
-        return filter{seen.insert($0).inserted}
+        return filter { seen.insert($0).inserted }
     }
 }
 
@@ -45,50 +45,59 @@ public struct MovieLens {
     public let user2id: [Float: Int]
     public let id2user: [Int: Float]
     public let item2id: [Float: Int]
-    public let id2item: [Int:Float]
+    public let id2item: [Int: Float]
     public let trainNegSampling: Tensor<Float>
 
     static func downloadMovieLensDatasetIfNotPresent() -> URL {
-        let localURL = DatasetUtilities.defaultDirectory.appendingPathComponent("MovieLens", isDirectory: true)
+        let localURL = DatasetUtilities.defaultDirectory.appendingPathComponent(
+            "MovieLens", isDirectory: true)
         let dataFolder = DatasetUtilities.downloadResource(
             filename: "ml-100k",
             fileExtension: "zip",
             remoteRoot: URL(string: "http://files.grouplens.org/datasets/movielens/")!,
-        localStorageDirectory: localURL)
+            localStorageDirectory: localURL)
 
         return dataFolder
     }
 
     public init() {
-        let trainFiles  = try! String(contentsOf: MovieLens.downloadMovieLensDatasetIfNotPresent().appendingPathComponent("u1.base"), encoding: .utf8)
-        let testFiles = try! String(contentsOf: MovieLens.downloadMovieLensDatasetIfNotPresent().appendingPathComponent("u1.test"), encoding: .utf8)
+        let trainFiles = try! String(
+            contentsOf: MovieLens.downloadMovieLensDatasetIfNotPresent().appendingPathComponent(
+                "u1.base"), encoding: .utf8)
+        let testFiles = try! String(
+            contentsOf: MovieLens.downloadMovieLensDatasetIfNotPresent().appendingPathComponent(
+                "u1.test"), encoding: .utf8)
 
-        let trainData: [[Float]] = trainFiles.split(separator: "\n").map{ String($0).split(separator: "\t").compactMap{ Float(String($0))}}
-        let testData: [[Float]] = testFiles.split(separator: "\n").map{ String($0).split(separator: "\t").compactMap{ Float(String($0))}}
+        let trainData: [[Float]] = trainFiles.split(separator: "\n").map {
+            String($0).split(separator: "\t").compactMap { Float(String($0)) }
+        }
+        let testData: [[Float]] = testFiles.split(separator: "\n").map {
+            String($0).split(separator: "\t").compactMap { Float(String($0)) }
+        }
 
         let trainUsers = trainData[column: 0].unique()
         let testUsers = testData[column: 0].unique()
 
         let items = trainData[column: 1].unique()
 
-        let userIndex = 0...trainUsers.count-1
-        let user2id = Dictionary(uniqueKeysWithValues: zip(trainUsers,userIndex))
-        let id2user = Dictionary(uniqueKeysWithValues: zip(userIndex,trainUsers))
+        let userIndex = 0...trainUsers.count - 1
+        let user2id = Dictionary(uniqueKeysWithValues: zip(trainUsers, userIndex))
+        let id2user = Dictionary(uniqueKeysWithValues: zip(userIndex, trainUsers))
 
-        let itemIndex = 0...items.count-1
-        let item2id = Dictionary(uniqueKeysWithValues: zip(items,itemIndex))
-        let id2item = Dictionary(uniqueKeysWithValues: zip(itemIndex,items))
+        let itemIndex = 0...items.count - 1
+        let item2id = Dictionary(uniqueKeysWithValues: zip(items, itemIndex))
+        let id2item = Dictionary(uniqueKeysWithValues: zip(itemIndex, items))
 
-        var trainNegSampling = Tensor<Float>(zeros: [trainUsers.count,items.count])
+        var trainNegSampling = Tensor<Float>(zeros: [trainUsers.count, items.count])
 
-        var dataset:[TensorPair<Int32,Float>] = []
+        var dataset: [TensorPair<Int32, Float>] = []
 
         for element in trainData {
             let uIndex = user2id[element[0]]!
             let iIndex = item2id[element[1]]!
             let rating = element[2]
-            if (rating > 0){
-              trainNegSampling[uIndex][iIndex] = Tensor(1.0)
+            if rating > 0 {
+                trainNegSampling[uIndex][iIndex] = Tensor(1.0)
             }
         }
 
@@ -96,15 +105,15 @@ public struct MovieLens {
             let uIndex = user2id[element[0]]!
             let iIndex = item2id[element[1]]!
             let x = Tensor<Int32>([Int32(uIndex), Int32(iIndex)])
-            dataset.append(TensorPair<Int32, Float>(first:x, second: [1]))
+            dataset.append(TensorPair<Int32, Float>(first: x, second: [1]))
 
             for _ in 0...3 {
-              var iIndex = Int.random(in:itemIndex)
-              while(trainNegSampling[uIndex][iIndex].scalarized() == 1.0) {
-                iIndex = Int.random(in:itemIndex)
-              }
-              let x = Tensor<Int32>([Int32(uIndex), Int32(iIndex)])
-              dataset.append(TensorPair<Int32, Float>(first: x, second: [0]))
+                var iIndex = Int.random(in: itemIndex)
+                while trainNegSampling[uIndex][iIndex].scalarized() == 1.0 {
+                    iIndex = Int.random(in: itemIndex)
+                }
+                let x = Tensor<Int32>([Int32(uIndex), Int32(iIndex)])
+                dataset.append(TensorPair<Int32, Float>(first: x, second: [0]))
             }
         }
 
