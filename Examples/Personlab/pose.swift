@@ -28,7 +28,7 @@ struct Keypoint {
       let dy = correspondingKeypoint.y - self.y
       let dx = correspondingKeypoint.x - self.x
       let squaredDistance = dy * dy + dx * dx
-      return squaredDistance < radius
+      return squaredDistance <= radius * radius
     }
     return contains
   }
