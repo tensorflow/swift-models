@@ -17,6 +17,8 @@ add_library(Datasets
   MNIST/KuzushijiMNIST.swift
   ObjectDetectionDataset.swift
   BostonHousing/BostonHousing.swift
+  TextUnsupervised/TextUnsupervised.swift
+  MovieLens/MovieLens.swift
   TensorPair.swift
   TextUnsupervised/TextUnsupervised.swift)
 target_link_libraries(Datasets PUBLIC
