@@ -116,9 +116,7 @@ func makeAnnotationURL(imageURL: URL, directory: URL) -> URL {
 }
 
 func getImageURLs(filename: String, directory: URL) -> [URL] {
-    let filePath =
-        directory
-        .appendingPathComponent("annotations/\(filename)", isDirectory: true)
+    let filePath = directory.appendingPathComponent("annotations/\(filename)")
     let imagesRootDirectory = directory.appendingPathComponent("images", isDirectory: true)
     let fileContents = try? String(contentsOf: filePath)
     let imageDetails = fileContents!.split(separator: "\n")
