@@ -21,16 +21,13 @@ struct Keypoint {
   }
 
   func isWithinRadiusOfCorrespondingPoint(in poses: [Pose], radius: Float = config.nmsRadius) -> Bool {
-//     print("pose", self)
-    let contains = poses.contains { pose in
+    return poses.contains { pose in
       let correspondingKeypoint = pose.getKeypoint(with: self.index)!
-      // print(correspondingKeypoint)
       let dy = correspondingKeypoint.y - self.y
       let dx = correspondingKeypoint.x - self.x
       let squaredDistance = dy * dy + dx * dx
       return squaredDistance <= radius * radius
     }
-    return contains
   }
 }
 
@@ -78,51 +75,6 @@ func getNextKeypoint(_ keypointId: KeypointIndex) -> [(KeypointIndex, Direction)
   }
 }
 
-// TODO: Add default and remove 4 nil cases
-func getSucceedingtKeypointIndex(_ keypointId: KeypointIndex) -> [KeypointIndex?] {
-  switch keypointId {
-  case .nose: return [.leftShoulder, .rightShoulder]
-  case .leftEye: return [.nose]
-  case .rightEye: return [.nose]
-  case .leftEar: return [.leftEye]
-  case .rightEar: return [.rightEye]
-  case .leftShoulder: return [.leftHip, .leftElbow]
-  case .rightShoulder: return [.rightHip, .rightElbow]
-  case .leftElbow: return [.leftWrist]
-  case .rightElbow: return [.rightWrist]
-  case .leftWrist: return [nil]
-  case .rightWrist: return [nil]
-  case .leftHip: return [.leftKnee]
-  case .rightHip: return [.rightKnee]
-  case .leftKnee: return [.leftAnkle]
-  case .rightKnee: return [.rightAnkle]
-  case .leftAnkle: return [nil]
-  case .rightAnkle: return [nil]
-  }
-}
-  
-func getPrecedingKeypointIndex(_ keypointId: KeypointIndex) -> [KeypointIndex?] {
-  switch keypointId {
-  case .nose: return [.leftEye, .rightEye]
-  case .leftEye: return [.leftEar]
-  case .rightEye: return [.rightEar]
-  case .leftEar: return [nil]
-  case .rightEar: return [nil]
-  case .leftShoulder: return [.nose]
-  case .rightShoulder: return [.nose]
-  case .leftElbow: return [.leftShoulder]
-  case .rightElbow: return [.rightShoulder]
-  case .leftWrist: return [.leftElbow]
-  case .rightWrist: return [.rightElbow]
-  case .leftHip: return [.leftShoulder]
-  case .rightHip: return [.rightShoulder]
-  case .leftKnee: return [.leftHip]
-  case .rightKnee: return [.rightHip]
-  case .leftAnkle: return [.leftKnee]
-  case .rightAnkle: return [.rightKnee]
-  }
-}
-
 // NOTE: Excelent type inference swift holy shit!
 /// Maps a pair of keypoint indexes to the appropiate index to be used
 /// to get the displacement in the displacement tensors.
@@ -145,74 +97,6 @@ let keypointPairToDisplacementIndexMap: [Set<KeypointIndex>: Int] = [
   Set([.rightKnee, .rightAnkle]): 15
 ]
 
-// let previousJointsMap: [[KeypointId?]] = [
-//   [.leftEye, .rightEye],  // nose
-//   [.leftEar],  //  leftEye
-//   [.rightEar],  //rightEye
-//   [nil],  // leftEar
-//   [nil],  // rightEar
-//   [.nose],  // leftShoulder
-//   [.nose],  // rightShoulder
-//   [.leftShoulder],  // leftElbow
-//   [.rightShoulder],  // rightElbow
-//   [.leftElbow],  // leftWrist
-//   [.rightElbow],  // rightWrist
-//   [.leftShoulder],  // leftHip
-//   [.rightShoulder],  // rightHip
-//   [.leftHip],  // leftKnee
-//   [.rightHip],  // rightKnee
-//   [.leftKnee],  // leftAngle
-//   [.rightKnee]  // rightAnkle
-// ]
-
-// let nextJointsMap: [[KeypointId?]] = [
-//   [.leftShoulder, .rightShoulder],  // nose
-//   [.nose],  //  leftEye
-//   [.nose],  //rightEye
-//   [.leftEye],  // leftEar
-//   [.rightEye],  // rightEar
-//   [.leftHip, .leftElbow],  // leftShoulder
-//   [.rightHip, .rightElbow],  // rightShoulder
-//   [.leftWrist],  // leftElbow
-//   [.rightWrist],  // rightElbow
-//   [nil],  // leftWrist
-//   [nil],  // rightWrist
-//   [.leftKnee],  // leftHip
-//   [.rightKnee],  // rightHip
-//   [.leftAnkle],  // leftKnee
-//   [.rightAnkle],  // rightKnee
-//   [nil],  // leftAngle
-//   [nil]  // rightAnkle
-// ]
-
-// // TODO: Check performance difference vs just using an Array with enums with
-// // associated values.
-// // Using a struct should be faster as we are stack allocated, but still,
-// // I want to measure the difference.
-// struct pose {
-//   let nose: Keypoint
-//   let lefteye: Keypoint
-//   let righeye: Keypoint
-//   let leftear: Keypoint
-//   let rightear: Keypoint
-//   let leftshoulder: Keypoint
-//   let rightshoulder: Keypoint
-//   let leftelbow: Keypoint
-//   let rightelbow: Keypoint
-//   let leftwrist: Keypoint
-//   let rightwrist: Keypoint
-//   let lefthip: Keypoint
-//   let righthip: Keypoint
-//   let leftknee: Keypoint
-//   let rightknee: Keypoint
-//   let leftankle: Keypoint
-//   let rightankle: Keypoint
-// }
-
-
-/// The final object the model returns.
-/// Implementation just wraps a list, but doing this defines intent more clearly 
-/// than just using a random list of keypoints through the code base.
 struct Pose  {
   var keypoints: [Keypoint?] = Array(repeating: nil, count: KeypointIndex.allCases.count)
 

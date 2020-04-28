@@ -29,7 +29,6 @@ struct PoseDecoder {
       var pose = Pose()
       pose.add(rootKeypoint)
 
-      // print("root", rootKeypoint)
       // Recursivelly parse keypoint tree going in forward direction
       recursivellyAddNextKeypoint(
         after: rootKeypoint,
@@ -93,24 +92,6 @@ struct PoseDecoder {
     let nextY = Float(getUnstridedIndex(y: displacedY) * config.outputStride) + yOffset
     let nextX = Float(getUnstridedIndex(x: displacedX) * config.outputStride) + xOffset
 
-    // print(displacements.flattened().sum())
-    // print(getUnstridedIndex(y: previousKeypoint.y),getUnstridedIndex(y: previousKeypoint.x))
-    // print(displacementIndexY, displacementIndexX)
-    // print("displaced", displacementY,displacementX)
-    // print("displaced_indices", getUnstridedIndex(y: displacedY),getUnstridedIndex(x: displacedX))
-    // print(displacedY,displacedX)
-    // print(yOffset,xOffset)
-    // print(nextY,nextX)
-    // print("this", getUnstridedIndex(y: nextY), getUnstridedIndex(x: nextX))
-    // print(Keypoint(
-    //   y: nextY,
-    //   x: nextX,
-    //   index: nextKeypointIndex,
-    //   score: heatmap[
-    //     getUnstridedIndex(y: displacedY), getUnstridedIndex(x: displacedX), nextKeypointIndex.rawValue
-    //   ].scalarized()
-    // ))
-    // readLine()
     return Keypoint(
       y: nextY,
       x: nextX,
@@ -182,11 +163,9 @@ struct PoseDecoder {
     var notOverlappedKeypointScoreAccumulator: Float = 0
     for keypoint in pose.keypoints {
       if !keypoint!.isWithinRadiusOfCorrespondingPoint(in: poses) {
-        // print("true", keypoint!.score)
         notOverlappedKeypointScoreAccumulator += keypoint!.score
       }
     }
-    // print(notOverlappedKeypointScoreAccumulator / Float(KeypointIndex.allCases.count))
     return notOverlappedKeypointScoreAccumulator / Float(KeypointIndex.allCases.count)
   }
 }
