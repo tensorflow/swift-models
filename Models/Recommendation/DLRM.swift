@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import TensorFlow
+import ModelSupport
 
 /// The DLRM model is parameterized to support multiple ways of combining the latent spaces of the inputs.
 public enum InteractionType {
@@ -38,11 +39,12 @@ public enum InteractionType {
 /// "Deep Learning Recommendation Model for Personalization and Recommendation Systems"
 /// Maxim Naumov et al.
 /// https://arxiv.org/pdf/1906.00091.pdf
-public struct DLRM: Module {
+public struct DLRM: TypedModule {
+    public typealias Scalar = Float
 
-    public var mlpBottom: MLP
-    public var mlpTop: MLP
-    public var latentFactors: [Embedding<Float>]
+    public var mlpBottom: Self.MLP
+    public var mlpTop: Self.MLP
+    public var latentFactors: [Self.Embedding]
     @noDerivative public let nDense: Int
     @noDerivative public let interaction: InteractionType
 
@@ -63,7 +65,7 @@ public struct DLRM: Module {
         mlpTop = MLP(dims: [topInput] + lnTop + [1], sigmoidLastLayer: true)
         latentFactors = lnEmb.map { embeddingSize -> Embedding<Float> in
             // Use a random uniform initialization to match the reference implementation.
-            let weights = Tensor<Float>(
+            let weights = Tensor(
                 randomUniform: [embeddingSize, mSpa],
                 lowerBound: Tensor(Float(-1.0)/Float(embeddingSize)),
                 upperBound: Tensor(Float(1.0)/Float(embeddingSize)))

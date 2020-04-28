@@ -49,7 +49,7 @@ let package = Package(
         .target(name: "ImageClassificationModels", dependencies: ["ModelSupport"], path: "Models/ImageClassification"),
         .target(name: "VideoClassificationModels", path: "Models/Spatiotemporal"),
         .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),
-        .target(name: "RecommendationModels", path: "Models/Recommendation"),
+        .target(name: "RecommendationModels", dependencies: ["ModelSupport"], path: "Models/Recommendation"),
         .target(
             name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport"],
             path: "Autoencoder/Autoencoder1D"),

@@ -15,7 +15,7 @@
 import TensorFlow
 
 /// A model composed of a variety of layers all using the same scalar type.
-public protocol TypedModel: Layer {
+public protocol TypedModule: Module {
   associatedtype Scalar: TensorFlowScalar
   
   typealias Tensor = TensorFlow.Tensor<Scalar>  // For some reason, this doesn't work!
@@ -23,14 +23,15 @@ public protocol TypedModel: Layer {
   typealias TTensor = TensorFlow.Tensor
 }
 
-public extension TypedModel where Scalar: TensorFlowFloatingPoint {
+public extension TypedModule where Scalar: TensorFlowFloatingPoint {
   typealias Conv2D = TensorFlow.Conv2D<Scalar>
   typealias AvgPool2D = TensorFlow.AvgPool2D<Scalar>
   typealias MaxPool2D = TensorFlow.MaxPool2D<Scalar>
   typealias Flatten = TensorFlow.Flatten<Scalar>
   typealias Dense = TensorFlow.Dense<Scalar>
+  typealias Embedding = TensorFlow.Embedding<Scalar>
 }
 
 /// A model composed of a variety of layers, where each one is parameterized
 /// by `Float`.
-public protocol FloatModel: TypedModel where Scalar == Float {}
+public protocol FloatModel: TypedModule, Layer where Scalar == Float {}

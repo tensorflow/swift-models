@@ -13,10 +13,11 @@
 // limitations under the License.
 
 import TensorFlow
+import ModelSupport
 
 /// MLP is a multi-layer perceptron and is used as a component of the DLRM model
-public struct MLP: Layer {
-    public var blocks: [Dense<Float>] = []
+public struct MLP<Scalar: TensorFlowFloatingPoint>: Layer, TypedModule {
+    public var blocks: [Self.Dense] = []
 
     /// Randomly initializes a new multilayer perceptron from the given hyperparameters.
     ///
@@ -35,12 +36,14 @@ public struct MLP: Layer {
     }
 
     @differentiable
-    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
+    public func callAsFunction(_ input: Tensor<Scalar>) -> Tensor<Scalar> {
         let blocksReduced = blocks.differentiableReduce(input) { last, layer in
             layer(last)
         }
         return blocksReduced
     }
-
 }
 
+extension TypedModule where Scalar: TensorFlowFloatingPoint {
+  public typealias MLP = RecommendationModels.MLP<Scalar>
+}
