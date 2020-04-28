@@ -2,6 +2,7 @@ add_library(DatasetsTests
   BostonHousing/BostonHousingTests.swift
   CIFAR10/CIFAR10Tests.swift
   Imagenette/ImagenetteTests.swift
+  MovieLens/MovieLensTests.swift
   MNIST/MNISTTests.swift
   TextUnsupervised/TextUnsupervisedTests.swift
   XCTestManifests.swift)
