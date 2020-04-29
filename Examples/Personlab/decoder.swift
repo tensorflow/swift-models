@@ -58,46 +58,48 @@ struct PoseDecoder {
 
   func followDisplacement(from previousKeypoint: Keypoint, to nextKeypointIndex: KeypointIndex, using displacements: Tensor<Float>) -> Keypoint {
 
-    let displacementIndexY = keypointPairToDisplacementIndexMap[Set([previousKeypoint.index, nextKeypointIndex])]!
-    let displacementIndexX = displacementIndexY + displacements.shape[2] / 2
+    let displacementKeypointIndexY = keypointPairToDisplacementIndexMap[Set([previousKeypoint.index, nextKeypointIndex])]!
+    let displacementKeypointIndexX = displacementKeypointIndexY + displacements.shape[2] / 2
+    let displacementYIndex = getUnstridedIndex(y: previousKeypoint.y)
+    let displacementXIndex = getUnstridedIndex(x: previousKeypoint.x)
 
     let displacementY = displacements[
-      getUnstridedIndex(y: previousKeypoint.y),
-      getUnstridedIndex(x: previousKeypoint.x),
-      displacementIndexY
+      displacementYIndex,
+      displacementXIndex,
+      displacementKeypointIndexY
     ].scalarized()
     let displacementX = displacements[
-      getUnstridedIndex(y: previousKeypoint.y),
-      getUnstridedIndex(x: previousKeypoint.x),
-      displacementIndexX
+      displacementYIndex,
+      displacementXIndex,
+      displacementKeypointIndexX
     ].scalarized()
 
-    let displacedY = previousKeypoint.y + displacementY
-    let displacedX = previousKeypoint.x + displacementX
+    let displacedY = getUnstridedIndex(y: previousKeypoint.y + displacementY)
+    let displacedX = getUnstridedIndex(x: previousKeypoint.x + displacementX)
 
     let yOffset = offsets[
-      getUnstridedIndex(y: displacedY),
-      getUnstridedIndex(x: displacedX),
+      displacedY,
+      displacedX,
       nextKeypointIndex.rawValue
     ].scalarized()
     let xOffset = offsets[
-      getUnstridedIndex(y: displacedY),
-      getUnstridedIndex(x: displacedX),
+      displacedY,
+      displacedX,
       nextKeypointIndex.rawValue + KeypointIndex.allCases.count
     ].scalarized()
 
     // If we are getting the offset from an exact point in the heatmap, we should add this
     // offset parting from that exact point in the heatmap, so we just nearest neighbour
     // interpolate it back, then re strech using output stride, and then add said offset.
-    let nextY = Float(getUnstridedIndex(y: displacedY) * config.outputStride) + yOffset
-    let nextX = Float(getUnstridedIndex(x: displacedX) * config.outputStride) + xOffset
+    let nextY = Float(displacedY * config.outputStride) + yOffset
+    let nextX = Float(displacedX * config.outputStride) + xOffset
 
     return Keypoint(
       y: nextY,
       x: nextX,
       index: nextKeypointIndex,
       score: heatmap[
-        getUnstridedIndex(y: displacedY), getUnstridedIndex(x: displacedX), nextKeypointIndex.rawValue
+        displacedY, displacedX, nextKeypointIndex.rawValue
       ].scalarized()
     )
   }
