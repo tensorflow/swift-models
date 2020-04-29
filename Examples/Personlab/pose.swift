@@ -53,7 +53,7 @@ enum KeypointIndex: Int, CaseIterable {
 
 enum Direction { case fwd, bwd }
 
-func getNextKeypoint(_ keypointId: KeypointIndex) -> [(KeypointIndex, Direction)] {
+func getNextKeypointIndexAndDirection(_ keypointId: KeypointIndex) -> [(KeypointIndex, Direction)] {
   switch keypointId {
   case .nose: return [(.leftEye, .fwd), (.rightEye, .fwd), (.leftShoulder, .fwd), (.rightShoulder, .fwd)]
   case .leftEye: return [(.nose, .bwd), (.leftEar, .fwd)]
@@ -75,9 +75,8 @@ func getNextKeypoint(_ keypointId: KeypointIndex) -> [(KeypointIndex, Direction)
   }
 }
 
-// NOTE: Excelent type inference swift holy shit!
 /// Maps a pair of keypoint indexes to the appropiate index to be used
-/// to get the displacement in the displacement tensors.
+/// in the displacement forward and backward tensors.
 let keypointPairToDisplacementIndexMap: [Set<KeypointIndex>: Int] = [
   Set([.nose, .leftEye]): 0,
   Set([.leftEye, .leftEar]): 1,

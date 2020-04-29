@@ -24,7 +24,8 @@ extension CheckpointReader {
 }
 
 
-/// Usef for copying model from Python Tensorflow 1.5 version
+/// Used as an ad hoc "hash" for tensor checking when copying the backbone from
+/// our Python Tensorflow 1.5 version
 func hash(_ tensor: Tensor<Float>) {
     print("[\(tensor.flattened().sum()), \(tensor[0, 0, 0]) \(tensor[0, -1, 1]), \(tensor[0, 1, 0]), \(tensor[0, -1, -1])]")
 }

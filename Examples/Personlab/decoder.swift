@@ -14,10 +14,10 @@ struct PoseDecoder {
     self.displacementsBwd = results.displacementsBwd[0]
   }
 
-  // TODO: Call as a function? Seem kinda obscene, lol.
+  // TODO: Use callAsFunction? Seem kinda obscene, lol, not sure.
+  //       Only reason I used a struct for the decoder was easy sharing of the
+  //       tensors between internal functions, maybe think of a better way.
   func decode() -> [Pose] {
-    // Batch size hardcoded to 1 at the moment, we could fix this with a for loop easily though,
-    // as I don't think it makes sense to vectorize this along batch size.
     var poses = [Pose]()
     var keypointPriorityQueue = getKeypointPriorityQueue()
     while keypointPriorityQueue.count > 0 {
@@ -43,7 +43,7 @@ struct PoseDecoder {
   }
 
   func recursivellyAddNextKeypoint(after previousKeypoint: Keypoint, into pose: inout Pose) {
-    for (nextKeypointIndex, direction) in getNextKeypoint(previousKeypoint.index) {
+    for (nextKeypointIndex, direction) in getNextKeypointIndexAndDirection(previousKeypoint.index) {
       if pose.getKeypoint(with: nextKeypointIndex) == nil {
         let nextKeypoint = followDisplacement(
           from: previousKeypoint,
@@ -129,8 +129,10 @@ struct PoseDecoder {
     return Int(clamped)
   }
 
+  // TODO: Legacy, I am not getting any benefit from using a Heap instead of just sorting normally,
+  //       fix this.
   func getKeypointPriorityQueue() -> Heap<Keypoint> {
-    var keypointPriorityQueue = Heap<Keypoint>(priorityFunction: {$0.score > $1.score})  // TODO: Check order
+    var keypointPriorityQueue = Heap<Keypoint>(priorityFunction: {$0.score > $1.score})
     for heatmapY in 0..<heatmap.shape[0] {
       for heatmapX in 0..<heatmap.shape[1] {
         for keypointIndex in 0..<heatmap.shape[2] {
