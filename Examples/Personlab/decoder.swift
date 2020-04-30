@@ -1,17 +1,18 @@
 import TensorFlow
+import Foundation
 
 struct PoseDecoder {
-  let heatmap: Tensor<Float>
-  let offsets: Tensor<Float>
-  let displacementsFwd: Tensor<Float>
-  let displacementsBwd: Tensor<Float>
+  let heatmap: CPUTensor<Float>
+  let offsets: CPUTensor<Float>
+  let displacementsFwd: CPUTensor<Float>
+  let displacementsBwd: CPUTensor<Float>
 
   init(for results: PersonlabHeadsResults, with config: Config) {
     // Remove [0] indexes when we add batchsize > 1 support, which should be really easy
-    self.heatmap = results.heatmap[0]
-    self.offsets = results.offsets[0]
-    self.displacementsFwd = results.displacementsFwd[0]
-    self.displacementsBwd = results.displacementsBwd[0]
+    self.heatmap = CPUTensor<Float>(results.heatmap[0])
+    self.offsets = CPUTensor<Float>(results.offsets[0])
+    self.displacementsFwd = CPUTensor<Float>(results.displacementsFwd[0])
+    self.displacementsBwd = CPUTensor<Float>(results.displacementsBwd[0])
   }
 
   // TODO: Use callAsFunction? Seem kinda obscene, lol, not sure.
@@ -56,23 +57,25 @@ struct PoseDecoder {
     }
   }
 
-  func followDisplacement(from previousKeypoint: Keypoint, to nextKeypointIndex: KeypointIndex, using displacements: Tensor<Float>) -> Keypoint {
+  func followDisplacement(from previousKeypoint: Keypoint, to nextKeypointIndex: KeypointIndex, using displacements: CPUTensor<Float>) -> Keypoint {
 
     let displacementKeypointIndexY = keypointPairToDisplacementIndexMap[Set([previousKeypoint.index, nextKeypointIndex])]!
     let displacementKeypointIndexX = displacementKeypointIndexY + displacements.shape[2] / 2
     let displacementYIndex = getUnstridedIndex(y: previousKeypoint.y)
     let displacementXIndex = getUnstridedIndex(x: previousKeypoint.x)
 
+    // let startt = CFAbsoluteTimeGetCurrent()
     let displacementY = displacements[
       displacementYIndex,
       displacementXIndex,
       displacementKeypointIndexY
-    ].scalarized()
+    ]
     let displacementX = displacements[
       displacementYIndex,
       displacementXIndex,
       displacementKeypointIndexX
-    ].scalarized()
+    ]
+    // print(CFAbsoluteTimeGetCurrent() - startt)
 
     let displacedY = getUnstridedIndex(y: previousKeypoint.y + displacementY)
     let displacedX = getUnstridedIndex(x: previousKeypoint.x + displacementX)
@@ -81,12 +84,12 @@ struct PoseDecoder {
       displacedY,
       displacedX,
       nextKeypointIndex.rawValue
-    ].scalarized()
+    ]
     let xOffset = offsets[
       displacedY,
       displacedX,
       nextKeypointIndex.rawValue + KeypointIndex.allCases.count
-    ].scalarized()
+    ]
 
     // If we are getting the offset from an exact point in the heatmap, we should add this
     // offset parting from that exact point in the heatmap, so we just nearest neighbour
@@ -100,7 +103,7 @@ struct PoseDecoder {
       index: nextKeypointIndex,
       score: heatmap[
         displacedY, displacedX, nextKeypointIndex.rawValue
-      ].scalarized()
+      ]
     )
   }
 
@@ -111,7 +114,7 @@ struct PoseDecoder {
       let xStart = max(heatmapX - config.keypointLocalMaximumRadius, 0)
       let xEnd = min(heatmapX + config.keypointLocalMaximumRadius, heatmap.shape[1] - 1)
       for windowX in xStart...xEnd {
-        if heatmap[windowY, windowX, keypointIndex].scalarized() > score {
+        if heatmap[windowY, windowX, keypointIndex] > score {
           return false
         }
       }
@@ -138,7 +141,7 @@ struct PoseDecoder {
     for heatmapY in 0..<heatmap.shape[0] {
       for heatmapX in 0..<heatmap.shape[1] {
         for keypointIndex in 0..<heatmap.shape[2] {
-          let score = heatmap[heatmapY, heatmapX, keypointIndex].scalarized()
+          let score = heatmap[heatmapY, heatmapX, keypointIndex]
 
           if score < config.keypointScoreThreshold { continue }
           if scoreIsMaximumInLocalWindow(

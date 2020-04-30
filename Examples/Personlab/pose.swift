@@ -1,14 +1,34 @@
 import TensorFlow
 
+struct CPUTensor<T: TensorFlowScalar> {
+  private var flattenedTensor: [T]
+  var shape: TensorShape
+
+  init(_ tensor: Tensor<T>) {
+    self.flattenedTensor = tensor.scalars
+    self.shape = tensor.shape
+  }
+
+  subscript(indexes: Int...) -> T {
+    var oneDimensionalIndex = 0
+    for i in 1..<shape.count {
+      oneDimensionalIndex += indexes[i - 1] * shape[i...].reduce(1, *)
+    }
+    // Last dimension doesn't have multipliers.
+    oneDimensionalIndex += indexes.last!
+    return flattenedTensor[oneDimensionalIndex]
+  }
+}
+
 struct Keypoint {
   let y: Float
   let x: Float
   let index: KeypointIndex
   let score: Float
 
-  init(heatmapY: Int, heatmapX: Int, index: Int, score: Float, offsets: Tensor<Float>) {
-    self.y = Float(heatmapY) * Float(config.outputStride) + offsets[heatmapY, heatmapX, index].scalarized()
-    self.x = Float(heatmapX) * Float(config.outputStride) + offsets[heatmapY, heatmapX, index + KeypointIndex.allCases.count].scalarized()
+  init(heatmapY: Int, heatmapX: Int, index: Int, score: Float, offsets: CPUTensor<Float>) {
+    self.y = Float(heatmapY) * Float(config.outputStride) + offsets[heatmapY, heatmapX, index]
+    self.x = Float(heatmapX) * Float(config.outputStride) + offsets[heatmapY, heatmapX, index + KeypointIndex.allCases.count]
     self.index = KeypointIndex(rawValue: index)!
     self.score = score
   }

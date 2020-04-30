@@ -6,6 +6,7 @@ struct Config {
     // Image
     let inputImageSize = (height:241, width: 289)
     let testImagePath = "/Users/joaqo/swift-models/pose.jpg"
+    // let testImagePath = "/Users/joaqo/Desktop/pose2.jpg"
 
     // Decoder
     let outputStride = 16
