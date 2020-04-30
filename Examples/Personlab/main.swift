@@ -14,17 +14,16 @@ var image = Image(jpeg: URL(fileURLWithPath: config.testImagePath))
 image = image.resized(to: config.inputImageSize)  // Adds a batch dimension automagically
 var normalizedImagesTensor = image.tensor * (2.0 / 255.0) - 1.0
 
-// Define and run convnet
+// Define network and load pre trained weights
 let backbone = MobileNetLikeBackbone(checkpoint: ckpt)
 let personlabHeads = PersonlabHeads(checkpoint: ckpt)
 
-let start = CFAbsoluteTimeGetCurrent()
+// Run pose estimator
 var convnetResults = personlabHeads(backbone(normalizedImagesTensor))
-print("Backbone", CFAbsoluteTimeGetCurrent() - start)
-let startt = CFAbsoluteTimeGetCurrent()
 let poseDecoder = PoseDecoder(for: convnetResults, with: config)
 var poses = poseDecoder.decode()
-print("Decoder", CFAbsoluteTimeGetCurrent() - startt)
+
+// Results
 for pose in poses {
   print(pose)
 }
