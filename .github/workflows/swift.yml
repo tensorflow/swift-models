@@ -11,12 +11,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          repository: ${{ github.repository }}
-          path: swift-models
-
-      - uses: actions/checkout@v2
-        with:
           repository: apple/swift-format
+          path: swift-format
 
       - uses: actions/cache@v1.1.2
         with:
@@ -31,12 +27,16 @@ jobs:
           echo "::add-path::${PWD}/.build/release"
           cd ..
 
+      - uses: actions/checkout@v2
+        with:
+          repository: ${{ github.repository }}
+          path: swift-models
+          
       - uses: compnerd/lint-action@s4tf
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           auto_fix: true
           appleswiftformat: true
-          appleswiftformat_dir: swift-models
 
   # build:
   #
