@@ -23,19 +23,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-swift-format-
 
-    - name: build swift-format
-      run: |
-        cd swift-format
-        swift build -c release
-        echo "::add-path::${PWD}/.build/release"
-        cd ..
+      - name: build swift-format
+        run: |
+          cd swift-format
+          swift build -c release
+          echo "::add-path::${PWD}/.build/release"
+          cd ..
 
-    - name: lint
-      uses: compnerd/lint-action@s4tf
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        auto_fix: true
-        appleswiftformat: true
+      - name: lint
+        uses: compnerd/lint-action@s4tf
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          auto_fix: true
+          appleswiftformat: true
 
   # build:
   #
