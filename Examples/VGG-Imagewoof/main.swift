@@ -54,7 +54,8 @@ for epoch in 1...90 {
         testBatchCount += 1
 
         let correctPredictions = logits.argmax(squeezingAxis: 1) .== labels
-        correctGuessCount = correctGuessCount
+        correctGuessCount =
+            correctGuessCount
             + Int(
                 Tensor<Int32>(correctPredictions).sum().scalarized())
         totalGuessCount = totalGuessCount + batch.first.shape[0]

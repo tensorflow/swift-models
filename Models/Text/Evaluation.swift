@@ -24,19 +24,19 @@
 /// - Source: [https://en.wikipedia.org/wiki/Matthews_correlation_coefficient](
 ///             https://en.wikipedia.org/wiki/Matthews_correlation_coefficient).
 public func matthewsCorrelationCoefficient(predictions: [Bool], groundTruth: [Bool]) -> Float {
-  var tp = 0 // True positives.
-  var tn = 0 // True negatives.
-  var fp = 0 // False positives.
-  var fn = 0 // False negatives.
-  for (prediction, truth) in zip(predictions, groundTruth) {
-    switch (prediction, truth) {
-    case (false, false): tn += 1
-    case (false, true): fn += 1
-    case (true, false): fp += 1
-    case (true, true): tp += 1
+    var tp = 0  // True positives.
+    var tn = 0  // True negatives.
+    var fp = 0  // False positives.
+    var fn = 0  // False negatives.
+    for (prediction, truth) in zip(predictions, groundTruth) {
+        switch (prediction, truth) {
+        case (false, false): tn += 1
+        case (false, true): fn += 1
+        case (true, false): fp += 1
+        case (true, true): tp += 1
+        }
     }
-  }
-  let nominator = Float(tp * tn - fp * fn)
-  let denominator = Float((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)).squareRoot()
-  return denominator != 0 ? nominator / denominator : 0
+    let nominator = Float(tp * tn - fp * fn)
+    let denominator = Float((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)).squareRoot()
+    return denominator != 0 ? nominator / denominator : 0
 }

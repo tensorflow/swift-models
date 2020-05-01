@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import TensorFlow
+
 #if canImport(PythonKit)
     import PythonKit
 #else
     import Python
 #endif
-import TensorFlow
 
 let iterationCount = 10000
 let learningPhase = iterationCount * 5 / 100
@@ -50,28 +51,35 @@ class Solver {
     var alpha: Float = 0.5
     let gamma: Float = 0.2
 
-    let playerStateCount = 32 // 21 + 10 + 1 offset
-    let dealerVisibleStateCount = 11 // 10 + 1 offset
-    let aceStateCount = 2 // useable / not bool
-    let playerActionCount = 2 // hit / stay
+    let playerStateCount = 32  // 21 + 10 + 1 offset
+    let dealerVisibleStateCount = 11  // 10 + 1 offset
+    let aceStateCount = 2  // useable / not bool
+    let playerActionCount = 2  // hit / stay
 
     init() {
-        Q = Array(repeating: Array(repeating: Array(repeating: Array(repeating: 0.0,
-                                                                     count: playerActionCount),
-                                                    count: aceStateCount),
-                                   count: dealerVisibleStateCount),
-                  count: playerStateCount)
+        Q = Array(
+            repeating: Array(
+                repeating: Array(
+                    repeating: Array(
+                        repeating: 0.0,
+                        count: playerActionCount),
+                    count: aceStateCount),
+                count: dealerVisibleStateCount),
+            count: playerStateCount)
     }
 
-    func updateQLearningStrategy(prior: BlackjackState,
-                                 action: Int,
-                                 reward: Int,
-                                 post: BlackjackState) {
+    func updateQLearningStrategy(
+        prior: BlackjackState,
+        action: Int,
+        reward: Int,
+        post: BlackjackState
+    ) {
         let oldQ = Q[prior.playerSum][prior.dealerCard][prior.useableAce][action]
         let priorQ = (1 - alpha) * oldQ
 
-        let maxReward = max(Q[post.playerSum][post.dealerCard][post.useableAce][0],
-                            Q[post.playerSum][post.dealerCard][post.useableAce][1])
+        let maxReward = max(
+            Q[post.playerSum][post.dealerCard][post.useableAce][0],
+            Q[post.playerSum][post.dealerCard][post.useableAce][1])
         let postQ = alpha * (Float(reward) + gamma * maxReward)
 
         Q[prior.playerSum][prior.dealerCard][prior.useableAce][action] += priorQ + postQ
@@ -164,18 +172,21 @@ for solver in SolverType.allCases {
 
         while !isDone {
             let priorState = BlackjackState(pythonState: environment._get_obs())
-            let action: Int = learner.strategy(observation: priorState,
-                                               solver: solver,
-                                               iteration: i) ? 1 : 0
+            let action: Int =
+                learner.strategy(
+                    observation: priorState,
+                    solver: solver,
+                    iteration: i) ? 1 : 0
 
             let (pythonPostState, reward, done, _) = environment.step(action).tuple4
 
             if solver == .qlearning {
                 let postState = BlackjackState(pythonState: pythonPostState)
-                learner.updateQLearningStrategy(prior: priorState,
-                                                action: action,
-                                                reward: Int(reward) ?? 0,
-                                                post: postState)
+                learner.updateQLearningStrategy(
+                    prior: priorState,
+                    action: action,
+                    reward: Int(reward) ?? 0,
+                    post: postState)
             }
 
             if done == true {

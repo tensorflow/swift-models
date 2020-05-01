@@ -87,9 +87,10 @@ struct InitialMBConvBlock: Layer {
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let depthwise = swish(batchNormDConv(dConv(input)))
         let seAvgPoolReshaped = seAveragePool(depthwise).reshaped(to: [
-            input.shape[0], 1, 1, self.hiddenDimension
+            input.shape[0], 1, 1, self.hiddenDimension,
         ])
-        let squeezeExcite = depthwise
+        let squeezeExcite =
+            depthwise
             * sigmoid(seExpandConv(swish(seReduceConv(seAvgPoolReshaped))))
         return batchNormConv2(conv2(squeezeExcite))
     }
@@ -159,9 +160,10 @@ struct MBConvBlock: Layer {
             depthwise = swish(batchNormDConv(dConv(zeroPad(piecewise))))
         }
         let seAvgPoolReshaped = seAveragePool(depthwise).reshaped(to: [
-            input.shape[0], 1, 1, self.hiddenDimension
+            input.shape[0], 1, 1, self.hiddenDimension,
         ])
-        let squeezeExcite = depthwise
+        let squeezeExcite =
+            depthwise
             * sigmoid(seExpandConv(swish(seReduceConv(seAvgPoolReshaped))))
         let piecewiseLinear = batchNormConv2(conv2(squeezeExcite))
 

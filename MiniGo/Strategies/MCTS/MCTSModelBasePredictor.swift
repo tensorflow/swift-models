@@ -37,12 +37,12 @@ public class MCTSModelBasedPredictor: MCTSPredictor {
         let inference = model.prediction(for: modelInput)
 
         let policy = inference.policy.flattened()
-        assert(policy.shape == [boardSize*boardSize + 1])
+        assert(policy.shape == [boardSize * boardSize + 1])
 
         // The first boardSize * boardSize elements are placed in `positions`.
         // The final value is for `pass`.
         let distribution = MCTSPrediction.Distribution(
-            positions: policy[0..<boardSize*boardSize].reshaped(to: [boardSize, boardSize]).array,
+            positions: policy[0..<boardSize * boardSize].reshaped(to: [boardSize, boardSize]).array,
             pass: policy[policy.scalarCount - 1].scalarized())
 
         assert(inference.value.shape == [1])
@@ -72,8 +72,9 @@ extension BoardState {
     ///
     /// For reference, see the AlphaGo Zero paper, Section: Method -> Neural network architecture.
     fileprivate func featurePlanes() -> Tensor<Float> {
-        assert(gameConfiguration.maxHistoryCount <= 7,
-               "Only support at most 8 board states in total.")
+        assert(
+            gameConfiguration.maxHistoryCount <= 7,
+            "Only support at most 8 board states in total.")
 
         let boardSize = gameConfiguration.size
 
@@ -92,7 +93,7 @@ extension BoardState {
         for boardInHistory in self.history {
             featurePlanesForOldestBoard = boardInHistory.binaryFeaturePlanes(
                 activePlayerColor: self.nextPlayerColor)
-            featurePlanes[nextIndex...nextIndex+1] = featurePlanesForOldestBoard
+            featurePlanes[nextIndex...nextIndex + 1] = featurePlanesForOldestBoard
             nextIndex += 2
         }
 
@@ -103,7 +104,7 @@ extension BoardState {
         // the latter here.
         assert(nextIndex == (self.history.count + 1) * 2)
         while nextIndex < 16 {
-            featurePlanes[nextIndex...(nextIndex+1)] = featurePlanesForOldestBoard
+            featurePlanes[nextIndex...(nextIndex + 1)] = featurePlanesForOldestBoard
             nextIndex += 2
         }
 

@@ -21,23 +21,23 @@ public final class ThreadSafe<A> {
     var _value: A
     let queue = DispatchQueue(label: "ThreadSafe")
     init(_ value: A) { self._value = value }
-  
+
     var value: A {
         return queue.sync { _value }
     }
-    func atomically(_ transform: (inout A) -> ()) {
+    func atomically(_ transform: (inout A) -> Void) {
         queue.sync { transform(&self._value) }
     }
 }
 
-public extension Array {
-    func _concurrentMap<B>(nthreads:Int?=nil, _ transform: (Element) -> B) -> [B] {
-        let result = ThreadSafe(Array<B?>(repeating: nil, count: count))
+extension Array {
+    public func _concurrentMap<B>(nthreads: Int? = nil, _ transform: (Element) -> B) -> [B] {
+        let result = ThreadSafe([B?](repeating: nil, count: count))
         let nt = nthreads ?? count
-        let cs = (count-1)/nt+1
+        let cs = (count - 1) / nt + 1
         DispatchQueue.concurrentPerform(iterations: nt) { i in
-            let min = i*cs
-            let max = min+cs>count ? count : min+cs
+            let min = i * cs
+            let max = min + cs > count ? count : min + cs
             for idx in (min..<max) {
                 let element = self[idx]
                 let transformed = transform(element)

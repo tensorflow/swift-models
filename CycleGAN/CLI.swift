@@ -21,6 +21,9 @@ struct Options: ParsableArguments {
     @Option(default: 50, help: ArgumentHelp("Number of epochs", valueName: "epochs"))
     var epochs: Int
 
-    @Option(default: 20, help: ArgumentHelp("Number of steps to log a sample image into tensorboard", valueName: "sampleLogPeriod"))
+    @Option(
+        default: 20,
+        help: ArgumentHelp(
+            "Number of steps to log a sample image into tensorboard", valueName: "sampleLogPeriod"))
     var sampleLogPeriod: Int
 }

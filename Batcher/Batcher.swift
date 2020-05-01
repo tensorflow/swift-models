@@ -44,18 +44,18 @@ public struct Batcher<C: Collection> where C.Index == Int {
     public let padSamples: ([C.Element]) -> [C.Element]
     // Hook to customize how the samples are collated
     public let collateSamples: ([C.Element]) -> C.Element
-    
+
     // Length of the batcher (number of batches it contains)
     public var count: Int {
         let nSamples = dataset.count
         return nSamples / batchSize + (nSamples % batchSize == 0 || dropLast ? 0 : 1)
     }
-    
+
     public init(
-        on dataset: C, 
-        batchSize: Int, 
-        numWorkers: Int = 1, 
-        shuffle: Bool = false, 
+        on dataset: C,
+        batchSize: Int,
+        numWorkers: Int = 1,
+        shuffle: Bool = false,
         dropLast: Bool = false,
         sampleIndices: @escaping (inout C, Bool) -> [Int] = defaultSample,
         padSamples: @escaping ([C.Element]) -> [C.Element] = identity,
@@ -70,7 +70,7 @@ public struct Batcher<C: Collection> where C.Index == Int {
         self.padSamples = padSamples
         self.collateSamples = collateSamples
     }
-    
+
     // To iterate through the batches
     public func sequenced() -> BatchIterator<C> {
         return BatchIterator(self)
@@ -78,7 +78,7 @@ public struct Batcher<C: Collection> where C.Index == Int {
 }
 
 // Iterator through a Batcher
-public struct BatchIterator<C: Collection>: IteratorProtocol, Sequence where C.Index == Int{
+public struct BatchIterator<C: Collection>: IteratorProtocol, Sequence where C.Index == Int {
     // Batcher to iterate through
     var b: Batcher<C>
     // Indices that will be used to go through the dataset of b
@@ -87,14 +87,14 @@ public struct BatchIterator<C: Collection>: IteratorProtocol, Sequence where C.I
     let samplesCount: Int
     // Where we are at in the dataset
     var pos: Int = 0
-    
-    init(_ b: Batcher<C>) { 
+
+    init(_ b: Batcher<C>) {
         self.b = b
         indices = b.sampleIndices(&self.b.dataset, b.shuffle)
         samplesCount = b.dataset.count
         pos = 0
     }
-    
+
     // Returns the next batch
     public mutating func next() -> C.Element? {
         guard pos < samplesCount else { return nil }
@@ -102,7 +102,8 @@ public struct BatchIterator<C: Collection>: IteratorProtocol, Sequence where C.I
         if (end - pos) < b.batchSize && b.dropLast { return nil }
         // The idea is to have samples processed and collated on the CPU before moving to the host.
         // This part has not been optimized yet
-        let samples = Array(pos..<end)._concurrentMap(nthreads: Swift.min(b.numWorkers, end-pos)) {
+        let samples = Array(pos..<end)._concurrentMap(nthreads: Swift.min(b.numWorkers, end - pos))
+        {
             b.dataset[indices[$0]]
         }
         pos = end
@@ -111,12 +112,12 @@ public struct BatchIterator<C: Collection>: IteratorProtocol, Sequence where C.I
 }
 
 // Add default collateSamples when the dataset elements conform to _Collatable
-public extension Batcher where C.Element: _Collatable {
-    init(
-        on dataset: C, 
-        batchSize: Int, 
-        numWorkers: Int = 1, 
-        shuffle: Bool = false, 
+extension Batcher where C.Element: _Collatable {
+    public init(
+        on dataset: C,
+        batchSize: Int,
+        numWorkers: Int = 1,
+        shuffle: Bool = false,
         dropLast: Bool = false,
         sampleIndices: @escaping (inout C, Bool) -> [Int] = defaultSample,
         padSamples: @escaping ([C.Element]) -> [C.Element] = identity,

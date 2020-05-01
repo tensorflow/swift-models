@@ -300,7 +300,7 @@ public struct CycleLinear10xDecayedParameter<
         let step = step - startStep
         let ratio = Scalar((step % (2 * cycleStepCount) - cycleStepCount)) / Scalar(cycleStepCount)
         let cyclePosition = 1 - abs(ratio)
-        let decay = (1 / Scalar(10) + cyclePosition) * 3 // 10x difference in each cycle (0.3 - 3).
+        let decay = (1 / Scalar(10) + cyclePosition) * 3  // 10x difference in each cycle (0.3 - 3).
         return parameter * ((1 - lowerBound) * decay + lowerBound)
     }
 }

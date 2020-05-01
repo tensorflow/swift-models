@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Datasets
 import Foundation
 import ModelSupport
 import TensorFlow
-import Datasets
 
 let options = Options.parseOrExit()
 
@@ -41,13 +41,15 @@ if let datasetPath = options.datasetPath {
         guard !directoryExists || directoryEmpty else { return }
 
         let location = URL(
-            string: "https://people.eecs.berkeley.edu/~taesung_park/CycleGAN/datasets/horse2zebra.zip")!
+            string:
+                "https://people.eecs.berkeley.edu/~taesung_park/CycleGAN/datasets/horse2zebra.zip")!
         let _ = DatasetUtilities.downloadResource(
             filename: "horse2zebra", fileExtension: "zip",
             remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
     }
 
-    datasetFolder = DatasetUtilities.defaultDirectory.appendingPathComponent("CycleGAN", isDirectory: true)
+    datasetFolder = DatasetUtilities.defaultDirectory.appendingPathComponent(
+        "CycleGAN", isDirectory: true)
     downloadZebraDataSetIfNotPresent(to: datasetFolder)
     trainFolderA = datasetFolder.appendingPathComponent("horse2zebra/trainA")
     trainFolderB = datasetFolder.appendingPathComponent("horse2zebra/trainB")
@@ -58,8 +60,10 @@ if let datasetPath = options.datasetPath {
 let trainDatasetA = try Images(folderURL: trainFolderA)
 let trainDatasetB = try Images(folderURL: trainFolderB)
 
-var generatorG = ResNetGenerator(inputChannels: 3, outputChannels: 3, blocks: 9, ngf: 64, normalization: InstanceNorm2D.self)
-var generatorF = ResNetGenerator(inputChannels: 3, outputChannels: 3, blocks: 9, ngf: 64, normalization: InstanceNorm2D.self)
+var generatorG = ResNetGenerator(
+    inputChannels: 3, outputChannels: 3, blocks: 9, ngf: 64, normalization: InstanceNorm2D.self)
+var generatorF = ResNetGenerator(
+    inputChannels: 3, outputChannels: 3, blocks: 9, ngf: 64, normalization: InstanceNorm2D.self)
 var discriminatorX = NetD(inChannels: 3, lastConvFilters: 64)
 var discriminatorY = NetD(inChannels: 3, lastConvFilters: 64)
 
@@ -77,30 +81,33 @@ let _ones = Tensorf.one
 var step = 0
 
 var sampleImage = trainDatasetA.batcher.dataset[0].expandingShape(at: 0)
-let sampleImageURL = URL(string: FileManager.default.currentDirectoryPath)!.appendingPathComponent("sample.jpg")
+let sampleImageURL = URL(string: FileManager.default.currentDirectoryPath)!.appendingPathComponent(
+    "sample.jpg")
 
 // MARK: Train
 
-for epoch in 0 ..< epochs {
+for epoch in 0..<epochs {
     print("Epoch \(epoch) started at: \(Date())")
     Context.local.learningPhase = .training
 
     let zippedAB = zip(trainDatasetA.batcher.sequenced(), trainDatasetB.batcher.sequenced())
-    
+
     for batch in zippedAB {
         Context.local.learningPhase = .training
-        
+
         let inputX = batch.0
         let inputY = batch.1
 
         // we do it outside of GPU scope so that dataset shuffling happens on CPU side
         let concatanatedImages = inputX.concatenated(with: inputY)
 
-        let scaledImages = resize(images: concatanatedImages,
-                                  size: (286, 286),
-                                  method: .nearest)
-        var croppedImages = scaledImages.slice(lowerBounds: Tensor<Int32>([0, Int32(random() % 30), Int32(random() % 30), 0]),
-                                               sizes: [2, 256, 256, 3])
+        let scaledImages = resize(
+            images: concatanatedImages,
+            size: (286, 286),
+            method: .nearest)
+        var croppedImages = scaledImages.slice(
+            lowerBounds: Tensor<Int32>([0, Int32(random() % 30), Int32(random() % 30), 0]),
+            sizes: [2, 256, 256, 3])
         if Bool.random() {
             croppedImages = croppedImages.reversed(inAxes: 2)
         }
@@ -120,8 +127,8 @@ for epoch in 0 ..< epochs {
             let fakeX = generatorF(realY)
             let cycledY = g(fakeX)
 
-            let cycleConsistencyLoss = (abs(realX - cycledX).mean() +
-                abs(realY - cycledY).mean()) * lambdaL1
+            let cycleConsistencyLoss =
+                (abs(realX - cycledX).mean() + abs(realY - cycledY).mean()) * lambdaL1
 
             let discFakeY = discriminatorY(fakeY)
             let generatorLoss = sigmoidCrossEntropy(logits: discFakeY, labels: onesd)
@@ -142,8 +149,9 @@ for epoch in 0 ..< epochs {
             let fakeY = generatorG(realX)
             let cycledX = g(fakeY)
 
-            let cycleConsistencyLoss = (abs(realY - cycledY).mean()
-                + abs(realX - cycledX).mean()) * lambdaL1
+            let cycleConsistencyLoss =
+                (abs(realY - cycledY).mean()
+                    + abs(realX - cycledX).mean()) * lambdaL1
 
             let discFakeX = discriminatorX(fakeX)
             let generatorLoss = sigmoidCrossEntropy(logits: discFakeX, labels: onesd)
@@ -161,8 +169,10 @@ for epoch in 0 ..< epochs {
             let discFakeX = d(_fakeX)
             let discRealX = d(realX)
 
-            let totalLoss = 0.5 * (sigmoidCrossEntropy(logits: discFakeX, labels: zerosd)
-                + sigmoidCrossEntropy(logits: discRealX, labels: onesd))
+            let totalLoss =
+                0.5
+                * (sigmoidCrossEntropy(logits: discFakeX, labels: zerosd)
+                    + sigmoidCrossEntropy(logits: discRealX, labels: onesd))
 
             return totalLoss
         }
@@ -171,8 +181,10 @@ for epoch in 0 ..< epochs {
             let discFakeY = d(_fakeY)
             let discRealY = d(realY)
 
-            let totalLoss = 0.5 * (sigmoidCrossEntropy(logits: discFakeY, labels: zerosd)
-                + sigmoidCrossEntropy(logits: discRealY, labels: onesd))
+            let totalLoss =
+                0.5
+                * (sigmoidCrossEntropy(logits: discFakeY, labels: zerosd)
+                    + sigmoidCrossEntropy(logits: discRealY, labels: onesd))
 
             return totalLoss
         }
@@ -186,7 +198,7 @@ for epoch in 0 ..< epochs {
 
         if step % options.sampleLogPeriod == 0 {
             Context.local.learningPhase = .inference
-            
+
             let fakeSample = generatorG(sampleImage) * 0.5 + 0.5
 
             let fakeSampleImage = Image(tensor: fakeSample[0] * 255)
@@ -209,10 +221,14 @@ let testDatasetB = try Images(folderURL: testFolderB).batcher.sequenced()
 
 let zippedTest = zip(testDatasetA, testDatasetB)
 
-let aResultsFolder = try createDirectoryIfNeeded(path: FileManager.default
-                                                                  .currentDirectoryPath + "/testA_results")
-let bResultsFolder = try createDirectoryIfNeeded(path: FileManager.default
-                                                                  .currentDirectoryPath + "/testB_results")
+let aResultsFolder = try createDirectoryIfNeeded(
+    path:
+        FileManager.default
+        .currentDirectoryPath + "/testA_results")
+let bResultsFolder = try createDirectoryIfNeeded(
+    path:
+        FileManager.default
+        .currentDirectoryPath + "/testB_results")
 
 var testStep = 0
 for testBatch in zippedTest {
@@ -228,10 +244,12 @@ for testBatch in zippedTest {
     let imageX = Image(tensor: resultX[0] * 255)
     let imageY = Image(tensor: resultY[0] * 255)
 
-    imageX.save(to: aResultsFolder.appendingPathComponent("\(String(testStep)).jpg", isDirectory: false),
-                format: .rgb)
-    imageY.save(to: bResultsFolder.appendingPathComponent("\(String(testStep)).jpg", isDirectory: false),
-                format: .rgb)
+    imageX.save(
+        to: aResultsFolder.appendingPathComponent("\(String(testStep)).jpg", isDirectory: false),
+        format: .rgb)
+    imageY.save(
+        to: bResultsFolder.appendingPathComponent("\(String(testStep)).jpg", isDirectory: false),
+        format: .rgb)
 
     testStep += 1
 }

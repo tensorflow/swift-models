@@ -24,14 +24,14 @@ public struct SyntheticImageDataset: ImageClassificationDataset {
     public init(batchSize: Int) {
         self.init(batchSize: batchSize, batches: 110, labels: 10, dimensions: [224, 224, 3])
     }
-    
+
     // TODO: Use a random seed to create deterministic examples here.
     public init(batchSize: Int, batches: Int, labels: Int, dimensions: [Int]) {
         precondition(labels > 0)
         precondition(dimensions.count == 3)
         let totalExamples = batchSize * batches
-        
-        let syntheticDataset = (0..<totalExamples).map {_ -> TensorPair<Float, Int32> in
+
+        let syntheticDataset = (0..<totalExamples).map { _ -> TensorPair<Float, Int32> in
             let syntheticImage = Tensor<Float>(
                 randomNormal: TensorShape(dimensions), mean: Tensor<Float>(0.5),
                 standardDeviation: Tensor<Float>(0.1))
@@ -41,7 +41,7 @@ public struct SyntheticImageDataset: ImageClassificationDataset {
 
         training = Batcher<SourceDataSet>(
             on: syntheticDataset, batchSize: batchSize, numWorkers: 1, shuffle: true)
-        
+
         test = Batcher<SourceDataSet>(on: syntheticDataset, batchSize: batchSize, numWorkers: 1)
     }
 }

@@ -70,16 +70,18 @@ public struct Embedding<Scalar: TensorFlowFloatingPoint>: Module, Regularizable 
     /// - Precondition: The input tensor rank must be either 2 or 3.
     @differentiable(wrt: self)
     public func callAsFunction(_ input: Tensor<Int32>) -> Tensor<Scalar> {
-        precondition(input.rank > 1 && input.rank < 4, "The input tensor rank must be either 2 or 3.")
+        precondition(
+            input.rank > 1 && input.rank < 4, "The input tensor rank must be either 2 or 3.")
         let flatInput = input.flattened()
         // TODO: [TPU] `useOneHotEmbeddings` is currently being ignored due to an AutoDiff bug.
         // let output = useOneHotEmbeddings ?
         //   matmul(Tensor<Scalar>(oneHotAtIndices: flatInput, depth: vocabularySize), embeddings) :
         //   embeddings.gathering(atIndices: flatInput)
         let output = embeddings.gathering(atIndices: flatInput)
-        let outputShape = input.rank == 2 ?
-            TensorShape(input.shape.dimensions + [embeddingSize]) :
-            TensorShape(input.shape.dimensions[0..<2] + [input.shape[2] * embeddingSize])
+        let outputShape =
+            input.rank == 2
+            ? TensorShape(input.shape.dimensions + [embeddingSize])
+            : TensorShape(input.shape.dimensions[0..<2] + [input.shape[2] * embeddingSize])
         return output.reshaped(to: outputShape)
     }
 }

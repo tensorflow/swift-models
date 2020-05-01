@@ -17,10 +17,10 @@
 // Jeremy Howard
 // https://github.com/fastai/Imagenette
 
+import Batcher
 import Foundation
 import ModelSupport
 import TensorFlow
-import Batcher
 
 public struct Imagewoof: ImageClassificationDataset {
     public typealias SourceDataSet = LazyDataSet
@@ -56,7 +56,7 @@ public struct Imagewoof: ImageClassificationDataset {
                 on: try loadImagewoofTrainingDirectory(
                     inputSize: inputSize, outputSize: outputSize,
                     localStorageDirectory: localStorageDirectory),
-                batchSize: batchSize, 
+                batchSize: batchSize,
                 shuffle: true)
             test = Batcher<SourceDataSet>(
                 on: try loadImagewoofValidationDirectory(
@@ -84,7 +84,9 @@ func downloadImagewoofIfNotPresent(to directory: URL, size: Imagewoof.ImageSize)
         remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
 }
 
-func exploreImagewoofDirectory(named name: String, in directory: URL, inputSize: Imagewoof.ImageSize) throws -> [URL] {
+func exploreImagewoofDirectory(
+    named name: String, in directory: URL, inputSize: Imagewoof.ImageSize
+) throws -> [URL] {
     downloadImagewoofIfNotPresent(to: directory, size: inputSize)
     let path = directory.appendingPathComponent("imagewoof\(inputSize.suffix)/\(name)")
     let dirContents = try FileManager.default.contentsOfDirectory(
@@ -102,7 +104,7 @@ func exploreImagewoofDirectory(named name: String, in directory: URL, inputSize:
 
 func loadImagewoofDirectory(
     named name: String, in directory: URL, inputSize: Imagewoof.ImageSize, outputSize: Int,
-    labelDict: [String:Int]? = nil
+    labelDict: [String: Int]? = nil
 ) throws -> LazyDataSet {
     let urls = try exploreImagewoofDirectory(named: name, in: directory, inputSize: inputSize)
     let unwrappedLabelDict = labelDict ?? createLabelDict(urls: urls)
@@ -110,24 +112,28 @@ func loadImagewoofDirectory(
         TensorPair<Float, Int32>(
             first: Image(jpeg: url).resized(to: (outputSize, outputSize)).tensor / 255.0,
             second: Tensor<Int32>(Int32(unwrappedLabelDict[parentLabel(url: url)]!))
-        )    
+        )
     }
 }
 
 func loadImagewoofTrainingDirectory(
-    inputSize: Imagewoof.ImageSize, outputSize: Int, localStorageDirectory: URL, labelDict: [String:Int]? = nil
+    inputSize: Imagewoof.ImageSize, outputSize: Int, localStorageDirectory: URL,
+    labelDict: [String: Int]? = nil
 ) throws
     -> LazyDataSet
 {
     return try loadImagewoofDirectory(
-        named: "train", in: localStorageDirectory, inputSize: inputSize, outputSize: outputSize, labelDict: labelDict)
+        named: "train", in: localStorageDirectory, inputSize: inputSize, outputSize: outputSize,
+        labelDict: labelDict)
 }
 
 func loadImagewoofValidationDirectory(
-    inputSize: Imagewoof.ImageSize, outputSize: Int, localStorageDirectory: URL, labelDict: [String:Int]? = nil
+    inputSize: Imagewoof.ImageSize, outputSize: Int, localStorageDirectory: URL,
+    labelDict: [String: Int]? = nil
 ) throws
     -> LazyDataSet
 {
     return try loadImagewoofDirectory(
-        named: "val", in: localStorageDirectory, inputSize: inputSize, outputSize: outputSize, labelDict: labelDict)
+        named: "val", in: localStorageDirectory, inputSize: inputSize, outputSize: outputSize,
+        labelDict: labelDict)
 }

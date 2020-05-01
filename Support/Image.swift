@@ -61,7 +61,7 @@ public struct Image {
                 // TODO: Proper error propagation for this.
                 fatalError("File does not exist at: \(url.path).")
             }
-            
+
             var width: Int32 = 0
             var height: Int32 = 0
             var bpp: Int32 = 0
@@ -104,7 +104,7 @@ public struct Image {
                 outputImageData = Tensor<UInt8>(data.clipped(min: 0, max: 255))
             }
         }
-        
+
         let height = Int32(outputImageData.shape[0])
         let width = Int32(outputImageData.shape[1])
         outputImageData.scalars.withUnsafeBufferPointer { bytes in

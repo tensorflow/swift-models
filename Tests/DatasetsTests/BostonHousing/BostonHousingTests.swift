@@ -14,6 +14,6 @@ final class BostonHousingTests: XCTestCase {
 
 extension BostonHousingTests {
     static var allTests = [
-        ("testCreateBostonHousing", testCreateBostonHousing),
+        ("testCreateBostonHousing", testCreateBostonHousing)
     ]
 }

@@ -22,7 +22,7 @@ final class MCTSModelBasedPredictorTests: XCTestCase {
     struct MockModel: InferenceModel {
         func prediction(for: Tensor<Float>) -> GoModelOutput {
             return GoModelOutput(
-                policy: Tensor<Float>(rangeFrom: 0, to: 19 * 19 + 1, stride:1),
+                policy: Tensor<Float>(rangeFrom: 0, to: 19 * 19 + 1, stride: 1),
                 value: Tensor<Float>(shape: [1], scalars: [0.9]),
                 logits: Tensor<Float>(randomUniform: [1, 19 * 19 + 1]))  // Not used.
         }
@@ -39,7 +39,8 @@ final class MCTSModelBasedPredictorTests: XCTestCase {
         XCTAssertEqual(Float(19 * 19), prediction.distribution.pass)
         for x in 0..<19 {
             for y in 0..<19 {
-                XCTAssertEqual(ShapedArraySlice(Float(x * 19 + y)), prediction.distribution.positions[x][y])
+                XCTAssertEqual(
+                    ShapedArraySlice(Float(x * 19 + y)), prediction.distribution.positions[x][y])
             }
         }
     }
@@ -47,6 +48,6 @@ final class MCTSModelBasedPredictorTests: XCTestCase {
 
 extension MCTSModelBasedPredictorTests {
     static var allTests = [
-        ("testPrediction", testPrediction),
+        ("testPrediction", testPrediction)
     ]
 }

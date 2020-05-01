@@ -22,28 +22,28 @@ final class CheckpointIndexReaderTests: XCTestCase {
         .appendingPathComponent("IndexFiles")
 
     func testLoadingMiniGo() {
-         do {
-             let indexReader = try CheckpointIndexReader(
-                 file: resourceBaseLocation.appendingPathComponent("minigo.index"))
-             let header = try indexReader.readHeader()
-             let keysAndValues = try indexReader.readAllKeysAndValues()
+        do {
+            let indexReader = try CheckpointIndexReader(
+                file: resourceBaseLocation.appendingPathComponent("minigo.index"))
+            let header = try indexReader.readHeader()
+            let keysAndValues = try indexReader.readAllKeysAndValues()
 
-             XCTAssertEqual(header.numShards, 1)
-             XCTAssertEqual(keysAndValues.count, 333)
+            XCTAssertEqual(header.numShards, 1)
+            XCTAssertEqual(keysAndValues.count, 333)
 
-             let firstTensorMetadata = keysAndValues["batch_normalization/beta"]
-             XCTAssertNotNil(
-                 firstTensorMetadata, "batch_normalization/beta tensor missing from index file.")
-             let secondTensorMetadata = keysAndValues["batch_normalization/beta/Momentum"]
-             XCTAssertNotNil(
-                 secondTensorMetadata,
-                 "batch_normalization/beta/Momentum tensor missing from index file.")
-             let lastTensorMetadata = keysAndValues["global_step"]
-             XCTAssertNotNil(lastTensorMetadata, "global_step tensor missing from index file.")
+            let firstTensorMetadata = keysAndValues["batch_normalization/beta"]
+            XCTAssertNotNil(
+                firstTensorMetadata, "batch_normalization/beta tensor missing from index file.")
+            let secondTensorMetadata = keysAndValues["batch_normalization/beta/Momentum"]
+            XCTAssertNotNil(
+                secondTensorMetadata,
+                "batch_normalization/beta/Momentum tensor missing from index file.")
+            let lastTensorMetadata = keysAndValues["global_step"]
+            XCTAssertNotNil(lastTensorMetadata, "global_step tensor missing from index file.")
 
-         } catch {
-             XCTFail("MiniGo checkpoint index reading failed with error: \(error).")
-         }
+        } catch {
+            XCTFail("MiniGo checkpoint index reading failed with error: \(error).")
+        }
     }
 
     func testLoadingTransformer() {

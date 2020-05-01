@@ -51,18 +51,18 @@ func fetchMNISTDataset(
         if normalizing {
             flattenedImages = flattenedImages * 2.0 - 1.0
         }
-        return (0..<rowCount).map { 
+        return (0..<rowCount).map {
             TensorPair(first: flattenedImages[$0], second: Tensor<Int32>(labels[$0]))
         }
     } else {
-        var images = 
-            Tensor(shape: [rowCount, 1, imageHeight, imageWidth], scalars: images) 
+        var images =
+            Tensor(shape: [rowCount, 1, imageHeight, imageWidth], scalars: images)
             .transposed(permutation: [0, 2, 3, 1]) / 255.0
         if normalizing {
             images = images * 2.0 - 1.0
         }
-        return (0..<rowCount).map { 
-            TensorPair(first: images[$0], second: Tensor<Int32>(labels[$0])) 
+        return (0..<rowCount).map {
+            TensorPair(first: images[$0], second: Tensor<Int32>(labels[$0]))
         }
     }
 }

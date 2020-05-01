@@ -32,7 +32,7 @@ extension BenchmarkResults {
     private func printAsPlainText() {
         let configuration = self.configuration
         let settings = configuration.settings
-        
+
         Swift.print("Benchmark: \(configuration.name)")
         Swift.print("\tVariety: \(configuration.variety.rawValue)")
         Swift.print("\tAfter \(settings.iterations) iteration(s) of \(self.timings.count) batches:")
@@ -126,7 +126,7 @@ extension Array where Element == Double {
     var standardDeviation: Element {
         return Double.sqrt(variance)
     }
-    
+
     func printStatistics(indentation: Int) {
         let tabs = String(repeating: "\t", count: indentation)
         Swift.print("\(tabs)Average: \(String(format: "%.2f", self.average))")

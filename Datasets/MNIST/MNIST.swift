@@ -17,9 +17,9 @@
 // Yann LeCun, Corinna Cortes, and Christopher J.C. Burges
 // http://yann.lecun.com/exdb/mnist/
 
+import Batcher
 import Foundation
 import TensorFlow
-import Batcher
 
 public struct MNIST: ImageClassificationDataset {
     public typealias SourceDataSet = [TensorPair<Float, Int32>]
@@ -44,9 +44,9 @@ public struct MNIST: ImageClassificationDataset {
                 flattening: flattening,
                 normalizing: normalizing),
             batchSize: batchSize,
-            numWorkers: 1, //No need to use parallelism since everything is loaded in memory
+            numWorkers: 1,  //No need to use parallelism since everything is loaded in memory
             shuffle: true)
-        
+
         test = Batcher<SourceDataSet>(
             on: fetchMNISTDataset(
                 localStorageDirectory: localStorageDirectory,
@@ -56,6 +56,6 @@ public struct MNIST: ImageClassificationDataset {
                 flattening: flattening,
                 normalizing: normalizing),
             batchSize: batchSize,
-            numWorkers: 1) //No need to use parallelism since everything is loaded in memory
+            numWorkers: 1)  //No need to use parallelism since everything is loaded in memory
     }
 }

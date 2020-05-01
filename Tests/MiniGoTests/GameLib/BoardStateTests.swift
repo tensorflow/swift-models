@@ -238,7 +238,7 @@ extension BoardStateTests {
         XCTAssertEqual(try buildBoardWithKo(), try buildBoardWithKo())
     }
 
-    private func buildBoardWithKo() throws -> BoardState{
+    private func buildBoardWithKo() throws -> BoardState {
         let configuration = GameConfiguration(size: 4, komi: 0.1)
         var boardState = BoardState(gameConfiguration: configuration)
         // Before placing new stone.

@@ -1,6 +1,6 @@
+import Datasets
 import TensorFlow
 import XCTest
-import Datasets
 
 final class MNISTTests: XCTestCase {
     func testCreateMNIST() {
@@ -14,7 +14,7 @@ final class MNISTTests: XCTestCase {
         }
         XCTAssertEqual(totalCount, 60000)
     }
-	
+
     func testCreateFashionMNIST() {
         let dataset = FashionMNIST(batchSize: 1)
 
@@ -47,4 +47,3 @@ extension MNISTTests {
         ("testCreateKuzushijiMNIST", testCreateKuzushijiMNIST),
     ]
 }
-

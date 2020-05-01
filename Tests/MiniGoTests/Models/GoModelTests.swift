@@ -32,6 +32,6 @@ final class GoModelTests: XCTestCase {
 
 extension GoModelTests {
     static var allTests = [
-        ("testInferenceShape", testInferenceShape),
+        ("testInferenceShape", testInferenceShape)
     ]
 }

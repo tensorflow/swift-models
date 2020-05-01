@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Foundation
-import TensorFlow
 import Datasets
+import Foundation
 import ModelSupport
+import TensorFlow
 
 // TODO: [AD] Avoid using token type embeddings for RoBERTa once optionals are supported in AD.
 // TODO: [AD] Similarly for the embedding projection used in ALBERT.
@@ -176,41 +176,43 @@ public struct BERT: Module, Regularizable {
             case .bert, .roberta: return []
             case let .albert(embeddingSize, _):
                 // TODO: [AD] Change to optional once supported.
-                return [Dense<Scalar>(
-                    inputSize: embeddingSize,
-                    outputSize: hiddenSize,
-                    weightInitializer: truncatedNormalInitializer(
-                        standardDeviation: Tensor(initializerStandardDeviation)))]
+                return [
+                    Dense<Scalar>(
+                        inputSize: embeddingSize,
+                        outputSize: hiddenSize,
+                        weightInitializer: truncatedNormalInitializer(
+                            standardDeviation: Tensor(initializerStandardDeviation)))
+                ]
             }
         }()
 
         switch variant {
         case .bert, .roberta:
-        self.encoderLayers = (0..<hiddenLayerCount).map { _ in
-            TransformerEncoderLayer(
-                hiddenSize: hiddenSize,
-                attentionHeadCount: attentionHeadCount,
-                attentionQueryActivation: { $0 },
-                attentionKeyActivation: { $0 },
-                attentionValueActivation: { $0 },
-                intermediateSize: intermediateSize,
-                intermediateActivation: intermediateActivation,
-                hiddenDropoutProbability: hiddenDropoutProbability,
-                attentionDropoutProbability: attentionDropoutProbability)
-        }
+            self.encoderLayers = (0..<hiddenLayerCount).map { _ in
+                TransformerEncoderLayer(
+                    hiddenSize: hiddenSize,
+                    attentionHeadCount: attentionHeadCount,
+                    attentionQueryActivation: { $0 },
+                    attentionKeyActivation: { $0 },
+                    attentionValueActivation: { $0 },
+                    intermediateSize: intermediateSize,
+                    intermediateActivation: intermediateActivation,
+                    hiddenDropoutProbability: hiddenDropoutProbability,
+                    attentionDropoutProbability: attentionDropoutProbability)
+            }
         case let .albert(_, hiddenGroupCount):
-        self.encoderLayers = (0..<hiddenGroupCount).map { _ in
-            TransformerEncoderLayer(
-                hiddenSize: hiddenSize,
-                attentionHeadCount: attentionHeadCount,
-                attentionQueryActivation: { $0 },
-                attentionKeyActivation: { $0 },
-                attentionValueActivation: { $0 },
-                intermediateSize: intermediateSize,
-                intermediateActivation: intermediateActivation,
-                hiddenDropoutProbability: hiddenDropoutProbability,
-                attentionDropoutProbability: attentionDropoutProbability)
-        }
+            self.encoderLayers = (0..<hiddenGroupCount).map { _ in
+                TransformerEncoderLayer(
+                    hiddenSize: hiddenSize,
+                    attentionHeadCount: attentionHeadCount,
+                    attentionQueryActivation: { $0 },
+                    attentionKeyActivation: { $0 },
+                    attentionValueActivation: { $0 },
+                    intermediateSize: intermediateSize,
+                    intermediateActivation: intermediateActivation,
+                    hiddenDropoutProbability: hiddenDropoutProbability,
+                    attentionDropoutProbability: attentionDropoutProbability)
+            }
         }
     }
 
@@ -337,19 +339,21 @@ public struct BERT: Module, Regularizable {
         switch variant {
         case .bert, .roberta:
             for layerIndex in 0..<(withoutDerivative(at: encoderLayers) { $0.count }) {
-                transformerInput = encoderLayers[layerIndex](TransformerInput(
-                sequence: transformerInput,
-                attentionMask: attentionMask,
-                batchSize: batchSize))
-        }
+                transformerInput = encoderLayers[layerIndex](
+                    TransformerInput(
+                        sequence: transformerInput,
+                        attentionMask: attentionMask,
+                        batchSize: batchSize))
+            }
         case let .albert(_, hiddenGroupCount):
             let groupsPerLayer = Float(hiddenGroupCount) / Float(hiddenLayerCount)
             for layerIndex in 0..<hiddenLayerCount {
                 let groupIndex = Int(Float(layerIndex) * groupsPerLayer)
-                transformerInput = encoderLayers[groupIndex](TransformerInput(
-                    sequence: transformerInput,
-                    attentionMask: attentionMask,
-                    batchSize: batchSize))
+                transformerInput = encoderLayers[groupIndex](
+                    TransformerInput(
+                        sequence: transformerInput,
+                        attentionMask: attentionMask,
+                        batchSize: batchSize))
             }
         }
 
@@ -439,7 +443,8 @@ public struct RoBERTaTokenizer: Tokenizer {
     private let bytePairEncoder: BytePairEncoder
 
     private let tokenizationRegex: NSRegularExpression = try! NSRegularExpression(
-        pattern: "'s|'t|'re|'ve|'m|'ll|'d| ?\\p{L}+| ?\\p{N}+| ?[^\\s\\p{L}\\p{N}]+|\\s+(?!\\S)|\\s+")
+        pattern:
+            "'s|'t|'re|'ve|'m|'ll|'d| ?\\p{L}+| ?\\p{N}+| ?[^\\s\\p{L}\\p{N}]+|\\s+(?!\\S)|\\s+")
 
     /// Creates a full text tokenizer.
     ///
@@ -510,7 +515,8 @@ extension BERT {
         /// The URL where this pre-trained model can be downloaded from.
         public var url: URL {
             let bertPrefix = "https://storage.googleapis.com/bert_models/2018_"
-            let robertaPrefix = "https://storage.googleapis.com/s4tf-hosted-binaries/checkpoints/Text/RoBERTa"
+            let robertaPrefix =
+                "https://storage.googleapis.com/s4tf-hosted-binaries/checkpoints/Text/RoBERTa"
             let albertPrefix = "https://storage.googleapis.com/tfhub-modules/google/albert"
             switch self {
             case .bertBase(false, false):
@@ -646,22 +652,26 @@ extension BERT {
             let vocabulary: Vocabulary = {
                 switch self {
                 case .bertBase, .bertLarge:
-                    let vocabularyURL = directory
+                    let vocabularyURL =
+                        directory
                         .appendingPathComponent(subDirectory)
                         .appendingPathComponent("vocab.txt")
                     return try! Vocabulary(fromFile: vocabularyURL)
                 case .robertaBase, .robertaLarge:
-                    let vocabularyURL = directory
+                    let vocabularyURL =
+                        directory
                         .appendingPathComponent(subDirectory)
                         .appendingPathComponent("vocab.json")
-                    let dictionaryURL = directory
+                    let dictionaryURL =
+                        directory
                         .appendingPathComponent(subDirectory)
                         .appendingPathComponent("dict.txt")
                     return try! Vocabulary(
                         fromRoBERTaJSONFile: vocabularyURL,
                         dictionaryFile: dictionaryURL)
                 case .albertBase, .albertLarge, .albertXLarge, .albertXXLarge:
-                    let vocabularyURL = directory
+                    let vocabularyURL =
+                        directory
                         .appendingPathComponent(subDirectory)
                         .appendingPathComponent("assets")
                         .appendingPathComponent("30k-clean.model")
@@ -672,31 +682,34 @@ extension BERT {
             // Create the tokenizer and load any necessary files.
             let tokenizer: Tokenizer = try {
                 switch self {
-                case .bertBase, .bertLarge, .albertBase, .albertLarge, .albertXLarge, .albertXXLarge:
+                case .bertBase, .bertLarge, .albertBase, .albertLarge, .albertXLarge,
+                    .albertXXLarge:
                     return BERTTokenizer(
                         vocabulary: vocabulary,
                         caseSensitive: caseSensitive,
                         unknownToken: "[UNK]",
                         maxTokenLength: nil)
                 case .robertaBase, .robertaLarge:
-                    let mergePairsFileURL = directory
+                    let mergePairsFileURL =
+                        directory
                         .appendingPathComponent(subDirectory)
                         .appendingPathComponent("merges.txt")
                     let mergePairs = [BytePairEncoder.Pair: Int](
-                        uniqueKeysWithValues:
-                            (try String(contentsOfFile: mergePairsFileURL.path, encoding: .utf8))
-                                .components(separatedBy: .newlines)
-                                .dropFirst()
-                                .enumerated()
-                                .compactMap { (index, line) -> (BytePairEncoder.Pair, Int)? in
-                                    let lineParts = line.split(separator: " ")
-                                    if lineParts.count < 2 { return nil }
-                                    return (
-                                        BytePairEncoder.Pair(
-                                            String(lineParts[0]),
-                                            String(lineParts[1])),
-                                        index)
-                                })
+                        uniqueKeysWithValues: (try String(
+                            contentsOfFile: mergePairsFileURL.path, encoding: .utf8))
+                            .components(separatedBy: .newlines)
+                            .dropFirst()
+                            .enumerated()
+                            .compactMap { (index, line) -> (BytePairEncoder.Pair, Int)? in
+                                let lineParts = line.split(separator: " ")
+                                if lineParts.count < 2 { return nil }
+                                return (
+                                    BytePairEncoder.Pair(
+                                        String(lineParts[0]),
+                                        String(lineParts[1])),
+                                    index
+                                )
+                            })
                     return RoBERTaTokenizer(
                         bytePairEncoder: BytePairEncoder(
                             vocabulary: vocabulary,
@@ -727,18 +740,24 @@ extension BERT {
             // Load the pre-trained model checkpoint.
             switch self {
             case .bertBase, .bertLarge:
-                model.load(fromTensorFlowCheckpoint: directory
-                    .appendingPathComponent(subDirectory)
-                    .appendingPathComponent("bert_model.ckpt"))
+                model.load(
+                    fromTensorFlowCheckpoint:
+                        directory
+                        .appendingPathComponent(subDirectory)
+                        .appendingPathComponent("bert_model.ckpt"))
             case .robertaBase, .robertaLarge:
-                model.load(fromTensorFlowCheckpoint: directory
-                    .appendingPathComponent(subDirectory)
-                    .appendingPathComponent("roberta_\(subDirectory).ckpt"))
+                model.load(
+                    fromTensorFlowCheckpoint:
+                        directory
+                        .appendingPathComponent(subDirectory)
+                        .appendingPathComponent("roberta_\(subDirectory).ckpt"))
             case .albertBase, .albertLarge, .albertXLarge, .albertXXLarge:
-                model.load(fromTensorFlowCheckpoint: directory
-                    .appendingPathComponent(subDirectory)
-                    .appendingPathComponent("variables")
-                    .appendingPathComponent("variables"))
+                model.load(
+                    fromTensorFlowCheckpoint:
+                        directory
+                        .appendingPathComponent(subDirectory)
+                        .appendingPathComponent("variables")
+                        .appendingPathComponent("variables"))
             }
             return model
         }
@@ -748,9 +767,10 @@ extension BERT {
             switch self {
             case .bertBase, .bertLarge, .robertaBase, .robertaLarge:
                 // Download and extract the pretrained model, if necessary.
-                DatasetUtilities.downloadResource(filename: "\(subDirectory)", fileExtension: "zip",
-                                                  remoteRoot: url.deletingLastPathComponent(),
-                                                  localStorageDirectory: directory)
+                DatasetUtilities.downloadResource(
+                    filename: "\(subDirectory)", fileExtension: "zip",
+                    remoteRoot: url.deletingLastPathComponent(),
+                    localStorageDirectory: directory)
             case .albertBase, .albertLarge, .albertXLarge, .albertXXLarge:
                 // Download the model, if necessary.
                 let compressedFileURL = directory.appendingPathComponent("\(subDirectory).tar.gz")
@@ -763,7 +783,7 @@ extension BERT {
                 }
             }
         }
-  }
+    }
 
     /// Loads a BERT model from the provided TensorFlow checkpoint file into this BERT model.
     ///
@@ -793,27 +813,40 @@ extension BERT {
             for layerIndex in encoderLayers.indices {
                 let prefix = "bert/encoder/layer_\(layerIndex)"
                 encoderLayers[layerIndex].multiHeadAttention.queryWeight =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/self/query/kernel"))
+                    Tensor(
+                        checkpointReader.loadTensor(named: "\(prefix)/attention/self/query/kernel"))
                 encoderLayers[layerIndex].multiHeadAttention.queryBias =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/self/query/bias"))
+                    Tensor(
+                        checkpointReader.loadTensor(named: "\(prefix)/attention/self/query/bias"))
                 encoderLayers[layerIndex].multiHeadAttention.keyWeight =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/self/key/kernel"))
+                    Tensor(
+                        checkpointReader.loadTensor(named: "\(prefix)/attention/self/key/kernel"))
                 encoderLayers[layerIndex].multiHeadAttention.keyBias =
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/self/key/bias"))
                 encoderLayers[layerIndex].multiHeadAttention.valueWeight =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/self/value/kernel"))
+                    Tensor(
+                        checkpointReader.loadTensor(named: "\(prefix)/attention/self/value/kernel"))
                 encoderLayers[layerIndex].multiHeadAttention.valueBias =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/self/value/bias"))
+                    Tensor(
+                        checkpointReader.loadTensor(named: "\(prefix)/attention/self/value/bias"))
                 encoderLayers[layerIndex].attentionWeight =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/output/dense/kernel"))
+                    Tensor(
+                        checkpointReader.loadTensor(
+                            named: "\(prefix)/attention/output/dense/kernel"))
                 encoderLayers[layerIndex].attentionBias =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/output/dense/bias"))
+                    Tensor(
+                        checkpointReader.loadTensor(named: "\(prefix)/attention/output/dense/bias"))
                 encoderLayers[layerIndex].attentionLayerNorm.offset =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/output/LayerNorm/beta"))
+                    Tensor(
+                        checkpointReader.loadTensor(
+                            named: "\(prefix)/attention/output/LayerNorm/beta"))
                 encoderLayers[layerIndex].attentionLayerNorm.scale =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/output/LayerNorm/gamma"))
+                    Tensor(
+                        checkpointReader.loadTensor(
+                            named: "\(prefix)/attention/output/LayerNorm/gamma"))
                 encoderLayers[layerIndex].intermediateWeight =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/intermediate/dense/kernel"))
+                    Tensor(
+                        checkpointReader.loadTensor(named: "\(prefix)/intermediate/dense/kernel"))
                 encoderLayers[layerIndex].intermediateBias =
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/intermediate/dense/bias"))
                 encoderLayers[layerIndex].outputWeight =
@@ -827,43 +860,63 @@ extension BERT {
             }
         case .albert:
             embeddingProjection[0].weight =
-                Tensor(checkpointReader.loadTensor(
-                    named: "bert/encoder/embedding_hidden_mapping_in/kernel"))
+                Tensor(
+                    checkpointReader.loadTensor(
+                        named: "bert/encoder/embedding_hidden_mapping_in/kernel"))
             embeddingProjection[0].bias =
-                Tensor(checkpointReader.loadTensor(
-                    named: "bert/encoder/embedding_hidden_mapping_in/bias"))
+                Tensor(
+                    checkpointReader.loadTensor(
+                        named: "bert/encoder/embedding_hidden_mapping_in/bias"))
             for layerIndex in encoderLayers.indices {
                 let prefix = "bert/encoder/transformer/group_\(layerIndex)/inner_group_0"
                 encoderLayers[layerIndex].multiHeadAttention.queryWeight =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention_1/self/query/kernel"))
+                    Tensor(
+                        checkpointReader.loadTensor(
+                            named: "\(prefix)/attention_1/self/query/kernel"))
                 encoderLayers[layerIndex].multiHeadAttention.queryBias =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention_1/self/query/bias"))
+                    Tensor(
+                        checkpointReader.loadTensor(named: "\(prefix)/attention_1/self/query/bias"))
                 encoderLayers[layerIndex].multiHeadAttention.keyWeight =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention_1/self/key/kernel"))
+                    Tensor(
+                        checkpointReader.loadTensor(named: "\(prefix)/attention_1/self/key/kernel"))
                 encoderLayers[layerIndex].multiHeadAttention.keyBias =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention_1/self/key/bias"))
+                    Tensor(
+                        checkpointReader.loadTensor(named: "\(prefix)/attention_1/self/key/bias"))
                 encoderLayers[layerIndex].multiHeadAttention.valueWeight =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention_1/self/value/kernel"))
+                    Tensor(
+                        checkpointReader.loadTensor(
+                            named: "\(prefix)/attention_1/self/value/kernel"))
                 encoderLayers[layerIndex].multiHeadAttention.valueBias =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention_1/self/value/bias"))
+                    Tensor(
+                        checkpointReader.loadTensor(named: "\(prefix)/attention_1/self/value/bias"))
                 encoderLayers[layerIndex].attentionWeight =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention_1/output/dense/kernel"))
+                    Tensor(
+                        checkpointReader.loadTensor(
+                            named: "\(prefix)/attention_1/output/dense/kernel"))
                 encoderLayers[layerIndex].attentionBias =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention_1/output/dense/bias"))
+                    Tensor(
+                        checkpointReader.loadTensor(
+                            named: "\(prefix)/attention_1/output/dense/bias"))
                 encoderLayers[layerIndex].attentionLayerNorm.offset =
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/LayerNorm/beta"))
                 encoderLayers[layerIndex].attentionLayerNorm.scale =
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/LayerNorm/gamma"))
                 encoderLayers[layerIndex].intermediateWeight =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/ffn_1/intermediate/dense/kernel"))
+                    Tensor(
+                        checkpointReader.loadTensor(
+                            named: "\(prefix)/ffn_1/intermediate/dense/kernel"))
                 encoderLayers[layerIndex].intermediateBias =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/ffn_1/intermediate/dense/bias"))
+                    Tensor(
+                        checkpointReader.loadTensor(
+                            named: "\(prefix)/ffn_1/intermediate/dense/bias"))
                 encoderLayers[layerIndex].outputWeight =
-                    Tensor(checkpointReader.loadTensor(
-                        named: "\(prefix)/ffn_1/intermediate/output/dense/kernel"))
+                    Tensor(
+                        checkpointReader.loadTensor(
+                            named: "\(prefix)/ffn_1/intermediate/output/dense/kernel"))
                 encoderLayers[layerIndex].outputBias =
-                    Tensor(checkpointReader.loadTensor(
-                        named: "\(prefix)/ffn_1/intermediate/output/dense/bias"))
+                    Tensor(
+                        checkpointReader.loadTensor(
+                            named: "\(prefix)/ffn_1/intermediate/output/dense/bias"))
                 encoderLayers[layerIndex].outputLayerNorm.offset =
                     Tensor(checkpointReader.loadTensor(named: "\(prefix)/LayerNorm_1/beta"))
                 encoderLayers[layerIndex].outputLayerNorm.scale =
@@ -876,16 +929,15 @@ extension BERT {
 extension Vocabulary {
     internal init(fromRoBERTaJSONFile fileURL: URL, dictionaryFile dictionaryURL: URL) throws {
         let dictionary = [Int: Int](
-            uniqueKeysWithValues:
-                (try String(contentsOfFile: dictionaryURL.path, encoding: .utf8))
-                    .components(separatedBy: .newlines)
-                    .compactMap { line in
-                        let lineParts = line.split(separator: " ")
-                        if lineParts.count < 1 { return nil }
-                        return Int(lineParts[0])
-                    }
-                    .enumerated()
-                    .map { ($1, $0 + 4) })
+            uniqueKeysWithValues: (try String(contentsOfFile: dictionaryURL.path, encoding: .utf8))
+                .components(separatedBy: .newlines)
+                .compactMap { line in
+                    let lineParts = line.split(separator: " ")
+                    if lineParts.count < 1 { return nil }
+                    return Int(lineParts[0])
+                }
+                .enumerated()
+                .map { ($1, $0 + 4) })
         let json = try String(contentsOfFile: fileURL.path)
         var tokensToIds = try JSONDecoder().decode(
             [String: Int].self,

@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Batcher
 import Datasets
 import Foundation
 import ModelSupport
 import TensorFlow
-import Batcher
 
 let epochCount = 10
 let batchSize = 100

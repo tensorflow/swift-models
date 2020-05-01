@@ -12,18 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import TensorFlow
 import Foundation
+import TensorFlow
 
 #if os(macOS)
-func random() -> UInt32 {
-    arc4random()
-}
+    func random() -> UInt32 {
+        arc4random()
+    }
 #endif
 
 func createDirectoryIfNeeded(path: String) throws -> URL {
-    try FileManager.default.createDirectory(atPath: path,
-                                            withIntermediateDirectories: true,
-                                            attributes: nil)
+    try FileManager.default.createDirectory(
+        atPath: path,
+        withIntermediateDirectories: true,
+        attributes: nil)
     return URL(string: path)!
 }

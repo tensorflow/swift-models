@@ -16,7 +16,7 @@
 public struct Position: Hashable, Equatable {
     public var x: Int
     public var y: Int
-    
+
     public init(x: Int, y: Int) {
         self.x = x
         self.y = y
@@ -27,10 +27,10 @@ public struct Position: Hashable, Equatable {
 extension Position {
     func neighbors(boardSize size: Int) -> [Position] {
         let neighbors = [
-            Position(x: x+1, y: y),
-            Position(x: x-1, y: y),
-            Position(x: x, y: y+1),
-            Position(x: x, y: y-1),
+            Position(x: x + 1, y: y),
+            Position(x: x - 1, y: y),
+            Position(x: x, y: y + 1),
+            Position(x: x, y: y - 1),
         ]
         return neighbors.filter { 0..<size ~= $0.x && 0..<size ~= $0.y }
     }

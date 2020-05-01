@@ -55,8 +55,10 @@ public struct DLRM: Module {
     ///    - lnBot: The size of the hidden layers in the bottom MLP.
     ///    - lnTop: The size of the hidden layers in the top MLP.
     ///    - interaction: The type of interactions between the hidden  features.
-    public init(nDense: Int, mSpa: Int, lnEmb: [Int], lnBot: [Int], lnTop: [Int],
-                interaction: InteractionType = .concatenate) {
+    public init(
+        nDense: Int, mSpa: Int, lnEmb: [Int], lnBot: [Int], lnTop: [Int],
+        interaction: InteractionType = .concatenate
+    ) {
         self.nDense = nDense
         mlpBottom = MLP(dims: [nDense] + lnBot)
         let topInput = lnEmb.count * mSpa + lnBot.last!
@@ -65,8 +67,8 @@ public struct DLRM: Module {
             // Use a random uniform initialization to match the reference implementation.
             let weights = Tensor<Float>(
                 randomUniform: [embeddingSize, mSpa],
-                lowerBound: Tensor(Float(-1.0)/Float(embeddingSize)),
-                upperBound: Tensor(Float(1.0)/Float(embeddingSize)))
+                lowerBound: Tensor(Float(-1.0) / Float(embeddingSize)),
+                upperBound: Tensor(Float(1.0) / Float(embeddingSize)))
             return Embedding(embeddings: weights)
         }
         self.interaction = interaction
@@ -85,8 +87,9 @@ public struct DLRM: Module {
         precondition(denseInput.shape.last! == nDense)
         precondition(sparseInput.count == latentFactors.count)
         let denseEmbVec = mlpBottom(denseInput)
-        let sparseEmbVecs = computeEmbeddings(sparseInputs: sparseInput,
-                                              latentFactors: latentFactors)
+        let sparseEmbVecs = computeEmbeddings(
+            sparseInputs: sparseInput,
+            latentFactors: latentFactors)
         let topInput = computeInteractions(
             denseEmbVec: denseEmbVec, sparseEmbVecs: sparseEmbVecs)
         let prediction = mlpTop(topInput)
@@ -97,7 +100,7 @@ public struct DLRM: Module {
 
     @differentiable(wrt: (denseEmbVec, sparseEmbVecs))
     public func computeInteractions(
-        denseEmbVec:  Tensor<Float>,
+        denseEmbVec: Tensor<Float>,
         sparseEmbVecs: [Tensor<Float>]
     ) -> Tensor<Float> {
         switch self.interaction {
@@ -107,7 +110,8 @@ public struct DLRM: Module {
             let batchSize = denseEmbVec.shape[0]
             let allEmbeddings = Tensor(
                 concatenating: sparseEmbVecs + [denseEmbVec],
-                alongAxis: 1).reshaped(to: [batchSize, -1, denseEmbVec.shape[1]])
+                alongAxis: 1
+            ).reshaped(to: [batchSize, -1, denseEmbVec.shape[1]])
             // Use matmul to efficiently compute all dot products
             let higherOrderInteractions = matmul(
                 allEmbeddings, allEmbeddings.transposed(permutation: 0, 2, 1))
@@ -190,7 +194,7 @@ fileprivate func makeIndices(n: Int32, selfInteraction: Bool) -> Tensor<Int32> {
     var result = [Int32]()
     for i in 0..<n {
         for j in (i + interactionOffset)..<n {
-            result.append(i*n + j)
+            result.append(i * n + j)
         }
     }
     return Tensor(result)

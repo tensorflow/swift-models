@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "TensorFlowModels",
     platforms: [
-        .macOS(.v10_13),
+        .macOS(.v10_13)
     ],
     products: [
         .library(name: "Batcher", targets: ["Batcher"]),
@@ -38,7 +38,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
-        .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.0.1")),
+        .package(
+            url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.0.1")),
     ],
     targets: [
         .target(name: "Batcher", path: "Batcher"),
@@ -80,10 +81,12 @@ let package = Package(
             name: "LeNet-MNIST", dependencies: ["ImageClassificationModels", "Datasets"],
             path: "Examples/LeNet-MNIST"),
         .target(
-            name: "MobileNetV1-Imagenette", dependencies: ["ImageClassificationModels", "Datasets"],
+            name: "MobileNetV1-Imagenette",
+            dependencies: ["ImageClassificationModels", "Datasets"],
             path: "Examples/MobileNetV1-Imagenette"),
         .target(
-            name: "MobileNetV2-Imagenette", dependencies: ["ImageClassificationModels", "Datasets"],
+            name: "MobileNetV2-Imagenette",
+            dependencies: ["ImageClassificationModels", "Datasets"],
             path: "Examples/MobileNetV2-Imagenette"),
         .target(
             name: "MiniGo", dependencies: ["ModelSupport"], path: "MiniGo", exclude: ["main.swift"]),
@@ -119,7 +122,8 @@ let package = Package(
         .target(
             name: "Benchmarks",
             dependencies: [
-                "Datasets", "ModelSupport", "ImageClassificationModels", .product(name: "ArgumentParser", package: "swift-argument-parser")
+                "Datasets", "ModelSupport", "ImageClassificationModels",
+                .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ],
             path: "Benchmarks"),
         .testTarget(name: "CheckpointTests", dependencies: ["ModelSupport"]),
@@ -128,13 +132,19 @@ let package = Package(
         .testTarget(name: "SupportTests", dependencies: ["ModelSupport"]),
         .target(
             name: "CycleGAN",
-            dependencies: ["Batcher", .product(name: "ArgumentParser", package: "swift-argument-parser"), "ModelSupport", "Datasets"],
+            dependencies: [
+                "Batcher", .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                "ModelSupport", "Datasets",
+            ],
             path: "CycleGAN"
         ),
         .target(
             name: "pix2pix",
-            dependencies: ["Batcher", .product(name: "ArgumentParser", package: "swift-argument-parser"), "ModelSupport", "Datasets"],
+            dependencies: [
+                "Batcher", .product(name: "ArgumentParser", package: "swift-argument-parser"),
+                "ModelSupport", "Datasets",
+            ],
             path: "pix2pix"
-        )
+        ),
     ]
 )

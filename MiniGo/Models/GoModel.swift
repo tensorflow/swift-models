@@ -120,7 +120,7 @@ public struct GoModel: Layer {
 
     public init(configuration: ModelConfiguration) {
         self.configuration = configuration
-        
+
         initialConv = ConvBN(
             filterShape: (3, 3, 17, configuration.convWidth),
             padding: .same,
@@ -137,7 +137,7 @@ public struct GoModel: Layer {
             inputSize: configuration.policyConvWidth * configuration.boardSize
                 * configuration.boardSize,
             outputSize: configuration.boardSize * configuration.boardSize + 1,
-            activation: {$0})
+            activation: { $0 })
         valueConv = ConvBN(
             filterShape: (1, 1, configuration.convWidth, configuration.valueConvWidth),
             padding: .same,
@@ -153,7 +153,7 @@ public struct GoModel: Layer {
             outputSize: 1,
             activation: tanh)
     }
-  
+
     @differentiable(wrt: (self, input))
     public func callAsFunction(_ input: Tensor<Float>) -> GoModelOutput {
         let batchSize = input.shape[0]
@@ -164,15 +164,19 @@ public struct GoModel: Layer {
         }
 
         let policyConvOutput = relu(policyConv(output))
-        let logits = policyDense(policyConvOutput.reshaped(to:
-            [batchSize,
-             configuration.policyConvWidth * configuration.boardSize * configuration.boardSize]))
+        let logits = policyDense(
+            policyConvOutput.reshaped(to: [
+                batchSize,
+                configuration.policyConvWidth * configuration.boardSize * configuration.boardSize,
+            ]))
         let policyOutput = softmax(logits)
 
         let valueConvOutput = relu(valueConv(output))
-        let valueHidden = valueDense1(valueConvOutput.reshaped(to:
-            [batchSize,
-             configuration.valueConvWidth * configuration.boardSize * configuration.boardSize]))
+        let valueHidden = valueDense1(
+            valueConvOutput.reshaped(to: [
+                batchSize,
+                configuration.valueConvWidth * configuration.boardSize * configuration.boardSize,
+            ]))
         let valueOutput = valueDense2(valueHidden).reshaped(to: [batchSize])
 
         return GoModelOutput(policy: policyOutput, value: valueOutput, logits: logits)
@@ -181,13 +185,20 @@ public struct GoModel: Layer {
     @usableFromInline
     @derivative(of: callAsFunction, wrt: (self, input))
     func _vjpCall(_ input: Tensor<Float>)
-        -> (value: GoModelOutput, pullback: (GoModelOutput.TangentVector)
-        -> (GoModel.TangentVector, Tensor<Float>)) {
+        -> (
+            value: GoModelOutput,
+            pullback: (GoModelOutput.TangentVector)
+                -> (GoModel.TangentVector, Tensor<Float>)
+        )
+    {
         // TODO(jekbradbury): add a real VJP
         // (we're only interested in inference for now and have control flow in our `call(_:)` method)
-        return (self(input), {
-            seed in (GoModel.TangentVector.zero, Tensor<Float>(0))
-        })
+        return (
+            self(input),
+            {
+                seed in (GoModel.TangentVector.zero, Tensor<Float>(0))
+            }
+        )
     }
 }
 

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import TensorFlow
 import Datasets
+import TensorFlow
 
 let epochCount = 12
 let batchSize = 128
@@ -46,7 +46,7 @@ struct Statistics {
 for epoch in 1...epochCount {
     var trainStats = Statistics()
     var testStats = Statistics()
-    
+
     Context.local.learningPhase = .training
     for batch in dataset.training.sequenced() {
         let (images, labels) = (batch.first, batch.second)

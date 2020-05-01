@@ -73,6 +73,6 @@ final class CheckpointWriterTests: XCTestCase {
 
 extension CheckpointWriterTests {
     static var allTests = [
-        ("testCheckpointRoundtrip", testCheckpointRoundtrip),
+        ("testCheckpointRoundtrip", testCheckpointRoundtrip)
     ]
 }

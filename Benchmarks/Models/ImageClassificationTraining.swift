@@ -36,8 +36,8 @@ where
         self.batchSize = settings.batchSize
         if settings.synthetic {
             let syntheticDataset = SyntheticImageDataset(
-                    batchSize: settings.batchSize, batches: settings.batches,
-                    labels: Model.outputLabels, dimensions: Model.preferredInputDimensions)
+                batchSize: settings.batchSize, batches: settings.batches,
+                labels: Model.outputLabels, dimensions: Model.preferredInputDimensions)
             self.trainingDataset = syntheticDataset.training
         } else {
             let classificationDataset = ClassificationDataset(batchSize: settings.batchSize)
@@ -64,11 +64,11 @@ where
 
         // Run a blank iteration through the entire dataset to force loading of all data from disk.
         for _ in trainingDataset.sequenced() {}
-        
+
         Context.local.learningPhase = .training
-        while (currentBatch < self.batches) {
+        while currentBatch < self.batches {
             for batch in trainingDataset.sequenced() {
-                if (currentBatch >= self.batches) { break }
+                if currentBatch >= self.batches { break }
                 let (images, labels) = (batch.first, batch.second)
                 let deviceImages: Tensor<Float>
                 let deviceLabels: Tensor<Int32>
@@ -80,10 +80,10 @@ where
                     deviceImages = Tensor(copying: images, to: device)
                     deviceLabels = Tensor(copying: labels, to: device)
                 }
-                
+
                 // Discard remainder batches that are not the same size as the others 
                 guard images.shape[0] == self.batchSize else { continue }
-                
+
                 let 𝛁model = TensorFlow.gradient(at: model) { model -> Tensor<Float> in
                     let logits = model(deviceImages)
                     return softmaxCrossEntropy(logits: logits, labels: deviceLabels)

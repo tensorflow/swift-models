@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import TensorFlow
 import ModelSupport
+import TensorFlow
 
 public class MiniGoCheckpointReader: CheckpointReader {
     private var layerCounts: [String: Int] = [:]
@@ -21,7 +21,7 @@ public class MiniGoCheckpointReader: CheckpointReader {
     func readTensor(layerName: String, weightName: String) -> Tensor<Float>? {
         let countSuffix = layerCounts[layerName] == nil ? "" : "_\(layerCounts[layerName]!)"
         let tensorName = layerName + countSuffix + "/" + weightName
-        guard containsTensor(named: tensorName) else { return nil}
+        guard containsTensor(named: tensorName) else { return nil }
         return Tensor<Float>(loadTensor(named: tensorName))
     }
 
@@ -90,7 +90,8 @@ extension BatchNorm: LoadableFromPythonCheckpoint where Scalar == Float {
 
         if let newRunningMean = reader.readTensor(
             layerName: "batch_normalization",
-            weightName: "moving_mean") {
+            weightName: "moving_mean")
+        {
             // Do not check shapes, because Swift running mean/variance are initialized to scalar
             // tensors.
             runningMean.value = newRunningMean
@@ -98,7 +99,8 @@ extension BatchNorm: LoadableFromPythonCheckpoint where Scalar == Float {
 
         if let newRunningVariance = reader.readTensor(
             layerName: "batch_normalization",
-            weightName: "moving_variance") {
+            weightName: "moving_variance")
+        {
             // Do not check shapes, because Swift running mean/variance are initialized to scalar
             // tensors.
             runningVariance.value = newRunningVariance

@@ -15,9 +15,9 @@
 import XCTest
 
 #if !os(macOS)
-public func allTests() -> [XCTestCaseEntry] {
-    return [
-        testCase(VideoClassificationInferenceTests.allTests),
-    ]
-}
+    public func allTests() -> [XCTestCaseEntry] {
+        return [
+            testCase(VideoClassificationInferenceTests.allTests)
+        ]
+    }
 #endif

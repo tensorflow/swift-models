@@ -36,9 +36,12 @@ final class DLRMTests: XCTestCase {
             lnBot: bottomMLPSize,
             lnTop: topMLPSize)
 
-        let result = model(denseInput: Tensor(ones: [batchSize, nDense]),
-                           sparseInput: [Tensor([7, 3, 1, 3, 1, 6, 7, 8, 9, 2]),
-                                          Tensor([17, 13, 19, 0, 1, 6, 7, 8, 9, 10])])
+        let result = model(
+            denseInput: Tensor(ones: [batchSize, nDense]),
+            sparseInput: [
+                Tensor([7, 3, 1, 3, 1, 6, 7, 8, 9, 2]),
+                Tensor([17, 13, 19, 0, 1, 6, 7, 8, 9, 10]),
+            ])
         XCTAssertEqual([batchSize], result.shape)
     }
 
@@ -56,10 +59,13 @@ final class DLRMTests: XCTestCase {
             return squared.sum()
         }
 
-        let trainingData = DLRMInput(dense: Tensor(randomNormal: [batchSize, nDense]),
-                                      sparse: [Tensor([7, 3, 1, 3, 1, 6, 7, 8, 9, 2]),
-                                               Tensor([17, 13, 19, 0, 1, 6, 7, 8, 9, 10])])
-        let labels = Tensor<Float>([1,0,0,1,1,1,0,1,0,1])
+        let trainingData = DLRMInput(
+            dense: Tensor(randomNormal: [batchSize, nDense]),
+            sparse: [
+                Tensor([7, 3, 1, 3, 1, 6, 7, 8, 9, 2]),
+                Tensor([17, 13, 19, 0, 1, 6, 7, 8, 9, 10]),
+            ])
+        let labels = Tensor<Float>([1, 0, 0, 1, 1, 1, 0, 1, 0, 1])
 
         // Sometimes DLRM on such a small dataset can get "stuck" in a bad initialization.
         // To ensure a reliable test, we give ourselves a few reinitializations.
@@ -86,10 +92,12 @@ final class DLRMTests: XCTestCase {
                 }
                 optimizer.update(&model, along: grads)
             }
-            print("Final model outputs (attempt: \(attempt)):\n\(model(trainingData))\nTarget:\n\(labels)")
+            print(
+                "Final model outputs (attempt: \(attempt)):\n\(model(trainingData))\nTarget:\n\(labels)"
+            )
         }
         XCTFail("Could not perfectly fit a single mini-batch after 5 reinitializations.")
-     }
+    }
 }
 
 extension DLRMTests {

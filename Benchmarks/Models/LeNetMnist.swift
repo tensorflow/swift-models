@@ -19,20 +19,22 @@ enum LeNetMNIST: BenchmarkModel {
     static var name: String { "LeNetMNIST" }
 
     static func examplesPerEpoch(for variety: BenchmarkVariety) -> Int {
-        switch(variety) {
+        switch variety {
         case .inferenceThroughput: return 10000
         case .trainingThroughput: return 60000
         }
     }
 
     static func defaults(for variety: BenchmarkVariety) -> BenchmarkSettings {
-        switch(variety) {
+        switch variety {
         case .inferenceThroughput:
-            return BenchmarkSettings(batches: 1000, batchSize: 128, iterations: 10,
-                                     warmupBatches: 1, synthetic: false, backend: .eager)
+            return BenchmarkSettings(
+                batches: 1000, batchSize: 128, iterations: 10,
+                warmupBatches: 1, synthetic: false, backend: .eager)
         case .trainingThroughput:
-            return BenchmarkSettings(batches: 110, batchSize: 128, iterations: 1, warmupBatches: 1,
-                                     synthetic: false, backend: .eager)
+            return BenchmarkSettings(
+                batches: 110, batchSize: 128, iterations: 1, warmupBatches: 1,
+                synthetic: false, backend: .eager)
         }
     }
 

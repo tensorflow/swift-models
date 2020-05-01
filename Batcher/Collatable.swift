@@ -16,8 +16,8 @@ import TensorFlow
 
 // Private protocol used to derive conformance to Collatable using KeyPathIterable
 public protocol __Collatable {
-     static func _collateLeaf<Root>(
-         _ rootOut: inout Root, _ rootKeyPath: PartialKeyPath<Root>, _ rootIn: [Root])
+    static func _collateLeaf<Root>(
+        _ rootOut: inout Root, _ rootKeyPath: PartialKeyPath<Root>, _ rootIn: [Root])
 }
 
 // _Collatable: a protocol representing a type where you can stack elements together to
@@ -32,7 +32,9 @@ extension _Collatable {
         _ rootOut: inout Root, _ rootKeyPath: PartialKeyPath<Root>, _ rootIn: [Root]
     ) {
         guard let keyPath = rootKeyPath as? WritableKeyPath<Root, Self> else {
-            fatalError("Failed conversion from \(rootKeyPath) to 'WritableKeyPath<\(Root.self), \(Self.self)>'")
+            fatalError(
+                "Failed conversion from \(rootKeyPath) to 'WritableKeyPath<\(Root.self), \(Self.self)>'"
+            )
         }
         rootOut[keyPath: keyPath] = Self.init(oldCollating: rootIn.map { $0[keyPath: keyPath] })
     }
@@ -41,7 +43,8 @@ extension _Collatable {
 // For derived conformance
 extension _KeyPathIterableBase {
     public func _collateAll<Root>(
-        _ rootOut: inout Root, _ rootKeyPath: PartialKeyPath<Root>, _ rootIn: [Root]) {
+        _ rootOut: inout Root, _ rootKeyPath: PartialKeyPath<Root>, _ rootIn: [Root]
+    ) {
         for kp in _allKeyPathsTypeErased {
             let joinedKeyPath = rootKeyPath.appending(path: kp)!
             if let valueType = type(of: joinedKeyPath).valueType as? __Collatable.Type {

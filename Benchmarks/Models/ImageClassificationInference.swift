@@ -25,8 +25,10 @@ protocol ImageClassificationModel: Layer where Input == Tensor<Float>, Output ==
 
 // TODO: Ease the tight restriction on Batcher data sources to allow for lazy datasets.
 class ImageClassificationInference<Model, ClassificationDataset>: Benchmark
-where Model: ImageClassificationModel, ClassificationDataset: ImageClassificationDataset,
-      ClassificationDataset.SourceDataSet == [TensorPair<Float, Int32>] {
+where
+    Model: ImageClassificationModel, ClassificationDataset: ImageClassificationDataset,
+    ClassificationDataset.SourceDataSet == [TensorPair<Float, Int32>]
+{
     let testDataset: Batcher<[TensorPair<Float, Int32>]>
     var model: Model
     let batches: Int
@@ -42,8 +44,8 @@ where Model: ImageClassificationModel, ClassificationDataset: ImageClassificatio
         self.model = Model()
         if settings.synthetic {
             let syntheticDataset = SyntheticImageDataset(
-                    batchSize: settings.batchSize, batches: settings.batches,
-                    labels: Model.outputLabels, dimensions: Model.preferredInputDimensions)
+                batchSize: settings.batchSize, batches: settings.batches,
+                labels: Model.outputLabels, dimensions: Model.preferredInputDimensions)
             self.testDataset = syntheticDataset.test
         } else {
             let classificationDataset = ClassificationDataset(batchSize: settings.batchSize)
@@ -62,7 +64,7 @@ where Model: ImageClassificationModel, ClassificationDataset: ImageClassificatio
         var batchTimings: [Double] = []
         var currentBatch = 0
         for batch in testDataset.sequenced() {
-            if (currentBatch >= self.batches) { break }
+            if currentBatch >= self.batches { break }
             let images = batch.first
             let deviceImages: Tensor<Float>
             switch backend {
@@ -72,7 +74,7 @@ where Model: ImageClassificationModel, ClassificationDataset: ImageClassificatio
                 deviceImages = Tensor(copying: images, to: device)
             }
 
-            let batchTime = time{
+            let batchTime = time {
                 let _ = model(deviceImages)
                 LazyTensorBarrier()
             }

@@ -45,7 +45,8 @@ enum HumanInputError: Error {
 }
 
 /// Gets the next move from user via stdio.
-fileprivate func promptAndReadMove(validatingWith validator: (Position) throws -> ()) -> Position? {
+fileprivate func promptAndReadMove(validatingWith validator: (Position) throws -> Void) -> Position?
+{
     while true {
         do {
             print("Your input (x: -1, y: -1) means `pass`:")

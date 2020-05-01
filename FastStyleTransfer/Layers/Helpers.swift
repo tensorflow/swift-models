@@ -28,12 +28,13 @@ public struct ReflectionPad2D<Scalar: TensorFlowFloatingPoint>: ParameterlessLay
     @differentiable
     public func callAsFunction(_ input: Tensor<Scalar>) -> Tensor<Scalar> {
         // Padding applied to height and width dimensions only.
-        return input.padded(forSizes: [
-            (0, 0),
-            padding.0,
-            padding.1,
-            (0, 0)
-        ], mode: .reflect)
+        return input.padded(
+            forSizes: [
+                (0, 0),
+                padding.0,
+                padding.1,
+                (0, 0),
+            ], mode: .reflect)
     }
 }
 

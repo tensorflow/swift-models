@@ -37,7 +37,10 @@ final class CheckpointReaderTests: XCTestCase {
 
     func testRemoteCheckpoint() {
         let mobilenetCheckpoint =
-            URL(string: "http://download.tensorflow.org/models/mobilenet_v1_2018_08_02/mobilenet_v1_0.25_128.tgz")!
+            URL(
+                string:
+                    "http://download.tensorflow.org/models/mobilenet_v1_2018_08_02/mobilenet_v1_0.25_128.tgz"
+            )!
 
         do {
             let reader = try CheckpointReader(

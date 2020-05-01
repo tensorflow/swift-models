@@ -14,7 +14,11 @@
 
 import TensorFlow
 
-public struct ResNetGenerator<NormalizationType: FeatureChannelInitializable>: Layer where NormalizationType.TangentVector.VectorSpaceScalar == Float, NormalizationType.Input == Tensorf, NormalizationType.Output == Tensorf {
+public struct ResNetGenerator<NormalizationType: FeatureChannelInitializable>: Layer
+where
+    NormalizationType.TangentVector.VectorSpaceScalar == Float, NormalizationType.Input == Tensorf,
+    NormalizationType.Output == Tensorf
+{
     var conv1: Conv2D<Float>
     var norm1: NormalizationType
 
@@ -34,74 +38,85 @@ public struct ResNetGenerator<NormalizationType: FeatureChannelInitializable>: L
 
     var lastConv: Conv2D<Float>
 
-    public init(inputChannels: Int,
-                outputChannels: Int,
-                blocks: Int,
-                ngf: Int,
-                normalization: NormalizationType.Type,
-                useDropout: Bool = false) {
+    public init(
+        inputChannels: Int,
+        outputChannels: Int,
+        blocks: Int,
+        ngf: Int,
+        normalization: NormalizationType.Type,
+        useDropout: Bool = false
+    ) {
         norm1 = NormalizationType(featureCount: ngf)
         let useBias = norm1 is InstanceNorm2D<Float>
 
-        let filterInit: (TensorShape) -> Tensorf = { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) }
+        let filterInit: (TensorShape) -> Tensorf = {
+            Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02))
+        }
         let biasInit: (TensorShape) -> Tensorf = useBias ? filterInit : zeros()
 
-        conv1 = Conv2D(filterShape: (7, 7, inputChannels, ngf),
-                       strides: (1, 1),
-                       filterInitializer: filterInit,
-                       biasInitializer: biasInit)
+        conv1 = Conv2D(
+            filterShape: (7, 7, inputChannels, ngf),
+            strides: (1, 1),
+            filterInitializer: filterInit,
+            biasInitializer: biasInit)
 
         var mult = 1
 
-        conv2 = Conv2D(filterShape: (3, 3, ngf * mult, ngf * mult * 2),
-                       strides: (2, 2),
-                       padding: .same,
-                       filterInitializer: filterInit,
-                       biasInitializer: biasInit)
+        conv2 = Conv2D(
+            filterShape: (3, 3, ngf * mult, ngf * mult * 2),
+            strides: (2, 2),
+            padding: .same,
+            filterInitializer: filterInit,
+            biasInitializer: biasInit)
         norm2 = NormalizationType(featureCount: ngf * mult * 2)
 
         mult = 2
 
-        conv3 = Conv2D(filterShape: (3, 3, ngf * mult, ngf * mult * 2),
-                       strides: (2, 2),
-                       padding: .same,
-                       filterInitializer: filterInit,
-                       biasInitializer: biasInit)
+        conv3 = Conv2D(
+            filterShape: (3, 3, ngf * mult, ngf * mult * 2),
+            strides: (2, 2),
+            padding: .same,
+            filterInitializer: filterInit,
+            biasInitializer: biasInit)
         norm3 = NormalizationType(featureCount: ngf * mult * 2)
 
         mult = 4
 
-        resblocks = (0 ..< blocks).map { _ in
-            ResNetBlock(channels: ngf * mult,
-                        paddingMode: .reflect,
-                        normalization: normalization,
-                        useDropOut: useDropout,
-                        filterInit: filterInit,
-                        biasInit: biasInit)
+        resblocks = (0..<blocks).map { _ in
+            ResNetBlock(
+                channels: ngf * mult,
+                paddingMode: .reflect,
+                normalization: normalization,
+                useDropOut: useDropout,
+                filterInit: filterInit,
+                biasInit: biasInit)
         }
 
         mult = 4
 
-        upConv1 = TransposedConv2D(filterShape: (3, 3, ngf * mult / 2, ngf * mult),
-                                   strides: (2, 2),
-                                   padding: .same,
-                                   filterInitializer: filterInit,
-                                   biasInitializer: biasInit)
+        upConv1 = TransposedConv2D(
+            filterShape: (3, 3, ngf * mult / 2, ngf * mult),
+            strides: (2, 2),
+            padding: .same,
+            filterInitializer: filterInit,
+            biasInitializer: biasInit)
         upNorm1 = NormalizationType(featureCount: ngf * mult / 2)
 
         mult = 2
 
-        upConv2 = TransposedConv2D(filterShape: (3, 3, ngf * mult / 2, ngf * mult),
-                                   strides: (2, 2),
-                                   padding: .same,
-                                   filterInitializer: filterInit,
-                                   biasInitializer: biasInit)
+        upConv2 = TransposedConv2D(
+            filterShape: (3, 3, ngf * mult / 2, ngf * mult),
+            strides: (2, 2),
+            padding: .same,
+            filterInitializer: filterInit,
+            biasInitializer: biasInit)
         upNorm2 = NormalizationType(featureCount: ngf * mult / 2)
 
-        lastConv = Conv2D(filterShape: (7, 7, ngf, outputChannels),
-                          padding: .same,
-                          filterInitializer: filterInit,
-                          biasInitializer: biasInit)
+        lastConv = Conv2D(
+            filterShape: (7, 7, ngf, outputChannels),
+            padding: .same,
+            filterInitializer: filterInit,
+            biasInitializer: biasInit)
     }
 
     @differentiable

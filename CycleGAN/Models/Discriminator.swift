@@ -15,43 +15,73 @@
 import TensorFlow
 
 public struct NetD: Layer {
-    var module: Sequential<Sequential<Conv2D<Float>, Sequential<Function<Tensorf, Tensorf>, Sequential<Conv2D<Float>, Sequential<BatchNorm<Float>, Sequential<Function<Tensorf, Tensorf>, Sequential<Conv2D<Float>, Sequential<BatchNorm<Float>, Function<Tensorf, Tensorf>>>>>>>>, Sequential<ConvLayer, Sequential<BatchNorm<Float>, Sequential<Function<Tensorf, Tensorf>, ConvLayer>>>>
+    var module:
+        Sequential<
+            Sequential<
+                Conv2D<Float>,
+                Sequential<
+                    Function<Tensorf, Tensorf>,
+                    Sequential<
+                        Conv2D<Float>,
+                        Sequential<
+                            BatchNorm<Float>,
+                            Sequential<
+                                Function<Tensorf, Tensorf>,
+                                Sequential<
+                                    Conv2D<Float>,
+                                    Sequential<BatchNorm<Float>, Function<Tensorf, Tensorf>>
+                                >
+                            >
+                        >
+                    >
+                >
+            >,
+            Sequential<
+                ConvLayer,
+                Sequential<BatchNorm<Float>, Sequential<Function<Tensorf, Tensorf>, ConvLayer>>
+            >
+        >
 
     public init(inChannels: Int, lastConvFilters: Int) {
         let kw = 4
 
         let module = Sequential {
-            Conv2D<Float>(filterShape: (kw, kw, inChannels, lastConvFilters),
-                          strides: (2, 2),
-                          padding: .same,
-                          filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
+            Conv2D<Float>(
+                filterShape: (kw, kw, inChannels, lastConvFilters),
+                strides: (2, 2),
+                padding: .same,
+                filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
             Function<Tensorf, Tensorf> { leakyRelu($0) }
 
-            Conv2D<Float>(filterShape: (kw, kw, lastConvFilters, 2 * lastConvFilters),
-                          strides: (2, 2),
-                          padding: .same,
-                          filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
+            Conv2D<Float>(
+                filterShape: (kw, kw, lastConvFilters, 2 * lastConvFilters),
+                strides: (2, 2),
+                padding: .same,
+                filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
             BatchNorm<Float>(featureCount: 2 * lastConvFilters)
             Function<Tensorf, Tensorf> { leakyRelu($0) }
 
-            Conv2D<Float>(filterShape: (kw, kw, 2 * lastConvFilters, 4 * lastConvFilters),
-                          strides: (2, 2),
-                          padding: .same,
-                          filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
+            Conv2D<Float>(
+                filterShape: (kw, kw, 2 * lastConvFilters, 4 * lastConvFilters),
+                strides: (2, 2),
+                padding: .same,
+                filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
             BatchNorm<Float>(featureCount: 4 * lastConvFilters)
             Function<Tensorf, Tensorf> { leakyRelu($0) }
         }
 
         let module2 = Sequential {
             module
-            ConvLayer(inChannels: 4 * lastConvFilters, outChannels: 8 * lastConvFilters,
-                      kernelSize: 4, stride: 1, padding: 1)
+            ConvLayer(
+                inChannels: 4 * lastConvFilters, outChannels: 8 * lastConvFilters,
+                kernelSize: 4, stride: 1, padding: 1)
 
             BatchNorm<Float>(featureCount: 8 * lastConvFilters)
             Function<Tensorf, Tensorf> { leakyRelu($0) }
 
-            ConvLayer(inChannels: 8 * lastConvFilters, outChannels: 1,
-                      kernelSize: 4, stride: 1, padding: 1)
+            ConvLayer(
+                inChannels: 8 * lastConvFilters, outChannels: 1,
+                kernelSize: 4, stride: 1, padding: 1)
         }
 
         self.module = module2

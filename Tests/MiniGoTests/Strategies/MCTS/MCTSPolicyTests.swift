@@ -39,6 +39,6 @@ final class MCTSPolicyTests: XCTestCase {
 
 extension MCTSPolicyTests {
     static var allTests = [
-        ("testChooseReasonableMove", testChooseReasonableMove),
+        ("testChooseReasonableMove", testChooseReasonableMove)
     ]
 }

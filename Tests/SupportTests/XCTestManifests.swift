@@ -15,11 +15,10 @@
 import XCTest
 
 #if !os(macOS)
-public func allTests() -> [XCTestCaseEntry] {
-    return [
-        testCase(ImageTests.allTests),
-        testCase(SupportTests.allTests),
-    ]
-}
+    public func allTests() -> [XCTestCaseEntry] {
+        return [
+            testCase(ImageTests.allTests),
+            testCase(SupportTests.allTests),
+        ]
+    }
 #endif
-

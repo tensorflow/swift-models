@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import TensorFlow
 import Batcher
+import TensorFlow
 
 public protocol ImageClassificationDataset {
-    associatedtype SourceDataSet: Collection 
+    associatedtype SourceDataSet: Collection
     where SourceDataSet.Element == TensorPair<Float, Int32>, SourceDataSet.Index == Int
     init(batchSize: Int)
     var training: Batcher<SourceDataSet> { get }

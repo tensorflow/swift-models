@@ -83,13 +83,14 @@ extension MCTSNode {
     /// Backs up the reward.
     func backUp(for move: Move, withRewardForBlackPlayer rewardForBlackPlayer: Float) {
         guard let index = actionSpace.firstIndex(where: { $0.move == move }) else {
-            fatalError("The action \(move) taken must be legal (all legal actions: \(actionSpace)).")
+            fatalError(
+                "The action \(move) taken must be legal (all legal actions: \(actionSpace)).")
         }
 
         totalVisitedCount += 1
         actionSpace[index].visitedCount += 1
-        actionSpace[index].qValueTotal += rewardForBlackPlayer *
-            (boardState.nextPlayerColor == .black ? 1.0 : -1.0)
+        actionSpace[index].qValueTotal +=
+            rewardForBlackPlayer * (boardState.nextPlayerColor == .black ? 1.0 : -1.0)
     }
 }
 
@@ -136,8 +137,8 @@ extension MCTSNode {
                 // value.
                 let visitedCount = $0.visitedCount
 
-                var actionValue = $0.prior *
-                    (Float(totalVisitedCount) / (1.0 + Float(visitedCount))).squareRoot()
+                var actionValue =
+                    $0.prior * (Float(totalVisitedCount) / (1.0 + Float(visitedCount))).squareRoot()
 
                 if visitedCount > 0 {
                     actionValue += $0.qValueTotal / Float(visitedCount)

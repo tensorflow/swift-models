@@ -54,19 +54,23 @@ struct Generator: Layer {
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let x1 = leakyRelu(input.sequenced(through: dense1, batchNorm1))
-        let x1Reshape = x1.reshaped(to: TensorShape(x1.shape.contiguousSize / (7 * 7 * 256), 7, 7, 256))
+        let x1Reshape = x1.reshaped(
+            to: TensorShape(x1.shape.contiguousSize / (7 * 7 * 256), 7, 7, 256))
         let x2 = leakyRelu(x1Reshape.sequenced(through: transConv2D1, flatten, batchNorm2))
-        let x2Reshape = x2.reshaped(to: TensorShape(x2.shape.contiguousSize / (7 * 7 * 128), 7, 7, 128))
+        let x2Reshape = x2.reshaped(
+            to: TensorShape(x2.shape.contiguousSize / (7 * 7 * 128), 7, 7, 128))
         let x3 = leakyRelu(x2Reshape.sequenced(through: transConv2D2, flatten, batchNorm3))
-        let x3Reshape = x3.reshaped(to: TensorShape(x3.shape.contiguousSize / (14 * 14 * 64), 14, 14, 64))
+        let x3Reshape = x3.reshaped(
+            to: TensorShape(x3.shape.contiguousSize / (14 * 14 * 64), 14, 14, 64))
         return tanh(transConv2D3(x3Reshape))
     }
 }
 
 @differentiable
 func generatorLoss(fakeLabels: Tensor<Float>) -> Tensor<Float> {
-    sigmoidCrossEntropy(logits: fakeLabels,
-                        labels: Tensor(ones: fakeLabels.shape))
+    sigmoidCrossEntropy(
+        logits: fakeLabels,
+        labels: Tensor(ones: fakeLabels.shape))
 }
 
 // MARK: Discriminator
@@ -96,10 +100,12 @@ struct Discriminator: Layer {
 
 @differentiable
 func discriminatorLoss(realLabels: Tensor<Float>, fakeLabels: Tensor<Float>) -> Tensor<Float> {
-    let realLoss = sigmoidCrossEntropy(logits: realLabels,
-                                       labels: Tensor(ones: realLabels.shape))
-    let fakeLoss = sigmoidCrossEntropy(logits: fakeLabels,
-                                       labels: Tensor(zeros: fakeLabels.shape))
+    let realLoss = sigmoidCrossEntropy(
+        logits: realLabels,
+        labels: Tensor(ones: realLabels.shape))
+    let fakeLoss = sigmoidCrossEntropy(
+        logits: fakeLabels,
+        labels: Tensor(zeros: fakeLabels.shape))
     return realLoss + fakeLoss
 }
 
@@ -118,7 +124,7 @@ let noise = Tensor<Float>(randomNormal: TensorShape(1, zDim))
 
 print("Begin training...")
 let epochs = 20
-for epoch in 0 ... epochs {
+for epoch in 0...epochs {
     Context.local.learningPhase = .training
     for batch in mnist.training.sequenced() {
         let realImages = batch.first
@@ -137,7 +143,8 @@ for epoch in 0 ... epochs {
         let noiseD = Tensor<Float>(randomNormal: TensorShape(batchSize, zDim))
         let fakeImages = generator(noiseD)
 
-        let 𝛁discriminator = TensorFlow.gradient(at: discriminator) { discriminator -> Tensor<Float> in
+        let 𝛁discriminator = TensorFlow.gradient(at: discriminator) {
+            discriminator -> Tensor<Float> in
             let realLabels = discriminator(realImages)
             let fakeLabels = discriminator(fakeImages)
             let loss = discriminatorLoss(realLabels: realLabels, fakeLabels: fakeLabels)

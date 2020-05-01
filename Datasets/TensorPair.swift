@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import TensorFlow
 import Batcher
+import TensorFlow
 
 /// A generic tuple of two tensors `Tensor`.
 /// 
@@ -24,7 +24,7 @@ import Batcher
 public struct TensorPair<S1: TensorFlowScalar, S2: TensorFlowScalar>: _Collatable, KeyPathIterable {
     public var first: Tensor<S1>
     public var second: Tensor<S2>
-    
+
     /// Creates from `first` and `second` tensors.
     public init(first: Tensor<S1>, second: Tensor<S2>) {
         self.first = first

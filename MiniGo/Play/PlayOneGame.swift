@@ -16,8 +16,9 @@
 public func playOneGame(gameConfiguration: GameConfiguration, participants: [Policy]) throws {
     var boardState = BoardState(gameConfiguration: gameConfiguration)
     precondition(participants.count == 2, "Must provide two participants.")
-    precondition(participants[0].participantName !=  participants[1].participantName,
-                 "Participants' names should not be same.")
+    precondition(
+        participants[0].participantName != participants[1].participantName,
+        "Participants' names should not be same.")
     // Choose a random participant to play black.
     let shuffled = participants.shuffled()
     let blackPlayer = shuffled[0]

@@ -49,7 +49,7 @@ struct BenchmarkCommand: ParsableCommand {
         subcommands: [
             ListDefaultsSubcommand.self,
             MeasureSubcommand.self,
-            MeasureAllSubCommand.self
+            MeasureAllSubCommand.self,
         ])
 }
 
@@ -122,8 +122,9 @@ extension BenchmarkCommand {
         @Option(help: "Number of training epochs.")
         var epochs: Int?
 
-        @Option(name: .customLong("warmupBatches"),
-                help: "Number of batches to use as a warmup period.")
+        @Option(
+            name: .customLong("warmupBatches"),
+            help: "Number of batches to use as a warmup period.")
         var warmupBatches: Int?
 
         @Flag(name: .customLong("json"), help: "Output json instead of plain text.")
@@ -139,7 +140,7 @@ extension BenchmarkCommand {
                 throw ValidationError(
                     "Can't specify both --training and --inference benchmark variety.")
             }
-            
+
             guard !(real && synthetic) else {
                 throw ValidationError(
                     "Can't specify both --real and --synthetic data sources.")
@@ -158,10 +159,11 @@ extension BenchmarkCommand {
             guard benchmark != nil else {
                 throw ValidationError("Must provide a --benchmark to run.")
             }
-            
+
             guard benchmarkModels[benchmark!] != nil else {
                 throw ValidationError(
-                    "No registered inference benchmark with a name: \(benchmark!). Consider running the `list` command to see all available benchmarks.")
+                    "No registered inference benchmark with a name: \(benchmark!). Consider running the `list` command to see all available benchmarks."
+                )
             }
         }
 
@@ -174,12 +176,14 @@ extension BenchmarkCommand {
             let batchSizeToUse = batchSize ?? defaults.batchSize
             let specifiedBatches: Int?
             if let epochs = epochs {
-                specifiedBatches = epochs * (benchmarkModel.examplesPerEpoch(for: variety)
-                    / batchSizeToUse)
+                specifiedBatches =
+                    epochs
+                    * (benchmarkModel.examplesPerEpoch(for: variety)
+                        / batchSizeToUse)
             } else {
                 specifiedBatches = batches
             }
-            
+
             let settings = BenchmarkSettings(
                 batches: specifiedBatches ?? defaults.batches,
                 batchSize: batchSizeToUse,
@@ -204,8 +208,9 @@ extension BenchmarkCommand {
             abstract: "Run all benchmarks with default settings."
         )
 
-        @Flag(name: .customLong("json"),
-        help: "Output json instead of plain text.")
+        @Flag(
+            name: .customLong("json"),
+            help: "Output json instead of plain text.")
         var useJSON: Bool
 
         func run() throws {

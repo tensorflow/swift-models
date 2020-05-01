@@ -56,7 +56,8 @@ class MCTSTree {
             do {
                 newBoardState = try root.boardState.placingNewStone(at: position)
             } catch {
-                fatalError("MCTS algorithm should never emit an illegal action. Got error: \(error).")
+                fatalError(
+                    "MCTS algorithm should never emit an illegal action. Got error: \(error).")
             }
         }
 
@@ -89,7 +90,8 @@ class MCTSTree {
             do {
                 newBoardState = try node.boardState.placingNewStone(at: position)
             } catch {
-                fatalError("MCTS algorithm should never emit an illegal action. Got error: \(error).")
+                fatalError(
+                    "MCTS algorithm should never emit an illegal action. Got error: \(error).")
             }
         }
 

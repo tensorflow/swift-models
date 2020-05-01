@@ -156,7 +156,8 @@ public struct BoardState {
         let isPotentialKo = newBoard.isKoish(at: position, withNewStoneColor: currentStoneColor)
 
         // Updates libertyTracker and board by placing a new stone.
-        let capturedStones = try newLibertyTracker.addStone(at: position, withColor: currentStoneColor)
+        let capturedStones = try newLibertyTracker.addStone(
+            at: position, withColor: currentStoneColor)
         newBoard.placeStone(at: position, withColor: currentStoneColor)
 
         // Removes capturedStones
@@ -211,10 +212,8 @@ extension BoardState: CustomStringConvertible {
 extension BoardState: Equatable {
     public static func == (lhs: BoardState, rhs: BoardState) -> Bool {
         // The following line is the sufficient and necessary condition for "equal".
-        return lhs.board == rhs.board &&
-            lhs.nextPlayerColor == rhs.nextPlayerColor &&
-            lhs.ko == rhs.ko &&
-            lhs.history == rhs.history
+        return lhs.board == rhs.board && lhs.nextPlayerColor == rhs.nextPlayerColor
+            && lhs.ko == rhs.ko && lhs.history == rhs.history
     }
 }
 
@@ -225,17 +224,20 @@ extension Board {
         libertyTracker: LibertyTracker,
         nextPlayerColor: Color
     ) -> [Position] {
-        var legalMoves = Array<Position>()
+        var legalMoves = [Position]()
         for x in 0..<self.size {
             for y in 0..<self.size {
                 let position = Position(x: x, y: y)
-                guard .legal == positionStatus(
-                    at: position,
-                    ko: ko,
-                    libertyTracker: libertyTracker,
-                    nextPlayerColor: nextPlayerColor
-                    ) else {
-                        continue
+                guard
+                    .legal
+                        == positionStatus(
+                            at: position,
+                            ko: ko,
+                            libertyTracker: libertyTracker,
+                            nextPlayerColor: nextPlayerColor
+                        )
+                else {
+                    continue
                 }
 
                 legalMoves.append(position)
@@ -254,12 +256,14 @@ extension Board {
         guard self.color(at: position) == nil else { return .illegal(reason: .occupied) }
         guard position != ko else { return .illegal(reason: .ko) }
 
-        guard !isSuicidal(
-            at: position,
-            libertyTracker: libertyTracker,
-            nextPlayerColor: nextPlayerColor
-            ) else {
-                return .illegal(reason: .suicide)
+        guard
+            !isSuicidal(
+                at: position,
+                libertyTracker: libertyTracker,
+                nextPlayerColor: nextPlayerColor
+            )
+        else {
+            return .illegal(reason: .suicide)
         }
         return .legal
     }
@@ -362,7 +366,7 @@ extension Board {
         var whiteStoneCount = 0
         for x in 0..<size {
             for y in 0..<size {
-                guard let color = scoreBoard.color(at: Position(x: x, y: y))  else {
+                guard let color = scoreBoard.color(at: Position(x: x, y: y)) else {
                     // This board position does not belong to either player. Could be seki or dame.
                     // See https://en.wikipedia.org/wiki/Go_(game)#Seki_(mutual_life).
                     continue
@@ -412,10 +416,12 @@ extension Board {
             }
         } while !candidates.isEmpty
 
-        precondition(territory.allSatisfy { self.color(at: $0) == nil },
-                     "territory must be all empty (no stones).")
-        precondition(borders.allSatisfy { self.color(at: $0) != nil },
-                     "borders cannot have empty positions.")
+        precondition(
+            territory.allSatisfy { self.color(at: $0) == nil },
+            "territory must be all empty (no stones).")
+        precondition(
+            borders.allSatisfy { self.color(at: $0) != nil },
+            "borders cannot have empty positions.")
         return (territory, borders)
     }
 }

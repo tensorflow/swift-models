@@ -20,17 +20,19 @@ import TensorFlow
 
 public struct ChannelShuffle: ParameterlessLayer {
     @noDerivative public var groups: Int
-    
+
     public init(groups: Int = 2) {
         self.groups = groups
     }
-    
+
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        let batchSize = input.shape[0], height = input.shape[1], width = input.shape[2],
-        channels = input.shape[3]
+        let batchSize = input.shape[0]
+        let height = input.shape[1]
+        let width = input.shape[2]
+        let channels = input.shape[3]
         let channelsPerGroup: Int = channels / groups
-        
+
         var output = input.reshaped(to: [batchSize, height, width, groups, channelsPerGroup])
         output = output.transposed(permutation: [0, 1, 2, 4, 3])
         output = output.reshaped(to: [batchSize, height, width, channels])
@@ -40,22 +42,29 @@ public struct ChannelShuffle: ParameterlessLayer {
 
 public struct InvertedResidual: Layer {
     @noDerivative public var includeBranch: Bool = true
-    @noDerivative public var zeropad: ZeroPadding2D = ZeroPadding2D<Float>(padding: ((1, 1), (1, 1)))
-    
-    public var branch: Sequential<ZeroPadding2D<Float>, Sequential<DepthwiseConv2D<Float>,
-    Sequential<BatchNorm<Float>, Sequential<Conv2D<Float>, BatchNorm<Float>>>>>
+    @noDerivative public var zeropad: ZeroPadding2D = ZeroPadding2D<Float>(
+        padding: ((1, 1), (1, 1)))
+
+    public var branch:
+        Sequential<
+            ZeroPadding2D<Float>,
+            Sequential<
+                DepthwiseConv2D<Float>,
+                Sequential<BatchNorm<Float>, Sequential<Conv2D<Float>, BatchNorm<Float>>>
+            >
+        >
     public var conv1: Conv2D<Float>
     public var batchNorm1: BatchNorm<Float>
     public var depthwiseConv: DepthwiseConv2D<Float>
     public var batchNorm2: BatchNorm<Float>
     public var conv2: Conv2D<Float>
     public var batchNorm3: BatchNorm<Float>
-    
+
     public init(filters: (Int, Int), stride: Int) {
         if stride == 1 {
             includeBranch = false
         }
-        
+
         let branchChannels = filters.1 / 2
         branch = Sequential {
             ZeroPadding2D<Float>(padding: ((1, 1), (1, 1)))
@@ -70,7 +79,7 @@ public struct InvertedResidual: Layer {
             )
             BatchNorm<Float>(featureCount: branchChannels)
         }
-        var inputChannels = includeBranch ? filters.0: branchChannels
+        var inputChannels = includeBranch ? filters.0 : branchChannels
         conv1 = Conv2D<Float>(
             filterShape: (1, 1, inputChannels, branchChannels), strides: (1, 1), padding: .valid,
             useBias: false
@@ -86,7 +95,7 @@ public struct InvertedResidual: Layer {
         batchNorm2 = BatchNorm<Float>(featureCount: branchChannels)
         batchNorm3 = BatchNorm<Float>(featureCount: branchChannels)
     }
-    
+
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         if !includeBranch {
@@ -94,24 +103,27 @@ public struct InvertedResidual: Layer {
             let input1 = splitInput[0]
             let input2 = splitInput[1]
             var output2 = relu(input2.sequenced(through: conv1, batchNorm1))
-            output2 = relu(output2.sequenced(through: zeropad, depthwiseConv, batchNorm2, conv2,
-                                             batchNorm3))
+            output2 = relu(
+                output2.sequenced(
+                    through: zeropad, depthwiseConv, batchNorm2, conv2,
+                    batchNorm3))
             return ChannelShuffle()(input1.concatenated(with: output2, alongAxis: 3))
         } else {
             let output1 = branch(input)
             var output2 = relu(input.sequenced(through: conv1, batchNorm1))
-            output2 = relu(output2.sequenced(through: zeropad, depthwiseConv, batchNorm2, conv2,
-                                             batchNorm3))
+            output2 = relu(
+                output2.sequenced(
+                    through: zeropad, depthwiseConv, batchNorm2, conv2,
+                    batchNorm3))
             return ChannelShuffle()(output1.concatenated(with: output2, alongAxis: 3))
         }
     }
 }
 
-
-
 public struct ShuffleNetV2: Layer {
-    @noDerivative public var zeroPad: ZeroPadding2D<Float> = ZeroPadding2D<Float>(padding: ((1, 1), (1, 1)))
-    
+    @noDerivative public var zeroPad: ZeroPadding2D<Float> = ZeroPadding2D<Float>(
+        padding: ((1, 1), (1, 1)))
+
     public var conv1: Conv2D<Float>
     public var batchNorm1: BatchNorm<Float>
     public var maxPool: MaxPool2D<Float>
@@ -121,9 +133,11 @@ public struct ShuffleNetV2: Layer {
     public var conv2: Conv2D<Float>
     public var globalPool: GlobalAvgPool2D<Float> = GlobalAvgPool2D()
     public var dense: Dense<Float>
-    
-    public init(stagesRepeat: (Int, Int, Int), stagesOutputChannels: (Int, Int, Int, Int, Int),
-                classCount: Int) {
+
+    public init(
+        stagesRepeat: (Int, Int, Int), stagesOutputChannels: (Int, Int, Int, Int, Int),
+        classCount: Int
+    ) {
         var inputChannels = 3
         var outputChannels = stagesOutputChannels.0
         conv1 = Conv2D<Float>(
@@ -138,40 +152,52 @@ public struct ShuffleNetV2: Layer {
         batchNorm1 = BatchNorm(featureCount: outputChannels)
         inputChannels = outputChannels
         outputChannels = stagesOutputChannels.1
-        invertedResidualBlocksStage1 = [InvertedResidual(filters: (inputChannels, outputChannels),
-                                                         stride: 2)]
+        invertedResidualBlocksStage1 = [
+            InvertedResidual(
+                filters: (inputChannels, outputChannels),
+                stride: 2)
+        ]
         for _ in 1...stagesRepeat.0 {
-            invertedResidualBlocksStage1.append(InvertedResidual(
-                filters: (outputChannels, outputChannels), stride: 1)
+            invertedResidualBlocksStage1.append(
+                InvertedResidual(
+                    filters: (outputChannels, outputChannels), stride: 1)
             )
         }
         inputChannels = outputChannels
         outputChannels = stagesOutputChannels.2
-        invertedResidualBlocksStage2 = [InvertedResidual(filters: (inputChannels, outputChannels),
-                                                         stride: 2)]
+        invertedResidualBlocksStage2 = [
+            InvertedResidual(
+                filters: (inputChannels, outputChannels),
+                stride: 2)
+        ]
         for _ in 1...stagesRepeat.1 {
-            invertedResidualBlocksStage2.append(InvertedResidual(
-                filters: (outputChannels, outputChannels), stride: 1)
+            invertedResidualBlocksStage2.append(
+                InvertedResidual(
+                    filters: (outputChannels, outputChannels), stride: 1)
             )
         }
-        
+
         inputChannels = outputChannels
         outputChannels = stagesOutputChannels.3
-        invertedResidualBlocksStage3 = [InvertedResidual(filters: (inputChannels, outputChannels),
-                                                         stride: 2)]
+        invertedResidualBlocksStage3 = [
+            InvertedResidual(
+                filters: (inputChannels, outputChannels),
+                stride: 2)
+        ]
         for _ in 1...stagesRepeat.2 {
-            invertedResidualBlocksStage3.append(InvertedResidual(
-                filters: (outputChannels, outputChannels), stride: 1)
+            invertedResidualBlocksStage3.append(
+                InvertedResidual(
+                    filters: (outputChannels, outputChannels), stride: 1)
             )
         }
     }
-    
+
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         var output = relu(input.sequenced(through: zeroPad, conv1, batchNorm1, zeroPad, maxPool))
-        output = invertedResidualBlocksStage1.differentiableReduce(output) {$1($0)}
-        output = invertedResidualBlocksStage2.differentiableReduce(output) {$1($0)}
-        output = invertedResidualBlocksStage3.differentiableReduce(output) {$1($0)}
+        output = invertedResidualBlocksStage1.differentiableReduce(output) { $1($0) }
+        output = invertedResidualBlocksStage2.differentiableReduce(output) { $1($0) }
+        output = invertedResidualBlocksStage3.differentiableReduce(output) { $1($0) }
         output = relu(conv2(output))
         return output.sequenced(through: globalPool, dense)
     }

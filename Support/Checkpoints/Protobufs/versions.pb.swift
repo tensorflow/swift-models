@@ -15,8 +15,8 @@ import SwiftProtobuf
 // Please ensure that your are building against the same version of the API
 // that was used to generate this file.
 fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAPIVersionCheck {
-  struct _2: SwiftProtobuf.ProtobufAPIVersion_2 {}
-  typealias Version = _2
+    struct _2: SwiftProtobuf.ProtobufAPIVersion_2 {}
+    typealias Version = _2
 }
 
 /// Version information for a piece of serialized data
@@ -32,65 +32,67 @@ fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAP
 ///   consumer >= min_consumer
 ///   consumer not in bad_consumers
 struct Tensorflow_VersionDef {
-  // SwiftProtobuf.Message conformance is added in an extension below. See the
-  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-  // methods supported on all messages.
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
 
-  /// The version of the code that produced this data.
-  var producer: Int32 = 0
+    /// The version of the code that produced this data.
+    var producer: Int32 = 0
 
-  /// Any consumer below this version is not allowed to consume this data.
-  var minConsumer: Int32 = 0
+    /// Any consumer below this version is not allowed to consume this data.
+    var minConsumer: Int32 = 0
 
-  /// Specific consumer versions which are disallowed (e.g. due to bugs).
-  var badConsumers: [Int32] = []
+    /// Specific consumer versions which are disallowed (e.g. due to bugs).
+    var badConsumers: [Int32] = []
 
-  var unknownFields = SwiftProtobuf.UnknownStorage()
+    var unknownFields = SwiftProtobuf.UnknownStorage()
 
-  init() {}
+    init() {}
 }
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "tensorflow"
 
-extension Tensorflow_VersionDef: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".VersionDef"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "producer"),
-    2: .standard(proto: "min_consumer"),
-    3: .standard(proto: "bad_consumers"),
-  ]
+extension Tensorflow_VersionDef: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase,
+    SwiftProtobuf._ProtoNameProviding
+{
+    static let protoMessageName: String = _protobuf_package + ".VersionDef"
+    static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+        1: .same(proto: "producer"),
+        2: .standard(proto: "min_consumer"),
+        3: .standard(proto: "bad_consumers"),
+    ]
 
-  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      switch fieldNumber {
-      case 1: try decoder.decodeSingularInt32Field(value: &self.producer)
-      case 2: try decoder.decodeSingularInt32Field(value: &self.minConsumer)
-      case 3: try decoder.decodeRepeatedInt32Field(value: &self.badConsumers)
-      default: break
-      }
+    mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+        while let fieldNumber = try decoder.nextFieldNumber() {
+            switch fieldNumber {
+            case 1: try decoder.decodeSingularInt32Field(value: &self.producer)
+            case 2: try decoder.decodeSingularInt32Field(value: &self.minConsumer)
+            case 3: try decoder.decodeRepeatedInt32Field(value: &self.badConsumers)
+            default: break
+            }
+        }
     }
-  }
 
-  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if self.producer != 0 {
-      try visitor.visitSingularInt32Field(value: self.producer, fieldNumber: 1)
+    func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+        if self.producer != 0 {
+            try visitor.visitSingularInt32Field(value: self.producer, fieldNumber: 1)
+        }
+        if self.minConsumer != 0 {
+            try visitor.visitSingularInt32Field(value: self.minConsumer, fieldNumber: 2)
+        }
+        if !self.badConsumers.isEmpty {
+            try visitor.visitPackedInt32Field(value: self.badConsumers, fieldNumber: 3)
+        }
+        try unknownFields.traverse(visitor: &visitor)
     }
-    if self.minConsumer != 0 {
-      try visitor.visitSingularInt32Field(value: self.minConsumer, fieldNumber: 2)
-    }
-    if !self.badConsumers.isEmpty {
-      try visitor.visitPackedInt32Field(value: self.badConsumers, fieldNumber: 3)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
 
-  static func ==(lhs: Tensorflow_VersionDef, rhs: Tensorflow_VersionDef) -> Bool {
-    if lhs.producer != rhs.producer {return false}
-    if lhs.minConsumer != rhs.minConsumer {return false}
-    if lhs.badConsumers != rhs.badConsumers {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
+    static func == (lhs: Tensorflow_VersionDef, rhs: Tensorflow_VersionDef) -> Bool {
+        if lhs.producer != rhs.producer { return false }
+        if lhs.minConsumer != rhs.minConsumer { return false }
+        if lhs.badConsumers != rhs.badConsumers { return false }
+        if lhs.unknownFields != rhs.unknownFields { return false }
+        return true
+    }
 }

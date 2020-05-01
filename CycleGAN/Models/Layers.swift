@@ -67,13 +67,16 @@ public struct ConvLayer: Layer {
     ///   - outChannels: Number of output channels in convolution kernel.
     ///   - kernelSize: Convolution kernel size (both width and height).
     ///   - stride: Stride size (both width and height).
-    public init(inChannels: Int, outChannels: Int, kernelSize: Int, stride: Int, padding: Int? = nil) {
-        let _padding =  padding ?? Int(kernelSize / 2)
+    public init(
+        inChannels: Int, outChannels: Int, kernelSize: Int, stride: Int, padding: Int? = nil
+    ) {
+        let _padding = padding ?? Int(kernelSize / 2)
         pad = ZeroPadding2D(padding: ((_padding, _padding), (_padding, _padding)))
-    
-        conv2d = Conv2D(filterShape: (kernelSize, kernelSize, inChannels, outChannels),
-                        strides: (stride, stride),
-                        filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
+
+        conv2d = Conv2D(
+            filterShape: (kernelSize, kernelSize, inChannels, outChannels),
+            strides: (stride, stride),
+            filterInitializer: { Tensorf(randomNormal: $0, standardDeviation: Tensorf(0.02)) })
     }
 
     /// Returns the output obtained from applying the layer to the given input.
@@ -86,7 +89,11 @@ public struct ConvLayer: Layer {
     }
 }
 
-public struct ResNetBlock<NormalizationType: FeatureChannelInitializable>: Layer where NormalizationType.TangentVector.VectorSpaceScalar == Float, NormalizationType.Input == Tensorf, NormalizationType.Output == Tensorf {
+public struct ResNetBlock<NormalizationType: FeatureChannelInitializable>: Layer
+where
+    NormalizationType.TangentVector.VectorSpaceScalar == Float, NormalizationType.Input == Tensorf,
+    NormalizationType.Output == Tensorf
+{
     var conv1: Conv2D<Float>
     var norm1: NormalizationType
     var conv2: Conv2D<Float>
@@ -97,20 +104,24 @@ public struct ResNetBlock<NormalizationType: FeatureChannelInitializable>: Layer
     @noDerivative var useDropOut: Bool
     @noDerivative let paddingMode: Tensorf.PaddingMode
 
-    public init(channels: Int,
-                paddingMode: Tensorf.PaddingMode,
-                normalization _: NormalizationType.Type,
-                useDropOut: Bool = false,
-                filterInit: (TensorShape) -> Tensorf,
-                biasInit: (TensorShape) -> Tensorf) {
-        conv1 = Conv2D(filterShape: (3, 3, channels, channels),
-                       filterInitializer: filterInit,
-                       biasInitializer: biasInit)
+    public init(
+        channels: Int,
+        paddingMode: Tensorf.PaddingMode,
+        normalization _: NormalizationType.Type,
+        useDropOut: Bool = false,
+        filterInit: (TensorShape) -> Tensorf,
+        biasInit: (TensorShape) -> Tensorf
+    ) {
+        conv1 = Conv2D(
+            filterShape: (3, 3, channels, channels),
+            filterInitializer: filterInit,
+            biasInitializer: biasInit)
         norm1 = NormalizationType(featureCount: channels)
 
-        conv2 = Conv2D(filterShape: (3, 3, channels, channels),
-                       filterInitializer: filterInit,
-                       biasInitializer: biasInit)
+        conv2 = Conv2D(
+            filterShape: (3, 3, channels, channels),
+            filterInitializer: filterInit,
+            biasInitializer: biasInit)
         norm2 = NormalizationType(featureCount: channels)
 
         dropOut = Dropout(probability: 0.5)

@@ -29,600 +29,600 @@ import SwiftProtobuf
 // Please ensure that your are building against the same version of the API
 // that was used to generate this file.
 fileprivate struct _GeneratedWithProtocGenSwiftVersion: SwiftProtobuf.ProtobufAPIVersionCheck {
-  struct _2: SwiftProtobuf.ProtobufAPIVersion_2 {}
-  typealias Version = _2
+    struct _2: SwiftProtobuf.ProtobufAPIVersion_2 {}
+    typealias Version = _2
 }
 
 /// TrainerSpec encodes a various parameters for SentencePiece training.
 struct Sentencepiece_TrainerSpec: SwiftProtobuf.ExtensibleMessage {
-  // SwiftProtobuf.Message conformance is added in an extension below. See the
-  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-  // methods supported on all messages.
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
 
-  ////////////////////////////////////////////////////////////////////
-  /// General parameters
-  ///
-  /// Input corpus files.
-  ///  Trainer accepts the following two formats:
-  ///  A) Monolingual: plain text, one sentence per line.
-  ///  B) Bilingual:   TSV, source sentence <tab> target sentence
-  ///  When bilingual data is passed, shared vocabulary model is built.
-  ///  Note that the input file must be raw corpus, not a preprocessed corpus.
-  ///  Trainer only loads the first `input_sentence_size` sentences specified
-  ///  with this parameter.
-  var input: [String] {
-    get {return _storage._input}
-    set {_uniqueStorage()._input = newValue}
-  }
-
-  /// Input corpus format:
-  /// "text": one-sentence-per-line text format (default)
-  /// "tsv":  sentence <tab> freq
-  var inputFormat: String {
-    get {return _storage._inputFormat ?? String()}
-    set {_uniqueStorage()._inputFormat = newValue}
-  }
-  /// Returns true if `inputFormat` has been explicitly set.
-  var hasInputFormat: Bool {return _storage._inputFormat != nil}
-  /// Clears the value of `inputFormat`. Subsequent reads from it will return its default value.
-  mutating func clearInputFormat() {_uniqueStorage()._inputFormat = nil}
-
-  /// Output model file prefix.
-  /// <model_prefix>.model and <model_prefix>.vocab are generated.
-  var modelPrefix: String {
-    get {return _storage._modelPrefix ?? String()}
-    set {_uniqueStorage()._modelPrefix = newValue}
-  }
-  /// Returns true if `modelPrefix` has been explicitly set.
-  var hasModelPrefix: Bool {return _storage._modelPrefix != nil}
-  /// Clears the value of `modelPrefix`. Subsequent reads from it will return its default value.
-  mutating func clearModelPrefix() {_uniqueStorage()._modelPrefix = nil}
-
-  var modelType: Sentencepiece_TrainerSpec.ModelType {
-    get {return _storage._modelType ?? .unigram}
-    set {_uniqueStorage()._modelType = newValue}
-  }
-  /// Returns true if `modelType` has been explicitly set.
-  var hasModelType: Bool {return _storage._modelType != nil}
-  /// Clears the value of `modelType`. Subsequent reads from it will return its default value.
-  mutating func clearModelType() {_uniqueStorage()._modelType = nil}
-
-  /// Vocabulary size. 8k is the default size.
-  var vocabSize: Int32 {
-    get {return _storage._vocabSize ?? 8000}
-    set {_uniqueStorage()._vocabSize = newValue}
-  }
-  /// Returns true if `vocabSize` has been explicitly set.
-  var hasVocabSize: Bool {return _storage._vocabSize != nil}
-  /// Clears the value of `vocabSize`. Subsequent reads from it will return its default value.
-  mutating func clearVocabSize() {_uniqueStorage()._vocabSize = nil}
-
-  /// List of the languages this model can accept.
-  /// Since the model is language-agnostic, this field is used as a reference.
-  var acceptLanguage: [String] {
-    get {return _storage._acceptLanguage}
-    set {_uniqueStorage()._acceptLanguage = newValue}
-  }
-
-  /// Size of self-test samples, which are encoded in the model file.
-  var selfTestSampleSize: Int32 {
-    get {return _storage._selfTestSampleSize ?? 0}
-    set {_uniqueStorage()._selfTestSampleSize = newValue}
-  }
-  /// Returns true if `selfTestSampleSize` has been explicitly set.
-  var hasSelfTestSampleSize: Bool {return _storage._selfTestSampleSize != nil}
-  /// Clears the value of `selfTestSampleSize`. Subsequent reads from it will return its default value.
-  mutating func clearSelfTestSampleSize() {_uniqueStorage()._selfTestSampleSize = nil}
-
-  ////////////////////////////////////////////////////////////////////
-  /// Training parameters.
-  ///
-  /// Uses characters which cover the corpus with the ratio of `chars_coverage`.
-  /// This parameter determines the set of basic Alphabet of sentence piece.
-  /// 1.0 - `chars_coverage` characters are treated as UNK.
-  var characterCoverage: Float {
-    get {return _storage._characterCoverage ?? 0.9995}
-    set {_uniqueStorage()._characterCoverage = newValue}
-  }
-  /// Returns true if `characterCoverage` has been explicitly set.
-  var hasCharacterCoverage: Bool {return _storage._characterCoverage != nil}
-  /// Clears the value of `characterCoverage`. Subsequent reads from it will return its default value.
-  mutating func clearCharacterCoverage() {_uniqueStorage()._characterCoverage = nil}
-
-  /// Maximum size of sentences the trainer loads from `input` parameter.
-  /// Trainer simply loads the `input` files in sequence.
-  /// It is better to shuffle the input corpus randomly.
-  var inputSentenceSize: Int32 {
-    get {return _storage._inputSentenceSize ?? 0}
-    set {_uniqueStorage()._inputSentenceSize = newValue}
-  }
-  /// Returns true if `inputSentenceSize` has been explicitly set.
-  var hasInputSentenceSize: Bool {return _storage._inputSentenceSize != nil}
-  /// Clears the value of `inputSentenceSize`. Subsequent reads from it will return its default value.
-  mutating func clearInputSentenceSize() {_uniqueStorage()._inputSentenceSize = nil}
-
-  var shuffleInputSentence: Bool {
-    get {return _storage._shuffleInputSentence ?? true}
-    set {_uniqueStorage()._shuffleInputSentence = newValue}
-  }
-  /// Returns true if `shuffleInputSentence` has been explicitly set.
-  var hasShuffleInputSentence: Bool {return _storage._shuffleInputSentence != nil}
-  /// Clears the value of `shuffleInputSentence`. Subsequent reads from it will return its default value.
-  mutating func clearShuffleInputSentence() {_uniqueStorage()._shuffleInputSentence = nil}
-
-  /// Maximum size of sentences to make seed sentence pieces.
-  /// Extended suffix array is constructed to extract frequent
-  /// sub-strings from the corpus. This uses 20N working space,
-  /// where N is the size of corpus.
-  var miningSentenceSize: Int32 {
-    get {return _storage._miningSentenceSize ?? 0}
-    set {_uniqueStorage()._miningSentenceSize = newValue}
-  }
-  /// Returns true if `miningSentenceSize` has been explicitly set.
-  var hasMiningSentenceSize: Bool {return _storage._miningSentenceSize != nil}
-  /// Clears the value of `miningSentenceSize`. Subsequent reads from it will return its default value.
-  mutating func clearMiningSentenceSize() {_uniqueStorage()._miningSentenceSize = nil}
-
-  /// Maximum size of sentences to train sentence pieces.
-  var trainingSentenceSize: Int32 {
-    get {return _storage._trainingSentenceSize ?? 0}
-    set {_uniqueStorage()._trainingSentenceSize = newValue}
-  }
-  /// Returns true if `trainingSentenceSize` has been explicitly set.
-  var hasTrainingSentenceSize: Bool {return _storage._trainingSentenceSize != nil}
-  /// Clears the value of `trainingSentenceSize`. Subsequent reads from it will return its default value.
-  mutating func clearTrainingSentenceSize() {_uniqueStorage()._trainingSentenceSize = nil}
-
-  /// The size of seed sentencepieces.
-  /// `seed_sentencepiece_size` must be larger than `vocab_size`.
-  var seedSentencepieceSize: Int32 {
-    get {return _storage._seedSentencepieceSize ?? 1000000}
-    set {_uniqueStorage()._seedSentencepieceSize = newValue}
-  }
-  /// Returns true if `seedSentencepieceSize` has been explicitly set.
-  var hasSeedSentencepieceSize: Bool {return _storage._seedSentencepieceSize != nil}
-  /// Clears the value of `seedSentencepieceSize`. Subsequent reads from it will return its default value.
-  mutating func clearSeedSentencepieceSize() {_uniqueStorage()._seedSentencepieceSize = nil}
-
-  /// In every EM sub-iterations, keeps top
-  /// `shrinking_factor` * `current sentencepieces size` with respect to
-  /// the loss of the sentence piece. This value should be smaller than 1.0.
-  var shrinkingFactor: Float {
-    get {return _storage._shrinkingFactor ?? 0.75}
-    set {_uniqueStorage()._shrinkingFactor = newValue}
-  }
-  /// Returns true if `shrinkingFactor` has been explicitly set.
-  var hasShrinkingFactor: Bool {return _storage._shrinkingFactor != nil}
-  /// Clears the value of `shrinkingFactor`. Subsequent reads from it will return its default value.
-  mutating func clearShrinkingFactor() {_uniqueStorage()._shrinkingFactor = nil}
-
-  /// The maximum sentence length in byte. The sentences with the length
-  /// larger than `max_sentence_length` is simply ignored.
-  /// Longer input tends to bring the following risks:
-  ///  * Overflow during EM training (unigram language model only)
-  ///  * Performance drop because of O(n log n) cost in BPE.
-  var maxSentenceLength: Int32 {
-    get {return _storage._maxSentenceLength ?? 4192}
-    set {_uniqueStorage()._maxSentenceLength = newValue}
-  }
-  /// Returns true if `maxSentenceLength` has been explicitly set.
-  var hasMaxSentenceLength: Bool {return _storage._maxSentenceLength != nil}
-  /// Clears the value of `maxSentenceLength`. Subsequent reads from it will return its default value.
-  mutating func clearMaxSentenceLength() {_uniqueStorage()._maxSentenceLength = nil}
-
-  /// Number of threads in the training.
-  var numThreads: Int32 {
-    get {return _storage._numThreads ?? 16}
-    set {_uniqueStorage()._numThreads = newValue}
-  }
-  /// Returns true if `numThreads` has been explicitly set.
-  var hasNumThreads: Bool {return _storage._numThreads != nil}
-  /// Clears the value of `numThreads`. Subsequent reads from it will return its default value.
-  mutating func clearNumThreads() {_uniqueStorage()._numThreads = nil}
-
-  /// Number of EM sub iterations.
-  var numSubIterations: Int32 {
-    get {return _storage._numSubIterations ?? 2}
-    set {_uniqueStorage()._numSubIterations = newValue}
-  }
-  /// Returns true if `numSubIterations` has been explicitly set.
-  var hasNumSubIterations: Bool {return _storage._numSubIterations != nil}
-  /// Clears the value of `numSubIterations`. Subsequent reads from it will return its default value.
-  mutating func clearNumSubIterations() {_uniqueStorage()._numSubIterations = nil}
-
-  ////////////////////////////////////////////////////////////////////
-  /// SentencePiece parameters which control the shapes of sentence piece.
-  ///
-  /// Maximum length of sentencepiece.
-  var maxSentencepieceLength: Int32 {
-    get {return _storage._maxSentencepieceLength ?? 16}
-    set {_uniqueStorage()._maxSentencepieceLength = newValue}
-  }
-  /// Returns true if `maxSentencepieceLength` has been explicitly set.
-  var hasMaxSentencepieceLength: Bool {return _storage._maxSentencepieceLength != nil}
-  /// Clears the value of `maxSentencepieceLength`. Subsequent reads from it will return its default value.
-  mutating func clearMaxSentencepieceLength() {_uniqueStorage()._maxSentencepieceLength = nil}
-
-  /// Uses Unicode script to split sentence pieces.
-  /// When `split_by_unicode_script` is true, we do not allow sentence piece to
-  /// include multiple Unicode scripts, e.g. "F1" is not a valid piece.
-  /// Exception: CJ characters (Hiragana/Katakana/Han) are all handled
-  /// as one script type, since Japanese word can consist of multiple scripts.
-  /// This exception is always applied regardless of the accept-language
-  /// parameter.
-  var splitByUnicodeScript: Bool {
-    get {return _storage._splitByUnicodeScript ?? true}
-    set {_uniqueStorage()._splitByUnicodeScript = newValue}
-  }
-  /// Returns true if `splitByUnicodeScript` has been explicitly set.
-  var hasSplitByUnicodeScript: Bool {return _storage._splitByUnicodeScript != nil}
-  /// Clears the value of `splitByUnicodeScript`. Subsequent reads from it will return its default value.
-  mutating func clearSplitByUnicodeScript() {_uniqueStorage()._splitByUnicodeScript = nil}
-
-  /// When `split_by_number` is true, put a boundary between number and non-number
-  /// transition. If we want to treat "F1" is one token, set this flag to be false.
-  var splitByNumber: Bool {
-    get {return _storage._splitByNumber ?? true}
-    set {_uniqueStorage()._splitByNumber = newValue}
-  }
-  /// Returns true if `splitByNumber` has been explicitly set.
-  var hasSplitByNumber: Bool {return _storage._splitByNumber != nil}
-  /// Clears the value of `splitByNumber`. Subsequent reads from it will return its default value.
-  mutating func clearSplitByNumber() {_uniqueStorage()._splitByNumber = nil}
-
-  /// Use a white space to split sentence pieces.
-  /// When `split_by_whitespace` is false, we may have the piece containing
-  /// a white space in the middle. e.g., "in_the".
-  var splitByWhitespace: Bool {
-    get {return _storage._splitByWhitespace ?? true}
-    set {_uniqueStorage()._splitByWhitespace = newValue}
-  }
-  /// Returns true if `splitByWhitespace` has been explicitly set.
-  var hasSplitByWhitespace: Bool {return _storage._splitByWhitespace != nil}
-  /// Clears the value of `splitByWhitespace`. Subsequent reads from it will return its default value.
-  mutating func clearSplitByWhitespace() {_uniqueStorage()._splitByWhitespace = nil}
-
-  /// Adds whitespace symbol (_) as a suffix instead of prefix. e.g., _hello => hello_.
-  /// When `treat_whitespace_as_suffix` is true, NormalizerSpec::add_dummy_prefix will
-  /// add the dummy whitespace to the end of sentence.
-  var treatWhitespaceAsSuffix: Bool {
-    get {return _storage._treatWhitespaceAsSuffix ?? false}
-    set {_uniqueStorage()._treatWhitespaceAsSuffix = newValue}
-  }
-  /// Returns true if `treatWhitespaceAsSuffix` has been explicitly set.
-  var hasTreatWhitespaceAsSuffix: Bool {return _storage._treatWhitespaceAsSuffix != nil}
-  /// Clears the value of `treatWhitespaceAsSuffix`. Subsequent reads from it will return its default value.
-  mutating func clearTreatWhitespaceAsSuffix() {_uniqueStorage()._treatWhitespaceAsSuffix = nil}
-
-  ////////////////////////////////////////////////////////////////////
-  /// Vocabulary management
-  ///
-  /// Defines control symbols used as an indicator to
-  /// change the behavior of the decoder. <s> and </s> are pre-defined.
-  /// We can use this field to encode various meta information,
-  /// including language indicator in multilingual model.
-  /// These symbols are not visible to users, but visible to
-  /// the decoder. Note that when the input sentence contains control symbols,
-  /// they are not treated as one token, but segmented into normal pieces.
-  /// Control symbols must be inserted independently from the segmentation.
-  var controlSymbols: [String] {
-    get {return _storage._controlSymbols}
-    set {_uniqueStorage()._controlSymbols = newValue}
-  }
-
-  /// Defines user defined symbols.
-  /// These symbols are added with extremely high score
-  /// so they are always treated as one unique symbol in any context.
-  /// Typical usage of user_defined_symbols is placeholder for named entities.
-  var userDefinedSymbols: [String] {
-    get {return _storage._userDefinedSymbols}
-    set {_uniqueStorage()._userDefinedSymbols = newValue}
-  }
-
-  /// `vocab_size` is treated as hard limit. Crash if
-  /// the model can not produce the vocab of size `vocab_size`,
-  /// When `hard_vocab_limit` is false, vocab_size is treated
-  /// as soft limit. Note that when model_type=char,
-  /// always assumes hard_vocab_limit = false.
-  var hardVocabLimit: Bool {
-    get {return _storage._hardVocabLimit ?? true}
-    set {_uniqueStorage()._hardVocabLimit = newValue}
-  }
-  /// Returns true if `hardVocabLimit` has been explicitly set.
-  var hasHardVocabLimit: Bool {return _storage._hardVocabLimit != nil}
-  /// Clears the value of `hardVocabLimit`. Subsequent reads from it will return its default value.
-  mutating func clearHardVocabLimit() {_uniqueStorage()._hardVocabLimit = nil}
-
-  /// use all symbols for vocab extraction. This flag is valid
-  /// if model type is either CHAR or WORD
-  var useAllVocab: Bool {
-    get {return _storage._useAllVocab ?? false}
-    set {_uniqueStorage()._useAllVocab = newValue}
-  }
-  /// Returns true if `useAllVocab` has been explicitly set.
-  var hasUseAllVocab: Bool {return _storage._useAllVocab != nil}
-  /// Clears the value of `useAllVocab`. Subsequent reads from it will return its default value.
-  mutating func clearUseAllVocab() {_uniqueStorage()._useAllVocab = nil}
-
-  ////////////////////////////////////////////////////////////////////
-  /// Reserved special meta tokens.
-  /// * -1 is not used.
-  /// * unk_id must not be -1.
-  /// Id must starts with 0 and be contigous.
-  var unkID: Int32 {
-    get {return _storage._unkID ?? 0}
-    set {_uniqueStorage()._unkID = newValue}
-  }
-  /// Returns true if `unkID` has been explicitly set.
-  var hasUnkID: Bool {return _storage._unkID != nil}
-  /// Clears the value of `unkID`. Subsequent reads from it will return its default value.
-  mutating func clearUnkID() {_uniqueStorage()._unkID = nil}
-
-  /// <s>
-  var bosID: Int32 {
-    get {return _storage._bosID ?? 1}
-    set {_uniqueStorage()._bosID = newValue}
-  }
-  /// Returns true if `bosID` has been explicitly set.
-  var hasBosID: Bool {return _storage._bosID != nil}
-  /// Clears the value of `bosID`. Subsequent reads from it will return its default value.
-  mutating func clearBosID() {_uniqueStorage()._bosID = nil}
-
-  /// </s>
-  var eosID: Int32 {
-    get {return _storage._eosID ?? 2}
-    set {_uniqueStorage()._eosID = newValue}
-  }
-  /// Returns true if `eosID` has been explicitly set.
-  var hasEosID: Bool {return _storage._eosID != nil}
-  /// Clears the value of `eosID`. Subsequent reads from it will return its default value.
-  mutating func clearEosID() {_uniqueStorage()._eosID = nil}
-
-  /// <pad> (padding)
-  var padID: Int32 {
-    get {return _storage._padID ?? -1}
-    set {_uniqueStorage()._padID = newValue}
-  }
-  /// Returns true if `padID` has been explicitly set.
-  var hasPadID: Bool {return _storage._padID != nil}
-  /// Clears the value of `padID`. Subsequent reads from it will return its default value.
-  mutating func clearPadID() {_uniqueStorage()._padID = nil}
-
-  var unkPiece: String {
-    get {return _storage._unkPiece ?? "<unk>"}
-    set {_uniqueStorage()._unkPiece = newValue}
-  }
-  /// Returns true if `unkPiece` has been explicitly set.
-  var hasUnkPiece: Bool {return _storage._unkPiece != nil}
-  /// Clears the value of `unkPiece`. Subsequent reads from it will return its default value.
-  mutating func clearUnkPiece() {_uniqueStorage()._unkPiece = nil}
-
-  var bosPiece: String {
-    get {return _storage._bosPiece ?? "<s>"}
-    set {_uniqueStorage()._bosPiece = newValue}
-  }
-  /// Returns true if `bosPiece` has been explicitly set.
-  var hasBosPiece: Bool {return _storage._bosPiece != nil}
-  /// Clears the value of `bosPiece`. Subsequent reads from it will return its default value.
-  mutating func clearBosPiece() {_uniqueStorage()._bosPiece = nil}
-
-  var eosPiece: String {
-    get {return _storage._eosPiece ?? "</s>"}
-    set {_uniqueStorage()._eosPiece = newValue}
-  }
-  /// Returns true if `eosPiece` has been explicitly set.
-  var hasEosPiece: Bool {return _storage._eosPiece != nil}
-  /// Clears the value of `eosPiece`. Subsequent reads from it will return its default value.
-  mutating func clearEosPiece() {_uniqueStorage()._eosPiece = nil}
-
-  var padPiece: String {
-    get {return _storage._padPiece ?? "<pad>"}
-    set {_uniqueStorage()._padPiece = newValue}
-  }
-  /// Returns true if `padPiece` has been explicitly set.
-  var hasPadPiece: Bool {return _storage._padPiece != nil}
-  /// Clears the value of `padPiece`. Subsequent reads from it will return its default value.
-  mutating func clearPadPiece() {_uniqueStorage()._padPiece = nil}
-
-  /// Encodes <unk> into U+2047 (DOUBLE QUESTION MARK),
-  /// since this character can be useful both for user and
-  /// developer. We can easily figure out that <unk> is emitted.
-  var unkSurface: String {
-    get {return _storage._unkSurface ?? " ⁇ "}
-    set {_uniqueStorage()._unkSurface = newValue}
-  }
-  /// Returns true if `unkSurface` has been explicitly set.
-  var hasUnkSurface: Bool {return _storage._unkSurface != nil}
-  /// Clears the value of `unkSurface`. Subsequent reads from it will return its default value.
-  mutating func clearUnkSurface() {_uniqueStorage()._unkSurface = nil}
-
-  var unknownFields = SwiftProtobuf.UnknownStorage()
-
-  /// Model type. only have UNIGRAM now.
-  enum ModelType: SwiftProtobuf.Enum {
-    typealias RawValue = Int
-
-    /// Unigram language model with dynamic algorithm
-    case unigram // = 1
-
-    /// Byte Pair Encoding
-    case bpe // = 2
-
-    /// Delimitered by whitespace.
-    case word // = 3
-
-    /// tokenizes into character sequence
-    case char // = 4
-
-    init() {
-      self = .unigram
+    ////////////////////////////////////////////////////////////////////
+    /// General parameters
+    ///
+    /// Input corpus files.
+    ///  Trainer accepts the following two formats:
+    ///  A) Monolingual: plain text, one sentence per line.
+    ///  B) Bilingual:   TSV, source sentence <tab> target sentence
+    ///  When bilingual data is passed, shared vocabulary model is built.
+    ///  Note that the input file must be raw corpus, not a preprocessed corpus.
+    ///  Trainer only loads the first `input_sentence_size` sentences specified
+    ///  with this parameter.
+    var input: [String] {
+        get { return _storage._input }
+        set { _uniqueStorage()._input = newValue }
     }
 
-    init?(rawValue: Int) {
-      switch rawValue {
-      case 1: self = .unigram
-      case 2: self = .bpe
-      case 3: self = .word
-      case 4: self = .char
-      default: return nil
-      }
+    /// Input corpus format:
+    /// "text": one-sentence-per-line text format (default)
+    /// "tsv":  sentence <tab> freq
+    var inputFormat: String {
+        get { return _storage._inputFormat ?? String() }
+        set { _uniqueStorage()._inputFormat = newValue }
+    }
+    /// Returns true if `inputFormat` has been explicitly set.
+    var hasInputFormat: Bool { return _storage._inputFormat != nil }
+    /// Clears the value of `inputFormat`. Subsequent reads from it will return its default value.
+    mutating func clearInputFormat() { _uniqueStorage()._inputFormat = nil }
+
+    /// Output model file prefix.
+    /// <model_prefix>.model and <model_prefix>.vocab are generated.
+    var modelPrefix: String {
+        get { return _storage._modelPrefix ?? String() }
+        set { _uniqueStorage()._modelPrefix = newValue }
+    }
+    /// Returns true if `modelPrefix` has been explicitly set.
+    var hasModelPrefix: Bool { return _storage._modelPrefix != nil }
+    /// Clears the value of `modelPrefix`. Subsequent reads from it will return its default value.
+    mutating func clearModelPrefix() { _uniqueStorage()._modelPrefix = nil }
+
+    var modelType: Sentencepiece_TrainerSpec.ModelType {
+        get { return _storage._modelType ?? .unigram }
+        set { _uniqueStorage()._modelType = newValue }
+    }
+    /// Returns true if `modelType` has been explicitly set.
+    var hasModelType: Bool { return _storage._modelType != nil }
+    /// Clears the value of `modelType`. Subsequent reads from it will return its default value.
+    mutating func clearModelType() { _uniqueStorage()._modelType = nil }
+
+    /// Vocabulary size. 8k is the default size.
+    var vocabSize: Int32 {
+        get { return _storage._vocabSize ?? 8000 }
+        set { _uniqueStorage()._vocabSize = newValue }
+    }
+    /// Returns true if `vocabSize` has been explicitly set.
+    var hasVocabSize: Bool { return _storage._vocabSize != nil }
+    /// Clears the value of `vocabSize`. Subsequent reads from it will return its default value.
+    mutating func clearVocabSize() { _uniqueStorage()._vocabSize = nil }
+
+    /// List of the languages this model can accept.
+    /// Since the model is language-agnostic, this field is used as a reference.
+    var acceptLanguage: [String] {
+        get { return _storage._acceptLanguage }
+        set { _uniqueStorage()._acceptLanguage = newValue }
     }
 
-    var rawValue: Int {
-      switch self {
-      case .unigram: return 1
-      case .bpe: return 2
-      case .word: return 3
-      case .char: return 4
-      }
+    /// Size of self-test samples, which are encoded in the model file.
+    var selfTestSampleSize: Int32 {
+        get { return _storage._selfTestSampleSize ?? 0 }
+        set { _uniqueStorage()._selfTestSampleSize = newValue }
+    }
+    /// Returns true if `selfTestSampleSize` has been explicitly set.
+    var hasSelfTestSampleSize: Bool { return _storage._selfTestSampleSize != nil }
+    /// Clears the value of `selfTestSampleSize`. Subsequent reads from it will return its default value.
+    mutating func clearSelfTestSampleSize() { _uniqueStorage()._selfTestSampleSize = nil }
+
+    ////////////////////////////////////////////////////////////////////
+    /// Training parameters.
+    ///
+    /// Uses characters which cover the corpus with the ratio of `chars_coverage`.
+    /// This parameter determines the set of basic Alphabet of sentence piece.
+    /// 1.0 - `chars_coverage` characters are treated as UNK.
+    var characterCoverage: Float {
+        get { return _storage._characterCoverage ?? 0.9995 }
+        set { _uniqueStorage()._characterCoverage = newValue }
+    }
+    /// Returns true if `characterCoverage` has been explicitly set.
+    var hasCharacterCoverage: Bool { return _storage._characterCoverage != nil }
+    /// Clears the value of `characterCoverage`. Subsequent reads from it will return its default value.
+    mutating func clearCharacterCoverage() { _uniqueStorage()._characterCoverage = nil }
+
+    /// Maximum size of sentences the trainer loads from `input` parameter.
+    /// Trainer simply loads the `input` files in sequence.
+    /// It is better to shuffle the input corpus randomly.
+    var inputSentenceSize: Int32 {
+        get { return _storage._inputSentenceSize ?? 0 }
+        set { _uniqueStorage()._inputSentenceSize = newValue }
+    }
+    /// Returns true if `inputSentenceSize` has been explicitly set.
+    var hasInputSentenceSize: Bool { return _storage._inputSentenceSize != nil }
+    /// Clears the value of `inputSentenceSize`. Subsequent reads from it will return its default value.
+    mutating func clearInputSentenceSize() { _uniqueStorage()._inputSentenceSize = nil }
+
+    var shuffleInputSentence: Bool {
+        get { return _storage._shuffleInputSentence ?? true }
+        set { _uniqueStorage()._shuffleInputSentence = newValue }
+    }
+    /// Returns true if `shuffleInputSentence` has been explicitly set.
+    var hasShuffleInputSentence: Bool { return _storage._shuffleInputSentence != nil }
+    /// Clears the value of `shuffleInputSentence`. Subsequent reads from it will return its default value.
+    mutating func clearShuffleInputSentence() { _uniqueStorage()._shuffleInputSentence = nil }
+
+    /// Maximum size of sentences to make seed sentence pieces.
+    /// Extended suffix array is constructed to extract frequent
+    /// sub-strings from the corpus. This uses 20N working space,
+    /// where N is the size of corpus.
+    var miningSentenceSize: Int32 {
+        get { return _storage._miningSentenceSize ?? 0 }
+        set { _uniqueStorage()._miningSentenceSize = newValue }
+    }
+    /// Returns true if `miningSentenceSize` has been explicitly set.
+    var hasMiningSentenceSize: Bool { return _storage._miningSentenceSize != nil }
+    /// Clears the value of `miningSentenceSize`. Subsequent reads from it will return its default value.
+    mutating func clearMiningSentenceSize() { _uniqueStorage()._miningSentenceSize = nil }
+
+    /// Maximum size of sentences to train sentence pieces.
+    var trainingSentenceSize: Int32 {
+        get { return _storage._trainingSentenceSize ?? 0 }
+        set { _uniqueStorage()._trainingSentenceSize = newValue }
+    }
+    /// Returns true if `trainingSentenceSize` has been explicitly set.
+    var hasTrainingSentenceSize: Bool { return _storage._trainingSentenceSize != nil }
+    /// Clears the value of `trainingSentenceSize`. Subsequent reads from it will return its default value.
+    mutating func clearTrainingSentenceSize() { _uniqueStorage()._trainingSentenceSize = nil }
+
+    /// The size of seed sentencepieces.
+    /// `seed_sentencepiece_size` must be larger than `vocab_size`.
+    var seedSentencepieceSize: Int32 {
+        get { return _storage._seedSentencepieceSize ?? 1_000_000 }
+        set { _uniqueStorage()._seedSentencepieceSize = newValue }
+    }
+    /// Returns true if `seedSentencepieceSize` has been explicitly set.
+    var hasSeedSentencepieceSize: Bool { return _storage._seedSentencepieceSize != nil }
+    /// Clears the value of `seedSentencepieceSize`. Subsequent reads from it will return its default value.
+    mutating func clearSeedSentencepieceSize() { _uniqueStorage()._seedSentencepieceSize = nil }
+
+    /// In every EM sub-iterations, keeps top
+    /// `shrinking_factor` * `current sentencepieces size` with respect to
+    /// the loss of the sentence piece. This value should be smaller than 1.0.
+    var shrinkingFactor: Float {
+        get { return _storage._shrinkingFactor ?? 0.75 }
+        set { _uniqueStorage()._shrinkingFactor = newValue }
+    }
+    /// Returns true if `shrinkingFactor` has been explicitly set.
+    var hasShrinkingFactor: Bool { return _storage._shrinkingFactor != nil }
+    /// Clears the value of `shrinkingFactor`. Subsequent reads from it will return its default value.
+    mutating func clearShrinkingFactor() { _uniqueStorage()._shrinkingFactor = nil }
+
+    /// The maximum sentence length in byte. The sentences with the length
+    /// larger than `max_sentence_length` is simply ignored.
+    /// Longer input tends to bring the following risks:
+    ///  * Overflow during EM training (unigram language model only)
+    ///  * Performance drop because of O(n log n) cost in BPE.
+    var maxSentenceLength: Int32 {
+        get { return _storage._maxSentenceLength ?? 4192 }
+        set { _uniqueStorage()._maxSentenceLength = newValue }
+    }
+    /// Returns true if `maxSentenceLength` has been explicitly set.
+    var hasMaxSentenceLength: Bool { return _storage._maxSentenceLength != nil }
+    /// Clears the value of `maxSentenceLength`. Subsequent reads from it will return its default value.
+    mutating func clearMaxSentenceLength() { _uniqueStorage()._maxSentenceLength = nil }
+
+    /// Number of threads in the training.
+    var numThreads: Int32 {
+        get { return _storage._numThreads ?? 16 }
+        set { _uniqueStorage()._numThreads = newValue }
+    }
+    /// Returns true if `numThreads` has been explicitly set.
+    var hasNumThreads: Bool { return _storage._numThreads != nil }
+    /// Clears the value of `numThreads`. Subsequent reads from it will return its default value.
+    mutating func clearNumThreads() { _uniqueStorage()._numThreads = nil }
+
+    /// Number of EM sub iterations.
+    var numSubIterations: Int32 {
+        get { return _storage._numSubIterations ?? 2 }
+        set { _uniqueStorage()._numSubIterations = newValue }
+    }
+    /// Returns true if `numSubIterations` has been explicitly set.
+    var hasNumSubIterations: Bool { return _storage._numSubIterations != nil }
+    /// Clears the value of `numSubIterations`. Subsequent reads from it will return its default value.
+    mutating func clearNumSubIterations() { _uniqueStorage()._numSubIterations = nil }
+
+    ////////////////////////////////////////////////////////////////////
+    /// SentencePiece parameters which control the shapes of sentence piece.
+    ///
+    /// Maximum length of sentencepiece.
+    var maxSentencepieceLength: Int32 {
+        get { return _storage._maxSentencepieceLength ?? 16 }
+        set { _uniqueStorage()._maxSentencepieceLength = newValue }
+    }
+    /// Returns true if `maxSentencepieceLength` has been explicitly set.
+    var hasMaxSentencepieceLength: Bool { return _storage._maxSentencepieceLength != nil }
+    /// Clears the value of `maxSentencepieceLength`. Subsequent reads from it will return its default value.
+    mutating func clearMaxSentencepieceLength() { _uniqueStorage()._maxSentencepieceLength = nil }
+
+    /// Uses Unicode script to split sentence pieces.
+    /// When `split_by_unicode_script` is true, we do not allow sentence piece to
+    /// include multiple Unicode scripts, e.g. "F1" is not a valid piece.
+    /// Exception: CJ characters (Hiragana/Katakana/Han) are all handled
+    /// as one script type, since Japanese word can consist of multiple scripts.
+    /// This exception is always applied regardless of the accept-language
+    /// parameter.
+    var splitByUnicodeScript: Bool {
+        get { return _storage._splitByUnicodeScript ?? true }
+        set { _uniqueStorage()._splitByUnicodeScript = newValue }
+    }
+    /// Returns true if `splitByUnicodeScript` has been explicitly set.
+    var hasSplitByUnicodeScript: Bool { return _storage._splitByUnicodeScript != nil }
+    /// Clears the value of `splitByUnicodeScript`. Subsequent reads from it will return its default value.
+    mutating func clearSplitByUnicodeScript() { _uniqueStorage()._splitByUnicodeScript = nil }
+
+    /// When `split_by_number` is true, put a boundary between number and non-number
+    /// transition. If we want to treat "F1" is one token, set this flag to be false.
+    var splitByNumber: Bool {
+        get { return _storage._splitByNumber ?? true }
+        set { _uniqueStorage()._splitByNumber = newValue }
+    }
+    /// Returns true if `splitByNumber` has been explicitly set.
+    var hasSplitByNumber: Bool { return _storage._splitByNumber != nil }
+    /// Clears the value of `splitByNumber`. Subsequent reads from it will return its default value.
+    mutating func clearSplitByNumber() { _uniqueStorage()._splitByNumber = nil }
+
+    /// Use a white space to split sentence pieces.
+    /// When `split_by_whitespace` is false, we may have the piece containing
+    /// a white space in the middle. e.g., "in_the".
+    var splitByWhitespace: Bool {
+        get { return _storage._splitByWhitespace ?? true }
+        set { _uniqueStorage()._splitByWhitespace = newValue }
+    }
+    /// Returns true if `splitByWhitespace` has been explicitly set.
+    var hasSplitByWhitespace: Bool { return _storage._splitByWhitespace != nil }
+    /// Clears the value of `splitByWhitespace`. Subsequent reads from it will return its default value.
+    mutating func clearSplitByWhitespace() { _uniqueStorage()._splitByWhitespace = nil }
+
+    /// Adds whitespace symbol (_) as a suffix instead of prefix. e.g., _hello => hello_.
+    /// When `treat_whitespace_as_suffix` is true, NormalizerSpec::add_dummy_prefix will
+    /// add the dummy whitespace to the end of sentence.
+    var treatWhitespaceAsSuffix: Bool {
+        get { return _storage._treatWhitespaceAsSuffix ?? false }
+        set { _uniqueStorage()._treatWhitespaceAsSuffix = newValue }
+    }
+    /// Returns true if `treatWhitespaceAsSuffix` has been explicitly set.
+    var hasTreatWhitespaceAsSuffix: Bool { return _storage._treatWhitespaceAsSuffix != nil }
+    /// Clears the value of `treatWhitespaceAsSuffix`. Subsequent reads from it will return its default value.
+    mutating func clearTreatWhitespaceAsSuffix() { _uniqueStorage()._treatWhitespaceAsSuffix = nil }
+
+    ////////////////////////////////////////////////////////////////////
+    /// Vocabulary management
+    ///
+    /// Defines control symbols used as an indicator to
+    /// change the behavior of the decoder. <s> and </s> are pre-defined.
+    /// We can use this field to encode various meta information,
+    /// including language indicator in multilingual model.
+    /// These symbols are not visible to users, but visible to
+    /// the decoder. Note that when the input sentence contains control symbols,
+    /// they are not treated as one token, but segmented into normal pieces.
+    /// Control symbols must be inserted independently from the segmentation.
+    var controlSymbols: [String] {
+        get { return _storage._controlSymbols }
+        set { _uniqueStorage()._controlSymbols = newValue }
     }
 
-  }
+    /// Defines user defined symbols.
+    /// These symbols are added with extremely high score
+    /// so they are always treated as one unique symbol in any context.
+    /// Typical usage of user_defined_symbols is placeholder for named entities.
+    var userDefinedSymbols: [String] {
+        get { return _storage._userDefinedSymbols }
+        set { _uniqueStorage()._userDefinedSymbols = newValue }
+    }
 
-  init() {}
+    /// `vocab_size` is treated as hard limit. Crash if
+    /// the model can not produce the vocab of size `vocab_size`,
+    /// When `hard_vocab_limit` is false, vocab_size is treated
+    /// as soft limit. Note that when model_type=char,
+    /// always assumes hard_vocab_limit = false.
+    var hardVocabLimit: Bool {
+        get { return _storage._hardVocabLimit ?? true }
+        set { _uniqueStorage()._hardVocabLimit = newValue }
+    }
+    /// Returns true if `hardVocabLimit` has been explicitly set.
+    var hasHardVocabLimit: Bool { return _storage._hardVocabLimit != nil }
+    /// Clears the value of `hardVocabLimit`. Subsequent reads from it will return its default value.
+    mutating func clearHardVocabLimit() { _uniqueStorage()._hardVocabLimit = nil }
 
-  var _protobuf_extensionFieldValues = SwiftProtobuf.ExtensionFieldValueSet()
-  fileprivate var _storage = _StorageClass.defaultInstance
+    /// use all symbols for vocab extraction. This flag is valid
+    /// if model type is either CHAR or WORD
+    var useAllVocab: Bool {
+        get { return _storage._useAllVocab ?? false }
+        set { _uniqueStorage()._useAllVocab = newValue }
+    }
+    /// Returns true if `useAllVocab` has been explicitly set.
+    var hasUseAllVocab: Bool { return _storage._useAllVocab != nil }
+    /// Clears the value of `useAllVocab`. Subsequent reads from it will return its default value.
+    mutating func clearUseAllVocab() { _uniqueStorage()._useAllVocab = nil }
+
+    ////////////////////////////////////////////////////////////////////
+    /// Reserved special meta tokens.
+    /// * -1 is not used.
+    /// * unk_id must not be -1.
+    /// Id must starts with 0 and be contigous.
+    var unkID: Int32 {
+        get { return _storage._unkID ?? 0 }
+        set { _uniqueStorage()._unkID = newValue }
+    }
+    /// Returns true if `unkID` has been explicitly set.
+    var hasUnkID: Bool { return _storage._unkID != nil }
+    /// Clears the value of `unkID`. Subsequent reads from it will return its default value.
+    mutating func clearUnkID() { _uniqueStorage()._unkID = nil }
+
+    /// <s>
+    var bosID: Int32 {
+        get { return _storage._bosID ?? 1 }
+        set { _uniqueStorage()._bosID = newValue }
+    }
+    /// Returns true if `bosID` has been explicitly set.
+    var hasBosID: Bool { return _storage._bosID != nil }
+    /// Clears the value of `bosID`. Subsequent reads from it will return its default value.
+    mutating func clearBosID() { _uniqueStorage()._bosID = nil }
+
+    /// </s>
+    var eosID: Int32 {
+        get { return _storage._eosID ?? 2 }
+        set { _uniqueStorage()._eosID = newValue }
+    }
+    /// Returns true if `eosID` has been explicitly set.
+    var hasEosID: Bool { return _storage._eosID != nil }
+    /// Clears the value of `eosID`. Subsequent reads from it will return its default value.
+    mutating func clearEosID() { _uniqueStorage()._eosID = nil }
+
+    /// <pad> (padding)
+    var padID: Int32 {
+        get { return _storage._padID ?? -1 }
+        set { _uniqueStorage()._padID = newValue }
+    }
+    /// Returns true if `padID` has been explicitly set.
+    var hasPadID: Bool { return _storage._padID != nil }
+    /// Clears the value of `padID`. Subsequent reads from it will return its default value.
+    mutating func clearPadID() { _uniqueStorage()._padID = nil }
+
+    var unkPiece: String {
+        get { return _storage._unkPiece ?? "<unk>" }
+        set { _uniqueStorage()._unkPiece = newValue }
+    }
+    /// Returns true if `unkPiece` has been explicitly set.
+    var hasUnkPiece: Bool { return _storage._unkPiece != nil }
+    /// Clears the value of `unkPiece`. Subsequent reads from it will return its default value.
+    mutating func clearUnkPiece() { _uniqueStorage()._unkPiece = nil }
+
+    var bosPiece: String {
+        get { return _storage._bosPiece ?? "<s>" }
+        set { _uniqueStorage()._bosPiece = newValue }
+    }
+    /// Returns true if `bosPiece` has been explicitly set.
+    var hasBosPiece: Bool { return _storage._bosPiece != nil }
+    /// Clears the value of `bosPiece`. Subsequent reads from it will return its default value.
+    mutating func clearBosPiece() { _uniqueStorage()._bosPiece = nil }
+
+    var eosPiece: String {
+        get { return _storage._eosPiece ?? "</s>" }
+        set { _uniqueStorage()._eosPiece = newValue }
+    }
+    /// Returns true if `eosPiece` has been explicitly set.
+    var hasEosPiece: Bool { return _storage._eosPiece != nil }
+    /// Clears the value of `eosPiece`. Subsequent reads from it will return its default value.
+    mutating func clearEosPiece() { _uniqueStorage()._eosPiece = nil }
+
+    var padPiece: String {
+        get { return _storage._padPiece ?? "<pad>" }
+        set { _uniqueStorage()._padPiece = newValue }
+    }
+    /// Returns true if `padPiece` has been explicitly set.
+    var hasPadPiece: Bool { return _storage._padPiece != nil }
+    /// Clears the value of `padPiece`. Subsequent reads from it will return its default value.
+    mutating func clearPadPiece() { _uniqueStorage()._padPiece = nil }
+
+    /// Encodes <unk> into U+2047 (DOUBLE QUESTION MARK),
+    /// since this character can be useful both for user and
+    /// developer. We can easily figure out that <unk> is emitted.
+    var unkSurface: String {
+        get { return _storage._unkSurface ?? " ⁇ " }
+        set { _uniqueStorage()._unkSurface = newValue }
+    }
+    /// Returns true if `unkSurface` has been explicitly set.
+    var hasUnkSurface: Bool { return _storage._unkSurface != nil }
+    /// Clears the value of `unkSurface`. Subsequent reads from it will return its default value.
+    mutating func clearUnkSurface() { _uniqueStorage()._unkSurface = nil }
+
+    var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    /// Model type. only have UNIGRAM now.
+    enum ModelType: SwiftProtobuf.Enum {
+        typealias RawValue = Int
+
+        /// Unigram language model with dynamic algorithm
+        case unigram  // = 1
+
+        /// Byte Pair Encoding
+        case bpe  // = 2
+
+        /// Delimitered by whitespace.
+        case word  // = 3
+
+        /// tokenizes into character sequence
+        case char  // = 4
+
+        init() {
+            self = .unigram
+        }
+
+        init?(rawValue: Int) {
+            switch rawValue {
+            case 1: self = .unigram
+            case 2: self = .bpe
+            case 3: self = .word
+            case 4: self = .char
+            default: return nil
+            }
+        }
+
+        var rawValue: Int {
+            switch self {
+            case .unigram: return 1
+            case .bpe: return 2
+            case .word: return 3
+            case .char: return 4
+            }
+        }
+
+    }
+
+    init() {}
+
+    var _protobuf_extensionFieldValues = SwiftProtobuf.ExtensionFieldValueSet()
+    fileprivate var _storage = _StorageClass.defaultInstance
 }
 
 #if swift(>=4.2)
 
-extension Sentencepiece_TrainerSpec.ModelType: CaseIterable {
-  // Support synthesized by the compiler.
-}
+    extension Sentencepiece_TrainerSpec.ModelType: CaseIterable {
+        // Support synthesized by the compiler.
+    }
 
 #endif  // swift(>=4.2)
 
 /// NormalizerSpec encodes a various parameters for string normalizaiton
 struct Sentencepiece_NormalizerSpec: SwiftProtobuf.ExtensibleMessage {
-  // SwiftProtobuf.Message conformance is added in an extension below. See the
-  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-  // methods supported on all messages.
-
-  /// name of normalization rule.
-  var name: String {
-    get {return _name ?? String()}
-    set {_name = newValue}
-  }
-  /// Returns true if `name` has been explicitly set.
-  var hasName: Bool {return self._name != nil}
-  /// Clears the value of `name`. Subsequent reads from it will return its default value.
-  mutating func clearName() {self._name = nil}
-
-  /// Pre-compiled normalization rule created by
-  /// Builder::GetPrecompiledCharsMap() or Builder::CompileCharsMap() method.
-  /// Usually this field is set by Builder::GetNormalizerSpec() method.
-  var precompiledCharsmap: Data {
-    get {return _precompiledCharsmap ?? SwiftProtobuf.Internal.emptyData}
-    set {_precompiledCharsmap = newValue}
-  }
-  /// Returns true if `precompiledCharsmap` has been explicitly set.
-  var hasPrecompiledCharsmap: Bool {return self._precompiledCharsmap != nil}
-  /// Clears the value of `precompiledCharsmap`. Subsequent reads from it will return its default value.
-  mutating func clearPrecompiledCharsmap() {self._precompiledCharsmap = nil}
-
-  /// Adds dummy whitespace at the beginning of text in order to
-  /// treat "world" in "world" and "hello world" in the same way.
-  var addDummyPrefix: Bool {
-    get {return _addDummyPrefix ?? true}
-    set {_addDummyPrefix = newValue}
-  }
-  /// Returns true if `addDummyPrefix` has been explicitly set.
-  var hasAddDummyPrefix: Bool {return self._addDummyPrefix != nil}
-  /// Clears the value of `addDummyPrefix`. Subsequent reads from it will return its default value.
-  mutating func clearAddDummyPrefix() {self._addDummyPrefix = nil}
-
-  /// Removes leading, trailing, and duplicate internal whitespace.
-  var removeExtraWhitespaces: Bool {
-    get {return _removeExtraWhitespaces ?? true}
-    set {_removeExtraWhitespaces = newValue}
-  }
-  /// Returns true if `removeExtraWhitespaces` has been explicitly set.
-  var hasRemoveExtraWhitespaces: Bool {return self._removeExtraWhitespaces != nil}
-  /// Clears the value of `removeExtraWhitespaces`. Subsequent reads from it will return its default value.
-  mutating func clearRemoveExtraWhitespaces() {self._removeExtraWhitespaces = nil}
-
-  /// Replaces whitespace with meta symbol.
-  /// This field must be true to train sentence piece model.
-  var escapeWhitespaces: Bool {
-    get {return _escapeWhitespaces ?? true}
-    set {_escapeWhitespaces = newValue}
-  }
-  /// Returns true if `escapeWhitespaces` has been explicitly set.
-  var hasEscapeWhitespaces: Bool {return self._escapeWhitespaces != nil}
-  /// Clears the value of `escapeWhitespaces`. Subsequent reads from it will return its default value.
-  mutating func clearEscapeWhitespaces() {self._escapeWhitespaces = nil}
-
-  /// Custom normalization rule file in TSV format.
-  /// https://github.com/google/sentencepiece/blob/master/doc/normalization.md
-  /// This field is only used in SentencePieceTrainer::Train() method, which
-  /// compiles the rule into the binary rule stored in `precompiled_charsmap`.
-  var normalizationRuleTsv: String {
-    get {return _normalizationRuleTsv ?? String()}
-    set {_normalizationRuleTsv = newValue}
-  }
-  /// Returns true if `normalizationRuleTsv` has been explicitly set.
-  var hasNormalizationRuleTsv: Bool {return self._normalizationRuleTsv != nil}
-  /// Clears the value of `normalizationRuleTsv`. Subsequent reads from it will return its default value.
-  mutating func clearNormalizationRuleTsv() {self._normalizationRuleTsv = nil}
-
-  var unknownFields = SwiftProtobuf.UnknownStorage()
-
-  init() {}
-
-  var _protobuf_extensionFieldValues = SwiftProtobuf.ExtensionFieldValueSet()
-  fileprivate var _name: String? = nil
-  fileprivate var _precompiledCharsmap: Data? = nil
-  fileprivate var _addDummyPrefix: Bool? = nil
-  fileprivate var _removeExtraWhitespaces: Bool? = nil
-  fileprivate var _escapeWhitespaces: Bool? = nil
-  fileprivate var _normalizationRuleTsv: String? = nil
-}
-
-/// Proto to store samples for self-testing.
-struct Sentencepiece_SelfTestData: SwiftProtobuf.ExtensibleMessage {
-  // SwiftProtobuf.Message conformance is added in an extension below. See the
-  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-  // methods supported on all messages.
-
-  var samples: [Sentencepiece_SelfTestData.Sample] = []
-
-  var unknownFields = SwiftProtobuf.UnknownStorage()
-
-  struct Sample {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
 
-    var input: String {
-      get {return _input ?? String()}
-      set {_input = newValue}
+    /// name of normalization rule.
+    var name: String {
+        get { return _name ?? String() }
+        set { _name = newValue }
     }
-    /// Returns true if `input` has been explicitly set.
-    var hasInput: Bool {return self._input != nil}
-    /// Clears the value of `input`. Subsequent reads from it will return its default value.
-    mutating func clearInput() {self._input = nil}
+    /// Returns true if `name` has been explicitly set.
+    var hasName: Bool { return self._name != nil }
+    /// Clears the value of `name`. Subsequent reads from it will return its default value.
+    mutating func clearName() { self._name = nil }
 
-    var expected: String {
-      get {return _expected ?? String()}
-      set {_expected = newValue}
+    /// Pre-compiled normalization rule created by
+    /// Builder::GetPrecompiledCharsMap() or Builder::CompileCharsMap() method.
+    /// Usually this field is set by Builder::GetNormalizerSpec() method.
+    var precompiledCharsmap: Data {
+        get { return _precompiledCharsmap ?? SwiftProtobuf.Internal.emptyData }
+        set { _precompiledCharsmap = newValue }
     }
-    /// Returns true if `expected` has been explicitly set.
-    var hasExpected: Bool {return self._expected != nil}
-    /// Clears the value of `expected`. Subsequent reads from it will return its default value.
-    mutating func clearExpected() {self._expected = nil}
+    /// Returns true if `precompiledCharsmap` has been explicitly set.
+    var hasPrecompiledCharsmap: Bool { return self._precompiledCharsmap != nil }
+    /// Clears the value of `precompiledCharsmap`. Subsequent reads from it will return its default value.
+    mutating func clearPrecompiledCharsmap() { self._precompiledCharsmap = nil }
+
+    /// Adds dummy whitespace at the beginning of text in order to
+    /// treat "world" in "world" and "hello world" in the same way.
+    var addDummyPrefix: Bool {
+        get { return _addDummyPrefix ?? true }
+        set { _addDummyPrefix = newValue }
+    }
+    /// Returns true if `addDummyPrefix` has been explicitly set.
+    var hasAddDummyPrefix: Bool { return self._addDummyPrefix != nil }
+    /// Clears the value of `addDummyPrefix`. Subsequent reads from it will return its default value.
+    mutating func clearAddDummyPrefix() { self._addDummyPrefix = nil }
+
+    /// Removes leading, trailing, and duplicate internal whitespace.
+    var removeExtraWhitespaces: Bool {
+        get { return _removeExtraWhitespaces ?? true }
+        set { _removeExtraWhitespaces = newValue }
+    }
+    /// Returns true if `removeExtraWhitespaces` has been explicitly set.
+    var hasRemoveExtraWhitespaces: Bool { return self._removeExtraWhitespaces != nil }
+    /// Clears the value of `removeExtraWhitespaces`. Subsequent reads from it will return its default value.
+    mutating func clearRemoveExtraWhitespaces() { self._removeExtraWhitespaces = nil }
+
+    /// Replaces whitespace with meta symbol.
+    /// This field must be true to train sentence piece model.
+    var escapeWhitespaces: Bool {
+        get { return _escapeWhitespaces ?? true }
+        set { _escapeWhitespaces = newValue }
+    }
+    /// Returns true if `escapeWhitespaces` has been explicitly set.
+    var hasEscapeWhitespaces: Bool { return self._escapeWhitespaces != nil }
+    /// Clears the value of `escapeWhitespaces`. Subsequent reads from it will return its default value.
+    mutating func clearEscapeWhitespaces() { self._escapeWhitespaces = nil }
+
+    /// Custom normalization rule file in TSV format.
+    /// https://github.com/google/sentencepiece/blob/master/doc/normalization.md
+    /// This field is only used in SentencePieceTrainer::Train() method, which
+    /// compiles the rule into the binary rule stored in `precompiled_charsmap`.
+    var normalizationRuleTsv: String {
+        get { return _normalizationRuleTsv ?? String() }
+        set { _normalizationRuleTsv = newValue }
+    }
+    /// Returns true if `normalizationRuleTsv` has been explicitly set.
+    var hasNormalizationRuleTsv: Bool { return self._normalizationRuleTsv != nil }
+    /// Clears the value of `normalizationRuleTsv`. Subsequent reads from it will return its default value.
+    mutating func clearNormalizationRuleTsv() { self._normalizationRuleTsv = nil }
 
     var unknownFields = SwiftProtobuf.UnknownStorage()
 
     init() {}
 
-    fileprivate var _input: String? = nil
-    fileprivate var _expected: String? = nil
-  }
+    var _protobuf_extensionFieldValues = SwiftProtobuf.ExtensionFieldValueSet()
+    fileprivate var _name: String? = nil
+    fileprivate var _precompiledCharsmap: Data? = nil
+    fileprivate var _addDummyPrefix: Bool? = nil
+    fileprivate var _removeExtraWhitespaces: Bool? = nil
+    fileprivate var _escapeWhitespaces: Bool? = nil
+    fileprivate var _normalizationRuleTsv: String? = nil
+}
 
-  init() {}
+/// Proto to store samples for self-testing.
+struct Sentencepiece_SelfTestData: SwiftProtobuf.ExtensibleMessage {
+    // SwiftProtobuf.Message conformance is added in an extension below. See the
+    // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+    // methods supported on all messages.
 
-  var _protobuf_extensionFieldValues = SwiftProtobuf.ExtensionFieldValueSet()
+    var samples: [Sentencepiece_SelfTestData.Sample] = []
+
+    var unknownFields = SwiftProtobuf.UnknownStorage()
+
+    struct Sample {
+        // SwiftProtobuf.Message conformance is added in an extension below. See the
+        // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+        // methods supported on all messages.
+
+        var input: String {
+            get { return _input ?? String() }
+            set { _input = newValue }
+        }
+        /// Returns true if `input` has been explicitly set.
+        var hasInput: Bool { return self._input != nil }
+        /// Clears the value of `input`. Subsequent reads from it will return its default value.
+        mutating func clearInput() { self._input = nil }
+
+        var expected: String {
+            get { return _expected ?? String() }
+            set { _expected = newValue }
+        }
+        /// Returns true if `expected` has been explicitly set.
+        var hasExpected: Bool { return self._expected != nil }
+        /// Clears the value of `expected`. Subsequent reads from it will return its default value.
+        mutating func clearExpected() { self._expected = nil }
+
+        var unknownFields = SwiftProtobuf.UnknownStorage()
+
+        init() {}
+
+        fileprivate var _input: String? = nil
+        fileprivate var _expected: String? = nil
+    }
+
+    init() {}
+
+    var _protobuf_extensionFieldValues = SwiftProtobuf.ExtensionFieldValueSet()
 }
 
 /// ModelProto stores model parameters.
@@ -630,795 +630,849 @@ struct Sentencepiece_SelfTestData: SwiftProtobuf.ExtensibleMessage {
 /// All settings/parameters which may change the behavior must be encoded
 /// in ModelProto.
 struct Sentencepiece_ModelProto: SwiftProtobuf.ExtensibleMessage {
-  // SwiftProtobuf.Message conformance is added in an extension below. See the
-  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
-  // methods supported on all messages.
-
-  /// Sentence pieces with scores.
-  var pieces: [Sentencepiece_ModelProto.SentencePiece] {
-    get {return _storage._pieces}
-    set {_uniqueStorage()._pieces = newValue}
-  }
-
-  /// Spec used to generate this model file.
-  var trainerSpec: Sentencepiece_TrainerSpec {
-    get {return _storage._trainerSpec ?? Sentencepiece_TrainerSpec()}
-    set {_uniqueStorage()._trainerSpec = newValue}
-  }
-  /// Returns true if `trainerSpec` has been explicitly set.
-  var hasTrainerSpec: Bool {return _storage._trainerSpec != nil}
-  /// Clears the value of `trainerSpec`. Subsequent reads from it will return its default value.
-  mutating func clearTrainerSpec() {_uniqueStorage()._trainerSpec = nil}
-
-  /// Spec for text normalization.
-  var normalizerSpec: Sentencepiece_NormalizerSpec {
-    get {return _storage._normalizerSpec ?? Sentencepiece_NormalizerSpec()}
-    set {_uniqueStorage()._normalizerSpec = newValue}
-  }
-  /// Returns true if `normalizerSpec` has been explicitly set.
-  var hasNormalizerSpec: Bool {return _storage._normalizerSpec != nil}
-  /// Clears the value of `normalizerSpec`. Subsequent reads from it will return its default value.
-  mutating func clearNormalizerSpec() {_uniqueStorage()._normalizerSpec = nil}
-
-  /// Stores sample input and its expected segmentation to verify the model.
-  var selfTestData: Sentencepiece_SelfTestData {
-    get {return _storage._selfTestData ?? Sentencepiece_SelfTestData()}
-    set {_uniqueStorage()._selfTestData = newValue}
-  }
-  /// Returns true if `selfTestData` has been explicitly set.
-  var hasSelfTestData: Bool {return _storage._selfTestData != nil}
-  /// Clears the value of `selfTestData`. Subsequent reads from it will return its default value.
-  mutating func clearSelfTestData() {_uniqueStorage()._selfTestData = nil}
-
-  var unknownFields = SwiftProtobuf.UnknownStorage()
-
-  struct SentencePiece: SwiftProtobuf.ExtensibleMessage {
     // SwiftProtobuf.Message conformance is added in an extension below. See the
     // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
     // methods supported on all messages.
 
-    /// piece must not be empty.
-    var piece: String {
-      get {return _piece ?? String()}
-      set {_piece = newValue}
+    /// Sentence pieces with scores.
+    var pieces: [Sentencepiece_ModelProto.SentencePiece] {
+        get { return _storage._pieces }
+        set { _uniqueStorage()._pieces = newValue }
     }
-    /// Returns true if `piece` has been explicitly set.
-    var hasPiece: Bool {return self._piece != nil}
-    /// Clears the value of `piece`. Subsequent reads from it will return its default value.
-    mutating func clearPiece() {self._piece = nil}
 
-    var score: Float {
-      get {return _score ?? 0}
-      set {_score = newValue}
+    /// Spec used to generate this model file.
+    var trainerSpec: Sentencepiece_TrainerSpec {
+        get { return _storage._trainerSpec ?? Sentencepiece_TrainerSpec() }
+        set { _uniqueStorage()._trainerSpec = newValue }
     }
-    /// Returns true if `score` has been explicitly set.
-    var hasScore: Bool {return self._score != nil}
-    /// Clears the value of `score`. Subsequent reads from it will return its default value.
-    mutating func clearScore() {self._score = nil}
+    /// Returns true if `trainerSpec` has been explicitly set.
+    var hasTrainerSpec: Bool { return _storage._trainerSpec != nil }
+    /// Clears the value of `trainerSpec`. Subsequent reads from it will return its default value.
+    mutating func clearTrainerSpec() { _uniqueStorage()._trainerSpec = nil }
 
-    var type: Sentencepiece_ModelProto.SentencePiece.TypeEnum {
-      get {return _type ?? .normal}
-      set {_type = newValue}
+    /// Spec for text normalization.
+    var normalizerSpec: Sentencepiece_NormalizerSpec {
+        get { return _storage._normalizerSpec ?? Sentencepiece_NormalizerSpec() }
+        set { _uniqueStorage()._normalizerSpec = newValue }
     }
-    /// Returns true if `type` has been explicitly set.
-    var hasType: Bool {return self._type != nil}
-    /// Clears the value of `type`. Subsequent reads from it will return its default value.
-    mutating func clearType() {self._type = nil}
+    /// Returns true if `normalizerSpec` has been explicitly set.
+    var hasNormalizerSpec: Bool { return _storage._normalizerSpec != nil }
+    /// Clears the value of `normalizerSpec`. Subsequent reads from it will return its default value.
+    mutating func clearNormalizerSpec() { _uniqueStorage()._normalizerSpec = nil }
+
+    /// Stores sample input and its expected segmentation to verify the model.
+    var selfTestData: Sentencepiece_SelfTestData {
+        get { return _storage._selfTestData ?? Sentencepiece_SelfTestData() }
+        set { _uniqueStorage()._selfTestData = newValue }
+    }
+    /// Returns true if `selfTestData` has been explicitly set.
+    var hasSelfTestData: Bool { return _storage._selfTestData != nil }
+    /// Clears the value of `selfTestData`. Subsequent reads from it will return its default value.
+    mutating func clearSelfTestData() { _uniqueStorage()._selfTestData = nil }
 
     var unknownFields = SwiftProtobuf.UnknownStorage()
 
-    enum TypeEnum: SwiftProtobuf.Enum {
-      typealias RawValue = Int
+    struct SentencePiece: SwiftProtobuf.ExtensibleMessage {
+        // SwiftProtobuf.Message conformance is added in an extension below. See the
+        // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+        // methods supported on all messages.
 
-      /// normal symbol
-      case normal // = 1
-
-      /// unknown symbol. only <unk> for now.
-      case unknown // = 2
-
-      /// control symbols. </s>, <s>, <2ja> etc.
-      case control // = 3
-
-      /// user defined symbols.
-      case userDefined // = 4
-
-      /// Typical usage of USER_DEFINED symbol
-      /// is placeholder.
-      case unused // = 5
-
-      init() {
-        self = .normal
-      }
-
-      init?(rawValue: Int) {
-        switch rawValue {
-        case 1: self = .normal
-        case 2: self = .unknown
-        case 3: self = .control
-        case 4: self = .userDefined
-        case 5: self = .unused
-        default: return nil
+        /// piece must not be empty.
+        var piece: String {
+            get { return _piece ?? String() }
+            set { _piece = newValue }
         }
-      }
+        /// Returns true if `piece` has been explicitly set.
+        var hasPiece: Bool { return self._piece != nil }
+        /// Clears the value of `piece`. Subsequent reads from it will return its default value.
+        mutating func clearPiece() { self._piece = nil }
 
-      var rawValue: Int {
-        switch self {
-        case .normal: return 1
-        case .unknown: return 2
-        case .control: return 3
-        case .userDefined: return 4
-        case .unused: return 5
+        var score: Float {
+            get { return _score ?? 0 }
+            set { _score = newValue }
         }
-      }
+        /// Returns true if `score` has been explicitly set.
+        var hasScore: Bool { return self._score != nil }
+        /// Clears the value of `score`. Subsequent reads from it will return its default value.
+        mutating func clearScore() { self._score = nil }
 
+        var type: Sentencepiece_ModelProto.SentencePiece.TypeEnum {
+            get { return _type ?? .normal }
+            set { _type = newValue }
+        }
+        /// Returns true if `type` has been explicitly set.
+        var hasType: Bool { return self._type != nil }
+        /// Clears the value of `type`. Subsequent reads from it will return its default value.
+        mutating func clearType() { self._type = nil }
+
+        var unknownFields = SwiftProtobuf.UnknownStorage()
+
+        enum TypeEnum: SwiftProtobuf.Enum {
+            typealias RawValue = Int
+
+            /// normal symbol
+            case normal  // = 1
+
+            /// unknown symbol. only <unk> for now.
+            case unknown  // = 2
+
+            /// control symbols. </s>, <s>, <2ja> etc.
+            case control  // = 3
+
+            /// user defined symbols.
+            case userDefined  // = 4
+
+            /// Typical usage of USER_DEFINED symbol
+            /// is placeholder.
+            case unused  // = 5
+
+            init() {
+                self = .normal
+            }
+
+            init?(rawValue: Int) {
+                switch rawValue {
+                case 1: self = .normal
+                case 2: self = .unknown
+                case 3: self = .control
+                case 4: self = .userDefined
+                case 5: self = .unused
+                default: return nil
+                }
+            }
+
+            var rawValue: Int {
+                switch self {
+                case .normal: return 1
+                case .unknown: return 2
+                case .control: return 3
+                case .userDefined: return 4
+                case .unused: return 5
+                }
+            }
+
+        }
+
+        init() {}
+
+        var _protobuf_extensionFieldValues = SwiftProtobuf.ExtensionFieldValueSet()
+        fileprivate var _piece: String? = nil
+        fileprivate var _score: Float? = nil
+        fileprivate var _type: Sentencepiece_ModelProto.SentencePiece.TypeEnum? = nil
     }
 
     init() {}
 
     var _protobuf_extensionFieldValues = SwiftProtobuf.ExtensionFieldValueSet()
-    fileprivate var _piece: String? = nil
-    fileprivate var _score: Float? = nil
-    fileprivate var _type: Sentencepiece_ModelProto.SentencePiece.TypeEnum? = nil
-  }
-
-  init() {}
-
-  var _protobuf_extensionFieldValues = SwiftProtobuf.ExtensionFieldValueSet()
-  fileprivate var _storage = _StorageClass.defaultInstance
+    fileprivate var _storage = _StorageClass.defaultInstance
 }
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
 fileprivate let _protobuf_package = "sentencepiece"
 
-extension Sentencepiece_TrainerSpec: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".TrainerSpec"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "input"),
-    7: .standard(proto: "input_format"),
-    2: .standard(proto: "model_prefix"),
-    3: .standard(proto: "model_type"),
-    4: .standard(proto: "vocab_size"),
-    5: .standard(proto: "accept_language"),
-    6: .standard(proto: "self_test_sample_size"),
-    10: .standard(proto: "character_coverage"),
-    11: .standard(proto: "input_sentence_size"),
-    19: .standard(proto: "shuffle_input_sentence"),
-    12: .standard(proto: "mining_sentence_size"),
-    13: .standard(proto: "training_sentence_size"),
-    14: .standard(proto: "seed_sentencepiece_size"),
-    15: .standard(proto: "shrinking_factor"),
-    18: .standard(proto: "max_sentence_length"),
-    16: .standard(proto: "num_threads"),
-    17: .standard(proto: "num_sub_iterations"),
-    20: .standard(proto: "max_sentencepiece_length"),
-    21: .standard(proto: "split_by_unicode_script"),
-    23: .standard(proto: "split_by_number"),
-    22: .standard(proto: "split_by_whitespace"),
-    24: .standard(proto: "treat_whitespace_as_suffix"),
-    30: .standard(proto: "control_symbols"),
-    31: .standard(proto: "user_defined_symbols"),
-    33: .standard(proto: "hard_vocab_limit"),
-    34: .standard(proto: "use_all_vocab"),
-    40: .standard(proto: "unk_id"),
-    41: .standard(proto: "bos_id"),
-    42: .standard(proto: "eos_id"),
-    43: .standard(proto: "pad_id"),
-    45: .standard(proto: "unk_piece"),
-    46: .standard(proto: "bos_piece"),
-    47: .standard(proto: "eos_piece"),
-    48: .standard(proto: "pad_piece"),
-    44: .standard(proto: "unk_surface"),
-  ]
+extension Sentencepiece_TrainerSpec: SwiftProtobuf.Message, SwiftProtobuf
+        ._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding
+{
+    static let protoMessageName: String = _protobuf_package + ".TrainerSpec"
+    static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+        1: .same(proto: "input"),
+        7: .standard(proto: "input_format"),
+        2: .standard(proto: "model_prefix"),
+        3: .standard(proto: "model_type"),
+        4: .standard(proto: "vocab_size"),
+        5: .standard(proto: "accept_language"),
+        6: .standard(proto: "self_test_sample_size"),
+        10: .standard(proto: "character_coverage"),
+        11: .standard(proto: "input_sentence_size"),
+        19: .standard(proto: "shuffle_input_sentence"),
+        12: .standard(proto: "mining_sentence_size"),
+        13: .standard(proto: "training_sentence_size"),
+        14: .standard(proto: "seed_sentencepiece_size"),
+        15: .standard(proto: "shrinking_factor"),
+        18: .standard(proto: "max_sentence_length"),
+        16: .standard(proto: "num_threads"),
+        17: .standard(proto: "num_sub_iterations"),
+        20: .standard(proto: "max_sentencepiece_length"),
+        21: .standard(proto: "split_by_unicode_script"),
+        23: .standard(proto: "split_by_number"),
+        22: .standard(proto: "split_by_whitespace"),
+        24: .standard(proto: "treat_whitespace_as_suffix"),
+        30: .standard(proto: "control_symbols"),
+        31: .standard(proto: "user_defined_symbols"),
+        33: .standard(proto: "hard_vocab_limit"),
+        34: .standard(proto: "use_all_vocab"),
+        40: .standard(proto: "unk_id"),
+        41: .standard(proto: "bos_id"),
+        42: .standard(proto: "eos_id"),
+        43: .standard(proto: "pad_id"),
+        45: .standard(proto: "unk_piece"),
+        46: .standard(proto: "bos_piece"),
+        47: .standard(proto: "eos_piece"),
+        48: .standard(proto: "pad_piece"),
+        44: .standard(proto: "unk_surface"),
+    ]
 
-  fileprivate class _StorageClass {
-    var _input: [String] = []
-    var _inputFormat: String? = nil
-    var _modelPrefix: String? = nil
-    var _modelType: Sentencepiece_TrainerSpec.ModelType? = nil
-    var _vocabSize: Int32? = nil
-    var _acceptLanguage: [String] = []
-    var _selfTestSampleSize: Int32? = nil
-    var _characterCoverage: Float? = nil
-    var _inputSentenceSize: Int32? = nil
-    var _shuffleInputSentence: Bool? = nil
-    var _miningSentenceSize: Int32? = nil
-    var _trainingSentenceSize: Int32? = nil
-    var _seedSentencepieceSize: Int32? = nil
-    var _shrinkingFactor: Float? = nil
-    var _maxSentenceLength: Int32? = nil
-    var _numThreads: Int32? = nil
-    var _numSubIterations: Int32? = nil
-    var _maxSentencepieceLength: Int32? = nil
-    var _splitByUnicodeScript: Bool? = nil
-    var _splitByNumber: Bool? = nil
-    var _splitByWhitespace: Bool? = nil
-    var _treatWhitespaceAsSuffix: Bool? = nil
-    var _controlSymbols: [String] = []
-    var _userDefinedSymbols: [String] = []
-    var _hardVocabLimit: Bool? = nil
-    var _useAllVocab: Bool? = nil
-    var _unkID: Int32? = nil
-    var _bosID: Int32? = nil
-    var _eosID: Int32? = nil
-    var _padID: Int32? = nil
-    var _unkPiece: String? = nil
-    var _bosPiece: String? = nil
-    var _eosPiece: String? = nil
-    var _padPiece: String? = nil
-    var _unkSurface: String? = nil
+    fileprivate class _StorageClass {
+        var _input: [String] = []
+        var _inputFormat: String? = nil
+        var _modelPrefix: String? = nil
+        var _modelType: Sentencepiece_TrainerSpec.ModelType? = nil
+        var _vocabSize: Int32? = nil
+        var _acceptLanguage: [String] = []
+        var _selfTestSampleSize: Int32? = nil
+        var _characterCoverage: Float? = nil
+        var _inputSentenceSize: Int32? = nil
+        var _shuffleInputSentence: Bool? = nil
+        var _miningSentenceSize: Int32? = nil
+        var _trainingSentenceSize: Int32? = nil
+        var _seedSentencepieceSize: Int32? = nil
+        var _shrinkingFactor: Float? = nil
+        var _maxSentenceLength: Int32? = nil
+        var _numThreads: Int32? = nil
+        var _numSubIterations: Int32? = nil
+        var _maxSentencepieceLength: Int32? = nil
+        var _splitByUnicodeScript: Bool? = nil
+        var _splitByNumber: Bool? = nil
+        var _splitByWhitespace: Bool? = nil
+        var _treatWhitespaceAsSuffix: Bool? = nil
+        var _controlSymbols: [String] = []
+        var _userDefinedSymbols: [String] = []
+        var _hardVocabLimit: Bool? = nil
+        var _useAllVocab: Bool? = nil
+        var _unkID: Int32? = nil
+        var _bosID: Int32? = nil
+        var _eosID: Int32? = nil
+        var _padID: Int32? = nil
+        var _unkPiece: String? = nil
+        var _bosPiece: String? = nil
+        var _eosPiece: String? = nil
+        var _padPiece: String? = nil
+        var _unkSurface: String? = nil
 
-    static let defaultInstance = _StorageClass()
+        static let defaultInstance = _StorageClass()
 
-    private init() {}
+        private init() {}
 
-    init(copying source: _StorageClass) {
-      _input = source._input
-      _inputFormat = source._inputFormat
-      _modelPrefix = source._modelPrefix
-      _modelType = source._modelType
-      _vocabSize = source._vocabSize
-      _acceptLanguage = source._acceptLanguage
-      _selfTestSampleSize = source._selfTestSampleSize
-      _characterCoverage = source._characterCoverage
-      _inputSentenceSize = source._inputSentenceSize
-      _shuffleInputSentence = source._shuffleInputSentence
-      _miningSentenceSize = source._miningSentenceSize
-      _trainingSentenceSize = source._trainingSentenceSize
-      _seedSentencepieceSize = source._seedSentencepieceSize
-      _shrinkingFactor = source._shrinkingFactor
-      _maxSentenceLength = source._maxSentenceLength
-      _numThreads = source._numThreads
-      _numSubIterations = source._numSubIterations
-      _maxSentencepieceLength = source._maxSentencepieceLength
-      _splitByUnicodeScript = source._splitByUnicodeScript
-      _splitByNumber = source._splitByNumber
-      _splitByWhitespace = source._splitByWhitespace
-      _treatWhitespaceAsSuffix = source._treatWhitespaceAsSuffix
-      _controlSymbols = source._controlSymbols
-      _userDefinedSymbols = source._userDefinedSymbols
-      _hardVocabLimit = source._hardVocabLimit
-      _useAllVocab = source._useAllVocab
-      _unkID = source._unkID
-      _bosID = source._bosID
-      _eosID = source._eosID
-      _padID = source._padID
-      _unkPiece = source._unkPiece
-      _bosPiece = source._bosPiece
-      _eosPiece = source._eosPiece
-      _padPiece = source._padPiece
-      _unkSurface = source._unkSurface
-    }
-  }
-
-  fileprivate mutating func _uniqueStorage() -> _StorageClass {
-    if !isKnownUniquelyReferenced(&_storage) {
-      _storage = _StorageClass(copying: _storage)
-    }
-    return _storage
-  }
-
-  public var isInitialized: Bool {
-    if !_protobuf_extensionFieldValues.isInitialized {return false}
-    return true
-  }
-
-  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    _ = _uniqueStorage()
-    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
-      while let fieldNumber = try decoder.nextFieldNumber() {
-        switch fieldNumber {
-        case 1: try decoder.decodeRepeatedStringField(value: &_storage._input)
-        case 2: try decoder.decodeSingularStringField(value: &_storage._modelPrefix)
-        case 3: try decoder.decodeSingularEnumField(value: &_storage._modelType)
-        case 4: try decoder.decodeSingularInt32Field(value: &_storage._vocabSize)
-        case 5: try decoder.decodeRepeatedStringField(value: &_storage._acceptLanguage)
-        case 6: try decoder.decodeSingularInt32Field(value: &_storage._selfTestSampleSize)
-        case 7: try decoder.decodeSingularStringField(value: &_storage._inputFormat)
-        case 10: try decoder.decodeSingularFloatField(value: &_storage._characterCoverage)
-        case 11: try decoder.decodeSingularInt32Field(value: &_storage._inputSentenceSize)
-        case 12: try decoder.decodeSingularInt32Field(value: &_storage._miningSentenceSize)
-        case 13: try decoder.decodeSingularInt32Field(value: &_storage._trainingSentenceSize)
-        case 14: try decoder.decodeSingularInt32Field(value: &_storage._seedSentencepieceSize)
-        case 15: try decoder.decodeSingularFloatField(value: &_storage._shrinkingFactor)
-        case 16: try decoder.decodeSingularInt32Field(value: &_storage._numThreads)
-        case 17: try decoder.decodeSingularInt32Field(value: &_storage._numSubIterations)
-        case 18: try decoder.decodeSingularInt32Field(value: &_storage._maxSentenceLength)
-        case 19: try decoder.decodeSingularBoolField(value: &_storage._shuffleInputSentence)
-        case 20: try decoder.decodeSingularInt32Field(value: &_storage._maxSentencepieceLength)
-        case 21: try decoder.decodeSingularBoolField(value: &_storage._splitByUnicodeScript)
-        case 22: try decoder.decodeSingularBoolField(value: &_storage._splitByWhitespace)
-        case 23: try decoder.decodeSingularBoolField(value: &_storage._splitByNumber)
-        case 24: try decoder.decodeSingularBoolField(value: &_storage._treatWhitespaceAsSuffix)
-        case 30: try decoder.decodeRepeatedStringField(value: &_storage._controlSymbols)
-        case 31: try decoder.decodeRepeatedStringField(value: &_storage._userDefinedSymbols)
-        case 33: try decoder.decodeSingularBoolField(value: &_storage._hardVocabLimit)
-        case 34: try decoder.decodeSingularBoolField(value: &_storage._useAllVocab)
-        case 40: try decoder.decodeSingularInt32Field(value: &_storage._unkID)
-        case 41: try decoder.decodeSingularInt32Field(value: &_storage._bosID)
-        case 42: try decoder.decodeSingularInt32Field(value: &_storage._eosID)
-        case 43: try decoder.decodeSingularInt32Field(value: &_storage._padID)
-        case 44: try decoder.decodeSingularStringField(value: &_storage._unkSurface)
-        case 45: try decoder.decodeSingularStringField(value: &_storage._unkPiece)
-        case 46: try decoder.decodeSingularStringField(value: &_storage._bosPiece)
-        case 47: try decoder.decodeSingularStringField(value: &_storage._eosPiece)
-        case 48: try decoder.decodeSingularStringField(value: &_storage._padPiece)
-        case 200..<536870912:
-          try decoder.decodeExtensionField(values: &_protobuf_extensionFieldValues, messageType: Sentencepiece_TrainerSpec.self, fieldNumber: fieldNumber)
-        default: break
+        init(copying source: _StorageClass) {
+            _input = source._input
+            _inputFormat = source._inputFormat
+            _modelPrefix = source._modelPrefix
+            _modelType = source._modelType
+            _vocabSize = source._vocabSize
+            _acceptLanguage = source._acceptLanguage
+            _selfTestSampleSize = source._selfTestSampleSize
+            _characterCoverage = source._characterCoverage
+            _inputSentenceSize = source._inputSentenceSize
+            _shuffleInputSentence = source._shuffleInputSentence
+            _miningSentenceSize = source._miningSentenceSize
+            _trainingSentenceSize = source._trainingSentenceSize
+            _seedSentencepieceSize = source._seedSentencepieceSize
+            _shrinkingFactor = source._shrinkingFactor
+            _maxSentenceLength = source._maxSentenceLength
+            _numThreads = source._numThreads
+            _numSubIterations = source._numSubIterations
+            _maxSentencepieceLength = source._maxSentencepieceLength
+            _splitByUnicodeScript = source._splitByUnicodeScript
+            _splitByNumber = source._splitByNumber
+            _splitByWhitespace = source._splitByWhitespace
+            _treatWhitespaceAsSuffix = source._treatWhitespaceAsSuffix
+            _controlSymbols = source._controlSymbols
+            _userDefinedSymbols = source._userDefinedSymbols
+            _hardVocabLimit = source._hardVocabLimit
+            _useAllVocab = source._useAllVocab
+            _unkID = source._unkID
+            _bosID = source._bosID
+            _eosID = source._eosID
+            _padID = source._padID
+            _unkPiece = source._unkPiece
+            _bosPiece = source._bosPiece
+            _eosPiece = source._eosPiece
+            _padPiece = source._padPiece
+            _unkSurface = source._unkSurface
         }
-      }
     }
-  }
 
-  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
-      if !_storage._input.isEmpty {
-        try visitor.visitRepeatedStringField(value: _storage._input, fieldNumber: 1)
-      }
-      if let v = _storage._modelPrefix {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 2)
-      }
-      if let v = _storage._modelType {
-        try visitor.visitSingularEnumField(value: v, fieldNumber: 3)
-      }
-      if let v = _storage._vocabSize {
-        try visitor.visitSingularInt32Field(value: v, fieldNumber: 4)
-      }
-      if !_storage._acceptLanguage.isEmpty {
-        try visitor.visitRepeatedStringField(value: _storage._acceptLanguage, fieldNumber: 5)
-      }
-      if let v = _storage._selfTestSampleSize {
-        try visitor.visitSingularInt32Field(value: v, fieldNumber: 6)
-      }
-      if let v = _storage._inputFormat {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 7)
-      }
-      if let v = _storage._characterCoverage {
-        try visitor.visitSingularFloatField(value: v, fieldNumber: 10)
-      }
-      if let v = _storage._inputSentenceSize {
-        try visitor.visitSingularInt32Field(value: v, fieldNumber: 11)
-      }
-      if let v = _storage._miningSentenceSize {
-        try visitor.visitSingularInt32Field(value: v, fieldNumber: 12)
-      }
-      if let v = _storage._trainingSentenceSize {
-        try visitor.visitSingularInt32Field(value: v, fieldNumber: 13)
-      }
-      if let v = _storage._seedSentencepieceSize {
-        try visitor.visitSingularInt32Field(value: v, fieldNumber: 14)
-      }
-      if let v = _storage._shrinkingFactor {
-        try visitor.visitSingularFloatField(value: v, fieldNumber: 15)
-      }
-      if let v = _storage._numThreads {
-        try visitor.visitSingularInt32Field(value: v, fieldNumber: 16)
-      }
-      if let v = _storage._numSubIterations {
-        try visitor.visitSingularInt32Field(value: v, fieldNumber: 17)
-      }
-      if let v = _storage._maxSentenceLength {
-        try visitor.visitSingularInt32Field(value: v, fieldNumber: 18)
-      }
-      if let v = _storage._shuffleInputSentence {
-        try visitor.visitSingularBoolField(value: v, fieldNumber: 19)
-      }
-      if let v = _storage._maxSentencepieceLength {
-        try visitor.visitSingularInt32Field(value: v, fieldNumber: 20)
-      }
-      if let v = _storage._splitByUnicodeScript {
-        try visitor.visitSingularBoolField(value: v, fieldNumber: 21)
-      }
-      if let v = _storage._splitByWhitespace {
-        try visitor.visitSingularBoolField(value: v, fieldNumber: 22)
-      }
-      if let v = _storage._splitByNumber {
-        try visitor.visitSingularBoolField(value: v, fieldNumber: 23)
-      }
-      if let v = _storage._treatWhitespaceAsSuffix {
-        try visitor.visitSingularBoolField(value: v, fieldNumber: 24)
-      }
-      if !_storage._controlSymbols.isEmpty {
-        try visitor.visitRepeatedStringField(value: _storage._controlSymbols, fieldNumber: 30)
-      }
-      if !_storage._userDefinedSymbols.isEmpty {
-        try visitor.visitRepeatedStringField(value: _storage._userDefinedSymbols, fieldNumber: 31)
-      }
-      if let v = _storage._hardVocabLimit {
-        try visitor.visitSingularBoolField(value: v, fieldNumber: 33)
-      }
-      if let v = _storage._useAllVocab {
-        try visitor.visitSingularBoolField(value: v, fieldNumber: 34)
-      }
-      if let v = _storage._unkID {
-        try visitor.visitSingularInt32Field(value: v, fieldNumber: 40)
-      }
-      if let v = _storage._bosID {
-        try visitor.visitSingularInt32Field(value: v, fieldNumber: 41)
-      }
-      if let v = _storage._eosID {
-        try visitor.visitSingularInt32Field(value: v, fieldNumber: 42)
-      }
-      if let v = _storage._padID {
-        try visitor.visitSingularInt32Field(value: v, fieldNumber: 43)
-      }
-      if let v = _storage._unkSurface {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 44)
-      }
-      if let v = _storage._unkPiece {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 45)
-      }
-      if let v = _storage._bosPiece {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 46)
-      }
-      if let v = _storage._eosPiece {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 47)
-      }
-      if let v = _storage._padPiece {
-        try visitor.visitSingularStringField(value: v, fieldNumber: 48)
-      }
-      try visitor.visitExtensionFields(fields: _protobuf_extensionFieldValues, start: 200, end: 536870912)
+    fileprivate mutating func _uniqueStorage() -> _StorageClass {
+        if !isKnownUniquelyReferenced(&_storage) {
+            _storage = _StorageClass(copying: _storage)
+        }
+        return _storage
     }
-    try unknownFields.traverse(visitor: &visitor)
-  }
 
-  static func ==(lhs: Sentencepiece_TrainerSpec, rhs: Sentencepiece_TrainerSpec) -> Bool {
-    if lhs._storage !== rhs._storage {
-      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
-        let _storage = _args.0
-        let rhs_storage = _args.1
-        if _storage._input != rhs_storage._input {return false}
-        if _storage._inputFormat != rhs_storage._inputFormat {return false}
-        if _storage._modelPrefix != rhs_storage._modelPrefix {return false}
-        if _storage._modelType != rhs_storage._modelType {return false}
-        if _storage._vocabSize != rhs_storage._vocabSize {return false}
-        if _storage._acceptLanguage != rhs_storage._acceptLanguage {return false}
-        if _storage._selfTestSampleSize != rhs_storage._selfTestSampleSize {return false}
-        if _storage._characterCoverage != rhs_storage._characterCoverage {return false}
-        if _storage._inputSentenceSize != rhs_storage._inputSentenceSize {return false}
-        if _storage._shuffleInputSentence != rhs_storage._shuffleInputSentence {return false}
-        if _storage._miningSentenceSize != rhs_storage._miningSentenceSize {return false}
-        if _storage._trainingSentenceSize != rhs_storage._trainingSentenceSize {return false}
-        if _storage._seedSentencepieceSize != rhs_storage._seedSentencepieceSize {return false}
-        if _storage._shrinkingFactor != rhs_storage._shrinkingFactor {return false}
-        if _storage._maxSentenceLength != rhs_storage._maxSentenceLength {return false}
-        if _storage._numThreads != rhs_storage._numThreads {return false}
-        if _storage._numSubIterations != rhs_storage._numSubIterations {return false}
-        if _storage._maxSentencepieceLength != rhs_storage._maxSentencepieceLength {return false}
-        if _storage._splitByUnicodeScript != rhs_storage._splitByUnicodeScript {return false}
-        if _storage._splitByNumber != rhs_storage._splitByNumber {return false}
-        if _storage._splitByWhitespace != rhs_storage._splitByWhitespace {return false}
-        if _storage._treatWhitespaceAsSuffix != rhs_storage._treatWhitespaceAsSuffix {return false}
-        if _storage._controlSymbols != rhs_storage._controlSymbols {return false}
-        if _storage._userDefinedSymbols != rhs_storage._userDefinedSymbols {return false}
-        if _storage._hardVocabLimit != rhs_storage._hardVocabLimit {return false}
-        if _storage._useAllVocab != rhs_storage._useAllVocab {return false}
-        if _storage._unkID != rhs_storage._unkID {return false}
-        if _storage._bosID != rhs_storage._bosID {return false}
-        if _storage._eosID != rhs_storage._eosID {return false}
-        if _storage._padID != rhs_storage._padID {return false}
-        if _storage._unkPiece != rhs_storage._unkPiece {return false}
-        if _storage._bosPiece != rhs_storage._bosPiece {return false}
-        if _storage._eosPiece != rhs_storage._eosPiece {return false}
-        if _storage._padPiece != rhs_storage._padPiece {return false}
-        if _storage._unkSurface != rhs_storage._unkSurface {return false}
+    public var isInitialized: Bool {
+        if !_protobuf_extensionFieldValues.isInitialized { return false }
         return true
-      }
-      if !storagesAreEqual {return false}
     }
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    if lhs._protobuf_extensionFieldValues != rhs._protobuf_extensionFieldValues {return false}
-    return true
-  }
+
+    mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+        _ = _uniqueStorage()
+        try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+            while let fieldNumber = try decoder.nextFieldNumber() {
+                switch fieldNumber {
+                case 1: try decoder.decodeRepeatedStringField(value: &_storage._input)
+                case 2: try decoder.decodeSingularStringField(value: &_storage._modelPrefix)
+                case 3: try decoder.decodeSingularEnumField(value: &_storage._modelType)
+                case 4: try decoder.decodeSingularInt32Field(value: &_storage._vocabSize)
+                case 5: try decoder.decodeRepeatedStringField(value: &_storage._acceptLanguage)
+                case 6: try decoder.decodeSingularInt32Field(value: &_storage._selfTestSampleSize)
+                case 7: try decoder.decodeSingularStringField(value: &_storage._inputFormat)
+                case 10: try decoder.decodeSingularFloatField(value: &_storage._characterCoverage)
+                case 11: try decoder.decodeSingularInt32Field(value: &_storage._inputSentenceSize)
+                case 12: try decoder.decodeSingularInt32Field(value: &_storage._miningSentenceSize)
+                case 13:
+                    try decoder.decodeSingularInt32Field(value: &_storage._trainingSentenceSize)
+                case 14:
+                    try decoder.decodeSingularInt32Field(value: &_storage._seedSentencepieceSize)
+                case 15: try decoder.decodeSingularFloatField(value: &_storage._shrinkingFactor)
+                case 16: try decoder.decodeSingularInt32Field(value: &_storage._numThreads)
+                case 17: try decoder.decodeSingularInt32Field(value: &_storage._numSubIterations)
+                case 18: try decoder.decodeSingularInt32Field(value: &_storage._maxSentenceLength)
+                case 19: try decoder.decodeSingularBoolField(value: &_storage._shuffleInputSentence)
+                case 20:
+                    try decoder.decodeSingularInt32Field(value: &_storage._maxSentencepieceLength)
+                case 21: try decoder.decodeSingularBoolField(value: &_storage._splitByUnicodeScript)
+                case 22: try decoder.decodeSingularBoolField(value: &_storage._splitByWhitespace)
+                case 23: try decoder.decodeSingularBoolField(value: &_storage._splitByNumber)
+                case 24:
+                    try decoder.decodeSingularBoolField(value: &_storage._treatWhitespaceAsSuffix)
+                case 30: try decoder.decodeRepeatedStringField(value: &_storage._controlSymbols)
+                case 31: try decoder.decodeRepeatedStringField(value: &_storage._userDefinedSymbols)
+                case 33: try decoder.decodeSingularBoolField(value: &_storage._hardVocabLimit)
+                case 34: try decoder.decodeSingularBoolField(value: &_storage._useAllVocab)
+                case 40: try decoder.decodeSingularInt32Field(value: &_storage._unkID)
+                case 41: try decoder.decodeSingularInt32Field(value: &_storage._bosID)
+                case 42: try decoder.decodeSingularInt32Field(value: &_storage._eosID)
+                case 43: try decoder.decodeSingularInt32Field(value: &_storage._padID)
+                case 44: try decoder.decodeSingularStringField(value: &_storage._unkSurface)
+                case 45: try decoder.decodeSingularStringField(value: &_storage._unkPiece)
+                case 46: try decoder.decodeSingularStringField(value: &_storage._bosPiece)
+                case 47: try decoder.decodeSingularStringField(value: &_storage._eosPiece)
+                case 48: try decoder.decodeSingularStringField(value: &_storage._padPiece)
+                case 200..<536_870_912:
+                    try decoder.decodeExtensionField(
+                        values: &_protobuf_extensionFieldValues,
+                        messageType: Sentencepiece_TrainerSpec.self, fieldNumber: fieldNumber)
+                default: break
+                }
+            }
+        }
+    }
+
+    func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+        try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+            if !_storage._input.isEmpty {
+                try visitor.visitRepeatedStringField(value: _storage._input, fieldNumber: 1)
+            }
+            if let v = _storage._modelPrefix {
+                try visitor.visitSingularStringField(value: v, fieldNumber: 2)
+            }
+            if let v = _storage._modelType {
+                try visitor.visitSingularEnumField(value: v, fieldNumber: 3)
+            }
+            if let v = _storage._vocabSize {
+                try visitor.visitSingularInt32Field(value: v, fieldNumber: 4)
+            }
+            if !_storage._acceptLanguage.isEmpty {
+                try visitor.visitRepeatedStringField(
+                    value: _storage._acceptLanguage, fieldNumber: 5)
+            }
+            if let v = _storage._selfTestSampleSize {
+                try visitor.visitSingularInt32Field(value: v, fieldNumber: 6)
+            }
+            if let v = _storage._inputFormat {
+                try visitor.visitSingularStringField(value: v, fieldNumber: 7)
+            }
+            if let v = _storage._characterCoverage {
+                try visitor.visitSingularFloatField(value: v, fieldNumber: 10)
+            }
+            if let v = _storage._inputSentenceSize {
+                try visitor.visitSingularInt32Field(value: v, fieldNumber: 11)
+            }
+            if let v = _storage._miningSentenceSize {
+                try visitor.visitSingularInt32Field(value: v, fieldNumber: 12)
+            }
+            if let v = _storage._trainingSentenceSize {
+                try visitor.visitSingularInt32Field(value: v, fieldNumber: 13)
+            }
+            if let v = _storage._seedSentencepieceSize {
+                try visitor.visitSingularInt32Field(value: v, fieldNumber: 14)
+            }
+            if let v = _storage._shrinkingFactor {
+                try visitor.visitSingularFloatField(value: v, fieldNumber: 15)
+            }
+            if let v = _storage._numThreads {
+                try visitor.visitSingularInt32Field(value: v, fieldNumber: 16)
+            }
+            if let v = _storage._numSubIterations {
+                try visitor.visitSingularInt32Field(value: v, fieldNumber: 17)
+            }
+            if let v = _storage._maxSentenceLength {
+                try visitor.visitSingularInt32Field(value: v, fieldNumber: 18)
+            }
+            if let v = _storage._shuffleInputSentence {
+                try visitor.visitSingularBoolField(value: v, fieldNumber: 19)
+            }
+            if let v = _storage._maxSentencepieceLength {
+                try visitor.visitSingularInt32Field(value: v, fieldNumber: 20)
+            }
+            if let v = _storage._splitByUnicodeScript {
+                try visitor.visitSingularBoolField(value: v, fieldNumber: 21)
+            }
+            if let v = _storage._splitByWhitespace {
+                try visitor.visitSingularBoolField(value: v, fieldNumber: 22)
+            }
+            if let v = _storage._splitByNumber {
+                try visitor.visitSingularBoolField(value: v, fieldNumber: 23)
+            }
+            if let v = _storage._treatWhitespaceAsSuffix {
+                try visitor.visitSingularBoolField(value: v, fieldNumber: 24)
+            }
+            if !_storage._controlSymbols.isEmpty {
+                try visitor.visitRepeatedStringField(
+                    value: _storage._controlSymbols, fieldNumber: 30)
+            }
+            if !_storage._userDefinedSymbols.isEmpty {
+                try visitor.visitRepeatedStringField(
+                    value: _storage._userDefinedSymbols, fieldNumber: 31)
+            }
+            if let v = _storage._hardVocabLimit {
+                try visitor.visitSingularBoolField(value: v, fieldNumber: 33)
+            }
+            if let v = _storage._useAllVocab {
+                try visitor.visitSingularBoolField(value: v, fieldNumber: 34)
+            }
+            if let v = _storage._unkID {
+                try visitor.visitSingularInt32Field(value: v, fieldNumber: 40)
+            }
+            if let v = _storage._bosID {
+                try visitor.visitSingularInt32Field(value: v, fieldNumber: 41)
+            }
+            if let v = _storage._eosID {
+                try visitor.visitSingularInt32Field(value: v, fieldNumber: 42)
+            }
+            if let v = _storage._padID {
+                try visitor.visitSingularInt32Field(value: v, fieldNumber: 43)
+            }
+            if let v = _storage._unkSurface {
+                try visitor.visitSingularStringField(value: v, fieldNumber: 44)
+            }
+            if let v = _storage._unkPiece {
+                try visitor.visitSingularStringField(value: v, fieldNumber: 45)
+            }
+            if let v = _storage._bosPiece {
+                try visitor.visitSingularStringField(value: v, fieldNumber: 46)
+            }
+            if let v = _storage._eosPiece {
+                try visitor.visitSingularStringField(value: v, fieldNumber: 47)
+            }
+            if let v = _storage._padPiece {
+                try visitor.visitSingularStringField(value: v, fieldNumber: 48)
+            }
+            try visitor.visitExtensionFields(
+                fields: _protobuf_extensionFieldValues, start: 200, end: 536_870_912)
+        }
+        try unknownFields.traverse(visitor: &visitor)
+    }
+
+    static func == (lhs: Sentencepiece_TrainerSpec, rhs: Sentencepiece_TrainerSpec) -> Bool {
+        if lhs._storage !== rhs._storage {
+            let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) {
+                (_args: (_StorageClass, _StorageClass)) in
+                let _storage = _args.0
+                let rhs_storage = _args.1
+                if _storage._input != rhs_storage._input { return false }
+                if _storage._inputFormat != rhs_storage._inputFormat { return false }
+                if _storage._modelPrefix != rhs_storage._modelPrefix { return false }
+                if _storage._modelType != rhs_storage._modelType { return false }
+                if _storage._vocabSize != rhs_storage._vocabSize { return false }
+                if _storage._acceptLanguage != rhs_storage._acceptLanguage { return false }
+                if _storage._selfTestSampleSize != rhs_storage._selfTestSampleSize { return false }
+                if _storage._characterCoverage != rhs_storage._characterCoverage { return false }
+                if _storage._inputSentenceSize != rhs_storage._inputSentenceSize { return false }
+                if _storage._shuffleInputSentence != rhs_storage._shuffleInputSentence {
+                    return false
+                }
+                if _storage._miningSentenceSize != rhs_storage._miningSentenceSize { return false }
+                if _storage._trainingSentenceSize != rhs_storage._trainingSentenceSize {
+                    return false
+                }
+                if _storage._seedSentencepieceSize != rhs_storage._seedSentencepieceSize {
+                    return false
+                }
+                if _storage._shrinkingFactor != rhs_storage._shrinkingFactor { return false }
+                if _storage._maxSentenceLength != rhs_storage._maxSentenceLength { return false }
+                if _storage._numThreads != rhs_storage._numThreads { return false }
+                if _storage._numSubIterations != rhs_storage._numSubIterations { return false }
+                if _storage._maxSentencepieceLength != rhs_storage._maxSentencepieceLength {
+                    return false
+                }
+                if _storage._splitByUnicodeScript != rhs_storage._splitByUnicodeScript {
+                    return false
+                }
+                if _storage._splitByNumber != rhs_storage._splitByNumber { return false }
+                if _storage._splitByWhitespace != rhs_storage._splitByWhitespace { return false }
+                if _storage._treatWhitespaceAsSuffix != rhs_storage._treatWhitespaceAsSuffix {
+                    return false
+                }
+                if _storage._controlSymbols != rhs_storage._controlSymbols { return false }
+                if _storage._userDefinedSymbols != rhs_storage._userDefinedSymbols { return false }
+                if _storage._hardVocabLimit != rhs_storage._hardVocabLimit { return false }
+                if _storage._useAllVocab != rhs_storage._useAllVocab { return false }
+                if _storage._unkID != rhs_storage._unkID { return false }
+                if _storage._bosID != rhs_storage._bosID { return false }
+                if _storage._eosID != rhs_storage._eosID { return false }
+                if _storage._padID != rhs_storage._padID { return false }
+                if _storage._unkPiece != rhs_storage._unkPiece { return false }
+                if _storage._bosPiece != rhs_storage._bosPiece { return false }
+                if _storage._eosPiece != rhs_storage._eosPiece { return false }
+                if _storage._padPiece != rhs_storage._padPiece { return false }
+                if _storage._unkSurface != rhs_storage._unkSurface { return false }
+                return true
+            }
+            if !storagesAreEqual { return false }
+        }
+        if lhs.unknownFields != rhs.unknownFields { return false }
+        if lhs._protobuf_extensionFieldValues != rhs._protobuf_extensionFieldValues { return false }
+        return true
+    }
 }
 
 extension Sentencepiece_TrainerSpec.ModelType: SwiftProtobuf._ProtoNameProviding {
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "UNIGRAM"),
-    2: .same(proto: "BPE"),
-    3: .same(proto: "WORD"),
-    4: .same(proto: "CHAR"),
-  ]
+    static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+        1: .same(proto: "UNIGRAM"),
+        2: .same(proto: "BPE"),
+        3: .same(proto: "WORD"),
+        4: .same(proto: "CHAR"),
+    ]
 }
 
-extension Sentencepiece_NormalizerSpec: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".NormalizerSpec"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "name"),
-    2: .standard(proto: "precompiled_charsmap"),
-    3: .standard(proto: "add_dummy_prefix"),
-    4: .standard(proto: "remove_extra_whitespaces"),
-    5: .standard(proto: "escape_whitespaces"),
-    6: .standard(proto: "normalization_rule_tsv"),
-  ]
+extension Sentencepiece_NormalizerSpec: SwiftProtobuf.Message, SwiftProtobuf
+        ._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding
+{
+    static let protoMessageName: String = _protobuf_package + ".NormalizerSpec"
+    static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+        1: .same(proto: "name"),
+        2: .standard(proto: "precompiled_charsmap"),
+        3: .standard(proto: "add_dummy_prefix"),
+        4: .standard(proto: "remove_extra_whitespaces"),
+        5: .standard(proto: "escape_whitespaces"),
+        6: .standard(proto: "normalization_rule_tsv"),
+    ]
 
-  public var isInitialized: Bool {
-    if !_protobuf_extensionFieldValues.isInitialized {return false}
-    return true
-  }
-
-  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      switch fieldNumber {
-      case 1: try decoder.decodeSingularStringField(value: &self._name)
-      case 2: try decoder.decodeSingularBytesField(value: &self._precompiledCharsmap)
-      case 3: try decoder.decodeSingularBoolField(value: &self._addDummyPrefix)
-      case 4: try decoder.decodeSingularBoolField(value: &self._removeExtraWhitespaces)
-      case 5: try decoder.decodeSingularBoolField(value: &self._escapeWhitespaces)
-      case 6: try decoder.decodeSingularStringField(value: &self._normalizationRuleTsv)
-      case 200..<536870912:
-        try decoder.decodeExtensionField(values: &_protobuf_extensionFieldValues, messageType: Sentencepiece_NormalizerSpec.self, fieldNumber: fieldNumber)
-      default: break
-      }
-    }
-  }
-
-  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if let v = self._name {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
-    }
-    if let v = self._precompiledCharsmap {
-      try visitor.visitSingularBytesField(value: v, fieldNumber: 2)
-    }
-    if let v = self._addDummyPrefix {
-      try visitor.visitSingularBoolField(value: v, fieldNumber: 3)
-    }
-    if let v = self._removeExtraWhitespaces {
-      try visitor.visitSingularBoolField(value: v, fieldNumber: 4)
-    }
-    if let v = self._escapeWhitespaces {
-      try visitor.visitSingularBoolField(value: v, fieldNumber: 5)
-    }
-    if let v = self._normalizationRuleTsv {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 6)
-    }
-    try visitor.visitExtensionFields(fields: _protobuf_extensionFieldValues, start: 200, end: 536870912)
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  static func ==(lhs: Sentencepiece_NormalizerSpec, rhs: Sentencepiece_NormalizerSpec) -> Bool {
-    if lhs._name != rhs._name {return false}
-    if lhs._precompiledCharsmap != rhs._precompiledCharsmap {return false}
-    if lhs._addDummyPrefix != rhs._addDummyPrefix {return false}
-    if lhs._removeExtraWhitespaces != rhs._removeExtraWhitespaces {return false}
-    if lhs._escapeWhitespaces != rhs._escapeWhitespaces {return false}
-    if lhs._normalizationRuleTsv != rhs._normalizationRuleTsv {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    if lhs._protobuf_extensionFieldValues != rhs._protobuf_extensionFieldValues {return false}
-    return true
-  }
-}
-
-extension Sentencepiece_SelfTestData: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".SelfTestData"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "samples"),
-  ]
-
-  public var isInitialized: Bool {
-    if !_protobuf_extensionFieldValues.isInitialized {return false}
-    return true
-  }
-
-  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      switch fieldNumber {
-      case 1: try decoder.decodeRepeatedMessageField(value: &self.samples)
-      case 200..<536870912:
-        try decoder.decodeExtensionField(values: &_protobuf_extensionFieldValues, messageType: Sentencepiece_SelfTestData.self, fieldNumber: fieldNumber)
-      default: break
-      }
-    }
-  }
-
-  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if !self.samples.isEmpty {
-      try visitor.visitRepeatedMessageField(value: self.samples, fieldNumber: 1)
-    }
-    try visitor.visitExtensionFields(fields: _protobuf_extensionFieldValues, start: 200, end: 536870912)
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  static func ==(lhs: Sentencepiece_SelfTestData, rhs: Sentencepiece_SelfTestData) -> Bool {
-    if lhs.samples != rhs.samples {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    if lhs._protobuf_extensionFieldValues != rhs._protobuf_extensionFieldValues {return false}
-    return true
-  }
-}
-
-extension Sentencepiece_SelfTestData.Sample: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = Sentencepiece_SelfTestData.protoMessageName + ".Sample"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "input"),
-    2: .same(proto: "expected"),
-  ]
-
-  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      switch fieldNumber {
-      case 1: try decoder.decodeSingularStringField(value: &self._input)
-      case 2: try decoder.decodeSingularStringField(value: &self._expected)
-      default: break
-      }
-    }
-  }
-
-  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if let v = self._input {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
-    }
-    if let v = self._expected {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 2)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  static func ==(lhs: Sentencepiece_SelfTestData.Sample, rhs: Sentencepiece_SelfTestData.Sample) -> Bool {
-    if lhs._input != rhs._input {return false}
-    if lhs._expected != rhs._expected {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    return true
-  }
-}
-
-extension Sentencepiece_ModelProto: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = _protobuf_package + ".ModelProto"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "pieces"),
-    2: .standard(proto: "trainer_spec"),
-    3: .standard(proto: "normalizer_spec"),
-    4: .standard(proto: "self_test_data"),
-  ]
-
-  fileprivate class _StorageClass {
-    var _pieces: [Sentencepiece_ModelProto.SentencePiece] = []
-    var _trainerSpec: Sentencepiece_TrainerSpec? = nil
-    var _normalizerSpec: Sentencepiece_NormalizerSpec? = nil
-    var _selfTestData: Sentencepiece_SelfTestData? = nil
-
-    static let defaultInstance = _StorageClass()
-
-    private init() {}
-
-    init(copying source: _StorageClass) {
-      _pieces = source._pieces
-      _trainerSpec = source._trainerSpec
-      _normalizerSpec = source._normalizerSpec
-      _selfTestData = source._selfTestData
-    }
-  }
-
-  fileprivate mutating func _uniqueStorage() -> _StorageClass {
-    if !isKnownUniquelyReferenced(&_storage) {
-      _storage = _StorageClass(copying: _storage)
-    }
-    return _storage
-  }
-
-  public var isInitialized: Bool {
-    if !_protobuf_extensionFieldValues.isInitialized {return false}
-    return withExtendedLifetime(_storage) { (_storage: _StorageClass) in
-      if !SwiftProtobuf.Internal.areAllInitialized(_storage._pieces) {return false}
-      if let v = _storage._trainerSpec, !v.isInitialized {return false}
-      if let v = _storage._normalizerSpec, !v.isInitialized {return false}
-      if let v = _storage._selfTestData, !v.isInitialized {return false}
-      return true
-    }
-  }
-
-  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    _ = _uniqueStorage()
-    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
-      while let fieldNumber = try decoder.nextFieldNumber() {
-        switch fieldNumber {
-        case 1: try decoder.decodeRepeatedMessageField(value: &_storage._pieces)
-        case 2: try decoder.decodeSingularMessageField(value: &_storage._trainerSpec)
-        case 3: try decoder.decodeSingularMessageField(value: &_storage._normalizerSpec)
-        case 4: try decoder.decodeSingularMessageField(value: &_storage._selfTestData)
-        case 200..<536870912:
-          try decoder.decodeExtensionField(values: &_protobuf_extensionFieldValues, messageType: Sentencepiece_ModelProto.self, fieldNumber: fieldNumber)
-        default: break
-        }
-      }
-    }
-  }
-
-  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
-      if !_storage._pieces.isEmpty {
-        try visitor.visitRepeatedMessageField(value: _storage._pieces, fieldNumber: 1)
-      }
-      if let v = _storage._trainerSpec {
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
-      }
-      if let v = _storage._normalizerSpec {
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
-      }
-      if let v = _storage._selfTestData {
-        try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
-      }
-      try visitor.visitExtensionFields(fields: _protobuf_extensionFieldValues, start: 200, end: 536870912)
-    }
-    try unknownFields.traverse(visitor: &visitor)
-  }
-
-  static func ==(lhs: Sentencepiece_ModelProto, rhs: Sentencepiece_ModelProto) -> Bool {
-    if lhs._storage !== rhs._storage {
-      let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) { (_args: (_StorageClass, _StorageClass)) in
-        let _storage = _args.0
-        let rhs_storage = _args.1
-        if _storage._pieces != rhs_storage._pieces {return false}
-        if _storage._trainerSpec != rhs_storage._trainerSpec {return false}
-        if _storage._normalizerSpec != rhs_storage._normalizerSpec {return false}
-        if _storage._selfTestData != rhs_storage._selfTestData {return false}
+    public var isInitialized: Bool {
+        if !_protobuf_extensionFieldValues.isInitialized { return false }
         return true
-      }
-      if !storagesAreEqual {return false}
     }
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    if lhs._protobuf_extensionFieldValues != rhs._protobuf_extensionFieldValues {return false}
-    return true
-  }
+
+    mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+        while let fieldNumber = try decoder.nextFieldNumber() {
+            switch fieldNumber {
+            case 1: try decoder.decodeSingularStringField(value: &self._name)
+            case 2: try decoder.decodeSingularBytesField(value: &self._precompiledCharsmap)
+            case 3: try decoder.decodeSingularBoolField(value: &self._addDummyPrefix)
+            case 4: try decoder.decodeSingularBoolField(value: &self._removeExtraWhitespaces)
+            case 5: try decoder.decodeSingularBoolField(value: &self._escapeWhitespaces)
+            case 6: try decoder.decodeSingularStringField(value: &self._normalizationRuleTsv)
+            case 200..<536_870_912:
+                try decoder.decodeExtensionField(
+                    values: &_protobuf_extensionFieldValues,
+                    messageType: Sentencepiece_NormalizerSpec.self, fieldNumber: fieldNumber)
+            default: break
+            }
+        }
+    }
+
+    func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+        if let v = self._name {
+            try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+        }
+        if let v = self._precompiledCharsmap {
+            try visitor.visitSingularBytesField(value: v, fieldNumber: 2)
+        }
+        if let v = self._addDummyPrefix {
+            try visitor.visitSingularBoolField(value: v, fieldNumber: 3)
+        }
+        if let v = self._removeExtraWhitespaces {
+            try visitor.visitSingularBoolField(value: v, fieldNumber: 4)
+        }
+        if let v = self._escapeWhitespaces {
+            try visitor.visitSingularBoolField(value: v, fieldNumber: 5)
+        }
+        if let v = self._normalizationRuleTsv {
+            try visitor.visitSingularStringField(value: v, fieldNumber: 6)
+        }
+        try visitor.visitExtensionFields(
+            fields: _protobuf_extensionFieldValues, start: 200, end: 536_870_912)
+        try unknownFields.traverse(visitor: &visitor)
+    }
+
+    static func == (lhs: Sentencepiece_NormalizerSpec, rhs: Sentencepiece_NormalizerSpec) -> Bool {
+        if lhs._name != rhs._name { return false }
+        if lhs._precompiledCharsmap != rhs._precompiledCharsmap { return false }
+        if lhs._addDummyPrefix != rhs._addDummyPrefix { return false }
+        if lhs._removeExtraWhitespaces != rhs._removeExtraWhitespaces { return false }
+        if lhs._escapeWhitespaces != rhs._escapeWhitespaces { return false }
+        if lhs._normalizationRuleTsv != rhs._normalizationRuleTsv { return false }
+        if lhs.unknownFields != rhs.unknownFields { return false }
+        if lhs._protobuf_extensionFieldValues != rhs._protobuf_extensionFieldValues { return false }
+        return true
+    }
 }
 
-extension Sentencepiece_ModelProto.SentencePiece: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
-  static let protoMessageName: String = Sentencepiece_ModelProto.protoMessageName + ".SentencePiece"
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "piece"),
-    2: .same(proto: "score"),
-    3: .same(proto: "type"),
-  ]
+extension Sentencepiece_SelfTestData: SwiftProtobuf.Message, SwiftProtobuf
+        ._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding
+{
+    static let protoMessageName: String = _protobuf_package + ".SelfTestData"
+    static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+        1: .same(proto: "samples")
+    ]
 
-  public var isInitialized: Bool {
-    if !_protobuf_extensionFieldValues.isInitialized {return false}
-    return true
-  }
+    public var isInitialized: Bool {
+        if !_protobuf_extensionFieldValues.isInitialized { return false }
+        return true
+    }
 
-  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
-    while let fieldNumber = try decoder.nextFieldNumber() {
-      switch fieldNumber {
-      case 1: try decoder.decodeSingularStringField(value: &self._piece)
-      case 2: try decoder.decodeSingularFloatField(value: &self._score)
-      case 3: try decoder.decodeSingularEnumField(value: &self._type)
-      case 200..<536870912:
-        try decoder.decodeExtensionField(values: &_protobuf_extensionFieldValues, messageType: Sentencepiece_ModelProto.SentencePiece.self, fieldNumber: fieldNumber)
-      default: break
-      }
+    mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+        while let fieldNumber = try decoder.nextFieldNumber() {
+            switch fieldNumber {
+            case 1: try decoder.decodeRepeatedMessageField(value: &self.samples)
+            case 200..<536_870_912:
+                try decoder.decodeExtensionField(
+                    values: &_protobuf_extensionFieldValues,
+                    messageType: Sentencepiece_SelfTestData.self, fieldNumber: fieldNumber)
+            default: break
+            }
+        }
     }
-  }
 
-  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
-    if let v = self._piece {
-      try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+    func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+        if !self.samples.isEmpty {
+            try visitor.visitRepeatedMessageField(value: self.samples, fieldNumber: 1)
+        }
+        try visitor.visitExtensionFields(
+            fields: _protobuf_extensionFieldValues, start: 200, end: 536_870_912)
+        try unknownFields.traverse(visitor: &visitor)
     }
-    if let v = self._score {
-      try visitor.visitSingularFloatField(value: v, fieldNumber: 2)
-    }
-    if let v = self._type {
-      try visitor.visitSingularEnumField(value: v, fieldNumber: 3)
-    }
-    try visitor.visitExtensionFields(fields: _protobuf_extensionFieldValues, start: 200, end: 536870912)
-    try unknownFields.traverse(visitor: &visitor)
-  }
 
-  static func ==(lhs: Sentencepiece_ModelProto.SentencePiece, rhs: Sentencepiece_ModelProto.SentencePiece) -> Bool {
-    if lhs._piece != rhs._piece {return false}
-    if lhs._score != rhs._score {return false}
-    if lhs._type != rhs._type {return false}
-    if lhs.unknownFields != rhs.unknownFields {return false}
-    if lhs._protobuf_extensionFieldValues != rhs._protobuf_extensionFieldValues {return false}
-    return true
-  }
+    static func == (lhs: Sentencepiece_SelfTestData, rhs: Sentencepiece_SelfTestData) -> Bool {
+        if lhs.samples != rhs.samples { return false }
+        if lhs.unknownFields != rhs.unknownFields { return false }
+        if lhs._protobuf_extensionFieldValues != rhs._protobuf_extensionFieldValues { return false }
+        return true
+    }
+}
+
+extension Sentencepiece_SelfTestData.Sample: SwiftProtobuf.Message, SwiftProtobuf
+        ._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding
+{
+    static let protoMessageName: String = Sentencepiece_SelfTestData.protoMessageName + ".Sample"
+    static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+        1: .same(proto: "input"),
+        2: .same(proto: "expected"),
+    ]
+
+    mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+        while let fieldNumber = try decoder.nextFieldNumber() {
+            switch fieldNumber {
+            case 1: try decoder.decodeSingularStringField(value: &self._input)
+            case 2: try decoder.decodeSingularStringField(value: &self._expected)
+            default: break
+            }
+        }
+    }
+
+    func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+        if let v = self._input {
+            try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+        }
+        if let v = self._expected {
+            try visitor.visitSingularStringField(value: v, fieldNumber: 2)
+        }
+        try unknownFields.traverse(visitor: &visitor)
+    }
+
+    static func == (lhs: Sentencepiece_SelfTestData.Sample, rhs: Sentencepiece_SelfTestData.Sample)
+        -> Bool
+    {
+        if lhs._input != rhs._input { return false }
+        if lhs._expected != rhs._expected { return false }
+        if lhs.unknownFields != rhs.unknownFields { return false }
+        return true
+    }
+}
+
+extension Sentencepiece_ModelProto: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase,
+    SwiftProtobuf._ProtoNameProviding
+{
+    static let protoMessageName: String = _protobuf_package + ".ModelProto"
+    static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+        1: .same(proto: "pieces"),
+        2: .standard(proto: "trainer_spec"),
+        3: .standard(proto: "normalizer_spec"),
+        4: .standard(proto: "self_test_data"),
+    ]
+
+    fileprivate class _StorageClass {
+        var _pieces: [Sentencepiece_ModelProto.SentencePiece] = []
+        var _trainerSpec: Sentencepiece_TrainerSpec? = nil
+        var _normalizerSpec: Sentencepiece_NormalizerSpec? = nil
+        var _selfTestData: Sentencepiece_SelfTestData? = nil
+
+        static let defaultInstance = _StorageClass()
+
+        private init() {}
+
+        init(copying source: _StorageClass) {
+            _pieces = source._pieces
+            _trainerSpec = source._trainerSpec
+            _normalizerSpec = source._normalizerSpec
+            _selfTestData = source._selfTestData
+        }
+    }
+
+    fileprivate mutating func _uniqueStorage() -> _StorageClass {
+        if !isKnownUniquelyReferenced(&_storage) {
+            _storage = _StorageClass(copying: _storage)
+        }
+        return _storage
+    }
+
+    public var isInitialized: Bool {
+        if !_protobuf_extensionFieldValues.isInitialized { return false }
+        return withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+            if !SwiftProtobuf.Internal.areAllInitialized(_storage._pieces) { return false }
+            if let v = _storage._trainerSpec, !v.isInitialized { return false }
+            if let v = _storage._normalizerSpec, !v.isInitialized { return false }
+            if let v = _storage._selfTestData, !v.isInitialized { return false }
+            return true
+        }
+    }
+
+    mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+        _ = _uniqueStorage()
+        try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+            while let fieldNumber = try decoder.nextFieldNumber() {
+                switch fieldNumber {
+                case 1: try decoder.decodeRepeatedMessageField(value: &_storage._pieces)
+                case 2: try decoder.decodeSingularMessageField(value: &_storage._trainerSpec)
+                case 3: try decoder.decodeSingularMessageField(value: &_storage._normalizerSpec)
+                case 4: try decoder.decodeSingularMessageField(value: &_storage._selfTestData)
+                case 200..<536_870_912:
+                    try decoder.decodeExtensionField(
+                        values: &_protobuf_extensionFieldValues,
+                        messageType: Sentencepiece_ModelProto.self, fieldNumber: fieldNumber)
+                default: break
+                }
+            }
+        }
+    }
+
+    func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+        try withExtendedLifetime(_storage) { (_storage: _StorageClass) in
+            if !_storage._pieces.isEmpty {
+                try visitor.visitRepeatedMessageField(value: _storage._pieces, fieldNumber: 1)
+            }
+            if let v = _storage._trainerSpec {
+                try visitor.visitSingularMessageField(value: v, fieldNumber: 2)
+            }
+            if let v = _storage._normalizerSpec {
+                try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
+            }
+            if let v = _storage._selfTestData {
+                try visitor.visitSingularMessageField(value: v, fieldNumber: 4)
+            }
+            try visitor.visitExtensionFields(
+                fields: _protobuf_extensionFieldValues, start: 200, end: 536_870_912)
+        }
+        try unknownFields.traverse(visitor: &visitor)
+    }
+
+    static func == (lhs: Sentencepiece_ModelProto, rhs: Sentencepiece_ModelProto) -> Bool {
+        if lhs._storage !== rhs._storage {
+            let storagesAreEqual: Bool = withExtendedLifetime((lhs._storage, rhs._storage)) {
+                (_args: (_StorageClass, _StorageClass)) in
+                let _storage = _args.0
+                let rhs_storage = _args.1
+                if _storage._pieces != rhs_storage._pieces { return false }
+                if _storage._trainerSpec != rhs_storage._trainerSpec { return false }
+                if _storage._normalizerSpec != rhs_storage._normalizerSpec { return false }
+                if _storage._selfTestData != rhs_storage._selfTestData { return false }
+                return true
+            }
+            if !storagesAreEqual { return false }
+        }
+        if lhs.unknownFields != rhs.unknownFields { return false }
+        if lhs._protobuf_extensionFieldValues != rhs._protobuf_extensionFieldValues { return false }
+        return true
+    }
+}
+
+extension Sentencepiece_ModelProto.SentencePiece: SwiftProtobuf.Message, SwiftProtobuf
+        ._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding
+{
+    static let protoMessageName: String =
+        Sentencepiece_ModelProto.protoMessageName + ".SentencePiece"
+    static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+        1: .same(proto: "piece"),
+        2: .same(proto: "score"),
+        3: .same(proto: "type"),
+    ]
+
+    public var isInitialized: Bool {
+        if !_protobuf_extensionFieldValues.isInitialized { return false }
+        return true
+    }
+
+    mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+        while let fieldNumber = try decoder.nextFieldNumber() {
+            switch fieldNumber {
+            case 1: try decoder.decodeSingularStringField(value: &self._piece)
+            case 2: try decoder.decodeSingularFloatField(value: &self._score)
+            case 3: try decoder.decodeSingularEnumField(value: &self._type)
+            case 200..<536_870_912:
+                try decoder.decodeExtensionField(
+                    values: &_protobuf_extensionFieldValues,
+                    messageType: Sentencepiece_ModelProto.SentencePiece.self,
+                    fieldNumber: fieldNumber)
+            default: break
+            }
+        }
+    }
+
+    func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+        if let v = self._piece {
+            try visitor.visitSingularStringField(value: v, fieldNumber: 1)
+        }
+        if let v = self._score {
+            try visitor.visitSingularFloatField(value: v, fieldNumber: 2)
+        }
+        if let v = self._type {
+            try visitor.visitSingularEnumField(value: v, fieldNumber: 3)
+        }
+        try visitor.visitExtensionFields(
+            fields: _protobuf_extensionFieldValues, start: 200, end: 536_870_912)
+        try unknownFields.traverse(visitor: &visitor)
+    }
+
+    static func == (
+        lhs: Sentencepiece_ModelProto.SentencePiece, rhs: Sentencepiece_ModelProto.SentencePiece
+    ) -> Bool {
+        if lhs._piece != rhs._piece { return false }
+        if lhs._score != rhs._score { return false }
+        if lhs._type != rhs._type { return false }
+        if lhs.unknownFields != rhs.unknownFields { return false }
+        if lhs._protobuf_extensionFieldValues != rhs._protobuf_extensionFieldValues { return false }
+        return true
+    }
 }
 
 extension Sentencepiece_ModelProto.SentencePiece.TypeEnum: SwiftProtobuf._ProtoNameProviding {
-  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
-    1: .same(proto: "NORMAL"),
-    2: .same(proto: "UNKNOWN"),
-    3: .same(proto: "CONTROL"),
-    4: .same(proto: "USER_DEFINED"),
-    5: .same(proto: "UNUSED"),
-  ]
+    static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+        1: .same(proto: "NORMAL"),
+        2: .same(proto: "UNKNOWN"),
+        3: .same(proto: "CONTROL"),
+        4: .same(proto: "USER_DEFINED"),
+        5: .same(proto: "UNUSED"),
+    ]
 }

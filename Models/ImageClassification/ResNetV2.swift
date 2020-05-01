@@ -38,21 +38,21 @@ public struct ConvBNV2: Layer {
         isLast: Bool = false
     ) {
         self.conv = Conv2D(
-            filterShape: (kernelSize, kernelSize, inFilters, outFilters), 
-            strides: (stride, stride), 
+            filterShape: (kernelSize, kernelSize, inFilters, outFilters),
+            strides: (stride, stride),
             padding: padding,
             useBias: false)
         self.isLast = isLast
         if isLast {
             //Initialize the last BatchNorm layer to scale zero
             self.norm = BatchNorm(
-                 axis: -1, 
-                 momentum: 0.9, 
-                 offset: Tensor(zeros: [outFilters]),
-                 scale: Tensor(zeros: [outFilters]),
-                 epsilon: 1e-5,
-                 runningMean: Tensor(0),
-                 runningVariance: Tensor(1))
+                axis: -1,
+                momentum: 0.9,
+                offset: Tensor(zeros: [outFilters]),
+                scale: Tensor(zeros: [outFilters]),
+                epsilon: 1e-5,
+                runningMean: Tensor(0),
+                runningVariance: Tensor(1))
         } else {
             self.norm = BatchNorm(featureCount: outFilters, momentum: 0.9, epsilon: 1e-5)
         }
@@ -73,22 +73,22 @@ public struct Shortcut: Layer {
     public var avgPool: AvgPool2D<Float>
     @noDerivative public let needsProjection: Bool
     @noDerivative public let needsPool: Bool
-    
+
     public init(inFilters: Int, outFilters: Int, stride: Int) {
         avgPool = AvgPool2D<Float>(poolSize: (2, 2), strides: (stride, stride))
         needsPool = (stride != 1)
         needsProjection = (inFilters != outFilters)
         projection = ConvBNV2(
-            inFilters:  needsProjection ? inFilters  : 1, 
+            inFilters: needsProjection ? inFilters : 1,
             outFilters: needsProjection ? outFilters : 1
         )
     }
-    
+
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         var res = input
         if needsProjection { res = projection(res) }
-        if needsPool       { res = avgPool(res)}
+        if needsPool { res = avgPool(res) }
         return res
     }
 }
@@ -99,17 +99,21 @@ public struct ResidualBlockV2: Layer {
     public var shortcut: Shortcut
     public var convs: [ConvBNV2]
 
-    public init(inFilters: Int, outFilters: Int, stride: Int, expansion: Int){
+    public init(inFilters: Int, outFilters: Int, stride: Int, expansion: Int) {
         if expansion == 1 {
             convs = [
-                ConvBNV2(inFilters: inFilters,  outFilters: outFilters, kernelSize: 3, stride: stride),
-                ConvBNV2(inFilters: outFilters, outFilters: outFilters, kernelSize: 3, isLast: true)
+                ConvBNV2(
+                    inFilters: inFilters, outFilters: outFilters, kernelSize: 3, stride: stride),
+                ConvBNV2(
+                    inFilters: outFilters, outFilters: outFilters, kernelSize: 3, isLast: true),
             ]
         } else {
             convs = [
-                ConvBNV2(inFilters: inFilters,    outFilters: outFilters/4),
-                ConvBNV2(inFilters: outFilters/4, outFilters: outFilters/4, kernelSize: 3, stride: stride),
-                ConvBNV2(inFilters: outFilters/4, outFilters: outFilters, isLast: true)
+                ConvBNV2(inFilters: inFilters, outFilters: outFilters / 4),
+                ConvBNV2(
+                    inFilters: outFilters / 4, outFilters: outFilters / 4, kernelSize: 3,
+                    stride: stride),
+                ConvBNV2(inFilters: outFilters / 4, outFilters: outFilters, isLast: true),
             ]
         }
         shortcut = Shortcut(inFilters: inFilters, outFilters: outFilters, stride: stride)
@@ -141,26 +145,29 @@ public struct ResNetV2: Layer {
     ///   - stemFilters: The number of filters in the first three convolutions.
     ///         Resnet-A trick uses 64-64-64, research at fastai suggests 32-32-64 is better
     public init(
-        classCount: Int, 
-        depth: Depth, 
-        inputChannels: Int = 3, 
+        classCount: Int,
+        depth: Depth,
+        inputChannels: Int = 3,
         stemFilters: [Int] = [32, 32, 64]
     ) {
         let filters = [inputChannels] + stemFilters
         inputStem = Array(0..<3).map { i in
-            ConvBNV2(inFilters: filters[i], outFilters: filters[i+1], kernelSize: 3, stride: i==0 ? 2 : 1)
+            ConvBNV2(
+                inFilters: filters[i], outFilters: filters[i + 1], kernelSize: 3,
+                stride: i == 0 ? 2 : 1)
         }
         maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2), padding: .same)
         let sizes = [64 / depth.expansion, 64, 128, 256, 512]
         for (iBlock, nBlocks) in depth.layerBlockSizes.enumerated() {
-            let (nIn, nOut) = (sizes[iBlock] * depth.expansion, sizes[iBlock+1] * depth.expansion)
+            let (nIn, nOut) = (sizes[iBlock] * depth.expansion, sizes[iBlock + 1] * depth.expansion)
             for j in 0..<nBlocks {
-                residualBlocks.append(ResidualBlockV2(
-                    inFilters: j==0 ? nIn : nOut,  
-                    outFilters: nOut, 
-                    stride: (iBlock != 0) && (j == 0) ? 2 : 1, 
-                    expansion: depth.expansion
-                ))
+                residualBlocks.append(
+                    ResidualBlockV2(
+                        inFilters: j == 0 ? nIn : nOut,
+                        outFilters: nOut,
+                        stride: (iBlock != 0) && (j == 0) ? 2 : 1,
+                        expansion: depth.expansion
+                    ))
             }
         }
         classifier = Dense(inputSize: 512 * depth.expansion, outputSize: classCount)
@@ -191,9 +198,9 @@ extension ResNetV2 {
 
         var layerBlockSizes: [Int] {
             switch self {
-            case .resNet18:  return [2, 2, 2,  2]
-            case .resNet34:  return [3, 4, 6,  3]
-            case .resNet50:  return [3, 4, 6,  3]
+            case .resNet18: return [2, 2, 2, 2]
+            case .resNet34: return [3, 4, 6, 3]
+            case .resNet50: return [3, 4, 6, 3]
             case .resNet101: return [3, 4, 23, 3]
             case .resNet152: return [3, 8, 36, 3]
             }

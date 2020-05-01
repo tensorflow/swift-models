@@ -12,27 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Batcher
 import Foundation
 import ModelSupport
 import TensorFlow
-import Batcher
 
 public class Images {
     var batcher: Batcher<[Tensorf]>
-    
+
     public init(folderURL: URL) throws {
         let folderContents = try FileManager.default
-                                            .contentsOfDirectory(at: folderURL,
-                                                                 includingPropertiesForKeys: [.isDirectoryKey],
-                                                                 options: [.skipsHiddenFiles])
+            .contentsOfDirectory(
+                at: folderURL,
+                includingPropertiesForKeys: [.isDirectoryKey],
+                options: [.skipsHiddenFiles])
         let imageFiles = folderContents.filter { $0.pathExtension == "jpg" }
 
         let imageTensors = imageFiles.map {
             Image(jpeg: $0).tensor / 127.5 - 1.0
         }
-        
-        self.batcher = Batcher(on: imageTensors,
-                               batchSize: 1,
-                               shuffle: true)
+
+        self.batcher = Batcher(
+            on: imageTensors,
+            batchSize: 1,
+            shuffle: true)
     }
 }

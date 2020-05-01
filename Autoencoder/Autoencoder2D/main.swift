@@ -14,11 +14,11 @@
 
 /// Based on https://blog.keras.io/building-autoencoders-in-keras.html
 
+import Batcher
 import Datasets
 import Foundation
 import ModelSupport
 import TensorFlow
-import Batcher
 
 let epochCount = 10
 let batchSize = 100
@@ -49,9 +49,11 @@ struct Autoencoder2D: Layer {
     @differentiable
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let resize = input.reshaped(to: [localBatchSize, 28, 28, 1])
-        let encoder = resize.sequenced(through: encoder1,
+        let encoder = resize.sequenced(
+            through: encoder1,
             encoder2, encoder3, encoder4, encoder5, encoder6)
-        let decoder = encoder.sequenced(through: decoder1,
+        let decoder = encoder.sequenced(
+            through: decoder1,
             decoder2, decoder3, decoder4, decoder5, decoder6)
         return output(decoder).reshaped(to: [localBatchSize, imageHeight * imageWidth])
     }

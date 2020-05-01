@@ -18,7 +18,7 @@ import XCTest
 @testable import VideoClassificationModels
 
 final class VideoClassificationInferenceTests: XCTestCase {
-    
+
     override class func setUp() {
         Context.local.learningPhase = .inference
     }

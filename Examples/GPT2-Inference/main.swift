@@ -18,12 +18,12 @@ let gpt: GPT2 = try GPT2()
 
 // Set temperature.
 if CommandLine.arguments.count >= 2 {
-  guard let temperature = Float(CommandLine.arguments[1]) else {
-    fatalError("Could not parse command line argument '\(CommandLine.arguments[1])' as a float")
-  }
-  gpt.temperature = temperature
+    guard let temperature = Float(CommandLine.arguments[1]) else {
+        fatalError("Could not parse command line argument '\(CommandLine.arguments[1])' as a float")
+    }
+    gpt.temperature = temperature
 } else {
-  gpt.temperature = 1.0
+    gpt.temperature = 1.0
 }
 
 // Use seed text.

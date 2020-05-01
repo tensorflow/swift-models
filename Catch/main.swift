@@ -20,12 +20,12 @@ import TensorFlow
 //   gradients). The algorithm should perform some tensor computation (not a
 //   purely table-based approach).
 
-var rng = PhiloxRandomNumberGenerator(seed: 0xdeadbeef)
+var rng = PhiloxRandomNumberGenerator(seed: 0xdead_beef)
 
 extension Sequence {
     /// Returns elements' descriptions joined by a separator.
     func description(joinedBy separator: String) -> String {
-        return map{"\($0)"}.joined(separator: separator)
+        return map { "\($0)" }.joined(separator: separator)
     }
 }
 
@@ -90,9 +90,9 @@ extension CatchAgent {
         let paddleX = observation.scalars[0]
         let ballX = observation.scalars[1]
         switch paddleX {
-        case ballX:    return .none
+        case ballX: return .none
         case ..<ballX: return .left
-        default:       return .right
+        default: return .right
         }
     }
 
@@ -180,9 +180,11 @@ extension CatchEnvironment {
     var observation: Observation {
         return ShapedArray<Float>(
             shape: [3],
-            scalars: [Float(ballPosition.x) / Float(columnCount),
-                      Float(ballPosition.y) / Float(rowCount),
-                      Float(paddlePosition.x) / Float(columnCount)]
+            scalars: [
+                Float(ballPosition.x) / Float(columnCount),
+                Float(ballPosition.y) / Float(rowCount),
+                Float(paddlePosition.x) / Float(columnCount),
+            ]
         )
     }
 
@@ -224,17 +226,19 @@ repeat {
         }
         if gameCount % 20 == 0 {
             print("Win rate (last 20 games): \(Float(winCount) / 20)")
-            print("""
-                  Win rate (total): \
-                  \(Float(totalWinCount) / Float(gameCount)) \
-                  [\(totalWinCount)/\(gameCount)]
-                  """)
+            print(
+                """
+                Win rate (total): \
+                \(Float(totalWinCount) / Float(gameCount)) \
+                [\(totalWinCount)/\(gameCount)]
+                """)
             winCount = 0
         }
     }
 } while gameCount < maxIterations
 
-print("""
-      Win rate (final): \(Float(totalWinCount) / Float(gameCount)) \
-      [\(totalWinCount)/\(gameCount)]
-      """)
+print(
+    """
+    Win rate (final): \(Float(totalWinCount) / Float(gameCount)) \
+    [\(totalWinCount)/\(gameCount)]
+    """)

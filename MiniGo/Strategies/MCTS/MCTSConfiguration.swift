@@ -62,8 +62,8 @@ public struct MCTSConfiguration {
         precondition(simulationCountForOneMove > 0)
         self.simulationCountForOneMove = simulationCountForOneMove
 
-        let maxGameDepthValue = maxGameDepth ??
-            Int(Float(gameConfiguration.size * gameConfiguration.size) * 1.4)
+        let maxGameDepthValue =
+            maxGameDepth ?? Int(Float(gameConfiguration.size * gameConfiguration.size) * 1.4)
         precondition(maxGameDepthValue > 0)
         self.maxGameDepth = maxGameDepthValue
 

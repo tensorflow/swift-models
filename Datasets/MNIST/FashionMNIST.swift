@@ -17,9 +17,9 @@
 // Han Xiao and Kashif Rasul and Roland Vollgraf
 // https://arxiv.org/abs/1708.07747
 
+import Batcher
 import Foundation
 import TensorFlow
-import Batcher
 
 public struct FashionMNIST: ImageClassificationDataset {
     public typealias SourceDataSet = [TensorPair<Float, Int32>]
@@ -44,7 +44,7 @@ public struct FashionMNIST: ImageClassificationDataset {
                 flattening: flattening,
                 normalizing: normalizing),
             batchSize: batchSize,
-            numWorkers: 1, //No need to use parallelism since everything is loaded in memory
+            numWorkers: 1,  //No need to use parallelism since everything is loaded in memory
             shuffle: true)
 
         test = Batcher<SourceDataSet>(
@@ -56,6 +56,6 @@ public struct FashionMNIST: ImageClassificationDataset {
                 flattening: flattening,
                 normalizing: normalizing),
             batchSize: batchSize,
-            numWorkers: 1) //No need to use parallelism since everything is loaded in memory
+            numWorkers: 1)  //No need to use parallelism since everything is loaded in memory
     }
 }

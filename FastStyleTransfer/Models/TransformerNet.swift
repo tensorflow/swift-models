@@ -1,5 +1,5 @@
-import TensorFlow
 import Foundation
+import TensorFlow
 
 /// A model that applies style.
 public struct TransformerNet: Layer {

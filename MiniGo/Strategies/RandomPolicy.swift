@@ -36,7 +36,8 @@ public class RandomPolicy: Policy {
         }
 
         guard let randomMove = legalMoves.randomElement() else {
-            fatalError("randomElement should not return nil for non-empty legal moves: \(legalMoves).")
+            fatalError(
+                "randomElement should not return nil for non-empty legal moves: \(legalMoves).")
         }
         return .place(position: randomMove)
     }
@@ -66,4 +67,3 @@ public class RandomPolicy: Policy {
         return .pass
     }
 }
-

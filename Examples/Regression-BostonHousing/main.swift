@@ -23,7 +23,7 @@ struct RegressionModel: Layer {
     var layer1 = Dense<Float>(inputSize: 13, outputSize: 64, activation: relu)
     var layer2 = Dense<Float>(inputSize: 64, outputSize: 32, activation: relu)
     var layer3 = Dense<Float>(inputSize: 32, outputSize: 1)
-    
+
     @differentiable
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         return input.sequenced(through: layer1, layer2, layer3)
@@ -63,24 +63,27 @@ for epoch in 1...epochCount {
                 }
             }
         }
-        
+
         let batchStart = r * batchSize
         let batchEnd = min(dataset.numTrainRecords, batchStart + batchSize)
-        let (loss, grad) = valueWithGradient(at: model) { (model: RegressionModel) -> Tensor<Float> in
+        let (loss, grad) = valueWithGradient(at: model) {
+            (model: RegressionModel) -> Tensor<Float> in
             let logits = model(dataset.xTrain[batchStart..<batchEnd])
-            return meanSquaredError(predicted: logits, expected: dataset.yTrain[batchStart..<batchEnd])
+            return meanSquaredError(
+                predicted: logits, expected: dataset.yTrain[batchStart..<batchEnd])
         }
         optimizer.update(&model, along: grad)
-        
+
         let logits = model(dataset.xTrain[batchStart..<batchEnd])
-        epochMAE += meanAbsoluteError(predictions: logits, truths: dataset.yTrain[batchStart..<batchEnd])
+        epochMAE += meanAbsoluteError(
+            predictions: logits, truths: dataset.yTrain[batchStart..<batchEnd])
         epochLoss += loss.scalarized()
         batchCount += 1
     }
     epochMAE /= Float(batchCount)
     epochLoss /= Float(batchCount)
 
-    if epoch == epochCount-1 {
+    if epoch == epochCount - 1 {
         print("MSE: \(epochLoss), MAE: \(epochMAE), Epoch: \(epoch+1)")
     }
 }
@@ -93,7 +96,11 @@ Context.local.learningPhase = .inference
 
 let prediction = model(dataset.xTest)
 
-let evalMse = meanSquaredError(predicted: prediction, expected: dataset.yTest).scalarized()/Float(dataset.numTestRecords)
-let evalMae = meanAbsoluteError(predictions: prediction, truths: dataset.yTest)/Float(dataset.numTestRecords)
+let evalMse =
+    meanSquaredError(predicted: prediction, expected: dataset.yTest).scalarized()
+    / Float(dataset.numTestRecords)
+let evalMae =
+    meanAbsoluteError(predictions: prediction, truths: dataset.yTest)
+    / Float(dataset.numTestRecords)
 
 print("MSE: \(evalMse), MAE: \(evalMae)")

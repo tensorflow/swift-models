@@ -24,13 +24,19 @@ public struct VGGBlock: Layer {
     var maxpool = MaxPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
 
     public init(featureCounts: (Int, Int, Int, Int), blockCount: Int) {
-        self.blocks = [Conv2D<Float>(filterShape: (3, 3, featureCounts.0, featureCounts.1),
-            padding: .same,
-            activation: relu)]
-        for _ in 1..<blockCount {
-            self.blocks += [Conv2D<Float>(filterShape: (3, 3, featureCounts.2, featureCounts.3),
+        self.blocks = [
+            Conv2D<Float>(
+                filterShape: (3, 3, featureCounts.0, featureCounts.1),
                 padding: .same,
-                activation: relu)]
+                activation: relu)
+        ]
+        for _ in 1..<blockCount {
+            self.blocks += [
+                Conv2D<Float>(
+                    filterShape: (3, 3, featureCounts.2, featureCounts.3),
+                    padding: .same,
+                    activation: relu)
+            ]
         }
     }
 

@@ -37,17 +37,19 @@ public struct BatchNormConv2DBlock: Layer {
     ) {
         self.norm1 = BatchNorm(featureCount: featureCounts.0)
         self.conv1 = Conv2D(
-            filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1), 
-            strides: strides, 
+            filterShape: (kernelSize, kernelSize, featureCounts.0, featureCounts.1),
+            strides: strides,
             padding: padding)
         self.norm2 = BatchNorm(featureCount: featureCounts.1)
-        self.conv2 = Conv2D(filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1), 
-                            strides: (1, 1), 
-                            padding: padding)
-        self.shortcut = Conv2D(filterShape: (1, 1, featureCounts.0, featureCounts.1), 
-                               strides: strides, 
-                               padding: padding)
-        self.isExpansion = featureCounts.1 != featureCounts.0 || strides != (1, 1) 
+        self.conv2 = Conv2D(
+            filterShape: (kernelSize, kernelSize, featureCounts.1, featureCounts.1),
+            strides: (1, 1),
+            padding: padding)
+        self.shortcut = Conv2D(
+            filterShape: (1, 1, featureCounts.0, featureCounts.1),
+            strides: strides,
+            padding: padding)
+        self.isExpansion = featureCounts.1 != featureCounts.0 || strides != (1, 1)
     }
 
     @differentiable
@@ -59,7 +61,7 @@ public struct BatchNormConv2DBlock: Layer {
         if isExpansion {
             shortcutResult = shortcut(preact1)
             preact2 = relu(norm2(residual))
-        } else { 
+        } else {
             shortcutResult = input
             preact2 = dropout(relu(norm2(residual)))
         }
@@ -77,10 +79,10 @@ public struct WideResNetBasicBlock: Layer {
         depthFactor: Int = 2,
         initialStride: (Int, Int) = (2, 2)
     ) {
-        self.blocks = [BatchNormConv2DBlock(featureCounts: featureCounts, strides: initialStride)]    
+        self.blocks = [BatchNormConv2DBlock(featureCounts: featureCounts, strides: initialStride)]
         for _ in 1..<depthFactor {
             self.blocks += [BatchNormConv2DBlock(featureCounts: (featureCounts.1, featureCounts.1))]
-        }  
+        }
     }
 
     @differentiable
@@ -106,10 +108,12 @@ public struct WideResNet: Layer {
 
         self.l2 = WideResNetBasicBlock(
             featureCounts: (16, 16 * widenFactor), depthFactor: depthFactor, initialStride: (1, 1))
-        self.l3 = WideResNetBasicBlock(featureCounts: (16 * widenFactor, 32 * widenFactor), 
-                                       depthFactor: depthFactor)
-        self.l4 = WideResNetBasicBlock(featureCounts: (32 * widenFactor, 64 * widenFactor), 
-                                       depthFactor: depthFactor)
+        self.l3 = WideResNetBasicBlock(
+            featureCounts: (16 * widenFactor, 32 * widenFactor),
+            depthFactor: depthFactor)
+        self.l4 = WideResNetBasicBlock(
+            featureCounts: (32 * widenFactor, 64 * widenFactor),
+            depthFactor: depthFactor)
 
         self.norm = BatchNorm(featureCount: 64 * widenFactor)
         self.avgPool = AvgPool2D(poolSize: (8, 8), strides: (8, 8))

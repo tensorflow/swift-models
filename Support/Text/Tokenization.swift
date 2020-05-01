@@ -30,7 +30,8 @@ public func createAttentionMask(forTextBatch text: TextBatch) -> Tensor<Float> {
 
     // We do not assume that `input.tokenIds` is a mask. We do not actually care if we attend
     // *from* padding tokens (only *to* padding tokens) so we create a tensor of all ones.
-    let broadcastOnes = Tensor<Float>(ones: [batchSize, fromSequenceLength, 1], on: text.mask.device)
+    let broadcastOnes = Tensor<Float>(
+        ones: [batchSize, fromSequenceLength, 1], on: text.mask.device)
 
     // We broadcast along two dimensions to create the mask.
     return broadcastOnes * reshapedMask
@@ -69,17 +70,18 @@ public struct Vocabulary {
 extension Vocabulary {
     public init(fromFile fileURL: URL) throws {
         self.init(
-        tokensToIds: [String: Int](
-            (try String(contentsOfFile: fileURL.path, encoding: .utf8))
-                .components(separatedBy: .newlines)
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { $0.count > 0 }
-                .enumerated().map { ($0.element, $0.offset) },
-            uniquingKeysWith: { (v1, v2) in max(v1, v2) }))
+            tokensToIds: [String: Int](
+                (try String(contentsOfFile: fileURL.path, encoding: .utf8))
+                    .components(separatedBy: .newlines)
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { $0.count > 0 }
+                    .enumerated().map { ($0.element, $0.offset) },
+                uniquingKeysWith: { (v1, v2) in max(v1, v2) }))
     }
 
     public func save(toFile fileURL: URL) throws {
-        try idsToTokens
+        try
+            idsToTokens
             .sorted { $0.key < $1.key }
             .map { $0.1 }
             .joined(separator: "\n")
@@ -245,17 +247,12 @@ internal func clean(_ text: String) -> String {
     // Katakana. Those alphabets are used to write space-separated words, and so they are not
     // treated specially and are instead handled like all of the other languages.
     let afterCJK = afterControl.replacingOccurrences(
-        of: #"([\p{InCJK_Unified_Ideographs}"# +
-            #"\p{InCJK_Unified_Ideographs_Extension_A}"# +
-            #"\p{InCJK_Compatibility_Ideographs}"# +
-            #"\x{20000}-\x{2a6df}"# +
-            #"\x{2a700}-\x{2b73f}"# +
-            #"\x{2b740}-\x{2b81f}"# +
-            #"\x{2b820}-\x{2ceaf}"# +
-            #"\x{2f800}-\x{2fa1f}])"#,
+        of: #"([\p{InCJK_Unified_Ideographs}"# + #"\p{InCJK_Unified_Ideographs_Extension_A}"#
+            + #"\p{InCJK_Compatibility_Ideographs}"# + #"\x{20000}-\x{2a6df}"#
+            + #"\x{2a700}-\x{2b73f}"# + #"\x{2b740}-\x{2b81f}"# + #"\x{2b820}-\x{2ceaf}"#
+            + #"\x{2f800}-\x{2fa1f}])"#,
         with: " $1 ",
         options: .regularExpression)
 
     return afterCJK
 }
-

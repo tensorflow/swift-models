@@ -33,7 +33,8 @@ public struct ConvBN: Layer {
         strides: (Int, Int) = (1, 1),
         padding: Padding = .valid
     ) {
-        self.conv = Conv2D(filterShape: filterShape, strides: strides, padding: padding, useBias: false)
+        self.conv = Conv2D(
+            filterShape: filterShape, strides: strides, padding: padding, useBias: false)
         self.norm = BatchNorm(featureCount: filterShape.3, momentum: 0.9, epsilon: 1e-5)
     }
 
@@ -64,7 +65,7 @@ public struct ResidualBlock: Layer {
         if isBasic {
             earlyConvs = [
                 (ConvBN(
-                    filterShape: (3, 3, inputFilters, filters), strides: strides, padding: .same)),
+                    filterShape: (3, 3, inputFilters, filters), strides: strides, padding: .same))
             ]
             lastConv = ConvBN(filterShape: (3, 3, filters, outFilters), padding: .same)
         } else {
@@ -130,7 +131,7 @@ public struct ResNet: Layer {
         useLaterStride: Bool = true
     ) {
         let inputFilters: Int
-        
+
         if downsamplingInFirstStage {
             inputFilters = 64
             initialLayer = ConvBN(

@@ -16,9 +16,9 @@
 // "KMNIST Dataset" (created by CODH), https://arxiv.org/abs/1812.01718
 // adapted from "Kuzushiji Dataset" (created by NIJL and others), doi:10.20676/00000341
 
+import Batcher
 import Foundation
 import TensorFlow
-import Batcher
 
 public struct KuzushijiMNIST: ImageClassificationDataset {
     public typealias SourceDataSet = [TensorPair<Float, Int32>]
@@ -37,24 +37,26 @@ public struct KuzushijiMNIST: ImageClassificationDataset {
         training = Batcher<SourceDataSet>(
             on: fetchMNISTDataset(
                 localStorageDirectory: localStorageDirectory,
-                remoteBaseDirectory: "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/KMNIST",
+                remoteBaseDirectory:
+                    "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/KMNIST",
                 imagesFilename: "train-images-idx3-ubyte",
                 labelsFilename: "train-labels-idx1-ubyte",
                 flattening: flattening,
                 normalizing: normalizing),
             batchSize: batchSize,
-            numWorkers: 1, //No need to use parallelism since everything is loaded in memory
+            numWorkers: 1,  //No need to use parallelism since everything is loaded in memory
             shuffle: true)
 
         test = Batcher<SourceDataSet>(
             on: fetchMNISTDataset(
                 localStorageDirectory: localStorageDirectory,
-                remoteBaseDirectory: "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/KMNIST",
+                remoteBaseDirectory:
+                    "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/KMNIST",
                 imagesFilename: "t10k-images-idx3-ubyte",
                 labelsFilename: "t10k-labels-idx1-ubyte",
                 flattening: flattening,
                 normalizing: normalizing),
             batchSize: batchSize,
-            numWorkers: 1) //No need to use parallelism since everything is loaded in memory
+            numWorkers: 1)  //No need to use parallelism since everything is loaded in memory
     }
 }

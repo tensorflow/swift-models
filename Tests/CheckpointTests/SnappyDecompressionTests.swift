@@ -20,7 +20,7 @@ import XCTest
 final class SnappyDecompressionTests: XCTestCase {
     let resourceBaseLocation = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
         .appendingPathComponent("IndexFiles")
-    
+
     func testReadingVarints() {
         let oneByteVarints = Data([24, 0, 63])
         var index = 0
@@ -33,7 +33,7 @@ final class SnappyDecompressionTests: XCTestCase {
         let varint3 = oneByteVarints.readVarint32(at: &index)
         XCTAssertEqual(index, 3)
         XCTAssertEqual(varint3, 63)
-        
+
         let multiByteVarints = Data([172, 2])
         index = 0
         let varint4 = multiByteVarints.readVarint32(at: &index)
@@ -61,7 +61,7 @@ final class SnappyDecompressionTests: XCTestCase {
 
     func testDecodingSnappyStream() {
         let literalTagByte: UInt8 = 0b00010100
-        let copyTagByte: UInt8 =  0b00000001
+        let copyTagByte: UInt8 = 0b00000001
 
         // Construct a byte buffer that inlines 6 bytes and copies 4 of them afterward.
         let snappyData = Data([10, literalTagByte, 12, 1, 50, 3, 45, 13, copyTagByte, 4])

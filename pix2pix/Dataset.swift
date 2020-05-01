@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Batcher
 import Foundation
 import ModelSupport
 import TensorFlow
-import Batcher
 
 public class PairedImages {
     public struct ImagePair: _Collatable {
@@ -23,35 +23,39 @@ public class PairedImages {
             self.source = .init(stacking: oldCollating.map(\.source))
             self.target = .init(stacking: oldCollating.map(\.target))
         }
-        
+
         public init(source: Tensor<Float>, target: Tensor<Float>) {
             self.source = source
             self.target = target
         }
-        
+
         var source: Tensor<Float>
         var target: Tensor<Float>
     }
     var batcher: Batcher<[ImagePair]>
-    
+
     public init(folderAURL: URL, folderBURL: URL) throws {
         let folderAContents = try FileManager.default
-                                             .contentsOfDirectory(at: folderAURL,
-                                                                  includingPropertiesForKeys: [.isDirectoryKey],
-                                                                  options: [.skipsHiddenFiles])
-                                             .filter { $0.pathExtension == "jpg" }
+            .contentsOfDirectory(
+                at: folderAURL,
+                includingPropertiesForKeys: [.isDirectoryKey],
+                options: [.skipsHiddenFiles]
+            )
+            .filter { $0.pathExtension == "jpg" }
 
         let imageTensors = folderAContents.map { (url: URL) -> ImagePair in
             let tensorA = Image(jpeg: url).tensor / 127.5 - 1.0
-            
-            let tensorBImageURL = folderBURL.appendingPathComponent(url.lastPathComponent.replacingOccurrences(of: "_A.jpg", with: "_B.jpg"))
+
+            let tensorBImageURL = folderBURL.appendingPathComponent(
+                url.lastPathComponent.replacingOccurrences(of: "_A.jpg", with: "_B.jpg"))
             let tensorB = Image(jpeg: tensorBImageURL).tensor / 127.5 - 1.0
-            
+
             return ImagePair(source: tensorA, target: tensorB)
         }
-        
-        self.batcher = Batcher(on: imageTensors,
-                               batchSize: 1,
-                               shuffle: true)
+
+        self.batcher = Batcher(
+            on: imageTensors,
+            batchSize: 1,
+            shuffle: true)
     }
 }

@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import XCTest
 import ModelSupport
 import TensorFlow
+import XCTest
 
 final class ImageTests: XCTestCase {
     let resourceBaseLocation = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
@@ -29,7 +29,7 @@ final class ImageTests: XCTestCase {
         } catch {
             XCTFail("Unable to create temporary directory with error: \(error).")
         }
-        
+
         // Remove pre-existing test files.
         let firstImagePath = temporaryDirectory.appendingPathComponent("testimage.jpg").path
         if FileManager.default.fileExists(atPath: firstImagePath) {
@@ -66,7 +66,7 @@ final class ImageTests: XCTestCase {
         XCTAssertEqual(imageTensor[15][45][1], Tensor<Float>(255.0))
         XCTAssertEqual(imageTensor[15][45][2], Tensor<Float>(250.0))
     }
-    
+
     func testImageSaving() {
         let imageDestination = temporaryDirectory.appendingPathComponent("testimage.jpg")
 
@@ -81,7 +81,7 @@ final class ImageTests: XCTestCase {
         grayscaleImage.save(to: imageDestination, format: .grayscale, quality: 95)
         let reloadedGrayscaleImage = Image(jpeg: imageDestination, byteOrdering: .rgb)
         XCTAssertEqual(reloadedGrayscaleImage.tensor.shape, [15, 20, 3])
-        
+
         let imageSource = resourceBaseLocation.appendingPathComponent("testimage.jpg")
         let imageDestination2 = temporaryDirectory.appendingPathComponent("testimage.jpg")
         let loadedRGBImage = Image(jpeg: imageSource, byteOrdering: .rgb)
@@ -89,7 +89,7 @@ final class ImageTests: XCTestCase {
         let reloadedRGBImage2 = Image(jpeg: imageDestination2, byteOrdering: .rgb)
         XCTAssertEqual(reloadedRGBImage2.tensor.shape, [20, 60, 3])
     }
-    
+
     static var allTests = [
         ("testImageLoading", testImageLoading),
         ("testImageSaving", testImageSaving),

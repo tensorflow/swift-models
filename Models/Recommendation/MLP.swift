@@ -25,11 +25,12 @@ public struct MLP: Layer {
     /// - Parameter sigmoidLastLayer: if `true`, use a `sigmoid` activation function for the last layer,
     ///   `relu` otherwise.
     init(dims: [Int], sigmoidLastLayer: Bool = false) {
-        for i in 0..<(dims.count-1) {
+        for i in 0..<(dims.count - 1) {
             if sigmoidLastLayer && i == dims.count - 2 {
-                blocks.append(Dense(inputSize: dims[i], outputSize: dims[i+1], activation: sigmoid))
+                blocks.append(
+                    Dense(inputSize: dims[i], outputSize: dims[i + 1], activation: sigmoid))
             } else {
-                blocks.append(Dense(inputSize: dims[i], outputSize: dims[i+1], activation: relu))
+                blocks.append(Dense(inputSize: dims[i], outputSize: dims[i + 1], activation: relu))
             }
         }
     }
@@ -43,4 +44,3 @@ public struct MLP: Layer {
     }
 
 }
-

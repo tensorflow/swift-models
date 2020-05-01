@@ -14,6 +14,6 @@ final class MovieLensTests: XCTestCase {
 
 extension MovieLensTests {
     static var allTests = [
-        ("testCreateMovieLens", testCreateMovieLens),
+        ("testCreateMovieLens", testCreateMovieLens)
     ]
 }

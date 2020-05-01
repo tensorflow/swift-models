@@ -17,10 +17,10 @@
 // Jeremy Howard
 // https://github.com/fastai/imagenette
 
+import Batcher
 import Foundation
 import ModelSupport
 import TensorFlow
-import Batcher
 
 public typealias LazyDataSet = LazyMapSequence<[URL], TensorPair<Float, Int32>>
 
@@ -51,14 +51,14 @@ public struct Imagenette: ImageClassificationDataset {
         batchSize: Int,
         inputSize: ImageSize, outputSize: Int,
         localStorageDirectory: URL = DatasetUtilities.defaultDirectory
-                .appendingPathComponent("Imagenette", isDirectory: true)
+            .appendingPathComponent("Imagenette", isDirectory: true)
     ) {
         do {
             training = Batcher<SourceDataSet>(
                 on: try loadImagenetteTrainingDirectory(
                     inputSize: inputSize, outputSize: outputSize,
                     localStorageDirectory: localStorageDirectory),
-                batchSize: batchSize, 
+                batchSize: batchSize,
                 shuffle: true)
             test = Batcher<SourceDataSet>(
                 on: try loadImagenetteValidationDirectory(
@@ -86,7 +86,9 @@ func downloadImagenetteIfNotPresent(to directory: URL, size: Imagenette.ImageSiz
         remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
 }
 
-func exploreImagenetteDirectory(named name: String, in directory: URL, inputSize: Imagenette.ImageSize) throws -> [URL] {
+func exploreImagenetteDirectory(
+    named name: String, in directory: URL, inputSize: Imagenette.ImageSize
+) throws -> [URL] {
     downloadImagenetteIfNotPresent(to: directory, size: inputSize)
     let path = directory.appendingPathComponent("imagenette\(inputSize.suffix)/\(name)")
     let dirContents = try FileManager.default.contentsOfDirectory(
@@ -109,12 +111,12 @@ func parentLabel(url: URL) -> String {
 func createLabelDict(urls: [URL]) -> [String: Int] {
     let allLabels = urls.map(parentLabel)
     let labels = Array(Set(allLabels)).sorted()
-    return Dictionary(uniqueKeysWithValues: labels.enumerated().map{ ($0.element, $0.offset) })
+    return Dictionary(uniqueKeysWithValues: labels.enumerated().map { ($0.element, $0.offset) })
 }
 
 func loadImagenetteDirectory(
     named name: String, in directory: URL, inputSize: Imagenette.ImageSize, outputSize: Int,
-    labelDict: [String:Int]? = nil
+    labelDict: [String: Int]? = nil
 ) throws -> LazyDataSet {
     let urls = try exploreImagenetteDirectory(named: name, in: directory, inputSize: inputSize)
     let unwrappedLabelDict = labelDict ?? createLabelDict(urls: urls)
@@ -122,24 +124,28 @@ func loadImagenetteDirectory(
         TensorPair<Float, Int32>(
             first: Image(jpeg: url).resized(to: (outputSize, outputSize)).tensor / 255.0,
             second: Tensor<Int32>(Int32(unwrappedLabelDict[parentLabel(url: url)]!))
-        )    
+        )
     }
 }
 
 func loadImagenetteTrainingDirectory(
-    inputSize: Imagenette.ImageSize, outputSize: Int, localStorageDirectory: URL, labelDict: [String:Int]? = nil
+    inputSize: Imagenette.ImageSize, outputSize: Int, localStorageDirectory: URL,
+    labelDict: [String: Int]? = nil
 ) throws
     -> LazyDataSet
 {
     return try loadImagenetteDirectory(
-        named: "train", in: localStorageDirectory, inputSize: inputSize, outputSize: outputSize, labelDict: labelDict)
+        named: "train", in: localStorageDirectory, inputSize: inputSize, outputSize: outputSize,
+        labelDict: labelDict)
 }
 
 func loadImagenetteValidationDirectory(
-    inputSize: Imagenette.ImageSize, outputSize: Int, localStorageDirectory: URL, labelDict: [String:Int]? = nil
+    inputSize: Imagenette.ImageSize, outputSize: Int, localStorageDirectory: URL,
+    labelDict: [String: Int]? = nil
 ) throws
     -> LazyDataSet
 {
     return try loadImagenetteDirectory(
-        named: "val", in: localStorageDirectory, inputSize: inputSize, outputSize: outputSize, labelDict: labelDict)
+        named: "val", in: localStorageDirectory, inputSize: inputSize, outputSize: outputSize,
+        labelDict: labelDict)
 }

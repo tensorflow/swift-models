@@ -19,10 +19,12 @@ public class MCTSPolicy: Policy {
     private let configuration: MCTSConfiguration
     private var tree: MCTSTree
 
-    public init(participantName: String, predictor: MCTSPredictor, configuration: MCTSConfiguration) {
+    public init(participantName: String, predictor: MCTSPredictor, configuration: MCTSConfiguration)
+    {
         self.participantName = participantName
         self.configuration = configuration
-        self.tree = MCTSTree(gameConfiguration: configuration.gameConfiguration, predictor: predictor)
+        self.tree = MCTSTree(
+            gameConfiguration: configuration.gameConfiguration, predictor: predictor)
     }
 
     public func nextMove(for boardState: BoardState, after previousMove: Move?) -> Move {
@@ -41,7 +43,8 @@ public class MCTSPolicy: Policy {
         // Stage 3: Select a move.
         var exploreMove = false
         if case .exploreMovesInEarlyStage(let maximumMoveCount) = configuration.explorationOption,
-            boardState.playedMoveCount <= maximumMoveCount {
+            boardState.playedMoveCount <= maximumMoveCount
+        {
             exploreMove = true
         }
 
@@ -110,7 +113,8 @@ public class MCTSPolicy: Policy {
         // Backup the reward to all visited notes.
         assert(visitedActions.count == visitedMCTSNodes.count)
         guard let finalRewardForBlackPlayer = rewardForBlackPlayer else {
-            fatalError("The reward must be set during simulation before quiting the tree expanding.")
+            fatalError(
+                "The reward must be set during simulation before quiting the tree expanding.")
         }
         for (index, node) in visitedMCTSNodes.enumerated() {
             node.backUp(

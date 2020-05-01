@@ -21,7 +21,7 @@ struct TimeDistributed: Layer {
         self.dense = wrapped
     }
 
-    @differentiable(wrt: (self,input))
+    @differentiable(wrt: (self, input))
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let (batchSize, timeSteps, features) = (input.shape[0], input.shape[1], input.shape[2])
         let reshaped = input.reshaped(to: [batchSize * timeSteps, features])
@@ -52,7 +52,7 @@ struct FeedForward: Layer {
         dropout = Dropout<Float>(probability: dropProbability)
     }
 
-    @differentiable(wrt: (self,input))
+    @differentiable(wrt: (self, input))
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         return input.sequenced(through: dense1, dropout, dense2)
     }
@@ -64,14 +64,14 @@ struct AttentionInputGPT2: Differentiable {
     var value: Tensor<Float>
 }
 
-@differentiable(wrt: (query,key,value))
+@differentiable(wrt: (query, key, value))
 func makeAttentionInput(query: Tensor<Float>, key: Tensor<Float>, value: Tensor<Float>)
     -> AttentionInputGPT2
 {
     return AttentionInputGPT2(query: query, key: key, value: value)
 }
 
-@derivative(of: makeAttentionInput, wrt: (query,key,value))
+@derivative(of: makeAttentionInput, wrt: (query, key, value))
 func _vjpMakeAttentionInput(query: Tensor<Float>, key: Tensor<Float>, value: Tensor<Float>)
     -> (
         value: AttentionInputGPT2,
@@ -93,12 +93,12 @@ public struct AttentionContext: Differentiable {
     }
 }
 
-@differentiable(wrt: (key,value))
+@differentiable(wrt: (key, value))
 func makeAttentionContext(key: Tensor<Float>, value: Tensor<Float>) -> AttentionContext {
     return AttentionContext(key: key, value: value)
 }
 
-@derivative(of: makeAttentionContext, wrt: (key,value))
+@derivative(of: makeAttentionContext, wrt: (key, value))
 func _vjpMakeAttentionContext(key: Tensor<Float>, value: Tensor<Float>)
     -> (
         value: AttentionContext,
@@ -142,7 +142,7 @@ struct Attention: ParameterlessLayer {
         self.causal = causal
     }
 
-    @differentiable(wrt: (self,input))
+    @differentiable(wrt: (self, input))
     func callAsFunction(_ input: AttentionInputGPT2) -> Tensor<Float> {
         var dotProducts = batchedMatmul(input.query, input.key, adjointRight: true)
         dotProducts = causallyMasked(dotProducts, enable: causal) / scale
@@ -226,7 +226,7 @@ struct MultiHeadAttentionGPT2: Layer {
         self.headCount = headCount
     }
 
-    @differentiable(wrt: (self,input))
+    @differentiable(wrt: (self, input))
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let qkvProjected = wqkv(input)
         let qkvSplit = splitHeads(qkvProjected, headCount: headCount)
@@ -268,7 +268,7 @@ public struct EncoderLayer: Layer {
         feedForwardNorm = LayerNorm(featureCount: size, axis: 2, epsilon: 1e-5)
     }
 
-    @differentiable(wrt: (self,input))
+    @differentiable(wrt: (self, input))
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let attended =
             input
@@ -346,7 +346,8 @@ public struct TransformerLM: Module {
     @differentiable
     public func callAsFunction(_ tokens: Tensor<Int32>) -> Tensor<Float> {
         let positions = { (0..<tokens.shape[1]).map { Int32($0) } }()
-        let positionsTensor = Tensor<Int32>(shape: [1, tokens.shape[1]], scalars: positions, on: tokens.device)
+        let positionsTensor = Tensor<Int32>(
+            shape: [1, tokens.shape[1]], scalars: positions, on: tokens.device)
         var h = embedding(tokens)
         h = h + positionalEmbeddings.gathering(atIndices: positionsTensor)
         h = layers.differentiableReduce(h) { $1($0) }

@@ -150,7 +150,6 @@ extension BytePairEncoder {
         return try! NSRegularExpression(pattern: "(?:\(escapedGlossary))")
     }()
 
-
     // TODO: Add documentation.
     internal static let bytesToUnicode: [UInt8: UnicodeScalar] = {
         var bytes = [UInt8](33...126) + [UInt8](161...172) + [UInt8](174...255)
@@ -209,10 +208,11 @@ extension BytePairEncoder {
             for match in matches {
                 if let start = token.index(
                     token.startIndex, offsetBy: match.range.lowerBound, limitedBy: token.endIndex),
-                   let end = token.index(
-                    token.startIndex, offsetBy: match.range.upperBound, limitedBy: token.endIndex)
+                    let end = token.index(
+                        token.startIndex, offsetBy: match.range.upperBound,
+                        limitedBy: token.endIndex)
                 {
-                  parts.append(String(token[start..<end]))
+                    parts.append(String(token[start..<end]))
                 }
             }
         case .roberta, .none:
