@@ -29,7 +29,6 @@ jobs:
 
       - uses: actions/checkout@v2
         with:
-          repository: ${{ github.repository }}
           path: swift-models
           
       - uses: compnerd/lint-action@s4tf
@@ -37,6 +36,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           auto_fix: true
           appleswiftformat: true
+          appleswiftformat_dir: swift-models
 
   # build:
   #
