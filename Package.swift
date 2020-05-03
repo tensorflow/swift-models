@@ -22,9 +22,9 @@ let package = Package(
         .library(name: "BenchmarksCore", targets: ["BenchmarksCore"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.10.0"),
-        .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.2.0")),
-        .package(url: "https://github.com/google/swift-benchmark", .branch("master")),
+        .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.9.0"),
+        .package(url: "https://github.com/joaqo/SwiftCV.git", .branch("master")),
+        .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.0.1")),
     ],
     targets: [
         .target(
@@ -80,7 +80,7 @@ let package = Package(
             dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
             path: "Examples/MobileNetV2-Imagenette"),
         .target(
-            name: "Personlab", dependencies: ["ImageClassificationModels", "Datasets"],
+            name: "Personlab", dependencies: ["ModelSupport", "SwiftCV"],
             path: "Examples/Personlab"),
         .target(
             name: "MiniGo", dependencies: ["Checkpoints"], path: "MiniGo", exclude: ["main.swift"]),
