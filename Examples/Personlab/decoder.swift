@@ -45,7 +45,7 @@ struct PoseDecoder {
 
   func recursivellyAddNextKeypoint(after previousKeypoint: Keypoint, into pose: inout Pose) {
     for (nextKeypointIndex, direction) in getNextKeypointIndexAndDirection(previousKeypoint.index) {
-      if pose.getKeypoint(with: nextKeypointIndex) == nil {
+      if pose.getKeypoint(nextKeypointIndex) == nil {
         let nextKeypoint = followDisplacement(
           from: previousKeypoint,
           to: nextKeypointIndex,

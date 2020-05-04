@@ -21,8 +21,8 @@ struct CPUTensor<T: TensorFlowScalar> {
 }
 
 struct Keypoint {
-  let y: Float
-  let x: Float
+  var y: Float
+  var x: Float
   let index: KeypointIndex
   let score: Float
 
@@ -42,7 +42,7 @@ struct Keypoint {
 
   func isWithinRadiusOfCorrespondingPoint(in poses: [Pose], radius: Float = config.nmsRadius) -> Bool {
     return poses.contains { pose in
-      let correspondingKeypoint = pose.getKeypoint(with: self.index)!
+      let correspondingKeypoint = pose.getKeypoint(self.index)!
       let dy = correspondingKeypoint.y - self.y
       let dx = correspondingKeypoint.x - self.x
       let squaredDistance = dy * dy + dx * dx
@@ -118,13 +118,25 @@ let keypointPairToDisplacementIndexMap: [Set<KeypointIndex>: Int] = [
 
 struct Pose  {
   var keypoints: [Keypoint?] = Array(repeating: nil, count: KeypointIndex.allCases.count)
+  var resolution = config.inputImageSize
 
   mutating func add(_ keypoint: Keypoint) {
     keypoints[keypoint.index.rawValue] = keypoint
   }
 
-  func getKeypoint(with index: KeypointIndex) -> Keypoint? {
+  func getKeypoint(_ index: KeypointIndex) -> Keypoint? {
     return keypoints[index.rawValue]
+  }
+
+  mutating func rescale(to newResolution: (height: Int, width: Int)) {
+    for i in 0..<keypoints.count {
+      if var k = keypoints[i] {
+        k.y *= Float(newResolution.height) / Float(resolution.height)
+        k.x *= Float(newResolution.width) / Float(resolution.width)
+        self.keypoints[i] = k
+      }
+    }
+    self.resolution = newResolution
   }
 }
 
