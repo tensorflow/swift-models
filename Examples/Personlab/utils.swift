@@ -4,12 +4,7 @@ import SwiftCV
 
 
 struct Config {
-    // Input image
     let inputImageSize = (height: 241, width: 289)
-    let testImagePath = "/home/lalo/swift-models/Examples/Personlab/pose.jpg"
-
-    // Checkpoint
-    let checkPointPath = "/home/lalo/swift-models/Examples/Personlab/checkpoints/Personlab"
 
     // Decoder
     let outputStride = 16
