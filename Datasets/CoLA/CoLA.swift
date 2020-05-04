@@ -163,8 +163,8 @@ extension CoLA {
                 sizeFn: { _ in batchSize / maxSequenceLength },
                 reduceFn: {
                     DataBatch(
-                        inputs: padAndBatch(
-                            textBatches: $0.map { $0.inputs }, maxLength: maxSequenceLength),
+                        inputs: $0.map { $0.inputs }.paddedAndCollated(
+                            to: maxSequenceLength),
                         labels: Tensor.batch($0.map { $0.labels! }))
                 },
                 dropRemainder: dropRemainder
@@ -177,8 +177,8 @@ extension CoLA {
                 sizeFn: { _ in batchSize / maxSequenceLength },
                 reduceFn: {
                     DataBatch(
-                        inputs: padAndBatch(
-                            textBatches: $0.map { $0.inputs }, maxLength: maxSequenceLength),
+                        inputs: $0.map { $0.inputs }.paddedAndCollated(
+                            to: maxSequenceLength),
                         labels: Tensor.batch($0.map { $0.labels! }))
                 },
                 dropRemainder: dropRemainder
@@ -190,8 +190,8 @@ extension CoLA {
                 sizeFn: { _ in batchSize / maxSequenceLength },
                 reduceFn: {
                     DataBatch(
-                        inputs: padAndBatch(
-                            textBatches: $0.map { $0.inputs }, maxLength: maxSequenceLength),
+                        inputs: $0.map { $0.inputs }.paddedAndCollated(
+                            to: maxSequenceLength),
                         labels: nil)
                 },
                 dropRemainder: dropRemainder
