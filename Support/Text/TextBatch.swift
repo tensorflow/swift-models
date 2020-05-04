@@ -38,19 +38,19 @@ public struct TextBatch {
   }
 }
 
-// TODO: When derived conformance to Collatable is implemented in swift-apis, 
-// this won't be necessary.
+// TODO: Use parallelism to grab the samples in parallel.
 extension TextBatch: Collatable {
   /// Creates an instance from collating `samples`.
   public init<BatchSamples: Collection>(collating samples: BatchSamples)
   where BatchSamples.Element == Self {
     self.init(
-      tokenIds: .init(collating: samples.map(\.tokenIds)), 
-      tokenTypeIds: .init(collating: samples.map(\.tokenTypeIds)), 
-      mask: .init(collating: samples.map(\.mask))
+      tokenIds: .init(concatenating: samples.map(\.tokenIds)), 
+      tokenTypeIds: .init(concatenating: samples.map(\.tokenTypeIds)), 
+      mask: .init(concatenating: samples.map(\.mask))
     )
   }
 }
+
 
 extension Collection where Element == TextBatch {
   /// Returns the elements of `self`, padded to `maxLength` if specified
