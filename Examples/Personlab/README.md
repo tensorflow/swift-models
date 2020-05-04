@@ -15,7 +15,7 @@ First install OpenCV by running the `install/install_cv4.sh` [script](https://gi
 .package(url: "https://github.com/joaqo/SwiftCV.git", .branch("master"))
 ```
 
-Finally download the checkpoint from the releases page in this repo.
+Finally download the [checkpoint](https://github.com/joaqo/swift-models/releases/download/PersonlabDemo/personlabCheckpoint.tar.gz) from the releases page in this repo.
 
 ## Running
 ```
