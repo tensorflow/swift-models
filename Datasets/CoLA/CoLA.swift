@@ -48,25 +48,21 @@ public struct CoLA<Entropy: RandomNumberGenerator> {
   public let trainingExamples: Samples
   /// The validation texts.
   public let validationExamples: Samples
-  /// The test texts. 
-//  public let testExamples: [Example]
     
   /// The sequence length to which every sentence will be padded.
   public let maxSequenceLength: Int
   /// The batch size.
   public let batchSize: Int
+    
   /// The type of the collection of batches.
   public typealias Batches = Slices<Sampling<Samples, ArraySlice<Int>>>
-  /// The type of the training seauence of epochs.
+  /// The type of the training sequence of epochs.
   public typealias TrainEpochs = LazyMapSequence<TrainingEpochs<Samples, Entropy>, 
     LazyMapSequence<Batches, LabeledTextBatch>>
-  
-  //public typealias DevDataIterator = GroupedIterator<MapIterator<ExampleIterator, DataBatch>>
-  //public typealias TestDataIterator = DevDataIterator
-
+  /// The sequence of training data (epochs of batches).
   public var trainingEpochs: TrainEpochs
+  /// The validation batches.
   public var validationBatches: LazyMapSequence<Slices<Samples>, LabeledTextBatch>
-//  public var testDataIterator: TestDataIterator
     
   /// The url from which to download the dataset.
   private let url: URL = URL(
