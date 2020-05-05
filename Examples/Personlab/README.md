@@ -1,6 +1,6 @@
 # PersonLab
 
-Personlab human pose estimator, inference only version.
+Personlab human pose estimator, inference only version. Runs optimally in the 0.8 version of the S4TF toolchain, newer versions of the toolchain run more slowly.
 
 Had to build slightly custom mobilenet backbone as the checkpoint I used does not fit into the mobilenet versions available in this repo.
 
