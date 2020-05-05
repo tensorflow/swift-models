@@ -12,12 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Adapted from: https://gist.github.com/eaplatanios/5163c8d503f9e56f11b5b058fb041d62
-// Changes:
-// - Rename `Architecture` to `BERTClassifier`.
-// - In `CoLA.update`:
-//   - Change `Architecture.classify` to `BERTClassifier.callAsFunction`.
-//   - Change `softmaxCrossEntropy` to `sigmoidCrossEntropy`.
+// Originaly adapted from: 
+// https://gist.github.com/eaplatanios/5163c8d503f9e56f11b5b058fb041d62
 
 import Foundation
 import ModelSupport

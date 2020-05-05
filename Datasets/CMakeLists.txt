@@ -5,6 +5,7 @@ add_library(Datasets
   COCO/COCODataset.swift
   COCO/COCOVariant.swift
   CoLA/CoLA.swift
+  CoLA/DataUtilities.swift
   ImageClassificationDataset.swift
   Imagenette/Imagenette.swift
   Imagenette/Imagewoof.swift
