@@ -82,7 +82,7 @@ struct InferenceCommand: ParsableCommand {
           draw(pose, on: frame)
         }
         ImShow(image: frame)
-        WaitKey(delay: 5000)
+        WaitKey(delay: 1)
       }
     }
   }
