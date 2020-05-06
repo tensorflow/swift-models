@@ -77,6 +77,7 @@ public struct TextUnsupervised {
     public init(
         bpe: BytePairEncoder,
         variant: TextUnsupervisedVariant = TextUnsupervisedVariant.wikiText2,
+        skipEncodingByLoadingFrom: String? = nil,
         trainingBatchSize: Int = 8, validationBatchSize: Int = 4, sequenceLength: Int = 1024,
         trainingDocumentCount: Int = 4, validationDocumentCount: Int = 4
     ) {
@@ -97,10 +98,12 @@ public struct TextUnsupervised {
                 .appendingPathComponent(
                     variant.rawValue, isDirectory: true)
             self.trainingDataset = try TextUnsupervised.loadTraining(
+                skipEncodingByLoadingFrom: skipEncodingByLoadingFrom,
                 localStorageDirectory: localStorageDirectory, bpe: bpe,
                 variantDetails: variantDetails, batchSize: trainingBatchSize,
                 sequenceLength: sequenceLength, documentCount: trainingDocumentCount)
             self.validationDataset = try TextUnsupervised.loadValidation(
+                skipEncodingByLoadingFrom: skipEncodingByLoadingFrom,
                 localStorageDirectory: localStorageDirectory, bpe: bpe,
                 variantDetails: variantDetails, batchSize: validationBatchSize,
                 sequenceLength: sequenceLength, documentCount: validationDocumentCount)
@@ -144,29 +147,36 @@ public struct TextUnsupervised {
 
     // Only supports CSV files.
     private static func loadDirectory(
+        skipEncodingByLoadingFrom: String? = nil,
         named name: String, in directory: URL, bpe: BytePairEncoder,
         variantDetails: TextUnsupervisedVariantDetails, batchSize: Int, sequenceLength: Int,
         documentCount: Int = 4
     ) throws -> LanguageModelDataset<[[Int]]> {
-        downloadIfNotPresent(to: directory, variantDetails: variantDetails)
-        let path = directory.appendingPathComponent("\(variantDetails.filename)/\(name).csv")
+        var encodedDocs: [[Int]] = []
 
-        let documentsFull = try readCSV(in: path)
-        let documents = Array(documentsFull[0..<min(documentCount, documentsFull.count)])
-
-        let embeddings = documents.map { embedding(for: $0, bpe: bpe) }
-        let lengths = embeddings.map { $0.count }
+        if let encodedDocsPath = skipEncodingByLoadingFrom {
+          for i in 0..<documentCount {
+            encodedDocs += [NSArray(contentsOfFile: "\(encodedDocsPath)\(i).txt") as! [Int]]
+          }
+        } else {
+          downloadIfNotPresent(to: directory, variantDetails: variantDetails)
+          let path = directory.appendingPathComponent("\(variantDetails.filename)/\(name).csv")
+          let documentsFull = try readCSV(in: path)
+          let documents = Array(documentsFull[0..<min(documentCount, documentsFull.count)])
+          encodedDocs = documents.map { embedding(for: $0, bpe: bpe) }
+        }
 
         return LanguageModelDataset(
             batchSize: batchSize,
             sequenceLength: sequenceLength,
-            numericalizedTexts: embeddings,
-            lengths: lengths,
+            numericalizedTexts: encodedDocs,
+            lengths: encodedDocs.map { $0.count },
             dropLast: true
         )
     }
 
     private static func loadTraining(
+        skipEncodingByLoadingFrom: String?,
         localStorageDirectory: URL, bpe: BytePairEncoder,
         variantDetails: TextUnsupervisedVariantDetails, batchSize: Int, sequenceLength: Int,
         documentCount: Int
@@ -175,12 +185,14 @@ public struct TextUnsupervised {
         -> LanguageModelDataset<[[Int]]>
     {
         return try loadDirectory(
+            skipEncodingByLoadingFrom: skipEncodingByLoadingFrom != nil ? (skipEncodingByLoadingFrom! + "/train/train_doc_") : nil,
             named: variantDetails.trainingDirectoryName, in: localStorageDirectory, bpe: bpe,
             variantDetails: variantDetails, batchSize: batchSize, sequenceLength: sequenceLength,
             documentCount: documentCount)
     }
 
     private static func loadValidation(
+        skipEncodingByLoadingFrom: String?,
         localStorageDirectory: URL, bpe: BytePairEncoder,
         variantDetails: TextUnsupervisedVariantDetails, batchSize: Int, sequenceLength: Int,
         documentCount: Int
@@ -189,6 +201,7 @@ public struct TextUnsupervised {
         -> LanguageModelDataset<[[Int]]>
     {
         return try loadDirectory(
+            skipEncodingByLoadingFrom: skipEncodingByLoadingFrom != nil ? (skipEncodingByLoadingFrom! + "/test/test_doc_") : nil,
             named: variantDetails.validationDirectoryName, in: localStorageDirectory, bpe: bpe,
             variantDetails: variantDetails, batchSize: batchSize, sequenceLength: sequenceLength,
             documentCount: documentCount)
