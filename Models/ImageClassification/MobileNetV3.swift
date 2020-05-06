@@ -357,7 +357,7 @@ public struct MobileNetV3Large: Layer {
             input.shape[0], 1, 1, self.lastConvChannel,
         ])
         let finalConvResult = dropoutLayer(hardSwish(finalConv(averagePool)))
-        return softmax(flatten(classiferConv(finalConvResult)))
+        return flatten(classiferConv(finalConvResult))
     }
 }
 
@@ -473,6 +473,6 @@ public struct MobileNetV3Small: Layer {
             input.shape[0], 1, 1, lastConvChannel,
         ])
         let finalConvResult = dropoutLayer(hardSwish(finalConv(averagePool)))
-        return softmax(flatten(classiferConv(finalConvResult)))
+        return flatten(classiferConv(finalConvResult))
     }
 }
