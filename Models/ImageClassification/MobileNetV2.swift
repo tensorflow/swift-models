@@ -219,8 +219,7 @@ public struct MobileNetV2: Layer {
         outputConvBatchNorm = BatchNorm(featureCount: lastBlockFilterCount)
 
         outputClassifier = Dense(
-            inputSize: lastBlockFilterCount, outputSize: classCount,
-            activation: softmax)
+            inputSize: lastBlockFilterCount, outputSize: classCount)
     }
 
     @differentiable

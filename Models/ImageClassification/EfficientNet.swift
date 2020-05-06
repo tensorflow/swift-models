@@ -271,7 +271,7 @@ public struct EfficientNet: Layer {
         dropoutProb = Dropout<Float>(probability: dropout)
         outputClassifier = Dense(
             inputSize: makeDivisible(filter: 1280, width: width),
-            outputSize: classCount, activation: softmax)
+            outputSize: classCount)
     }
 
     @differentiable

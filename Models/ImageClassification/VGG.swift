@@ -58,7 +58,7 @@ public struct VGG16: Layer {
         layer3 = VGGBlock(featureCounts: (128, 256, 256, 256), blockCount: 3)
         layer4 = VGGBlock(featureCounts: (256, 512, 512, 512), blockCount: 3)
         layer5 = VGGBlock(featureCounts: (512, 512, 512, 512), blockCount: 3)
-        output = Dense(inputSize: 4096, outputSize: classCount, activation: softmax)
+        output = Dense(inputSize: 4096, outputSize: classCount)
     }
 
     @differentiable
@@ -86,7 +86,7 @@ public struct VGG19: Layer {
         layer3 = VGGBlock(featureCounts: (128, 256, 256, 256), blockCount: 4)
         layer4 = VGGBlock(featureCounts: (256, 512, 512, 512), blockCount: 4)
         layer5 = VGGBlock(featureCounts: (512, 512, 512, 512), blockCount: 4)
-        output = Dense(inputSize: 4096, outputSize: classCount, activation: softmax)
+        output = Dense(inputSize: 4096, outputSize: classCount)
     }
 
     @differentiable

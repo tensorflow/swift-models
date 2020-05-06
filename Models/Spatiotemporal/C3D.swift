@@ -39,7 +39,7 @@ public struct C3D: Layer {
     var output: Dense<Float>
     
     public init(classCount: Int) {
-        self.output = Dense<Float>(inputSize: 1024, outputSize: classCount, activation: softmax)
+        self.output = Dense<Float>(inputSize: 1024, outputSize: classCount)
     }
     
     @differentiable
