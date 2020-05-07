@@ -78,7 +78,7 @@ public struct CIFAR10<Entropy: RandomNumberGenerator> {
     let trainingSamples = loadCIFARTrainingFiles(in: localStorageDirectory)
     training = TrainingEpochs(samples: trainingSamples, batchSize: batchSize, entropy: entropy)
       .lazy.map { (batches: Batches) -> LazyMapSequence<Batches, LabeledImage> in
-        return batches.lazy.map{ makeBatch(samples: $0, normalizing: normalizing, device:device) }
+        return batches.lazy.map{ makeBatch(samples: $0, normalizing: normalizing, device: device) }
       }
       
     // Validation data
