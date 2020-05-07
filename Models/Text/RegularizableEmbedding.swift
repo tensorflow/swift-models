@@ -18,7 +18,7 @@ import TensorFlow
 ///
 /// `Embedding` is effectively a lookup table that maps indices from a fixed vocabulary to
 /// fixed-size vector representations, e.g. `[[0], [3]] -> [[0.25, 0.1], [0.6, -0.2]]`.
-public struct Embedding<Scalar: TensorFlowFloatingPoint>: Module, Regularizable {
+public struct RegularizableEmbedding<Scalar: TensorFlowFloatingPoint>: Module, Regularizable {
     /// Embeddings lookup table with shape `[vocabularySize, embeddingSize]`.
     public var embeddings: Tensor<Scalar>
 
@@ -84,7 +84,7 @@ public struct Embedding<Scalar: TensorFlowFloatingPoint>: Module, Regularizable 
     }
 }
 
-extension Embedding {
+extension RegularizableEmbedding {
     /// Default initializer to use for the embeddings lookup table.
     public static var defaultInitializer: ParameterInitializer<Scalar> {
         truncatedNormalInitializer(standardDeviation: Tensor<Scalar>(0.02))
