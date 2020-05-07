@@ -84,7 +84,7 @@ public struct CIFAR10<Entropy: RandomNumberGenerator> {
     // Validation data
     let validationSamples = loadCIFARTestFile(in: localStorageDirectory)
     validation = validationSamples.inBatches(of: batchSize).lazy.map {
-      makeBatch(samples: $0, normalizing: normalizing, device:device)
+      makeBatch(samples: $0, normalizing: normalizing, device: device)
     }
   }
 }
@@ -148,7 +148,7 @@ func loadCIFARTestFile(in localStorageDirectory: URL) -> [(data: [UInt8], label:
 }
 
 fileprivate func makeBatch<BatchSamples: Collection>(
-  samples: BatchSamples, normalizing: Bool, device:Device
+  samples: BatchSamples, normalizing: Bool, device: Device
 ) -> LabeledImage where BatchSamples.Element == (data: [UInt8], label: Int32) {
   let bytes = samples.lazy.map(\.data).reduce(into: [], +=)
   let images = Tensor<UInt8>(shape: [samples.count, 3, 32, 32], scalars: bytes, on:device)
