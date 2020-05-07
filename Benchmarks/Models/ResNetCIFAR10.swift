@@ -38,11 +38,11 @@ enum ResNetCIFAR10: BenchmarkModel {
     }
 
     static func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return ImageClassificationInference<ResNet56, CIFAR10>(settings: settings)
+        return ImageClassificationInference<ResNet56, OldCIFAR10>(settings: settings)
     }
 
     static func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return ImageClassificationTraining<ResNet56, CIFAR10>(settings: settings)
+        return ImageClassificationTraining<ResNet56, OldCIFAR10>(settings: settings)
     }
 }
 

@@ -7,6 +7,7 @@ final class CIFAR10Tests: XCTestCase {
     func testCreateCIFAR10() {
         let dataset = CIFAR10(
             batchSize: 1,
+            entropy: SystemRandomNumberGenerator(),
             remoteBinaryArchiveLocation:
                 URL(
                     string:
@@ -16,12 +17,14 @@ final class CIFAR10Tests: XCTestCase {
         verify(dataset)
     }
 
-    func verify(_ dataset: CIFAR10) {
+    func verify(_ dataset: CIFAR10<SystemRandomNumberGenerator>) {
         var totalCount = 0
-        for example in dataset.training.sequenced() {
-            XCTAssertTrue((0..<10).contains(example.second[0].scalar!))
-            XCTAssertEqual(example.first.shape, [1, 32, 32, 3])
-            totalCount += 1
+        for epochBatches in dataset.training.prefix(1){ 
+            for batch in epochBatches {
+                XCTAssertTrue((0..<10).contains(batch.label[0].scalar!))
+                XCTAssertEqual(batch.data.shape, [1, 32, 32, 3])
+                totalCount += 1
+            }
         }
         XCTAssertEqual(totalCount, 50000)
     }
@@ -29,6 +32,7 @@ final class CIFAR10Tests: XCTestCase {
     func testNormalizeCIFAR10() {
         let dataset = CIFAR10(
             batchSize: 50000,
+            entropy: SystemRandomNumberGenerator(),
             remoteBinaryArchiveLocation:
                 URL(
                     string:
@@ -38,14 +42,16 @@ final class CIFAR10Tests: XCTestCase {
         
         let targetMean = Tensor<Double>([0, 0, 0])
         let targetStd = Tensor<Double>([1, 1, 1])
-        for batch in dataset.training.sequenced() {
-            let images = Tensor<Double>(batch.first)
-            let mean = images.mean(squeezingAxes: [0, 1, 2])
-            let std = images.standardDeviation(squeezingAxes: [0, 1, 2])
-            XCTAssertTrue(targetMean.isAlmostEqual(to: mean,
-                                                   tolerance: 1e-6))
-            XCTAssertTrue(targetStd.isAlmostEqual(to: std,
-                                                  tolerance: 1e-5))
+        for epochBatches in dataset.training.prefix(1){ 
+            for batch in epochBatches {
+                let images = Tensor<Double>(batch.data)
+                let mean = images.mean(squeezingAxes: [0, 1, 2])
+                let std = images.standardDeviation(squeezingAxes: [0, 1, 2])
+                XCTAssertTrue(targetMean.isAlmostEqual(to: mean,
+                                                       tolerance: 1e-6))
+                XCTAssertTrue(targetStd.isAlmostEqual(to: std,
+                                                      tolerance: 1e-5))
+            }
         }
     }
 }
