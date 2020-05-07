@@ -48,12 +48,13 @@ public struct CIFAR10<Entropy: RandomNumberGenerator> {
     self.init(
       batchSize: batchSize,
       entropy: entropy,
+      device: Device.default,
       remoteBinaryArchiveLocation: URL(
         string: "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/CIFAR10/cifar-10-binary.tar.gz")!, 
       normalizing: true)
   }
   
-  /// Creates an instance with `batchSize` using `remoteBinaryArchiveLocation`.
+  /// Creates an instance with `batchSize` on `device` using `remoteBinaryArchiveLocation`.
   ///
   /// - Parameters:
   ///   - entropy: a source of randomness used to shuffle sample ordering.  It  
@@ -65,6 +66,7 @@ public struct CIFAR10<Entropy: RandomNumberGenerator> {
   public init(
     batchSize: Int,
     entropy: Entropy,
+    device: Device,
     remoteBinaryArchiveLocation: URL, 
     localStorageDirectory: URL = DatasetUtilities.defaultDirectory
       .appendingPathComponent("CIFAR10", isDirectory: true), 
@@ -76,13 +78,13 @@ public struct CIFAR10<Entropy: RandomNumberGenerator> {
     let trainingSamples = loadCIFARTrainingFiles(in: localStorageDirectory)
     training = TrainingEpochs(samples: trainingSamples, batchSize: batchSize, entropy: entropy)
       .lazy.map { (batches: Batches) -> LazyMapSequence<Batches, LabeledImage> in
-        return batches.lazy.map{ makeBatch(samples: $0, normalizing: normalizing) }
+        return batches.lazy.map{ makeBatch(samples: $0, normalizing: normalizing, device: device) }
       }
       
     // Validation data
     let validationSamples = loadCIFARTestFile(in: localStorageDirectory)
     validation = validationSamples.inBatches(of: batchSize).lazy.map {
-      makeBatch(samples: $0, normalizing: normalizing)
+      makeBatch(samples: $0, normalizing: normalizing, device: device)
     }
   }
 }
@@ -145,16 +147,17 @@ func loadCIFARTestFile(in localStorageDirectory: URL) -> [(data: [UInt8], label:
   return loadCIFARFile(named: "test_batch.bin", in: localStorageDirectory)
 }
 
-func makeBatch<BatchSamples: Collection>(samples: BatchSamples, normalizing: Bool) -> LabeledImage 
-where BatchSamples.Element == (data: [UInt8], label: Int32) {
+fileprivate func makeBatch<BatchSamples: Collection>(
+  samples: BatchSamples, normalizing: Bool, device: Device
+) -> LabeledImage where BatchSamples.Element == (data: [UInt8], label: Int32) {
   let bytes = samples.lazy.map(\.data).reduce(into: [], +=)
-  let images = Tensor<UInt8>(shape: [samples.count, 3, 32, 32], scalars: bytes)
+  let images = Tensor<UInt8>(shape: [samples.count, 3, 32, 32], scalars: bytes, on: device)
   
   var imageTensor = Tensor<Float>(images.transposed(permutation: [0, 2, 3, 1]))
   imageTensor /= 255.0
   if normalizing {
-    let mean = Tensor<Float>([0.4913996898, 0.4821584196, 0.4465309242])
-    let std = Tensor<Float>([0.2470322324, 0.2434851280, 0.2615878417])
+    let mean = Tensor<Float>([0.4913996898, 0.4821584196, 0.4465309242], on: device)
+    let std = Tensor<Float>([0.2470322324, 0.2434851280, 0.2615878417], on: device)
     imageTensor = (imageTensor - mean) / std
   }
   

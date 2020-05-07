@@ -26,7 +26,7 @@ let imageHeight = 28
 let imageWidth = 28
 
 let outputFolder = "./output/"
-let dataset = KuzushijiMNIST(batchSize: batchSize, flattening: true)
+let dataset = OldKuzushijiMNIST(batchSize: batchSize, flattening: true)
 
 // An autoencoder.
 struct Autoencoder2D: Layer {
