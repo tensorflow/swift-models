@@ -37,11 +37,11 @@ enum LeNetMNIST: BenchmarkModel {
     }
 
     static func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return ImageClassificationInference<LeNet, MNIST>(settings: settings)
+        return ImageClassificationInference<LeNet, OldMNIST>(settings: settings)
     }
 
     static func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return ImageClassificationTraining<LeNet, MNIST>(settings: settings)
+        return ImageClassificationTraining<LeNet, OldMNIST>(settings: settings)
     }
 }
 

@@ -26,7 +26,7 @@ let imageHeight = 28
 let imageWidth = 28
 
 let outputFolder = "./output/"
-let dataset = MNIST(batchSize: 128, flattening: true)
+let dataset = OldMNIST(batchSize: 128, flattening: true)
 
 let inputDim = 784  // 28*28 for any MNIST
 let hiddenDim = 400
@@ -84,7 +84,7 @@ func vaeLossFunction(
 }
 
 // TODO: Find a cleaner way of extracting individual images that doesn't require a second dataset.
-let singleImageDataset = MNIST(batchSize: 1, flattening: true)
+let singleImageDataset = OldMNIST(batchSize: 1, flattening: true)
 let individualTestImages = singleImageDataset.test
 var testImageIterator = individualTestImages.sequenced()
 

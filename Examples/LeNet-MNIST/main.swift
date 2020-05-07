@@ -43,20 +43,20 @@ struct Statistics {
 }
 
 // The training loop.
-for epoch in 1...epochCount {
+for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
     var trainStats = Statistics()
     var testStats = Statistics()
     
     Context.local.learningPhase = .training
-    for batch in dataset.training.sequenced() {
-        let (images, labels) = (batch.first, batch.second)
+    for batch in epochBatches {
+        let (images, labels) = (batch.data, batch.label)
         // Compute the gradient with respect to the model.
         let 𝛁model = TensorFlow.gradient(at: classifier) { classifier -> Tensor<Float> in
             let ŷ = classifier(images)
             let correctPredictions = ŷ.argmax(squeezingAxis: 1) .== labels
             trainStats.correctGuessCount += Int(
                 Tensor<Int32>(correctPredictions).sum().scalarized())
-            trainStats.totalGuessCount += batch.first.shape[0]
+            trainStats.totalGuessCount += images.shape[0]
             let loss = softmaxCrossEntropy(logits: ŷ, labels: labels)
             trainStats.totalLoss += loss.scalarized()
             trainStats.batches += 1
@@ -67,13 +67,13 @@ for epoch in 1...epochCount {
     }
 
     Context.local.learningPhase = .inference
-    for batch in dataset.test.sequenced() {
-        let (images, labels) = (batch.first, batch.second)
+    for batch in dataset.validation {
+        let (images, labels) = (batch.data, batch.label)
         // Compute loss on test set
         let ŷ = classifier(images)
         let correctPredictions = ŷ.argmax(squeezingAxis: 1) .== labels
         testStats.correctGuessCount += Int(Tensor<Int32>(correctPredictions).sum().scalarized())
-        testStats.totalGuessCount += batch.first.shape[0]
+        testStats.totalGuessCount += images.shape[0]
         let loss = softmaxCrossEntropy(logits: ŷ, labels: labels)
         testStats.totalLoss += loss.scalarized()
         testStats.batches += 1
@@ -83,7 +83,7 @@ for epoch in 1...epochCount {
     let testAccuracy = Float(testStats.correctGuessCount) / Float(testStats.totalGuessCount)
     print(
         """
-        [Epoch \(epoch)] \
+        [Epoch \(epoch + 1)] \
         Training Loss: \(trainStats.totalLoss / Float(trainStats.batches)), \
         Training Accuracy: \(trainStats.correctGuessCount)/\(trainStats.totalGuessCount) \
         (\(trainAccuracy)), \

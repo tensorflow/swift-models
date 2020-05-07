@@ -8,6 +8,7 @@ final class CIFAR10Tests: XCTestCase {
         let dataset = CIFAR10(
             batchSize: 1,
             entropy: SystemRandomNumberGenerator(),
+            device: Device.default,
             remoteBinaryArchiveLocation:
                 URL(
                     string:
@@ -33,6 +34,7 @@ final class CIFAR10Tests: XCTestCase {
         let dataset = CIFAR10(
             batchSize: 50000,
             entropy: SystemRandomNumberGenerator(),
+            device: Device.default,
             remoteBinaryArchiveLocation:
                 URL(
                     string:
