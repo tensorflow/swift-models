@@ -35,6 +35,7 @@ private protocol TextUnsupervisedVariantDetails {
     var trainingDirectoryName: String { get set }
     var validationDirectoryName: String { get set }
     var filename: String { get set }
+    var encodedFileName: String? {get set}
     var fileExtension: String { get set }
 }
 
@@ -45,24 +46,17 @@ public struct TextUnsupervised {
         var trainingDirectoryName = "train"
         var validationDirectoryName = "test"
         var filename = "wikitext-103"
+        var encodedFileName: String? = nil
         var fileExtension = "tgz"
     }
 
     private struct WikiText2Details: TextUnsupervisedVariantDetails {
         var variant = TextUnsupervisedVariant.wikiText2
-        var location = URL(string: "https://s3.amazonaws.com/fast-ai-nlp/")!
+        var location = URL(string: "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/WikiText2/")!
         var trainingDirectoryName = "train"
         var validationDirectoryName = "test"
         var filename = "wikitext-2"
-        var fileExtension = "tgz"
-    }
-
-    private struct EncodedWikiText2Details: TextUnsupervisedVariantDetails {
-        var variant = TextUnsupervisedVariant.wikiText2
-        var location = URL(string: "https://storage.cloud.google.com/s4tf-hosted-binaries/datasets/WikiText2/")!
-        var trainingDirectoryName = "train"
-        var validationDirectoryName = "test"
-        var filename = "encoded-wikitext-2"
+        var encodedFileName: String? = "encoded-wikitext-2"
         var fileExtension = "tgz"
     }
 
@@ -99,7 +93,8 @@ public struct TextUnsupervised {
                 let variantDetails = WikiText103Details()
                 self.variantDetails = variantDetails
             case .wikiText2:
-                self.variantDetails = (bpe == nil ? EncodedWikiText2Details() : WikiText2Details())
+                let variantDetails = WikiText2Details()
+                self.variantDetails = variantDetails
             }
 
             let localStorageDirectory: URL = FileManager.default.temporaryDirectory
@@ -119,7 +114,7 @@ public struct TextUnsupervised {
     }
 
     private static func downloadIfNotPresent(
-        to directory: URL, variantDetails: TextUnsupervisedVariantDetails
+        to directory: URL, variantDetails: TextUnsupervisedVariantDetails, downloadEncodedFile: Bool
     ) {
         let downloadPath = directory.appendingPathComponent(variantDetails.variant.rawValue).path
         let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
@@ -130,7 +125,8 @@ public struct TextUnsupervised {
 
         // Downloads and extracts dataset files.
         let _ = DatasetUtilities.downloadResource(
-            filename: variantDetails.filename, fileExtension: variantDetails.fileExtension,
+            filename: (downloadEncodedFile ? variantDetails.encodedFileName! : variantDetails.filename),
+            fileExtension: variantDetails.fileExtension,
             remoteRoot: variantDetails.location, localStorageDirectory: directory, extract: true)
     }
 
@@ -157,7 +153,7 @@ public struct TextUnsupervised {
         variantDetails: TextUnsupervisedVariantDetails, batchSize: Int, sequenceLength: Int,
         documentCount: Int = 4
     ) throws -> LanguageModelDataset<[[Int]]> {
-        downloadIfNotPresent(to: directory, variantDetails: variantDetails)
+        downloadIfNotPresent(to: directory, variantDetails: variantDetails, downloadEncodedFile: bpe == nil)
 
         var encodedDocs: [[Int]] = []
         if let bpe = bpe {
@@ -166,7 +162,7 @@ public struct TextUnsupervised {
             let documents = Array(documentsFull[0..<min(documentCount, documentsFull.count)])
             encodedDocs = documents.map { embedding(for: $0, bpe: bpe) }
         } else {
-            let pathPrefix = directory.appendingPathComponent("\(variantDetails.filename)/\(name)").path
+            let pathPrefix = directory.appendingPathComponent("\(variantDetails.encodedFileName!)/\(name)").path
             for i in 0..<documentCount {
                 encodedDocs += [
                   NSArray(
