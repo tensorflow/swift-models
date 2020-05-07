@@ -75,7 +75,7 @@ public struct MNIST<Entropy: RandomNumberGenerator> {
       batchSize: batchSize, entropy: entropy
     ).lazy.map { (batches: Batches) -> LazyMapSequence<Batches, LabeledImage> in
       return batches.lazy.map{ makeMNISTBatch(
-        samples: $0, flattening: flattening, normalizing: normalizing, device:device
+        samples: $0, flattening: flattening, normalizing: normalizing, device: device
       )}
     }
     
@@ -86,7 +86,7 @@ public struct MNIST<Entropy: RandomNumberGenerator> {
       labelsFilename: "t10k-labels-idx1-ubyte"
     ).inBatches(of: batchSize).lazy.map {
       makeMNISTBatch(samples: $0, flattening: flattening, normalizing: normalizing, 
-                     device:device)
+                     device: device)
     }
   }
 }
