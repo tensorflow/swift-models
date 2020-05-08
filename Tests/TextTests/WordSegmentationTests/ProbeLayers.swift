@@ -18,8 +18,8 @@ import TensorFlow
 import TextModels
 
 extension SNLM {
-  /// Sets the model parameters to the given parameters exported from the pytorch model.
-  mutating func setTorchParameters(_ p: TorchSNLMParameters) {
+  /// Sets the model parameters to the given parameters exported from the model.
+  mutating func setParameters(_ p: SNLMParameters) {
     setEmbedding(&embEnc, to: p.emb_enc)
     setLSTM(&lstmEnc.cell, to: p.lstm_enc)
     setMLP(&mlpInterpolation, to: p.mlp_interpolation)
@@ -34,34 +34,34 @@ extension SNLM {
     tensor = value
   }
 
-  // Sets the given Embedding parameters to the given pytorch embedding parameters.
-  private func setEmbedding(_ embedding: inout Embedding<Float>, to p: TorchEmbeddingParameters) {
+  // Sets the given Embedding parameters to the given embedding parameters.
+  private func setEmbedding(_ embedding: inout Embedding<Float>, to p: EmbeddingParameters) {
     checkShapeAndSet(&embedding.embeddings, to: p.weight)
   }
 
-  /// Sets the given LSTM cell's parameters to the given pytorch LSTM parameters.
-  private func setLSTM(_ lstm: inout LSTMCell<Float>, to p: TorchLSTMParameters) {
-    let fusedWeightTorch = p.weight_ih_l0.concatenated(with: p.weight_hh_l0, alongAxis: 1).transposed()
-    let i = fusedWeightTorch.shape[0]
-    let j = fusedWeightTorch.shape[1] / 4
+  /// Sets the given LSTM cell's parameters to the given LSTM parameters.
+  private func setLSTM(_ lstm: inout LSTMCell<Float>, to p: LSTMParameters) {
+    let fusedWeight = p.weight_ih_l0.concatenated(with: p.weight_hh_l0, alongAxis: 1).transposed()
+    let i = fusedWeight.shape[0]
+    let j = fusedWeight.shape[1] / 4
     let fusedWeightTF = Tensor(
       concatenating: [
-        fusedWeightTorch.slice(lowerBounds: [0, 0], upperBounds: [i, j]),
-        fusedWeightTorch.slice(lowerBounds: [0, 2 * j], upperBounds: [i, 3 * j]),
-        fusedWeightTorch.slice(lowerBounds: [0, j], upperBounds: [i, 2 * j]),
-        fusedWeightTorch.slice(lowerBounds: [0, 3 * j], upperBounds: [i, 4 * j])
+        fusedWeight.slice(lowerBounds: [0, 0], upperBounds: [i, j]),
+        fusedWeight.slice(lowerBounds: [0, 2 * j], upperBounds: [i, 3 * j]),
+        fusedWeight.slice(lowerBounds: [0, j], upperBounds: [i, 2 * j]),
+        fusedWeight.slice(lowerBounds: [0, 3 * j], upperBounds: [i, 4 * j])
       ],
       alongAxis: 1
     )
 
-    let fusedBiasTorch = (p.bias_ih_l0 + p.bias_hh_l0)
-    let k = fusedBiasTorch.shape[0] / 4
+    let fusedBias = (p.bias_ih_l0 + p.bias_hh_l0)
+    let k = fusedBias.shape[0] / 4
     let fusedBiasTF = Tensor(
       concatenating: [
-        fusedBiasTorch.slice(lowerBounds: [0], upperBounds: [k]),
-        fusedBiasTorch.slice(lowerBounds: [2 * k], upperBounds: [3 * k]),
-        fusedBiasTorch.slice(lowerBounds: [k], upperBounds: [2 * k]),
-        fusedBiasTorch.slice(lowerBounds: [3 * k], upperBounds: [4 * k])
+        fusedBias.slice(lowerBounds: [0], upperBounds: [k]),
+        fusedBias.slice(lowerBounds: [2 * k], upperBounds: [3 * k]),
+        fusedBias.slice(lowerBounds: [k], upperBounds: [2 * k]),
+        fusedBias.slice(lowerBounds: [3 * k], upperBounds: [4 * k])
       ]
     )
 
@@ -69,26 +69,26 @@ extension SNLM {
     checkShapeAndSet(&lstm.fusedBias, to: fusedBiasTF)
   }
 
-  /// Sets the given MLP's parameters to the given pytorch MLP parameters.
-  private func setMLP(_ mlp: inout MLP, to p: TorchMLPParameters) {
+  /// Sets the given MLP's parameters to the given MLP parameters.
+  private func setMLP(_ mlp: inout MLP, to p: MLPParameters) {
     setDense(&mlp.dense1, to: p.linear1)
     setDense(&mlp.dense2, to: p.linear2)
   }
 
-  /// Sets the given Dense's parameters to the given pytorch linear parameters.
-  private func setDense(_ dense: inout Dense<Float>, to p: TorchLinearParameters) {
+  /// Sets the given Dense's parameters to the given linear parameters.
+  private func setDense(_ dense: inout Dense<Float>, to p: LinearParameters) {
     checkShapeAndSet(&dense.weight, to: p.weight.transposed())
     checkShapeAndSet(&dense.bias, to: p.bias)
   }
 }
 
-func tangentVector(from torchGradient: TorchSNLMParameters, model: SNLM) -> SNLM.TangentVector {
+func tangentVector(from gradient: SNLMParameters, model: SNLM) -> SNLM.TangentVector {
   var model = model
-  model.setTorchParameters(torchGradient)
+  model.setParameters(gradient)
 
-  // `model.setTorchParameters` is for model parameters, not for gradients, so
+  // `model.setParameters` is for model parameters, not for gradients, so
   // we need to adjust the LSTM biases, whose gradients work differently than
-  // `model.setTorchParameters` does.
+  // `model.setParameters` does.
   model.lstmEnc.cell.fusedBias /= 2
   model.lstmDec.cell.fusedBias /= 2
 
@@ -147,7 +147,7 @@ class ProbeLayerTests: XCTestCase {
       strVocab: strVocab,
       order: 5))
 
-    model.setTorchParameters(Example1.parameters)
+    model.setParameters(Example1.parameters)
 
     print("Encoding")
     let encoderStates = model.encode(CharacterSequence(alphabet: chrVocab, characters: [0, 1, 0, 1])) // "abab"

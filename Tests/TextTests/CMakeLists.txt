@@ -2,7 +2,7 @@ add_library(TextTests
   Inference.swift
   WordSegmentationTests/ExampleData.swift
   WordSegmentationTests/ProbeLayers.swift
-  WordSegmentationTests/TorchParameters.swift
+  WordSegmentationTests/Parameters.swift
   WordSegmentationTests/WordSegmentationTests.swift
   XCTestManifests.swift)
 set_target_properties(TextTests PROPERTIES

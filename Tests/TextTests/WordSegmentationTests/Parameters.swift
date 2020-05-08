@@ -14,33 +14,33 @@
 
 import TensorFlow
 
-struct TorchSNLMParameters {
-  var emb_enc: TorchEmbeddingParameters
-  var lstm_enc: TorchLSTMParameters
-  var mlp_interpolation: TorchMLPParameters
-  var mlp_memory: TorchMLPParameters
-  var emb_dec: TorchEmbeddingParameters
-  var lstm_dec: TorchLSTMParameters
-  var linear_dec: TorchLinearParameters
+struct SNLMParameters {
+  var emb_enc: EmbeddingParameters
+  var lstm_enc: LSTMParameters
+  var mlp_interpolation: MLPParameters
+  var mlp_memory: MLPParameters
+  var emb_dec: EmbeddingParameters
+  var lstm_dec: LSTMParameters
+  var linear_dec: LinearParameters
 }
 
-struct TorchEmbeddingParameters {
+struct EmbeddingParameters {
   var weight: Tensor<Float>
 }
 
-struct TorchLSTMParameters {
+struct LSTMParameters {
   var weight_ih_l0: Tensor<Float>
   var weight_hh_l0: Tensor<Float>
   var bias_ih_l0: Tensor<Float>
   var bias_hh_l0: Tensor<Float>
 }
 
-struct TorchMLPParameters {
-  var linear1: TorchLinearParameters
-  var linear2: TorchLinearParameters
+struct MLPParameters {
+  var linear1: LinearParameters
+  var linear2: LinearParameters
 }
 
-struct TorchLinearParameters {
+struct LinearParameters {
   var weight: Tensor<Float>
   var bias: Tensor<Float>
 }
