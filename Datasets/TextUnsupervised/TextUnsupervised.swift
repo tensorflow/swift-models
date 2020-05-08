@@ -56,7 +56,7 @@ public struct TextUnsupervised {
         var trainingDirectoryName = "train"
         var validationDirectoryName = "test"
         var filename = "wikitext-2"
-        var encodedFileName: String? = "encoded-wikitext-2"
+        var encodedFileName: String? = "wikitext-2-encoded"
         var fileExtension = "tgz"
     }
 
@@ -139,6 +139,17 @@ public struct TextUnsupervised {
         return rows
     }
 
+    private static func readEncoded(in file: URL) throws -> [Int] {
+        let rawText = try! String(contentsOf: file, encoding: .utf8)
+        let rows = rawText.components(separatedBy: "\n")
+        var tokens: Array<Int> = Array()
+        for row in rows {
+            guard let encoded = Int(row) else { continue }
+            tokens.append(encoded)
+        }
+        return tokens
+    }
+
     private static func embedding(for string: String, bpe: BytePairEncoder) -> [Int] {
         let tokens = bpe.encode(token: string, variant: .gpt2)
         // TODO(michellecasbon): Decide how to prevent OOV or choose a better ID (probably not 0).
@@ -165,8 +176,8 @@ public struct TextUnsupervised {
         variantDetails: TextUnsupervisedVariantDetails, batchSize: Int, sequenceLength: Int,
         documentCount: Int = 4
     ) throws -> LanguageModelDataset<[[Int]]> {
-        precondition(!(bpe == nil && variantDetails.encodedFileName == nil),
-                     "Please provide encodedFileName when bpe is nil.")
+        precondition(bpe != nil || variantDetails.encodedFileName != nil,
+                     "bpe must be provided when encodedFileName is nil.")
         downloadIfNotPresent(to: directory, variantDetails: variantDetails, downloadEncodedFile: bpe == nil)
 
         var encodedDocs: [[Int]] = []
@@ -179,7 +190,7 @@ public struct TextUnsupervised {
             let pathPrefix = directory.appendingPathComponent("\(variantDetails.encodedFileName!)/\(name)").path
             for i in 0..<documentCount {
                 encodedDocs += [
-                  try NSArray(contentsOf: URL(fileURLWithPath: "\(pathPrefix)/doc_\(i).txt"), error: ()) as! [Int]
+                  try readEncoded(in: URL(fileURLWithPath: "\(pathPrefix)/doc_\(i).txt"))
                 ]
             }
         }
