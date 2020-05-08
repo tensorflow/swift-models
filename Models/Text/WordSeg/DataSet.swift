@@ -14,7 +14,7 @@
 
 import Foundation
 
-public struct DataSet {
+internal struct DataSet {
   public let training: [CharacterSequence]
   public private(set) var testing: [CharacterSequence]?
   public private(set) var validation: [CharacterSequence]?
