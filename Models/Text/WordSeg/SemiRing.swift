@@ -13,11 +13,11 @@
 // limitations under the License.
 
 #if os(iOS) || os(macOS) || os(tvOS) || os(watchOS)
-import Darwin
+  import Darwin
 #elseif os(Windows)
-import ucrt
+  import ucrt
 #else
-import Glibc
+  import Glibc
 #endif
 
 /// logSumExp(_:_:)
@@ -61,15 +61,17 @@ public struct SemiRing: Differentiable {
 }
 
 @differentiable
-func *(_ lhs: SemiRing, _ rhs: SemiRing) -> SemiRing {
-  return SemiRing(logp: lhs.logp + rhs.logp,
-                  logr: logSumExp(lhs.logp + rhs.logr, rhs.logp + lhs.logr))
+func * (_ lhs: SemiRing, _ rhs: SemiRing) -> SemiRing {
+  return SemiRing(
+    logp: lhs.logp + rhs.logp,
+    logr: logSumExp(lhs.logp + rhs.logr, rhs.logp + lhs.logr))
 }
 
 @differentiable
-func +(_ lhs: SemiRing, _ rhs: SemiRing) -> SemiRing {
-  return SemiRing(logp: logSumExp(lhs.logp, rhs.logp),
-                  logr: logSumExp(lhs.logr, rhs.logr))
+func + (_ lhs: SemiRing, _ rhs: SemiRing) -> SemiRing {
+  return SemiRing(
+    logp: logSumExp(lhs.logp, rhs.logp),
+    logr: logSumExp(lhs.logr, rhs.logr))
 }
 
 extension SemiRing {
@@ -83,7 +85,7 @@ extension SemiRing {
   // TODO(abdulras) see if we can use ulp as a default tolerance
   @inlinable
   public func isAlmostEqual(to other: Self, tolerance: Float) -> Bool {
-    return self.logp.isAlmostEqual(to: other.logp, tolerance: tolerance) &&
-      self.logr.isAlmostEqual(to: other.logr, tolerance: tolerance)
+    return self.logp.isAlmostEqual(to: other.logp, tolerance: tolerance)
+      && self.logr.isAlmostEqual(to: other.logr, tolerance: tolerance)
   }
 }

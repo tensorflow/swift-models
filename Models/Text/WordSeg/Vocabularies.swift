@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import TensorFlow
 import ModelSupport
+import TensorFlow
 
 /// Alphabet maps from characters in a string to Int32 representations.
 ///
@@ -30,7 +30,7 @@ public struct Alphabet {
   let pad: Int32
 
   public init<C: Collection>(_ letters: C, eos: String, eow: String, pad: String)
-      where C.Element == Character {
+  where C.Element == Character {
     self.dictionary = .init(zip(letters.lazy.map { String($0) }, 0...))
 
     self.eos = Int32(self.dictionary.count)
@@ -44,7 +44,7 @@ public struct Alphabet {
   }
 
   public init<C: Collection>(_ letters: C, eos: String, eow: String, pad: String)
-      where C.Element == Element {
+  where C.Element == Element {
     self.dictionary = .init(zip(letters.lazy.map { String($0) }, 0...))
 
     self.eos = Int32(self.dictionary.count)
@@ -93,7 +93,7 @@ public struct CharacterSequence: Hashable {
   }
 
   public init(alphabet: Alphabet, characters: ArraySlice<Int32>) {
-    self.characters = Array<Int32>(characters)
+    self.characters = [Int32](characters)
     self.eos = alphabet.eos
   }
 
@@ -108,7 +108,7 @@ public struct CharacterSequence: Hashable {
   public var count: Int { return characters.count }
   var last: Int32? { return characters.last }
   var tensor: Tensor<Int32> {
-    Tensor<Int32>([self.eos] + characters[0 ..< characters.count - 1])
+    Tensor<Int32>([self.eos] + characters[0..<characters.count - 1])
   }
 }
 
@@ -140,23 +140,25 @@ public struct Lexicon {
     maxLength: Int,
     minFreq: Int
   ) {
-    var histogram: [ArraySlice<Int32>:Int] = [:]
+    var histogram: [ArraySlice<Int32>: Int] = [:]
 
     for sentence in sequences {
       // NOTE: the use of `sentence.count - 1` is to ensure that we ignore the
       // trailing `EoS` marker.
-      for i in 0 ..< sentence.count - 1 {
-        for j in 1 ... maxLength {
+      for i in 0..<sentence.count - 1 {
+        for j in 1...maxLength {
           let e = min(i + j, sentence.count - 1)
           // Store strings longer than 2.
           guard e - i > 1 else { continue }
-          histogram[sentence[i ..< e], default: 0] += 1
+          histogram[sentence[i..<e], default: 0] += 1
         }
       }
     }
 
     let frequentWordCandidates = histogram.filter { $0.1 >= minFreq }
-    let vocab = frequentWordCandidates.map { CharacterSequence(alphabet: alphabet, characters: $0.0) }
+    let vocab = frequentWordCandidates.map {
+      CharacterSequence(alphabet: alphabet, characters: $0.0)
+    }
 
     self.init(vocab)
   }
@@ -171,7 +173,8 @@ extension CharacterErrors: CustomStringConvertible {
   public var description: String {
     switch self {
     case let .unknownCharacter(character, index, sentence):
-      return "Unknown character '\(character)' encountered at index \(index) while converting sentence \"\(sentence)\" to a character sequence."
+      return
+        "Unknown character '\(character)' encountered at index \(index) while converting sentence \"\(sentence)\" to a character sequence."
     case .nonUtf8Data:
       return "Non-UTF8 data encountered."
     }

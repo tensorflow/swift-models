@@ -22,35 +22,35 @@
 
 import TensorFlow
 
-public struct Conf {
-  public var ndim: Int
-  public var dropoutProb: Double
-  public var chrVocab: Alphabet
-  public var strVocab: Lexicon
-  public var order: Int
-
-  public init(
-    ndim: Int,
-    dropoutProb: Double,
-    chrVocab: Alphabet,
-    strVocab: Lexicon,
-    order: Int
-  ) {
-    self.ndim = ndim
-    self.dropoutProb = dropoutProb
-    self.chrVocab = chrVocab
-    self.strVocab = strVocab
-    self.order = order
-  }
-}
-
 /// SNLM
 ///
 /// A representation of the Segmental Neural Language Model.
 ///
 /// \ref https://www.aclweb.org/anthology/P19-1645.pdf
 public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
-  @noDerivative public var conf: Conf
+  public struct Parameters {
+    public var ndim: Int
+    public var dropoutProb: Double
+    public var chrVocab: Alphabet
+    public var strVocab: Lexicon
+    public var order: Int
+
+    public init(
+      ndim: Int,
+      dropoutProb: Double,
+      chrVocab: Alphabet,
+      strVocab: Lexicon,
+      order: Int
+    ) {
+      self.ndim = ndim
+      self.dropoutProb = dropoutProb
+      self.chrVocab = chrVocab
+      self.strVocab = strVocab
+      self.order = order
+    }
+  }
+
+  @noDerivative public var parameters: Parameters
 
   // MARK: - Encoder
 
@@ -77,34 +77,46 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 
   // MARK: - Initializer
 
-  public init(conf: Conf) {
-    self.conf = conf
+  public init(parameters: Parameters) {
+    self.parameters = parameters
 
     // Encoder
-    self.embEnc = Embedding(vocabularySize: conf.chrVocab.count, embeddingSize: conf.ndim)
-    self.lstmEnc = LSTM(LSTMCell(inputSize: conf.ndim, hiddenSize: conf.ndim))
+    self.embEnc = Embedding(
+      vocabularySize: parameters.chrVocab.count,
+      embeddingSize: parameters.ndim)
+    self.lstmEnc = LSTM(
+      LSTMCell(
+        inputSize: parameters.ndim,
+        hiddenSize:
+          parameters.ndim))
 
     // Interpolation weight
     self.mlpInterpolation = MLP(
-      nIn: conf.ndim,
-      nHidden: conf.ndim,
+      nIn: parameters.ndim,
+      nHidden: parameters.ndim,
       nOut: 2,
-      dropoutProbability: conf.dropoutProb)
+      dropoutProbability: parameters.dropoutProb)
 
     // Lexical memory
     self.mlpMemory = MLP(
-      nIn: conf.ndim,
-      nHidden: conf.ndim,
-      nOut: conf.strVocab.count,
-      dropoutProbability: conf.dropoutProb)
+      nIn: parameters.ndim,
+      nHidden: parameters.ndim,
+      nOut: parameters.strVocab.count,
+      dropoutProbability: parameters.dropoutProb)
 
     // Character-level decoder
-    self.embDec = Embedding(vocabularySize: conf.chrVocab.count, embeddingSize: conf.ndim)
-    self.lstmDec = LSTM(LSTMCell(inputSize: conf.ndim, hiddenSize: conf.ndim))
-    self.denseDec = Dense(inputSize: conf.ndim, outputSize: conf.chrVocab.count)
+    self.embDec = Embedding(
+      vocabularySize: parameters.chrVocab.count,
+      embeddingSize: parameters.ndim)
+    self.lstmDec = LSTM(
+      LSTMCell(
+        inputSize: parameters.ndim,
+        hiddenSize:
+          parameters.ndim))
+    self.denseDec = Dense(inputSize: parameters.ndim, outputSize: parameters.chrVocab.count)
 
     // Other layers
-    self.drop = Dropout(probability: conf.dropoutProb)
+    self.drop = Dropout(probability: parameters.dropoutProb)
   }
 
   // MARK: - Encode
@@ -128,16 +140,16 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
     var xBatch: [Int32] = []
     var yBatch: [Int32] = []
     for candidate in candidates {
-      let padding = Array(repeating: conf.chrVocab.pad, count: maxLen - candidate.count - 1)
+      let padding = Array(repeating: parameters.chrVocab.pad, count: maxLen - candidate.count - 1)
 
       // x is </w>{sentence}{padding}
-      xBatch.append(conf.chrVocab.eow)
+      xBatch.append(parameters.chrVocab.eow)
       xBatch.append(contentsOf: candidate.characters)
       xBatch.append(contentsOf: padding)
 
       // y is {sentence}</w>{padding}
       yBatch.append(contentsOf: candidate.characters)
-      yBatch.append(conf.chrVocab.eow)
+      yBatch.append(parameters.chrVocab.eow)
       yBatch.append(contentsOf: padding)
     }
 
@@ -168,13 +180,16 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
     let logits = denseDec(decoderResult)
 
     // [time x batch]
-    let logp = -1 * softmaxCrossEntropy(
-      logits: logits.reshaped(to: [logits.shape[0] * logits.shape[1], logits.shape[2]]),
-      labels: y.flattened(),
-      reduction: identity).reshaped(to: y.shape)
+    let logp =
+      -1
+      * softmaxCrossEntropy(
+        logits: logits.reshaped(to: [logits.shape[0] * logits.shape[1], logits.shape[2]]),
+        labels: y.flattened(),
+        reduction: identity
+      ).reshaped(to: y.shape)
 
     // [time x batch]
-    let logpExcludingPad = logp * Tensor<Float>(y .!= conf.chrVocab.pad)
+    let logpExcludingPad = logp * Tensor<Float>(y .!= parameters.chrVocab.pad)
 
     // [batch]
     let candidateLogP = logpExcludingPad.transposed().sum(squeezingAxes: 1)
@@ -192,7 +207,7 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   //    return torch.log(torch_util.var_from_scaler(0.0, "FloatTensor", self.gpu))
 
   func get_logp_lex(_ logp_lex: [Float], _ candidate: CharacterSequence) -> Float {
-    guard let index = conf.strVocab.dictionary[candidate] else {
+    guard let index = parameters.strVocab.dictionary[candidate] else {
       return -Float.infinity
     }
     return logp_lex[Int(index)]
@@ -207,14 +222,15 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
     let logp_lex_batch = mlpMemory(Tensor(stacking: states))
     for pos in 0..<sentence.count {
       var candidates: [CharacterSequence] = []
-      for span in 1..<min(sentence.count-pos+1, maxLen+1) {
+      for span in 1..<min(sentence.count - pos + 1, maxLen + 1) {
         // TODO: avoid copies?
         let candidate =
-            CharacterSequence(alphabet: conf.chrVocab,
-                              characters: sentence[pos ..< pos + span])
+          CharacterSequence(
+            alphabet: parameters.chrVocab,
+            characters: sentence[pos..<pos + span])
         // TODO: use && instead of nested ifs (AD workaround)
         if candidate.count != 1 {
-          if candidate.last == conf.chrVocab.eos {
+          if candidate.last == parameters.chrVocab.eos {
             // Prohibit strings such as ["t", "h", "e", "</s>"]
             continue
           }
@@ -232,9 +248,9 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
       //  lattice[pos]["semiring_score"] = semiring.add(lattice[pos]["edges"],
       //                                                self.gpu)
       let current_state = states[pos]
-      let logg = scalarsWithADHack(logg_batch[pos]) // [2]
-      let logp_lex = scalarsWithADHack(logp_lex_batch[pos]) // [strVocab.chr.count]
-      let logp_chr = scalarsWithADHack(decode(candidates, current_state)) // [candidates.count]
+      let logg = scalarsWithADHack(logg_batch[pos])  // [2]
+      let logp_lex = scalarsWithADHack(logp_lex_batch[pos])  // [strVocab.chr.count]
+      let logp_chr = scalarsWithADHack(decode(candidates, current_state))  // [candidates.count]
       if pos != 0 {
         // TODO: Mutate in place when AD supports it.
         let updatedNode = Lattice.Node(
@@ -268,7 +284,7 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
           sentence: candidate,
           logp: logp_i,
           previous: lattice[pos].semiringScore,
-          order: conf.order)
+          order: parameters.order)
 
         // TODO: Mutate in place when AD supports it.
         let updatedNode = Lattice.Node(
@@ -363,61 +379,65 @@ func makeEncoderInput(_ x: Tensor<Float>) -> [Tensor<Float>] {
 
 // TODO: Move this derivative into tensorflow-apis
 extension RecurrentLayer {
-    @differentiable(wrt: (self, inputs, initialState))
-    public func callAsFunction2(
-        _ inputs: [Cell.TimeStepInput],
-        initialState: Cell.State
-    ) -> [Cell.TimeStepOutput] {
-        if inputs.isEmpty { return [Cell.TimeStepOutput]() }
-        var currentHiddenState = initialState
-        var timeStepOutputs: [Cell.TimeStepOutput] = []
-        for timeStepInput in inputs {
-            let output = cell(input: timeStepInput, state: currentHiddenState)
-            currentHiddenState = output.state
-            timeStepOutputs.append(output.output)
-        }
-        return timeStepOutputs
+  @differentiable(wrt: (self, inputs, initialState))
+  public func callAsFunction2(
+    _ inputs: [Cell.TimeStepInput],
+    initialState: Cell.State
+  ) -> [Cell.TimeStepOutput] {
+    if inputs.isEmpty { return [Cell.TimeStepOutput]() }
+    var currentHiddenState = initialState
+    var timeStepOutputs: [Cell.TimeStepOutput] = []
+    for timeStepInput in inputs {
+      let output = cell(input: timeStepInput, state: currentHiddenState)
+      currentHiddenState = output.state
+      timeStepOutputs.append(output.output)
     }
+    return timeStepOutputs
+  }
 
-    @usableFromInline
-    @derivative(of: callAsFunction2, wrt: (self, inputs, initialState))
-    internal func _vjpCallAsFunctionWrtMore(
-        _ inputs: [Cell.TimeStepInput],
-        initialState: Cell.State
-    ) -> (
-        value: [Cell.TimeStepOutput],
-        pullback: (Array<Cell.TimeStepOutput>.TangentVector)
-            -> (TangentVector, Array<Cell.TimeStepInput>.TangentVector, Cell.State.TangentVector)
-    ) {
-        let timeStepCount = inputs.count
-        var currentHiddenState = initialState
-        var timeStepOutputs: [Cell.TimeStepOutput] = []
-        timeStepOutputs.reserveCapacity(timeStepCount)
-        var backpropagators: [Cell.Backpropagator] = []
-        backpropagators.reserveCapacity(timeStepCount)
-        for timestep in inputs {
-            let (output, backpropagator) = cell.appliedForBackpropagation(
-                to: .init(input: timestep, state: currentHiddenState))
-            currentHiddenState = output.state
-            timeStepOutputs.append(output.output)
-            backpropagators.append(backpropagator)
-        }
-        return (timeStepOutputs, { 𝛁outputs in
-            precondition(𝛁outputs.base.count == timeStepCount,
-                         "The number of output gradients must equal the number of time steps")
-            var 𝛁cell = Cell.TangentVector.zero
-            var 𝛁state = Cell.State.TangentVector.zero
-            var reversed𝛁inputs: [Cell.TimeStepInput.TangentVector] = []
-            reversed𝛁inputs.reserveCapacity(timeStepCount)
-            for (𝛁output, backpropagator) in zip(𝛁outputs.base, backpropagators).reversed() {
-                let (new𝛁cell, 𝛁input) = backpropagator(.init(output: 𝛁output, state: 𝛁state))
-                𝛁cell += new𝛁cell
-                𝛁state = 𝛁input.state
-                reversed𝛁inputs.append(𝛁input.input)
-            }
-            return (.init(cell: 𝛁cell), .init(Array(reversed𝛁inputs.reversed())), 𝛁state)
-        })
+  @usableFromInline
+  @derivative(of: callAsFunction2, wrt: (self, inputs, initialState))
+  internal func _vjpCallAsFunctionWrtMore(
+    _ inputs: [Cell.TimeStepInput],
+    initialState: Cell.State
+  ) -> (
+    value: [Cell.TimeStepOutput],
+    pullback: (Array<Cell.TimeStepOutput>.TangentVector)
+      -> (TangentVector, Array<Cell.TimeStepInput>.TangentVector, Cell.State.TangentVector)
+  ) {
+    let timeStepCount = inputs.count
+    var currentHiddenState = initialState
+    var timeStepOutputs: [Cell.TimeStepOutput] = []
+    timeStepOutputs.reserveCapacity(timeStepCount)
+    var backpropagators: [Cell.Backpropagator] = []
+    backpropagators.reserveCapacity(timeStepCount)
+    for timestep in inputs {
+      let (output, backpropagator) = cell.appliedForBackpropagation(
+        to: .init(input: timestep, state: currentHiddenState))
+      currentHiddenState = output.state
+      timeStepOutputs.append(output.output)
+      backpropagators.append(backpropagator)
     }
+    return (
+      timeStepOutputs,
+      { 𝛁outputs in
+        precondition(
+          𝛁outputs.base.count == timeStepCount,
+          "The number of output gradients must equal the number of time steps")
+        var 𝛁cell = Cell.TangentVector.zero
+        var 𝛁state = Cell.State.TangentVector.zero
+        var reversed𝛁inputs: [Cell.TimeStepInput.TangentVector] = []
+        reversed𝛁inputs.reserveCapacity(timeStepCount)
+        for (𝛁output, backpropagator) in zip(𝛁outputs.base, backpropagators).reversed() {
+          let (new𝛁cell, 𝛁input) = backpropagator(.init(output: 𝛁output, state: 𝛁state))
+          𝛁cell += new𝛁cell
+          𝛁state = 𝛁input.state
+          reversed𝛁inputs.append(𝛁input.input)
+        }
+        return (.init(cell: 𝛁cell), .init(Array(reversed𝛁inputs.reversed())), 𝛁state)
+      }
+    )
+  }
 }
 
 // TODO: Better way of dealing with this problem.
@@ -426,7 +446,9 @@ func scalarsWithADHack(_ t: Tensor<Float>) -> [Float] {
 }
 
 @derivative(of: scalarsWithADHack)
-func vjpScalarsHack(_ t: Tensor<Float>) -> (value: [Float], pullback: (Array<Float>.TangentVector) -> Tensor<Float>) {
+func vjpScalarsHack(_ t: Tensor<Float>) -> (
+  value: [Float], pullback: (Array<Float>.TangentVector) -> Tensor<Float>
+) {
   // TODO: Capture less stuff.
   func pullback(_ tv: Array<Float>.TangentVector) -> Tensor<Float> {
     if tv.count == 0 {

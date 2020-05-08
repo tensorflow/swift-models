@@ -40,23 +40,28 @@ public struct Lattice: Differentiable {
     public var totalScore: SemiRing
 
     @differentiable
-    init(start: Int, end: Int, sentence: CharacterSequence, logp: Float,
-         previous: SemiRing, order: Int) {
+    init(
+      start: Int, end: Int, sentence: CharacterSequence, logp: Float,
+      previous: SemiRing, order: Int
+    ) {
       self.start = start
       self.end = end
       self.string = sentence
       self.logp = logp
 
       self.score =
-        SemiRing(logp: logp,
-                 // TODO(abdulras): this should really use integeral pow
-                 logr: logp + logf(powf(Float(sentence.count), Float(order))))
+        SemiRing(
+          logp: logp,
+          // TODO(abdulras): this should really use integeral pow
+          logr: logp + logf(powf(Float(sentence.count), Float(order))))
       self.totalScore = self.score * previous
     }
 
     @differentiable
-    public init(start: Int, end: Int, string: CharacterSequence, logp: Float,
-                score: SemiRing, totalScore: SemiRing) {
+    public init(
+      start: Int, end: Int, string: CharacterSequence, logp: Float,
+      score: SemiRing, totalScore: SemiRing
+    ) {
       self.start = start
       self.end = end
       self.string = string
@@ -78,8 +83,10 @@ public struct Lattice: Differentiable {
     init() {}
 
     @differentiable
-    public init(bestEdge: Edge?, bestScore: Float, edges: [Edge],
-                semiringScore: SemiRing) {
+    public init(
+      bestEdge: Edge?, bestScore: Float, edges: [Edge],
+      semiringScore: SemiRing
+    ) {
       self.bestEdge = bestEdge
       self.bestScore = bestScore
       self.edges = edges
@@ -160,9 +167,9 @@ extension Lattice.Node: CustomStringConvertible {
       edgesStr = edges.enumerated().map { "    \($0.0) - \($0.1)" }.joined(separator: "\n")
     }
     return """
-    best edge: \(String(describing: bestEdge)), best score: \(bestScore), score: \(semiringScore.shortDescription)
-    \(edgesStr)
-    """
+      best edge: \(String(describing: bestEdge)), best score: \(bestScore), score: \(semiringScore.shortDescription)
+      \(edgesStr)
+      """
   }
 }
 
@@ -180,14 +187,14 @@ extension Lattice {
       return false
     }
     return zip(self.positions, other.positions).enumerated()
-        .map { (index, position) in
-          let eq = position.0.isAlmostEqual(to: position.1, tolerance: tolerance)
-          if !eq {
-            print("mismatch at \(index): \(position.0) != \(position.1)")
-          }
-          return eq
+      .map { (index, position) in
+        let eq = position.0.isAlmostEqual(to: position.1, tolerance: tolerance)
+        if !eq {
+          print("mismatch at \(index): \(position.0) != \(position.1)")
         }
-        .reduce(true) { $0 && $1 }
+        return eq
+      }
+      .reduce(true) { $0 && $1 }
   }
 }
 
@@ -207,19 +214,18 @@ extension Lattice.Node {
       return false
     }
     return zip(self.edges, other.edges)
-        .map { $0.isAlmostEqual(to: $1, tolerance: tolerance) }
-        .reduce(true) { $0 && $1 }
+      .map { $0.isAlmostEqual(to: $1, tolerance: tolerance) }
+      .reduce(true) { $0 && $1 }
   }
 }
 
 extension Lattice.Edge {
   public func isAlmostEqual(to other: Self, tolerance: Float) -> Bool {
-    return self.start == other.start &&
-      self.end == other.end &&
+    return self.start == other.start && self.end == other.end
       // TODO: figure out why the string equality is being ignored
       // self.string == other.string &&
-      self.logp.isAlmostEqual(to: other.logp, tolerance: tolerance) &&
-      self.score.isAlmostEqual(to: other.score, tolerance: tolerance) &&
-      self.totalScore.isAlmostEqual(to: other.totalScore, tolerance: tolerance)
+      && self.logp.isAlmostEqual(to: other.logp, tolerance: tolerance)
+      && self.score.isAlmostEqual(to: other.score, tolerance: tolerance)
+      && self.totalScore.isAlmostEqual(to: other.totalScore, tolerance: tolerance)
   }
 }

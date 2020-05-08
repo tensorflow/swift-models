@@ -12,10 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import XCTest
-
 import TensorFlow
 import TextModels
+import XCTest
 
 extension SNLM {
   /// Sets the model parameters to the given parameters exported from the model.
@@ -30,7 +29,9 @@ extension SNLM {
   }
 
   private func checkShapeAndSet(_ tensor: inout Tensor<Float>, to value: Tensor<Float>) {
-    assert(tensor.shape == value.shape, "shape mismatch while setting: \(tensor.shape) to \(value.shape)")
+    assert(
+      tensor.shape == value.shape, "shape mismatch while setting: \(tensor.shape) to \(value.shape)"
+    )
     tensor = value
   }
 
@@ -49,7 +50,7 @@ extension SNLM {
         fusedWeight.slice(lowerBounds: [0, 0], upperBounds: [i, j]),
         fusedWeight.slice(lowerBounds: [0, 2 * j], upperBounds: [i, 3 * j]),
         fusedWeight.slice(lowerBounds: [0, j], upperBounds: [i, 2 * j]),
-        fusedWeight.slice(lowerBounds: [0, 3 * j], upperBounds: [i, 4 * j])
+        fusedWeight.slice(lowerBounds: [0, 3 * j], upperBounds: [i, 4 * j]),
       ],
       alongAxis: 1
     )
@@ -61,7 +62,7 @@ extension SNLM {
         fusedBias.slice(lowerBounds: [0], upperBounds: [k]),
         fusedBias.slice(lowerBounds: [2 * k], upperBounds: [3 * k]),
         fusedBias.slice(lowerBounds: [k], upperBounds: [2 * k]),
-        fusedBias.slice(lowerBounds: [3 * k], upperBounds: [4 * k])
+        fusedBias.slice(lowerBounds: [3 * k], upperBounds: [4 * k]),
       ]
     )
 
@@ -95,7 +96,9 @@ func tangentVector(from gradient: SNLMParameters, model: SNLM) -> SNLM.TangentVe
   return model.differentiableVectorView
 }
 
-func almostEqual(_ lhs: SNLM.TangentVector, _ rhs: SNLM.TangentVector, relTol: Float, zeroTol: Float) -> Bool {
+func almostEqual(
+  _ lhs: SNLM.TangentVector, _ rhs: SNLM.TangentVector, relTol: Float, zeroTol: Float
+) -> Bool {
   var success = true
   for (kpIndex, kp) in lhs.recursivelyAllKeyPaths(to: Tensor<Float>.self).enumerated() {
     let t1 = lhs[keyPath: kp]
@@ -106,7 +109,10 @@ func almostEqual(_ lhs: SNLM.TangentVector, _ rhs: SNLM.TangentVector, relTol: F
       continue
     }
     for (elementIndex, (t1e, t2e)) in zip(t1.scalars, t2.scalars).enumerated() {
-      if !(t1e.isAlmostEqual(to: t2e, tolerance: relTol) || (t1e.isAlmostZero(absoluteTolerance: zeroTol) && t2e.isAlmostZero(absoluteTolerance: zeroTol))) {
+      if !(t1e.isAlmostEqual(to: t2e, tolerance: relTol)
+        || (t1e.isAlmostZero(absoluteTolerance: zeroTol)
+          && t2e.isAlmostZero(absoluteTolerance: zeroTol)))
+      {
         print("Mismatch on tensor \(kpIndex) element \(elementIndex): \(t1e) & \(t2e)")
         success = false
       }
@@ -123,34 +129,36 @@ class ProbeLayerTests: XCTestCase {
     // 2 - </s>
     // 3 - </w>
     // 4 - <pad>
-    let chrVocab: Alphabet = Alphabet([
-      "a",
-      "b",
-    ], eos: "</s>", eow: "</w>", pad: "<pad>")
-
+    let chrVocab: Alphabet = Alphabet(
+      [
+        "a",
+        "b",
+      ], eos: "</s>", eow: "</w>", pad: "<pad>")
 
     // strVocab is:
     // 0 - aaaa
     // 1 - bbbb
     // 2 - abab
     let strVocab: Lexicon = Lexicon([
-      CharacterSequence(alphabet: chrVocab, characters: [0, 0]), // "aa"
-      CharacterSequence(alphabet: chrVocab, characters: [1, 1]), // "bb"
-      CharacterSequence(alphabet: chrVocab, characters: [0, 1]), // "ab"
-      CharacterSequence(alphabet: chrVocab, characters: [1, 0]) // "ba"
+      CharacterSequence(alphabet: chrVocab, characters: [0, 0]),  // "aa"
+      CharacterSequence(alphabet: chrVocab, characters: [1, 1]),  // "bb"
+      CharacterSequence(alphabet: chrVocab, characters: [0, 1]),  // "ab"
+      CharacterSequence(alphabet: chrVocab, characters: [1, 0]),  // "ba"
     ])
 
-    var model = SNLM(conf: Conf(
-      ndim: 2,
-      dropoutProb: 0,
-      chrVocab: chrVocab,
-      strVocab: strVocab,
-      order: 5))
+    var model = SNLM(
+      parameters: SNLM.Parameters(
+        ndim: 2,
+        dropoutProb: 0,
+        chrVocab: chrVocab,
+        strVocab: strVocab,
+        order: 5))
 
     model.setParameters(Example1.parameters)
 
     print("Encoding")
-    let encoderStates = model.encode(CharacterSequence(alphabet: chrVocab, characters: [0, 1, 0, 1])) // "abab"
+    let encoderStates = model.encode(
+      CharacterSequence(alphabet: chrVocab, characters: [0, 1, 0, 1]))  // "abab"
     let encoderStatesTensor = Tensor(stacking: encoderStates)
     print("Expected: \(Example1.expectedEncoding)")
     print("Actual: \(encoderStatesTensor)")
@@ -161,7 +169,9 @@ class ProbeLayerTests: XCTestCase {
     let mlpInterpolationOutput = model.mlpInterpolation(encoderStatesTensor)
     print("Expected: \(Example1.expectedMLPInterpolationOutput)")
     print("Actual: \(encoderStates)")
-    XCTAssert(abs(mlpInterpolationOutput - Example1.expectedMLPInterpolationOutput).max().scalarized() < 1e-6)
+    XCTAssert(
+      abs(mlpInterpolationOutput - Example1.expectedMLPInterpolationOutput).max().scalarized()
+        < 1e-6)
     print("OK!\n")
 
     print("MLP Memory")
@@ -174,8 +184,8 @@ class ProbeLayerTests: XCTestCase {
     print("Decode")
     let decoded = model.decode(
       [
-        CharacterSequence(alphabet: chrVocab, characters: [0, 0, 0]), // "aaa"
-        CharacterSequence(alphabet: chrVocab, characters: [0, 1])     // "ab"
+        CharacterSequence(alphabet: chrVocab, characters: [0, 0, 0]),  // "aaa"
+        CharacterSequence(alphabet: chrVocab, characters: [0, 1]),  // "ab"
       ],
       encoderStates[0]
     )

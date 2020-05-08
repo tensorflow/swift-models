@@ -63,10 +63,14 @@ public struct DataSet {
     return Alphabet(sorted, eos: eos, eow: eow, pad: pad)
   }
 
-  private static func convertDataset(_ dataset: [String], alphabet: Alphabet) throws -> [CharacterSequence] {
+  private static func convertDataset(_ dataset: [String], alphabet: Alphabet) throws
+    -> [CharacterSequence]
+  {
     return try dataset.map { try CharacterSequence(alphabet: alphabet, appendingEoSTo: $0) }
   }
-  private static func convertDataset(_ dataset: [String]?, alphabet: Alphabet) throws -> [CharacterSequence]? {
+  private static func convertDataset(_ dataset: [String]?, alphabet: Alphabet) throws
+    -> [CharacterSequence]?
+  {
     if let ds = dataset {
       let tmp: [CharacterSequence] = try convertDataset(ds, alphabet: alphabet)  // Use tmp to disambiguate function
       return tmp
@@ -79,22 +83,25 @@ public struct DataSet {
     validation validationFile: String? = nil,
     testing testingFile: String? = nil
   ) throws {
-    let trainingData = try Data(contentsOf: URL(fileURLWithPath: trainingFile),
-                                options: .alwaysMapped)
+    let trainingData = try Data(
+      contentsOf: URL(fileURLWithPath: trainingFile),
+      options: .alwaysMapped)
     let training = try Self.load(data: trainingData)
 
     var validation: [String]? = nil
     var testing: [String]? = nil
 
     if let validationFile = validationFile {
-      let data = try Data(contentsOf: URL(fileURLWithPath: validationFile),
-                          options: .alwaysMapped)
+      let data = try Data(
+        contentsOf: URL(fileURLWithPath: validationFile),
+        options: .alwaysMapped)
       validation = try Self.load(data: data)
     }
 
     if let testingFile = testingFile {
-      let data: Data = try Data(contentsOf: URL(fileURLWithPath: testingFile),
-                                options: .alwaysMapped)
+      let data: Data = try Data(
+        contentsOf: URL(fileURLWithPath: testingFile),
+        options: .alwaysMapped)
       testing = try Self.load(data: data)
     }
     self.alphabet = Self.makeAlphabet(datasets: training, validation, testing)
@@ -103,7 +110,9 @@ public struct DataSet {
     self.testing = try Self.convertDataset(testing, alphabet: self.alphabet)
   }
 
-  init(training trainingData: Data, validation validationData: Data?, testing testingData: Data?) throws {
+  init(training trainingData: Data, validation validationData: Data?, testing testingData: Data?)
+    throws
+  {
     let training = try Self.load(data: trainingData)
     var validation: [String]? = nil
     var testing: [String]? = nil
