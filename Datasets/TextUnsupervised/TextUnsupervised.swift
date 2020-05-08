@@ -62,7 +62,6 @@ public struct TextUnsupervised {
 
     public let trainingDataset: LanguageModelDataset<[[Int]]>
     public let validationDataset: LanguageModelDataset<[[Int]]>
-    // bpe is optional. If it's nil then we skip encoding and load encoded text directly.
     public let bpe: BytePairEncoder?
     public let variant: TextUnsupervisedVariant
     private let variantDetails: TextUnsupervisedVariantDetails
@@ -147,12 +146,27 @@ public struct TextUnsupervised {
         return ids
     }
 
-    // Only supports CSV files.
+    /// Returns a LanguageModelDataset by processing files specified by 'variantDetails' which
+    /// resides in 'directory'.
+    ///
+    /// Download the files if not present. If bpe is nil which means skip bype pair encoding,
+    /// then download the encoded file instead.
+    ///
+    /// - Parameter name: name of the dataset. Ususally 'train' or 'test'.
+    /// - Parameter directory: directory that files are read from.
+    /// - Parameter bpe: byte pair encoder used for encoding text.
+    /// - Parameter variantDetails: an object containing information of filename, location, etc.
+    /// - Parameter batchSize: number of sequences in a batch.
+    /// - Parameter sequenceLength: number of characters in a sequence.
+    /// - Parameter documentCount: number of documents to proceed. (Refer func readCSV() to see how
+    ///   a text file is chunked into documents.)
     private static func loadDirectory(
         named name: String, in directory: URL, bpe: BytePairEncoder?,
         variantDetails: TextUnsupervisedVariantDetails, batchSize: Int, sequenceLength: Int,
         documentCount: Int = 4
     ) throws -> LanguageModelDataset<[[Int]]> {
+        precondition(!(bpe == nil && variantDetails.encodedFileName == nil),
+                     "Please provide encodedFileName when bpe is nil.")
         downloadIfNotPresent(to: directory, variantDetails: variantDetails, downloadEncodedFile: bpe == nil)
 
         var encodedDocs: [[Int]] = []
@@ -165,8 +179,7 @@ public struct TextUnsupervised {
             let pathPrefix = directory.appendingPathComponent("\(variantDetails.encodedFileName!)/\(name)").path
             for i in 0..<documentCount {
                 encodedDocs += [
-                  NSArray(
-                    contentsOfFile: "\(pathPrefix)/doc_\(i).txt") as! [Int]
+                  NSArray(contentsOf: URL(fileURLWithPath: "\(pathPrefix)/doc_\(i).txt")) as! [Int]
                 ]
             }
         }
