@@ -179,7 +179,7 @@ public struct TextUnsupervised {
             let pathPrefix = directory.appendingPathComponent("\(variantDetails.encodedFileName!)/\(name)").path
             for i in 0..<documentCount {
                 encodedDocs += [
-                  NSArray(contentsOf: URL(fileURLWithPath: "\(pathPrefix)/doc_\(i).txt")) as! [Int]
+                  try NSArray(contentsOf: URL(fileURLWithPath: "\(pathPrefix)/doc_\(i).txt"), error: ()) as! [Int]
                 ]
             }
         }
