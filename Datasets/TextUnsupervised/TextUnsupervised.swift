@@ -35,6 +35,7 @@ private protocol TextUnsupervisedVariantDetails {
     var trainingDirectoryName: String { get set }
     var validationDirectoryName: String { get set }
     var filename: String { get set }
+    var encodedFileName: String? {get set}
     var fileExtension: String { get set }
 }
 
@@ -45,21 +46,23 @@ public struct TextUnsupervised {
         var trainingDirectoryName = "train"
         var validationDirectoryName = "test"
         var filename = "wikitext-103"
+        var encodedFileName: String? = nil
         var fileExtension = "tgz"
     }
 
     private struct WikiText2Details: TextUnsupervisedVariantDetails {
         var variant = TextUnsupervisedVariant.wikiText2
-        var location = URL(string: "https://s3.amazonaws.com/fast-ai-nlp/")!
+        var location = URL(string: "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/WikiText2/")!
         var trainingDirectoryName = "train"
         var validationDirectoryName = "test"
         var filename = "wikitext-2"
+        var encodedFileName: String? = "wikitext-2-encoded"
         var fileExtension = "tgz"
     }
 
     public let trainingDataset: LanguageModelDataset<[[Int]]>
     public let validationDataset: LanguageModelDataset<[[Int]]>
-    public let bpe: BytePairEncoder
+    public let bpe: BytePairEncoder?
     public let variant: TextUnsupervisedVariant
     private let variantDetails: TextUnsupervisedVariantDetails
 
@@ -75,7 +78,7 @@ public struct TextUnsupervised {
     }
 
     public init(
-        bpe: BytePairEncoder,
+        bpe: BytePairEncoder? = nil,
         variant: TextUnsupervisedVariant = TextUnsupervisedVariant.wikiText2,
         trainingBatchSize: Int = 8, validationBatchSize: Int = 4, sequenceLength: Int = 1024,
         trainingDocumentCount: Int = 4, validationDocumentCount: Int = 4
@@ -110,7 +113,7 @@ public struct TextUnsupervised {
     }
 
     private static func downloadIfNotPresent(
-        to directory: URL, variantDetails: TextUnsupervisedVariantDetails
+        to directory: URL, variantDetails: TextUnsupervisedVariantDetails, downloadEncodedFile: Bool
     ) {
         let downloadPath = directory.appendingPathComponent(variantDetails.variant.rawValue).path
         let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
@@ -121,7 +124,8 @@ public struct TextUnsupervised {
 
         // Downloads and extracts dataset files.
         let _ = DatasetUtilities.downloadResource(
-            filename: variantDetails.filename, fileExtension: variantDetails.fileExtension,
+            filename: (downloadEncodedFile ? variantDetails.encodedFileName! : variantDetails.filename),
+            fileExtension: variantDetails.fileExtension,
             remoteRoot: variantDetails.location, localStorageDirectory: directory, extract: true)
     }
 
@@ -135,6 +139,17 @@ public struct TextUnsupervised {
         return rows
     }
 
+    private static func readEncoded(in file: URL) throws -> [Int] {
+        let rawText = try! String(contentsOf: file, encoding: .utf8)
+        let rows = rawText.components(separatedBy: "\n")
+        var tokens: Array<Int> = Array()
+        for row in rows {
+            guard let encoded = Int(row) else { continue }
+            tokens.append(encoded)
+        }
+        return tokens
+    }
+
     private static func embedding(for string: String, bpe: BytePairEncoder) -> [Int] {
         let tokens = bpe.encode(token: string, variant: .gpt2)
         // TODO(michellecasbon): Decide how to prevent OOV or choose a better ID (probably not 0).
@@ -142,32 +157,55 @@ public struct TextUnsupervised {
         return ids
     }
 
-    // Only supports CSV files.
+    /// Returns a LanguageModelDataset by processing files specified by 'variantDetails' which
+    /// resides in 'directory'.
+    ///
+    /// Download the files if not present. If bpe is nil which means skip bype pair encoding,
+    /// then download the encoded file instead.
+    ///
+    /// - Parameter name: name of the dataset. Ususally 'train' or 'test'.
+    /// - Parameter directory: directory that files are read from.
+    /// - Parameter bpe: byte pair encoder used for encoding text.
+    /// - Parameter variantDetails: an object containing information of filename, location, etc.
+    /// - Parameter batchSize: number of sequences in a batch.
+    /// - Parameter sequenceLength: number of characters in a sequence.
+    /// - Parameter documentCount: number of documents to proceed. (Refer func readCSV() to see how
+    ///   a text file is chunked into documents.)
     private static func loadDirectory(
-        named name: String, in directory: URL, bpe: BytePairEncoder,
+        named name: String, in directory: URL, bpe: BytePairEncoder?,
         variantDetails: TextUnsupervisedVariantDetails, batchSize: Int, sequenceLength: Int,
         documentCount: Int = 4
     ) throws -> LanguageModelDataset<[[Int]]> {
-        downloadIfNotPresent(to: directory, variantDetails: variantDetails)
-        let path = directory.appendingPathComponent("\(variantDetails.filename)/\(name).csv")
+        precondition(bpe != nil || variantDetails.encodedFileName != nil,
+                     "bpe must be provided when encodedFileName is nil.")
+        downloadIfNotPresent(to: directory, variantDetails: variantDetails, downloadEncodedFile: bpe == nil)
 
-        let documentsFull = try readCSV(in: path)
-        let documents = Array(documentsFull[0..<min(documentCount, documentsFull.count)])
-
-        let embeddings = documents.map { embedding(for: $0, bpe: bpe) }
-        let lengths = embeddings.map { $0.count }
+        var encodedDocs: [[Int]] = []
+        if let bpe = bpe {
+            let path = directory.appendingPathComponent("\(variantDetails.filename)/\(name).csv")
+            let documentsFull = try readCSV(in: path)
+            let documents = Array(documentsFull[0..<min(documentCount, documentsFull.count)])
+            encodedDocs = documents.map { embedding(for: $0, bpe: bpe) }
+        } else {
+            let pathPrefix = directory.appendingPathComponent("\(variantDetails.encodedFileName!)/\(name)").path
+            for i in 0..<documentCount {
+                encodedDocs += [
+                  try readEncoded(in: URL(fileURLWithPath: "\(pathPrefix)/doc_\(i).txt"))
+                ]
+            }
+        }
 
         return LanguageModelDataset(
             batchSize: batchSize,
             sequenceLength: sequenceLength,
-            numericalizedTexts: embeddings,
-            lengths: lengths,
+            numericalizedTexts: encodedDocs,
+            lengths: encodedDocs.map { $0.count },
             dropLast: true
         )
     }
 
     private static func loadTraining(
-        localStorageDirectory: URL, bpe: BytePairEncoder,
+        localStorageDirectory: URL, bpe: BytePairEncoder?,
         variantDetails: TextUnsupervisedVariantDetails, batchSize: Int, sequenceLength: Int,
         documentCount: Int
     )
@@ -181,7 +219,7 @@ public struct TextUnsupervised {
     }
 
     private static func loadValidation(
-        localStorageDirectory: URL, bpe: BytePairEncoder,
+        localStorageDirectory: URL, bpe: BytePairEncoder?,
         variantDetails: TextUnsupervisedVariantDetails, batchSize: Int, sequenceLength: Int,
         documentCount: Int
     )
