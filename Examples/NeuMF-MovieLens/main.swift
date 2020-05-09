@@ -28,8 +28,8 @@ let size: [Int] = [16, 32, 16, 8]
 let regs: [Float] = [0.0, 0.0, 0.0, 0.0]
 
 var model = NeuMF(
-    numUsers: numUsers, numItems: numItems, mfDim: 8, mfReg: 0.0, mlpLayerSizes: size,
-    mlpLayerRegs: regs)
+    numUsers: numUsers, numItems: numItems, numLatentFeatures: 8, matrixRegularization: 0.0, mlpLayerSizes: size,
+    mlpRegularizations: regs)
 let optimizer = Adam(for: model, learningRate: 0.001)
 var itemCount = Dictionary(
     uniqueKeysWithValues: zip(
