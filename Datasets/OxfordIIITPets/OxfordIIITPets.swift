@@ -20,10 +20,7 @@
 import Batcher
 import Foundation
 import ModelSupport
-import PythonKit
 import TensorFlow
-
-let os = Python.import("os")
 
 public struct OxfordIIITPets: ImageSegmentationDataset {
     public typealias SourceDataSet = LazyDataSet
@@ -79,17 +76,6 @@ func downloadOxfordIIITPetsIfNotPresent(to directory: URL) {
     extractArchive(
         at: directory.appendingPathComponent("annotations.tar.gz"), to: directory,
         fileExtension: "tar.gz", deleteArchiveWhenDone: true)
-
-    /// let _ = DatasetUtilities.downloadResource(
-    ///     filename: "images", fileExtension: "tar.gz",
-    ///     remoteRoot: remoteRoot, localStorageDirectory: directory
-    /// )
-
-    /// let _ = DatasetUtilities.downloadResource(
-    ///     filename: "annotations", fileExtension: "tar.gz",
-    ///     remoteRoot: remoteRoot, localStorageDirectory: directory
-    /// )
-
 }
 
 func loadOxfordIIITPets(filename: String, in directory: URL, imageSize: Int) throws -> LazyDataSet {
