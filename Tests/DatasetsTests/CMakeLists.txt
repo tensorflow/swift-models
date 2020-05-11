@@ -4,6 +4,7 @@ add_library(DatasetsTests
   COCO/COCODatasetTests.swift
   COCO/COCOVariantTests.swift
   Imagenette/ImagenetteTests.swift
+  MovieLens/MovieLensTests.swift
   MNIST/MNISTTests.swift
   TextUnsupervised/TextUnsupervisedTests.swift
   OxfordIIITPets/OxfordIIITPetsTests.swift

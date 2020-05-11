@@ -79,6 +79,7 @@ extension BenchmarkConfiguration {
         case .inferenceThroughput:
             result += "--inference "
         }
+        result += "--\(settings.backend) "
         if self.settings.synthetic {
             result += "--synthetic "
         } else {

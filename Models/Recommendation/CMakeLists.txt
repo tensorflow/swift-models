@@ -1,6 +1,7 @@
 add_library(RecommendationModels
   DLRM.swift
-  MLP.swift)
+  MLP.swift
+  NeuMF.swift)
 set_target_properties(RecommendationModels PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
 target_compile_options(RecommendationModels PRIVATE

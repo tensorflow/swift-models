@@ -96,12 +96,12 @@ public struct MultiHeadAttention: Layer, Regularizable {
 
     public var regularizationValue: TangentVector {
         TangentVector(
-        queryWeight: queryWeight,
-        queryBias: Tensor(Scalar(0)),
-        keyWeight: keyWeight,
-        keyBias: Tensor(Scalar(0)),
-        valueWeight: valueWeight,
-        valueBias: Tensor(Scalar(0)))
+            queryWeight: queryWeight,
+            queryBias: Tensor(Scalar(0), on: queryBias.device),
+            keyWeight: keyWeight,
+            keyBias: Tensor(Scalar(0), on: keyBias.device),
+            valueWeight: valueWeight,
+            valueBias: Tensor(Scalar(0), on: valueBias.device))
     }
 
     /// Creates a multi-head attention layer.
@@ -180,35 +180,34 @@ public struct MultiHeadAttention: Layer, Regularizable {
         let source = input.source.reshapedToMatrix()
         let target = input.target.reshapedToMatrix()
 
-        var q = queryActivation(matmul(source, queryWeight) + queryBias) // [B * F, N * H]
-        var k = keyActivation(matmul(target, keyWeight) + keyBias)       // [B * T, N * H]
-        var v = valueActivation(matmul(target, valueWeight) + valueBias) // [B * T, N * H]
+        var q = queryActivation(matmul(source, queryWeight) + queryBias)  // [B * F, N * H]
+        var k = keyActivation(matmul(target, keyWeight) + keyBias)  // [B * T, N * H]
+        var v = valueActivation(matmul(target, valueWeight) + valueBias)  // [B * T, N * H]
 
-        q = q.reshaped(to: [B, F, N, H]).transposed(permutation: 0, 2, 1, 3) // [B, N, F, H]
-        k = k.reshaped(to: [B, T, N, H]).transposed(permutation: 0, 2, 1, 3) // [B, N, T, H]
-        v = v.reshaped(to: [B, T, N, H]).transposed(permutation: 0, 2, 1, 3) // [B, N, T, H]
+        q = q.reshaped(to: [B, F, N, H]).transposed(permutation: 0, 2, 1, 3)  // [B, N, F, H]
+        k = k.reshaped(to: [B, T, N, H]).transposed(permutation: 0, 2, 1, 3)  // [B, N, T, H]
+        v = v.reshaped(to: [B, T, N, H]).transposed(permutation: 0, 2, 1, 3)  // [B, N, T, H]
 
         // Take the dot product between the query and the key to get the raw attention scores.
-        var attentionScores = matmul(q, transposed: false, k, transposed: true) // [B, N, F, T]
+        var attentionScores = matmul(q, transposed: false, k, transposed: true)  // [B, N, F, T]
         attentionScores = attentionScores / sqrtf(Scalar(headSize))
 
         // Since the attention mask is set to 1.0 for positions we want to attend to and 0.0 for
         // masked positions, we create a tensor which is 0.0 for positions we want to attend to and 
         // -10000.0 for masked positions. Since we are adding this tensor to the raw scores before 
         // the softmax, this is effectively the same as removing the masked entries entirely.
-        let attentionMask = input.mask.expandingShape(at: 1) // [B, 1, F, T]
+        let attentionMask = input.mask.expandingShape(at: 1)  // [B, 1, F, T]
         attentionScores = attentionScores - 10000 * (1 - attentionMask)
 
         // Normalize the attention scores to convert them to probabilities. We are also dropping
         // out entire tokens to attend to, which might seem a bit unusual, but it is taken from the
         // original Transformer paper.
-        let attentionProbabilities = attentionDropout(softmax(attentionScores)) // [B, N, F, T]
+        let attentionProbabilities = attentionDropout(softmax(attentionScores))  // [B, N, F, T]
 
-        let result = matmul(attentionProbabilities, v) // [B, N, F, H]
-            .transposed(permutation: 0, 2, 1, 3)       // [B, F, N, H]
-        return matrixResult ?
-            result.reshaped(to: [B * F, N * H]) :
-            result.reshaped(to: [B, F, N * H])
+        let result = matmul(attentionProbabilities, v)  // [B, N, F, H]
+            .transposed(permutation: 0, 2, 1, 3)  // [B, F, N, H]
+        return matrixResult
+            ? result.reshaped(to: [B * F, N * H]) : result.reshaped(to: [B, F, N * H])
     }
 }
 

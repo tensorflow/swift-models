@@ -29,19 +29,19 @@ enum LeNetMNIST: BenchmarkModel {
         switch(variety) {
         case .inferenceThroughput:
             return BenchmarkSettings(batches: 1000, batchSize: 128, iterations: 10,
-                                     warmupBatches: 1, synthetic: false)
+                                     warmupBatches: 1, synthetic: false, backend: .eager)
         case .trainingThroughput:
             return BenchmarkSettings(batches: 110, batchSize: 128, iterations: 1, warmupBatches: 1,
-                                     synthetic: false)
+                                     synthetic: false, backend: .eager)
         }
     }
 
     static func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return ImageClassificationInference<LeNet, MNIST>(settings: settings)
+        return ImageClassificationInference<LeNet, OldMNIST>(settings: settings)
     }
 
     static func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return ImageClassificationTraining<LeNet, MNIST>(settings: settings)
+        return ImageClassificationTraining<LeNet, OldMNIST>(settings: settings)
     }
 }
 

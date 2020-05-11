@@ -16,7 +16,7 @@ import Foundation
 
 protocol Benchmark {
     var batchSize: Int { get }
-    func run() -> [Double]
+    func run(backend: Backend) -> [Double]
 }
 
 /// Performs the specified benchmark over a certain number of iterations and provides the result to a callback function.
@@ -29,7 +29,7 @@ func measure(
     let iterations = configuration.settings.iterations
     let start = timestampInMilliseconds()
     for _ in 0..<iterations {
-        var timedSteps = benchmark.run()
+        var timedSteps = benchmark.run(backend: configuration.settings.backend)
         warmup.append(contentsOf: timedSteps.prefix(configuration.settings.warmupBatches))
         timedSteps.removeFirst(configuration.settings.warmupBatches)
         timings.append(contentsOf: timedSteps)

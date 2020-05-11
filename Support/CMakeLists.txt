@@ -13,6 +13,7 @@ add_library(ModelSupport
   Checkpoints/Protobufs/versions.pb.swift
   Checkpoints/SnappyDecompression.swift
   FileManagement.swift
+  LabeledData.swift
   Image.swift
   Stderr.swift
   Text/BytePairEncoder.swift
