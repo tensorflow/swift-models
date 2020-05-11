@@ -6,6 +6,7 @@ add_library(DatasetsTests
   Imagenette/ImagenetteTests.swift
   MNIST/MNISTTests.swift
   TextUnsupervised/TextUnsupervisedTests.swift
+  OxfordIIITPets/OxfordIIITPetsTests.swift
   XCTestManifests.swift)
 set_target_properties(DatasetsTests PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY $<TARGET_FILE_DIR:ModelTests>
