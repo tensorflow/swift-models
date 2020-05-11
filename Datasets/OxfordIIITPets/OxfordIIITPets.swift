@@ -67,15 +67,15 @@ func downloadOxfordIIITPetsIfNotPresent(to directory: URL) {
 
     let remoteRoot = URL(string: "https://www.robots.ox.ac.uk/~vgg/data/pets/data/")!
 
-    os.system("wget \(remoteRoot.appendingPathComponent("images.tar.gz")) -P \(directory.path)")
-    extractArchive(
-        at: directory.appendingPathComponent("images.tar.gz"), to: directory,
-        fileExtension: "tar.gz", deleteArchiveWhenDone: true)
-    os.system(
-        "wget \(remoteRoot.appendingPathComponent("annotations.tar.gz")) -P \(directory.path)")
-    extractArchive(
-        at: directory.appendingPathComponent("annotations.tar.gz"), to: directory,
-        fileExtension: "tar.gz", deleteArchiveWhenDone: true)
+    let _ = DatasetUtilities.downloadResource(
+         filename: "images", fileExtension: "tar.gz",
+         remoteRoot: remoteRoot, localStorageDirectory: directory
+    )
+
+    let _ = DatasetUtilities.downloadResource(
+         filename: "annotations", fileExtension: "tar.gz",
+         remoteRoot: remoteRoot, localStorageDirectory: directory
+    )
 }
 
 func loadOxfordIIITPets(filename: String, in directory: URL, imageSize: Int) throws -> LazyDataSet {
