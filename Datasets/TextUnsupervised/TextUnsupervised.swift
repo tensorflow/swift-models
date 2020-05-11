@@ -67,17 +67,6 @@ public struct TextUnsupervised {
     private let variantDetails: TextUnsupervisedVariantDetails
 
     public init(
-        variant: TextUnsupervisedVariant = TextUnsupervisedVariant.wikiText2
-    ) {
-        // Empty BytePairEncoder.
-        let vocabulary = Vocabulary(tokensToIds: ["<|endoftext|>": 0])
-        let mergePairs = [BytePairEncoder.Pair: Int]()
-        let bpe = BytePairEncoder(vocabulary: vocabulary, mergePairs: mergePairs)
-
-        self.init(bpe: bpe, variant: variant)
-    }
-
-    public init(
         bpe: BytePairEncoder? = nil,
         variant: TextUnsupervisedVariant = TextUnsupervisedVariant.wikiText2,
         trainingBatchSize: Int = 8, validationBatchSize: Int = 4, sequenceLength: Int = 1024,
