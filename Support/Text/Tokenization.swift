@@ -30,7 +30,7 @@ public func createAttentionMask(forTextBatch text: TextBatch) -> Tensor<Float> {
 
     // We do not assume that `input.tokenIds` is a mask. We do not actually care if we attend
     // *from* padding tokens (only *to* padding tokens) so we create a tensor of all ones.
-    let broadcastOnes = Tensor<Float>(ones: [batchSize, fromSequenceLength, 1])
+    let broadcastOnes = Tensor<Float>(ones: [batchSize, fromSequenceLength, 1], on: text.mask.device)
 
     // We broadcast along two dimensions to create the mask.
     return broadcastOnes * reshapedMask

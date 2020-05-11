@@ -14,11 +14,39 @@
 
 import TensorFlow
 import Batcher
+import ModelSupport
 
 public protocol ImageClassificationDataset {
-    associatedtype SourceDataSet: Collection 
-    where SourceDataSet.Element == TensorPair<Float, Int32>, SourceDataSet.Index == Int
-    init(batchSize: Int)
-    var training: Batcher<SourceDataSet> { get }
-    var test: Batcher<SourceDataSet> { get }
+  associatedtype SourceDataSet: Collection 
+  where SourceDataSet.Element == TensorPair<Float, Int32>, SourceDataSet.Index == Int
+  init(batchSize: Int)
+  var training: Batcher<SourceDataSet> { get }
+  var test: Batcher<SourceDataSet> { get }
+}
+
+/// An image with a label.
+public typealias LabeledImage = LabeledData<Tensor<Float>, Tensor<Int32>>
+
+/// Types whose elements represent an image classification dataset (with both
+/// training and validation data).
+public protocol ImageClassificationData {
+  /// The type of the training data, represented as a sequence of epochs, which
+  /// are collection of batches.
+  associatedtype Training: Sequence 
+    where Training.Element: Collection, Training.Element.Element == LabeledImage
+  /// The type of the validation data, represented as a collection of batches.
+  associatedtype Validation: Collection where Validation.Element == LabeledImage
+  /// Creates an instance from a given `batchSize`.
+  init(batchSize: Int)
+  /// The `training` epochs.
+  var training: Training { get }
+  /// The `validation` batches.
+  var validation: Validation { get }
+    
+  // The following is probably going to be necessary since we can't extract that
+  // information from `Epochs` or `Batches`.
+  /// The number of samples in the `training` set.
+  //var trainingSampleCount: Int {get}
+  /// The number of samples in the `validation` set.
+  //var validationSampleCount: Int {get}
 }

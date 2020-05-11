@@ -105,7 +105,7 @@ func sampleVector(size: Int) -> Tensor<Float> {
     Tensor(randomNormal: [size, latentSize])
 }
 
-let dataset = MNIST(batchSize: batchSize, flattening: true, normalizing: true)
+let dataset = OldMNIST(batchSize: batchSize, flattening: true, normalizing: true)
 
 var generator = Generator()
 var discriminator = Discriminator()

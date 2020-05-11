@@ -7,22 +7,26 @@ final class MNISTTests: XCTestCase {
         let dataset = MNIST(batchSize: 1)
 
         var totalCount = 0
-        for example in dataset.training.sequenced() {
-            XCTAssertTrue((0..<10).contains(example.second[0].scalar!))
-            XCTAssertEqual(example.first.shape, [1, 28, 28, 1])
-            totalCount += 1
+        for epochBatches in dataset.training.prefix(1){ 
+            for batch in epochBatches {
+                XCTAssertTrue((0..<10).contains(batch.label[0].scalar!))
+                XCTAssertEqual(batch.data.shape, [1, 28, 28, 1])
+                totalCount += 1
+            }
         }
         XCTAssertEqual(totalCount, 60000)
     }
-	
+
     func testCreateFashionMNIST() {
         let dataset = FashionMNIST(batchSize: 1)
 
         var totalCount = 0
-        for example in dataset.training.sequenced() {
-            XCTAssertTrue((0..<10).contains(example.second[0].scalar!))
-            XCTAssertEqual(example.first.shape, [1, 28, 28, 1])
-            totalCount += 1
+        for epochBatches in dataset.training.prefix(1){ 
+            for batch in epochBatches {
+                XCTAssertTrue((0..<10).contains(batch.label[0].scalar!))
+                XCTAssertEqual(batch.data.shape, [1, 28, 28, 1])
+                totalCount += 1
+            }
         }
         XCTAssertEqual(totalCount, 60000)
     }
@@ -31,10 +35,12 @@ final class MNISTTests: XCTestCase {
         let dataset = KuzushijiMNIST(batchSize: 1)
 
         var totalCount = 0
-        for example in dataset.training.sequenced() {
-            XCTAssertTrue((0..<10).contains(example.second[0].scalar!))
-            XCTAssertEqual(example.first.shape, [1, 28, 28, 1])
-            totalCount += 1
+        for epochBatches in dataset.training.prefix(1){ 
+            for batch in epochBatches {
+                XCTAssertTrue((0..<10).contains(batch.label[0].scalar!))
+                XCTAssertEqual(batch.data.shape, [1, 28, 28, 1])
+                totalCount += 1
+            }
         }
         XCTAssertEqual(totalCount, 60000)
     }

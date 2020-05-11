@@ -33,7 +33,8 @@ let package = Package(
         .executable(name: "MiniGoDemo", targets: ["MiniGoDemo"]),
         .executable(name: "GPT2-Inference", targets: ["GPT2-Inference"]),
         .executable(name: "GPT2-WikiText2", targets: ["GPT2-WikiText2"]),
-        .executable(name: "CycleGAN", targets: ["CycleGAN"])
+        .executable(name: "NeuMF-MovieLens", targets: ["NeuMF-MovieLens"]),
+        .executable(name: "CycleGAN", targets: ["CycleGAN"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
@@ -56,6 +57,9 @@ let package = Package(
         .target(
             name: "Autoencoder2D", dependencies: ["Datasets", "ModelSupport"],
             path: "Autoencoder/Autoencoder2D"),
+        .target(
+            name: "VariationalAutoencoder1D", dependencies: ["Datasets", "ModelSupport"],
+            path: "Autoencoder/VAE1D"),
         .target(name: "Catch", path: "Catch"),
         .target(name: "Gym-FrozenLake", path: "Gym/FrozenLake"),
         .target(name: "Gym-CartPole", path: "Gym/CartPole"),
@@ -85,6 +89,9 @@ let package = Package(
             name: "MiniGo", dependencies: ["ModelSupport"], path: "MiniGo", exclude: ["main.swift"]),
         .target(
             name: "MiniGoDemo", dependencies: ["MiniGo"], path: "MiniGo", sources: ["main.swift"]),
+        .target(
+            name: "NeuMF-MovieLens", dependencies: ["RecommendationModels", "Datasets"],
+            path: "Examples/NeuMF-MovieLens"),
         .testTarget(name: "MiniGoTests", dependencies: ["MiniGo"]),
         .testTarget(name: "ImageClassificationTests", dependencies: ["ImageClassificationModels"]),
         .testTarget(name: "VideoClassificationTests", dependencies: ["VideoClassificationModels"]),

@@ -12,92 +12,81 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Adapted from: https://gist.github.com/eaplatanios/5163c8d503f9e56f11b5b058fb041d62
-// Changes:
-// - Rename `Architecture` to `BERTClassifier`.
-// - In `CoLA.update`:
-//   - Change `Architecture.classify` to `BERTClassifier.callAsFunction`.
-//   - Change `softmaxCrossEntropy` to `sigmoidCrossEntropy`.
+// Originaly adapted from: 
+// https://gist.github.com/eaplatanios/5163c8d503f9e56f11b5b058fb041d62
 
 import Foundation
 import ModelSupport
 import TensorFlow
 
-public struct CoLA {
-    public let directoryURL: URL
-    public let trainExamples: [Example]
-    public let devExamples: [Example]
-    public let testExamples: [Example]
-    public let maxSequenceLength: Int
-    public let batchSize: Int
+/// A `TextBatch` with the corresponding labels.
+public typealias LabeledTextBatch = (data: TextBatch, label: Tensor<Int32>)
 
-    public typealias ExampleIterator = IndexingIterator<[Example]>
-    public typealias TrainDataIterator = PrefetchIterator<
-        GroupedIterator<MapIterator<ExampleIterator, DataBatch>>
-    >
-    public typealias DevDataIterator = GroupedIterator<MapIterator<ExampleIterator, DataBatch>>
-    public typealias TestDataIterator = DevDataIterator
+/// CoLA example.
+public struct CoLAExample {
+  /// The unique identifier representing the `Example`.
+  public let id: String
+  /// The text of the `Example`.
+  public let sentence: String
+  /// The label of the `Example`.
+  public let isAcceptable: Bool?
 
-    public var trainDataIterator: TrainDataIterator
-    public var devDataIterator: DevDataIterator
-    public var testDataIterator: TestDataIterator
+  /// Creates an instance from `id`, `sentence` and `isAcceptable`.
+  public init(id: String, sentence: String, isAcceptable: Bool?) {
+    self.id = id
+    self.sentence = sentence
+    self.isAcceptable = isAcceptable
+  }
 }
 
-//===-----------------------------------------------------------------------------------------===//
+public struct CoLA<Entropy: RandomNumberGenerator> {
+  /// The directory where the dataset will be downloaded
+  public let directoryURL: URL
+  /// The type of the labeled samples.
+  public typealias Samples = LazyMapSequence<[CoLAExample], LabeledTextBatch>
+  /// The training texts.
+  public let trainingExamples: Samples
+  /// The validation texts.
+  public let validationExamples: Samples
+    
+  /// The sequence length to which every sentence will be padded.
+  public let maxSequenceLength: Int
+  /// The batch size.
+  public let batchSize: Int
+    
+  /// The type of the collection of batches.
+  public typealias Batches = Slices<Sampling<Samples, ArraySlice<Int>>>
+  /// The type of the training sequence of epochs.
+  public typealias TrainEpochs = LazyMapSequence<TrainingEpochs<Samples, Entropy>, 
+    LazyMapSequence<Batches, LabeledTextBatch>>
+  /// The sequence of training data (epochs of batches).
+  public var trainingEpochs: TrainEpochs
+  /// The validation batches.
+  public var validationBatches: LazyMapSequence<Slices<Samples>, LabeledTextBatch>
+    
+  /// The url from which to download the dataset.
+  private let url: URL = URL(
+    string: String(
+      "https://firebasestorage.googleapis.com/v0/b/mtl-sentence-representations.appspot.com/"
+      + "o/data%2FCoLA.zip?alt=media&token=46d5e637-3411-4188-bc44-5809b5bfb5f4"))!
+}
+
 // Data
-//===-----------------------------------------------------------------------------------------===//
-
 extension CoLA {
-    /// CoLA example.
-    public struct Example {
-        public let id: String
-        public let sentence: String
-        public let isAcceptable: Bool?
+  internal static func load(fromFile fileURL: URL, isTest: Bool = false) throws -> [CoLAExample] {
+    let lines = try parse(tsvFileAt: fileURL)
 
-        public init(id: String, sentence: String, isAcceptable: Bool?) {
-            self.id = id
-            self.sentence = sentence
-            self.isAcceptable = isAcceptable
-        }
+    if isTest {
+      // The test data file has a header.
+      return lines.dropFirst().enumerated().map { (i, lineParts) in
+        CoLAExample(id: lineParts[0], sentence: lineParts[1], isAcceptable: nil)
+      }
     }
 
-    /// CoLA data batch.
-    public struct DataBatch: KeyPathIterable {
-        public var inputs: TextBatch  // TODO: !!! Mutable in order to allow for batching.
-        public var labels: Tensor<Int32>?  // TODO: !!! Mutable in order to allow for batching.
-
-        public init(inputs: TextBatch, labels: Tensor<Int32>?) {
-            self.inputs = inputs
-            self.labels = labels
-        }
+    return lines.enumerated().map { (i, lineParts) in
+      CoLAExample(id: lineParts[0], sentence: lineParts[3], isAcceptable: lineParts[1] == "1")
     }
-
-    /// URL pointing to the downloadable ZIP file that contains the CoLA dataset.
-    private static let url: URL = URL(
-        string: String(
-            "https://firebasestorage.googleapis.com/v0/b/mtl-sentence-representations.appspot.com/"
-                + "o/data%2FCoLA.zip?alt=media&token=46d5e637-3411-4188-bc44-5809b5bfb5f4"))!
-
-    internal enum FileType: String {
-        case train = "train"
-        case dev = "dev"
-        case test = "test"
-    }
-
-    internal static func load(fromFile fileURL: URL, fileType: FileType) throws -> [Example] {
-        let lines = try parse(tsvFileAt: fileURL)
-
-        if fileType == .test {
-            // The test data file has a header.
-            return lines.dropFirst().enumerated().map { (i, lineParts) in
-                Example(id: lineParts[0], sentence: lineParts[1], isAcceptable: nil)
-            }
-        }
-
-        return lines.enumerated().map { (i, lineParts) in
-            Example(id: lineParts[0], sentence: lineParts[3], isAcceptable: lineParts[1] == "1")
-        }
-    }
+  }
 }
 
 internal func parse(tsvFileAt fileURL: URL) throws -> [[String]] {
@@ -110,91 +99,97 @@ internal func parse(tsvFileAt fileURL: URL) throws -> [[String]] {
 }
 
 extension CoLA {
-    public init(
-        exampleMap: @escaping (Example) -> DataBatch,
-        taskDirectoryURL: URL,
-        maxSequenceLength: Int,
-        batchSize: Int,
-        dropRemainder: Bool
-    ) throws {
-        self.directoryURL = taskDirectoryURL.appendingPathComponent("CoLA")
-        let dataURL = directoryURL.appendingPathComponent("data")
-        let compressedDataURL = dataURL.appendingPathComponent("downloaded-data.zip")
+  /// Creates an instance in `taskDirectoryURL` with batches of size `batchSize`
+  /// by `maximumSequenceLength`.
+  ///
+  /// - Parameters:
+  ///   - entropy: a source of randomness used to shuffle sample ordering. It
+  ///     will be stored in `self`, so if it is only pseudorandom and has value
+  ///     semantics, the sequence of epochs is determinstic and not dependent on
+  ///     other operations.
+  ///   - exampleMap: a transform that processes `Example` in `LabeledTextBatch`.
+  public init(
+    taskDirectoryURL: URL,
+    maxSequenceLength: Int,
+    batchSize: Int,
+    entropy: Entropy,
+    exampleMap: @escaping (CoLAExample) -> LabeledTextBatch
+  ) throws {
+    self.directoryURL = taskDirectoryURL.appendingPathComponent("CoLA")
+    let dataURL = directoryURL.appendingPathComponent("data")
+    let compressedDataURL = dataURL.appendingPathComponent("downloaded-data.zip")
 
-        // Download the data, if necessary.
-        try download(from: CoLA.url, to: compressedDataURL)
+    // Download the data, if necessary.
+    try download(from: url, to: compressedDataURL)
 
-        // Extract the data, if necessary.
-        let extractedDirectoryURL = compressedDataURL.deletingPathExtension()
-        if !FileManager.default.fileExists(atPath: extractedDirectoryURL.path) {
-            try extract(zipFileAt: compressedDataURL, to: extractedDirectoryURL)
-        }
-
-        #if false
-            // FIXME: Need to generalize `DatasetUtilities.downloadResource` to accept
-            // arbitrary full URLs instead of constructing full URL from filename and
-            // file extension.
-            DatasetUtilities.downloadResource(
-                filename: "\(subDirectory)", fileExtension: "zip",
-                remoteRoot: url.deletingLastPathComponent(),
-                localStorageDirectory: directory)
-        #endif
-
-        // Load the data files into arrays of examples.
-        let dataFilesURL = extractedDirectoryURL.appendingPathComponent("CoLA")
-        self.trainExamples = try CoLA.load(
-            fromFile: dataFilesURL.appendingPathComponent("train.tsv"),
-            fileType: .train)
-        self.devExamples = try CoLA.load(
-            fromFile: dataFilesURL.appendingPathComponent("dev.tsv"),
-            fileType: .dev)
-        self.testExamples = try CoLA.load(
-            fromFile: dataFilesURL.appendingPathComponent("test.tsv"),
-            fileType: .test)
-
-        self.maxSequenceLength = maxSequenceLength
-        self.batchSize = batchSize
-
-        // Create the data iterators used for training and evaluating.
-        self.trainDataIterator = trainExamples.shuffled().makeIterator()  // TODO: [RNG] Seed support.
-            .map(exampleMap)
-            .grouped(
-                keyFn: { _ in 0 },
-                sizeFn: { _ in batchSize / maxSequenceLength },
-                reduceFn: {
-                    DataBatch(
-                        inputs: padAndBatch(
-                            textBatches: $0.map { $0.inputs }, maxLength: maxSequenceLength),
-                        labels: Tensor.batch($0.map { $0.labels! }))
-                },
-                dropRemainder: dropRemainder
-            )
-            .prefetched(count: 2)
-        self.devDataIterator = devExamples.makeIterator()
-            .map(exampleMap)
-            .grouped(
-                keyFn: { _ in 0 },
-                sizeFn: { _ in batchSize / maxSequenceLength },
-                reduceFn: {
-                    DataBatch(
-                        inputs: padAndBatch(
-                            textBatches: $0.map { $0.inputs }, maxLength: maxSequenceLength),
-                        labels: Tensor.batch($0.map { $0.labels! }))
-                },
-                dropRemainder: dropRemainder
-            )
-        self.testDataIterator = testExamples.makeIterator()
-            .map(exampleMap)
-            .grouped(
-                keyFn: { _ in 0 },
-                sizeFn: { _ in batchSize / maxSequenceLength },
-                reduceFn: {
-                    DataBatch(
-                        inputs: padAndBatch(
-                            textBatches: $0.map { $0.inputs }, maxLength: maxSequenceLength),
-                        labels: nil)
-                },
-                dropRemainder: dropRemainder
-            )
+    // Extract the data, if necessary.
+    let extractedDirectoryURL = compressedDataURL.deletingPathExtension()
+    if !FileManager.default.fileExists(atPath: extractedDirectoryURL.path) {
+      try extract(zipFileAt: compressedDataURL, to: extractedDirectoryURL)
     }
+
+    #if false
+      // FIXME: Need to generalize `DatasetUtilities.downloadResource` to accept
+      // arbitrary full URLs instead of constructing full URL from filename and
+      // file extension.
+      DatasetUtilities.downloadResource(
+        filename: "\(subDirectory)", fileExtension: "zip",
+        remoteRoot: url.deletingLastPathComponent(),
+        localStorageDirectory: directory)
+    #endif
+
+    // Load the data files.
+    let dataFilesURL = extractedDirectoryURL.appendingPathComponent("CoLA")
+    trainingExamples = try CoLA.load(
+      fromFile: dataFilesURL.appendingPathComponent("train.tsv")
+    ).lazy.map(exampleMap)
+    
+    validationExamples = try CoLA.load(
+      fromFile: dataFilesURL.appendingPathComponent("dev.tsv")
+    ).lazy.map(exampleMap)
+
+    self.maxSequenceLength = maxSequenceLength
+    self.batchSize = batchSize
+
+    // Create the training sequence of epochs.
+    trainingEpochs = TrainingEpochs(
+      samples: trainingExamples, batchSize: batchSize / maxSequenceLength, entropy: entropy
+    ).lazy.map { (batches: Batches) -> LazyMapSequence<Batches, LabeledTextBatch> in
+      batches.lazy.map{ 
+        (
+          data: $0.map(\.data).paddedAndCollated(to: maxSequenceLength),
+          label: Tensor($0.map(\.label))
+        )
+      }
+    }
+    
+    // Create the validation collection of batches.
+    validationBatches = validationExamples.inBatches(of: batchSize / maxSequenceLength).lazy.map{ 
+      (
+        data: $0.map(\.data).paddedAndCollated(to: maxSequenceLength),
+        label: Tensor($0.map(\.label))
+      )
+    }
+  }
+}
+
+extension CoLA where Entropy == SystemRandomNumberGenerator {
+  /// Creates an instance in `taskDirectoryURL` with batches of size `batchSize`
+  /// by `maximumSequenceLength`.
+  ///
+  /// - Parameter exampleMap: a transform that processes `Example` in `LabeledTextBatch`.
+  public init(
+    taskDirectoryURL: URL,
+    maxSequenceLength: Int,
+    batchSize: Int,
+    exampleMap: @escaping (CoLAExample) -> LabeledTextBatch
+  ) throws {
+    try self.init(
+      taskDirectoryURL: taskDirectoryURL,
+      maxSequenceLength: maxSequenceLength,
+      batchSize: batchSize,
+      entropy: SystemRandomNumberGenerator(),
+      exampleMap: exampleMap
+    )
+  }
 }

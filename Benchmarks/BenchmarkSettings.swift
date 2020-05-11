@@ -18,4 +18,10 @@ struct BenchmarkSettings: Codable {
     let iterations: Int
     let warmupBatches: Int
     let synthetic: Bool
+    let backend: Backend
+}
+
+enum Backend: String, Codable {
+    case eager = "eager"
+    case x10 = "x10"
 }

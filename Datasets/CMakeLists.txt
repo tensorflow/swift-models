@@ -1,10 +1,10 @@
 add_library(Datasets
   CIFAR10/CIFAR10.swift
+  CIFAR10/OldCIFAR10.swift
   DatasetUtilities.swift
   COCO/COCO.swift
   COCO/COCODataset.swift
   COCO/COCOVariant.swift
-  CoLA/Batchable.swift
   CoLA/CoLA.swift
   CoLA/DataUtilities.swift
   ImageClassificationDataset.swift
@@ -15,8 +15,14 @@ add_library(Datasets
   MNIST/MNIST.swift
   MNIST/FashionMNIST.swift
   MNIST/KuzushijiMNIST.swift
+  MNIST/OldMNISTDatasetHandler.swift
+  MNIST/OldMNIST.swift
+  MNIST/OldFashionMNIST.swift
+  MNIST/OldKuzushijiMNIST.swift
   ObjectDetectionDataset.swift
   BostonHousing/BostonHousing.swift
+  TextUnsupervised/TextUnsupervised.swift
+  MovieLens/MovieLens.swift
   TensorPair.swift
   TextUnsupervised/TextUnsupervised.swift)
 target_link_libraries(Datasets PUBLIC

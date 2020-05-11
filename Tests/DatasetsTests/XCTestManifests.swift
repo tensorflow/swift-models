@@ -25,6 +25,7 @@ import XCTest
             testCase(BostonHousingTests.allTests),
             testCase(TextUnsupervisedTests.allTests),
             testCase(OxfordIIITPetsTests.allTests),
+            testCase(MovieLensTests.allTests),
         ]
     }
 #endif

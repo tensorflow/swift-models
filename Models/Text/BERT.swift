@@ -48,9 +48,9 @@ public struct BERT: Module, Regularizable {
     @noDerivative public let typeVocabularySize: Int
     @noDerivative public let initializerStandardDeviation: Scalar
 
-    public var tokenEmbedding: Embedding<Scalar>
-    public var tokenTypeEmbedding: Embedding<Scalar>
-    public var positionEmbedding: Embedding<Scalar>
+    public var tokenEmbedding: RegularizableEmbedding<Scalar>
+    public var tokenTypeEmbedding: RegularizableEmbedding<Scalar>
+    public var positionEmbedding: RegularizableEmbedding<Scalar>
     public var embeddingLayerNorm: LayerNorm<Scalar>
     @noDerivative public var embeddingDropout: Dropout<Scalar>
     public var embeddingProjection: [Dense<Scalar>]
@@ -129,7 +129,7 @@ public struct BERT: Module, Regularizable {
             }
         }()
 
-        self.tokenEmbedding = Embedding<Scalar>(
+        self.tokenEmbedding = RegularizableEmbedding<Scalar>(
             vocabularySize: vocabulary.count,
             embeddingSize: embeddingSize,
             embeddingsInitializer: truncatedNormalInitializer(
@@ -138,7 +138,7 @@ public struct BERT: Module, Regularizable {
 
         // The token type vocabulary will always be small and so we use the one-hot approach here
         // as it is always faster for small vocabularies.
-        self.tokenTypeEmbedding = Embedding<Scalar>(
+        self.tokenTypeEmbedding = RegularizableEmbedding<Scalar>(
             vocabularySize: typeVocabularySize,
             embeddingSize: embeddingSize,
             embeddingsInitializer: truncatedNormalInitializer(
@@ -157,7 +157,7 @@ public struct BERT: Module, Regularizable {
             case .roberta: return 2
             }
         }()
-        self.positionEmbedding = Embedding(
+        self.positionEmbedding = RegularizableEmbedding(
             vocabularySize: positionPaddingIndex + maxSequenceLength,
             embeddingSize: embeddingSize,
             embeddingsInitializer: truncatedNormalInitializer(

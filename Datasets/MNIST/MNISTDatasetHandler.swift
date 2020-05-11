@@ -16,53 +16,53 @@ import Foundation
 import TensorFlow
 
 func fetchMNISTDataset(
-    localStorageDirectory: URL,
-    remoteBaseDirectory: String,
-    imagesFilename: String,
-    labelsFilename: String,
-    flattening: Bool,
-    normalizing: Bool
-) -> [TensorPair<Float, Int32>] {
-    guard let remoteRoot = URL(string: remoteBaseDirectory) else {
-        fatalError("Failed to create MNIST root url: \(remoteBaseDirectory)")
-    }
+  localStorageDirectory: URL,
+  remoteBaseDirectory: String,
+  imagesFilename: String,
+  labelsFilename: String
+) -> [(data: [UInt8], label: Int32)] {
+  guard let remoteRoot = URL(string: remoteBaseDirectory) else {
+    fatalError("Failed to create MNIST root url: \(remoteBaseDirectory)")
+  }
 
-    let imagesData = DatasetUtilities.fetchResource(
-        filename: imagesFilename,
-        fileExtension: "gz",
-        remoteRoot: remoteRoot,
-        localStorageDirectory: localStorageDirectory)
-    let labelsData = DatasetUtilities.fetchResource(
-        filename: labelsFilename,
-        fileExtension: "gz",
-        remoteRoot: remoteRoot,
-        localStorageDirectory: localStorageDirectory)
+  let imagesData = DatasetUtilities.fetchResource(
+    filename: imagesFilename,
+    fileExtension: "gz",
+    remoteRoot: remoteRoot,
+    localStorageDirectory: localStorageDirectory)
+  let labelsData = DatasetUtilities.fetchResource(
+    filename: labelsFilename,
+    fileExtension: "gz",
+    remoteRoot: remoteRoot,
+    localStorageDirectory: localStorageDirectory)
 
-    let images = [UInt8](imagesData).dropFirst(16).map(Float.init)
-    let labels = [UInt8](labelsData).dropFirst(8).map(Int32.init)
+  let images = [UInt8](imagesData).dropFirst(16)
+  let labels = [UInt8](labelsData).dropFirst(8).map(Int32.init)
+    
+  var labeledImages: [(data: [UInt8], label: Int32)] = []
 
-    let rowCount = labels.count
-    let (imageWidth, imageHeight) = (28, 28)
+  let imageByteSize = 28 * 28
+  for imageIndex in 0..<labels.count {
+    let baseAddress = images.startIndex + imageIndex * imageByteSize
+    let data = [UInt8](images[baseAddress..<(baseAddress + imageByteSize)])
+    labeledImages.append((data: data, label: labels[imageIndex]))
+  }
 
-    if flattening {
-        var flattenedImages =
-            Tensor(shape: [rowCount, imageHeight * imageWidth], scalars: images)
-            / 255.0
-        if normalizing {
-            flattenedImages = flattenedImages * 2.0 - 1.0
-        }
-        return (0..<rowCount).map { 
-            TensorPair(first: flattenedImages[$0], second: Tensor<Int32>(labels[$0]))
-        }
-    } else {
-        var images = 
-            Tensor(shape: [rowCount, 1, imageHeight, imageWidth], scalars: images) 
-            .transposed(permutation: [0, 2, 3, 1]) / 255.0
-        if normalizing {
-            images = images * 2.0 - 1.0
-        }
-        return (0..<rowCount).map { 
-            TensorPair(first: images[$0], second: Tensor<Int32>(labels[$0])) 
-        }
-    }
+  return labeledImages
+}
+    
+func makeMNISTBatch<BatchSamples: Collection>(
+  samples: BatchSamples, flattening: Bool, normalizing: Bool, device:Device
+) -> LabeledImage where BatchSamples.Element == (data: [UInt8], label: Int32) {
+  let bytes = samples.lazy.map(\.data).reduce(into: [], +=)
+  let shape: TensorShape = flattening ? [samples.count, 28 * 28] : [samples.count, 28, 28, 1]
+  let images = Tensor<UInt8>(shape: shape, scalars: bytes, on:device)
+  
+  var imageTensor = Tensor<Float>(images) / 255.0
+  if normalizing {
+    imageTensor = imageTensor * 2.0 - 1.0
+  }
+  
+  let labels = Tensor<Int32>(samples.map(\.label))
+  return LabeledImage(data: imageTensor, label: labels)
 }
