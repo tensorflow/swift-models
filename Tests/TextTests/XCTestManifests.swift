@@ -18,10 +18,10 @@ import XCTest
   public func allTests() -> [XCTestCaseEntry] {
     return [
       testCase(TextInferenceTests.allTests),
-      testCase(DataSetTests.allTests),
-      testCase(SemiRingTests.allTests),
-      testCase(VocabularyTests.allTests),
-      testCase(ProbeLayerTests.allTests),
+      testCase(WordSegDataSetTests.allTests),
+      testCase(WordSegSemiRingTests.allTests),
+      testCase(WordSegVocabularyTests.allTests),
+      testCase(WordSegProbeLayerTests.allTests),
     ]
   }
 #endif
