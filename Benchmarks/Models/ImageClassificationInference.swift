@@ -56,7 +56,6 @@ where Model: ImageClassificationModel,
         
         for epochBatches in dataset.training {
             for batch in epochBatches {
-                if (currentBatch >= self.batches) { break }
                 let images = batch.data
 
                 let batchTime = time{
@@ -65,6 +64,9 @@ where Model: ImageClassificationModel,
                 }
                 batchTimings.append(batchTime)
                 currentBatch += 1
+                if (currentBatch >= self.batches) {
+                    return batchTimings
+                }
             }
         }
         return batchTimings

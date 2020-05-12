@@ -35,13 +35,18 @@ where
     }
 
     func run(backend: Backend) -> [Double] {
+        // Note: The this initial eager-mode tensor computation is needed, or all GPU memory
+        // will be exhausted on initial allocation of the model.
+        // TODO: Remove the following tensor workaround when above is fixed.
+        let testTensor = Tensor<Float>([1.0, 2.0, 3.0])
+        let testTensor2 = Tensor<Float>([1.0, 2.0, 3.0])
+        let _ = testTensor + testTensor2
+
         let device: Device
         switch backend {
         case .eager: device = Device.defaultTFEager
         case .x10: device = Device.defaultXLA
         }
-
-        let dataset = ClassificationDataset(batchSize: batchSize, on: device)
 
         // Include model and optimizer initialization time in first batch, to be part of warmup.
         var beforeBatch = timestampInMilliseconds()
@@ -53,18 +58,19 @@ where
         var batchTimings: [Double] = []
         var currentBatch = 0
 
+        let dataset = ClassificationDataset(batchSize: batchSize, on: device)
+
         // Run a blank iteration through the entire dataset to force loading of all data from disk.
-        let initialEpoch = dataset.training.prefix(1)
-        for _ in initialEpoch { }
+        // let initialEpoch = dataset.training.prefix(1)
+        // for epochBatches in initialEpoch { 
+        //     for _ in epochBatches {
+        //     }
+        // }
 
         Context.local.learningPhase = .training
         for epochBatches in dataset.training {
             for batch in epochBatches {
-                if (currentBatch >= self.batches) { break }
                 let (images, labels) = (batch.data, batch.label)
-                
-                // Discard remainder batches that are not the same size as the others 
-                guard images.shape[0] == self.batchSize else { continue }
                 
                 let 𝛁model = TensorFlow.gradient(at: model) { model -> Tensor<Float> in
                     let logits = model(images)
@@ -74,6 +80,9 @@ where
                 LazyTensorBarrier()
                 batchTimings.append(durationInMilliseconds(since: beforeBatch))
                 currentBatch += 1
+                if (currentBatch >= self.batches) {
+                    return batchTimings
+                }
                 beforeBatch = timestampInMilliseconds()
             }
         }

@@ -73,11 +73,11 @@ fileprivate func makeSyntheticBatch<BatchSamples: Collection>(
   samples: BatchSamples, dimensions: [Int], labels: Int, device: Device
 ) -> LabeledImage where BatchSamples.Element == Int {
   let syntheticImageBatch = Tensor<Float>(
-      randomNormal: TensorShape([samples.count] + dimensions), mean: Tensor<Float>(0.5),
-      standardDeviation: Tensor<Float>(0.1), on: device)
-  
+      glorotUniform: TensorShape([samples.count] + dimensions), on: device)
+
   let syntheticLabels = Tensor<Int32>(samples.map{_ -> Int32 in
     Int32.random(in: 0..<Int32(labels))
   }, on: device)
+
   return LabeledImage(data: syntheticImageBatch, label: syntheticLabels)
 }
