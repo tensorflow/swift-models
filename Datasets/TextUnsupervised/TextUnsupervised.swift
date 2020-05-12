@@ -17,6 +17,23 @@ import Foundation
 import ModelSupport
 import TensorFlow
 
+extension Array {
+    func concurrentMap<B>(_ transform: @escaping (Element) -> B) -> [B] {
+        var res = Array<B?>(repeating: nil, count: count)
+        let threadCount = Swift.min(count, 10)
+        let q = DispatchQueue(label: "sync queue")
+        DispatchQueue.concurrentPerform(iterations: threadCount) { threadId in
+            for idx in stride(from: threadId, to: count, by: threadCount) {
+              let transformed = transform(self[idx])
+              q.sync {
+                  res[idx] = transformed
+              }
+            }
+        }
+        return res.map { $0! }
+    }
+}
+
 public enum TextUnsupervisedVariant: String {
     /// - Source: [Einstein AI WikiText-103](
     ///             https://blog.einstein.ai/
@@ -174,14 +191,11 @@ public struct TextUnsupervised {
             let path = directory.appendingPathComponent("\(variantDetails.filename)/\(name).csv")
             let documentsFull = try readCSV(in: path)
             let documents = Array(documentsFull[0..<min(documentCount, documentsFull.count)])
-            encodedDocs = documents.map { embedding(for: $0, bpe: bpe) }
-        } else {
+            encodedDocs = documents.concurrentMap { embedding(for: $0, bpe: bpe) }
+	} else {
             let pathPrefix = directory.appendingPathComponent("\(variantDetails.encodedFileName!)/\(name)").path
-            for i in 0..<documentCount {
-                encodedDocs += [
-                  try readEncoded(in: URL(fileURLWithPath: "\(pathPrefix)/doc_\(i).txt"))
-                ]
-            }
+            encodedDocs = (0..<documentCount).map {URL(fileURLWithPath: "\(pathPrefix)/doc_\($0).txt")}
+                                             .concurrentMap {try! readEncoded(in: $0)}
         }
 
         return LanguageModelDataset(
