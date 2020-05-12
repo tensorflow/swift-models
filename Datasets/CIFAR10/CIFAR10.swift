@@ -161,6 +161,6 @@ fileprivate func makeBatch<BatchSamples: Collection>(
     imageTensor = (imageTensor - mean) / std
   }
   
-  let labels = Tensor<Int32>(samples.map(\.label))
+  let labels = Tensor<Int32>(samples.map(\.label), on: device)
   return LabeledImage(data: imageTensor, label: labels)
 }

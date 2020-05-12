@@ -63,6 +63,6 @@ func makeMNISTBatch<BatchSamples: Collection>(
     imageTensor = imageTensor * 2.0 - 1.0
   }
   
-  let labels = Tensor<Int32>(samples.map(\.label))
+  let labels = Tensor<Int32>(samples.map(\.label), on: device)
   return LabeledImage(data: imageTensor, label: labels)
 }

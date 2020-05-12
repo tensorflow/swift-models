@@ -78,6 +78,6 @@ fileprivate func makeSyntheticBatch<BatchSamples: Collection>(
   
   let syntheticLabels = Tensor<Int32>(samples.map{_ -> Int32 in
     Int32.random(in: 0..<Int32(labels))
-  })
+  }, on: device)
   return LabeledImage(data: syntheticImageBatch, label: syntheticLabels)
 }
