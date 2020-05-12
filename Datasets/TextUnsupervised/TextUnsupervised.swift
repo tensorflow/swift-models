@@ -192,7 +192,7 @@ public struct TextUnsupervised {
             let documentsFull = try readCSV(in: path)
             let documents = Array(documentsFull[0..<min(documentCount, documentsFull.count)])
             encodedDocs = documents.concurrentMap { embedding(for: $0, bpe: bpe) }
-	} else {
+	    } else {
             let pathPrefix = directory.appendingPathComponent("\(variantDetails.encodedFileName!)/\(name)").path
             encodedDocs = (0..<documentCount).map {URL(fileURLWithPath: "\(pathPrefix)/doc_\($0).txt")}
                                              .concurrentMap {try! readEncoded(in: $0)}
