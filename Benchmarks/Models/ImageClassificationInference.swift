@@ -25,9 +25,8 @@ protocol ImageClassificationModel: Layer where Input == Tensor<Float>, Output ==
 
 // TODO: Ease the tight restriction on Batcher data sources to allow for lazy datasets.
 class ImageClassificationInference<Model, ClassificationDataset>: Benchmark
-where Model: ImageClassificationModel, ClassificationDataset: ImageClassificationDataset,
-      ClassificationDataset.SourceDataSet == [TensorPair<Float, Int32>] {
-    let testDataset: Batcher<[TensorPair<Float, Int32>]>
+where Model: ImageClassificationModel,
+      ClassificationDataset: ImageClassificationData {
     var model: Model
     let batches: Int
     let batchSize: Int
@@ -40,15 +39,6 @@ where Model: ImageClassificationModel, ClassificationDataset: ImageClassificatio
         self.batches = settings.batches
         self.batchSize = settings.batchSize
         self.model = Model()
-        if settings.synthetic {
-            let syntheticDataset = SyntheticImageDataset(
-                    batchSize: settings.batchSize, batches: settings.batches,
-                    labels: Model.outputLabels, dimensions: Model.preferredInputDimensions)
-            self.testDataset = syntheticDataset.test
-        } else {
-            let classificationDataset = ClassificationDataset(batchSize: settings.batchSize)
-            self.testDataset = classificationDataset.test
-        }
     }
 
     func run(backend: Backend) -> [Double] {
@@ -57,27 +47,25 @@ where Model: ImageClassificationModel, ClassificationDataset: ImageClassificatio
         case .eager: device = Device.defaultTFEager
         case .x10: device = Device.defaultXLA
         }
+        let dataset = ClassificationDataset(batchSize: batchSize, on: device)
+        
         model.move(to: device)
 
         var batchTimings: [Double] = []
         var currentBatch = 0
-        for batch in testDataset.sequenced() {
-            if (currentBatch >= self.batches) { break }
-            let images = batch.first
-            let deviceImages: Tensor<Float>
-            switch backend {
-            case .eager:
-                deviceImages = images
-            case .x10:
-                deviceImages = Tensor(copying: images, to: device)
-            }
+        
+        for epochBatches in dataset.training {
+            for batch in epochBatches {
+                if (currentBatch >= self.batches) { break }
+                let images = batch.data
 
-            let batchTime = time{
-                let _ = model(deviceImages)
-                LazyTensorBarrier()
+                let batchTime = time{
+                    let _ = model(images)
+                    LazyTensorBarrier()
+                }
+                batchTimings.append(batchTime)
+                currentBatch += 1
             }
-            batchTimings.append(batchTime)
-            currentBatch += 1
         }
         return batchTimings
     }

@@ -38,11 +38,19 @@ enum ResNetCIFAR10: BenchmarkModel {
     }
 
     static func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return ImageClassificationInference<ResNet56, OldCIFAR10>(settings: settings)
+        if settings.synthetic {
+            return ImageClassificationInference<ResNet56, SyntheticCIFAR10>(settings: settings)
+        } else {
+            return ImageClassificationInference<ResNet56, CIFAR10<SystemRandomNumberGenerator>>(settings: settings)
+        }
     }
 
     static func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return ImageClassificationTraining<ResNet56, OldCIFAR10>(settings: settings)
+        if settings.synthetic {
+            return ImageClassificationTraining<ResNet56, SyntheticCIFAR10>(settings: settings)
+        } else {
+            return ImageClassificationTraining<ResNet56, CIFAR10<SystemRandomNumberGenerator>>(settings: settings)
+        }
     }
 }
 
@@ -62,4 +70,12 @@ struct ResNet56: Layer {
 extension ResNet56: ImageClassificationModel {
     static var preferredInputDimensions: [Int] { [32, 32, 3] }
     static var outputLabels: Int { 10 }
+}
+
+final class SyntheticCIFAR10: SyntheticImageDataset<SystemRandomNumberGenerator>, ImageClassificationData {
+  public init(batchSize: Int, on device: Device = Device.default) {
+    super.init(batchSize: batchSize, labels: ResNet56.outputLabels,
+      dimensions: ResNet56.preferredInputDimensions, entropy: SystemRandomNumberGenerator(),
+      device: device)
+  }
 }

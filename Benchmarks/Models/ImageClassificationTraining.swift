@@ -20,10 +20,8 @@ import TensorFlow
 struct ImageClassificationTraining<Model, ClassificationDataset>: Benchmark
 where
     Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == Float,
-    ClassificationDataset: ImageClassificationDataset,
-    ClassificationDataset.SourceDataSet == [TensorPair<Float, Int32>]
+    ClassificationDataset: ImageClassificationData
 {
-    let trainingDataset: Batcher<[TensorPair<Float, Int32>]>
     let batches: Int
     let batchSize: Int
 
@@ -34,15 +32,6 @@ where
     init(settings: BenchmarkSettings) {
         self.batches = settings.batches
         self.batchSize = settings.batchSize
-        if settings.synthetic {
-            let syntheticDataset = SyntheticImageDataset(
-                    batchSize: settings.batchSize, batches: settings.batches,
-                    labels: Model.outputLabels, dimensions: Model.preferredInputDimensions)
-            self.trainingDataset = syntheticDataset.training
-        } else {
-            let classificationDataset = ClassificationDataset(batchSize: settings.batchSize)
-            self.trainingDataset = classificationDataset.training
-        }
     }
 
     func run(backend: Backend) -> [Double] {
@@ -51,6 +40,8 @@ where
         case .eager: device = Device.defaultTFEager
         case .x10: device = Device.defaultXLA
         }
+
+        let dataset = ClassificationDataset(batchSize: batchSize, on: device)
 
         // Include model and optimizer initialization time in first batch, to be part of warmup.
         var beforeBatch = timestampInMilliseconds()
@@ -63,30 +54,21 @@ where
         var currentBatch = 0
 
         // Run a blank iteration through the entire dataset to force loading of all data from disk.
-        for _ in trainingDataset.sequenced() {}
-        
+        let initialEpoch = dataset.training.prefix(1)
+        for _ in initialEpoch { }
+
         Context.local.learningPhase = .training
-        while (currentBatch < self.batches) {
-            for batch in trainingDataset.sequenced() {
+        for epochBatches in dataset.training {
+            for batch in epochBatches {
                 if (currentBatch >= self.batches) { break }
-                let (images, labels) = (batch.first, batch.second)
-                let deviceImages: Tensor<Float>
-                let deviceLabels: Tensor<Int32>
-                switch backend {
-                case .eager:
-                    deviceImages = images
-                    deviceLabels = labels
-                case .x10:
-                    deviceImages = Tensor(copying: images, to: device)
-                    deviceLabels = Tensor(copying: labels, to: device)
-                }
+                let (images, labels) = (batch.data, batch.label)
                 
                 // Discard remainder batches that are not the same size as the others 
                 guard images.shape[0] == self.batchSize else { continue }
                 
                 let 𝛁model = TensorFlow.gradient(at: model) { model -> Tensor<Float> in
-                    let logits = model(deviceImages)
-                    return softmaxCrossEntropy(logits: logits, labels: deviceLabels)
+                    let logits = model(images)
+                    return softmaxCrossEntropy(logits: logits, labels: labels)
                 }
                 optimizer.update(&model, along: 𝛁model)
                 LazyTensorBarrier()

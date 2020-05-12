@@ -37,7 +37,7 @@ public protocol ImageClassificationData {
   /// The type of the validation data, represented as a collection of batches.
   associatedtype Validation: Collection where Validation.Element == LabeledImage
   /// Creates an instance from a given `batchSize`.
-  init(batchSize: Int)
+  init(batchSize: Int, on device: Device)
   /// The `training` epochs.
   var training: Training { get }
   /// The `validation` batches.

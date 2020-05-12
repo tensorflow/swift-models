@@ -44,11 +44,11 @@ public struct CIFAR10<Entropy: RandomNumberGenerator> {
   ///   ordering.  It  will be stored in `self`, so if it is only pseudorandom 
   ///   and has value semantics, the sequence of epochs is deterministic and not 
   ///   dependent on other operations.
-  public init(batchSize: Int, entropy: Entropy) {
+  public init(batchSize: Int, entropy: Entropy, device: Device) {
     self.init(
       batchSize: batchSize,
       entropy: entropy,
-      device: Device.default,
+      device: device,
       remoteBinaryArchiveLocation: URL(
         string: "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/CIFAR10/cifar-10-binary.tar.gz")!, 
       normalizing: true)
@@ -91,8 +91,8 @@ public struct CIFAR10<Entropy: RandomNumberGenerator> {
 
 extension CIFAR10: ImageClassificationData where Entropy == SystemRandomNumberGenerator {
   /// Creates an instance with `batchSize`.
-  public init(batchSize: Int) {
-    self.init(batchSize: batchSize, entropy: SystemRandomNumberGenerator())
+  public init(batchSize: Int, on device: Device = Device.default) {
+    self.init(batchSize: batchSize, entropy: SystemRandomNumberGenerator(), device: device)
   }
 }
 

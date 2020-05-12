@@ -14,6 +14,7 @@
 
 import Datasets
 import ImageClassificationModels
+import TensorFlow
 
 enum LeNetMNIST: BenchmarkModel {
     static var name: String { "LeNetMNIST" }
@@ -37,15 +38,31 @@ enum LeNetMNIST: BenchmarkModel {
     }
 
     static func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return ImageClassificationInference<LeNet, OldMNIST>(settings: settings)
+        if settings.synthetic {
+            return ImageClassificationInference<LeNet, SyntheticMNIST>(settings: settings)
+        } else {
+            return ImageClassificationInference<LeNet, MNIST<SystemRandomNumberGenerator>>(settings: settings)
+        }
     }
 
     static func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return ImageClassificationTraining<LeNet, OldMNIST>(settings: settings)
+        if settings.synthetic {
+            return ImageClassificationTraining<LeNet, SyntheticMNIST>(settings: settings)
+        } else {
+            return ImageClassificationTraining<LeNet, MNIST<SystemRandomNumberGenerator>>(settings: settings)
+        }
     }
 }
 
 extension LeNet: ImageClassificationModel {
     static var preferredInputDimensions: [Int] { [28, 28, 1] }
     static var outputLabels: Int { 10 }
+}
+
+final class SyntheticMNIST: SyntheticImageDataset<SystemRandomNumberGenerator>, ImageClassificationData {
+  public init(batchSize: Int, on device: Device = Device.default) {
+    super.init(batchSize: batchSize, labels: LeNet.outputLabels,
+      dimensions: LeNet.preferredInputDimensions, entropy: SystemRandomNumberGenerator(),
+      device: device)
+  }
 }
