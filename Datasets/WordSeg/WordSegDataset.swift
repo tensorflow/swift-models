@@ -88,7 +88,7 @@ public struct WordSegDataset {
     return nil
   }
 
-  public init?() throws {
+  public init() throws {
     let downloadDetails = DownloadDetails()
     let localStorageDirectory: URL = FileManager.default.temporaryDirectory
       .appendingPathComponent("WordSeg", isDirectory: true)
@@ -113,7 +113,7 @@ public struct WordSegDataset {
       testing: testingFilePath)
   }
 
-  public init?(
+  public init(
     training trainingFile: String,
     validation validationFile: String? = nil,
     testing testingFile: String? = nil
