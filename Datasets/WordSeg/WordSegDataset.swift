@@ -21,6 +21,15 @@ public struct WordSegDataset {
   public private(set) var validation: [CharacterSequence]?
   public let alphabet: Alphabet
 
+  private struct DownloadDetails {
+    var archiveLocation = URL(string: "https://s3.eu-west-2.amazonaws.com/k-kawakami")!
+    var archiveFileName = "seg"
+    var archiveExtension = "zip"
+    var testingFilePath = "br/br-text/te.txt"
+    var trainingFilePath = "br/br-text/tr.txt"
+    var validationFilePath = "br/br-text/va.txt"
+  }
+
   private static func load(data: Data) throws -> [String] {
     guard let contents: String = String(data: data, encoding: .utf8) else {
       throw CharacterErrors.nonUtf8Data
@@ -79,6 +88,26 @@ public struct WordSegDataset {
     return nil
   }
 
+  public init?() throws {
+    let downloadDetails = DownloadDetails()
+    let localStorageDirectory: URL = FileManager.default.temporaryDirectory
+      .appendingPathComponent("WordSeg", isDirectory: true)
+
+    WordSegDataset.downloadIfNotPresent(to: localStorageDirectory, downloadDetails: downloadDetails)
+
+    let archiveDirectory = localStorageDirectory
+      .appendingPathComponent(downloadDetails.archiveFileName)
+    let trainingFilePath = archiveDirectory
+      .appendingPathComponent(downloadDetails.trainingFilePath).path
+    let validationFilePath = archiveDirectory
+      .appendingPathComponent(downloadDetails.validationFilePath).path
+    let testingFilePath = archiveDirectory
+      .appendingPathComponent(downloadDetails.testingFilePath).path
+
+    try self.init(training: trainingFilePath, validation: validationFilePath,
+      testing: testingFilePath)
+  }
+
   public init?(
     training trainingFile: String,
     validation validationFile: String? = nil,
@@ -129,4 +158,22 @@ public struct WordSegDataset {
     self.validation = try Self.convertDataset(validation, alphabet: self.alphabet)
     self.testing = try Self.convertDataset(testing, alphabet: self.alphabet)
   }
+
+  private static func downloadIfNotPresent(
+    to directory: URL, downloadDetails: DownloadDetails
+  ) {
+    let downloadPath = directory.path
+    let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
+    let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: downloadPath)
+    let directoryEmpty = (contentsOfDir == nil) || (contentsOfDir!.isEmpty)
+
+    guard !directoryExists || directoryEmpty else { return }
+
+    // Downloads and extracts dataset files.
+    let _ = DatasetUtilities.downloadResource(
+      filename: downloadDetails.archiveFileName,
+      fileExtension: downloadDetails.archiveExtension,
+      remoteRoot: downloadDetails.archiveLocation,
+      localStorageDirectory: directory, extract: true)
+    }
 }

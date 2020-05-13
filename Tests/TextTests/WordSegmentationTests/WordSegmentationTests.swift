@@ -18,32 +18,6 @@ import XCTest
 
 @testable import TextModels
 
-class WordSegDatasetTests: XCTestCase {
-  func test_WordSegDatasetLoad() {
-    let buffer: [UInt8] = [
-      0x61, 0x6c, 0x70, 0x68, 0x61, 0x0a,  // alpha.
-    ]
-
-    var dataset: WordSegDataset?
-    buffer.withUnsafeBytes { pointer in
-      guard let address = pointer.baseAddress else { return }
-      let training: Data =
-        Data(
-          bytesNoCopy: UnsafeMutableRawPointer(mutating: address),
-          count: pointer.count, deallocator: .none)
-      dataset = try? WordSegDataset(training: training, validation: nil, testing: nil)
-    }
-
-    // 'a', 'h', 'l', 'p', '</s>', '</w>', '<pad>'
-    XCTAssertEqual(dataset?.alphabet.count, 7)
-    XCTAssertEqual(dataset?.training.count, 1)
-  }
-
-  static var allTests = [
-    ("test_WordSegDatasetLoad", test_WordSegDatasetLoad)
-  ]
-}
-
 class WordSegSemiRingTests: XCTestCase {
   func test_SemiRingAdd() {
     let value: SemiRing =

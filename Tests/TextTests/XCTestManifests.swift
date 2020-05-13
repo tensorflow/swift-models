@@ -18,7 +18,6 @@ import XCTest
   public func allTests() -> [XCTestCaseEntry] {
     return [
       testCase(TextInferenceTests.allTests),
-      testCase(WordSegDatasetTests.allTests),
       testCase(WordSegSemiRingTests.allTests),
       testCase(WordSegVocabularyTests.allTests),
       testCase(WordSegProbeLayerTests.allTests),
