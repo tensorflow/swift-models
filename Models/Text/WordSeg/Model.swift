@@ -211,7 +211,6 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
     return logp_lex[Int(index)]
   }
 
-  // TODO: Triggers compiler crash.
   @differentiable
   public func buildLattice(_ sentence: CharacterSequence, maxLen: Int) -> Lattice {
     var lattice = Lattice(count: sentence.count, embEnc.embeddings)
@@ -250,14 +249,13 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
       let logp_lex = logp_lex_batch[pos].scalarsADHack  // [strVocab.chr.count]
       let logp_chr = decode(candidates, current_state).scalarsADHack  // [candidates.count]
       if pos != 0 {
-        // TODO: Mutate in place when AD supports it.
         let updatedNode = Lattice.Node(
           bestEdge: lattice[pos].bestEdge,
           bestScore: lattice[pos].bestScore,
           edges: lattice[pos].edges,
           semiringScore: lattice[pos].computeSemiringScore()
         )
-        lattice.positions = update(lattice.positions, index: pos, value: updatedNode)
+        lattice.positions.update(at: pos, to: updatedNode)
       }
 
       //for i, candidate in enumerate(candidates):
@@ -284,48 +282,53 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
           previous: lattice[pos].semiringScore,
           order: parameters.order)
 
-        // TODO: Mutate in place when AD supports it.
         let updatedNode = Lattice.Node(
           bestEdge: lattice[next_pos].bestEdge,
           bestScore: lattice[next_pos].bestScore,
           edges: lattice[next_pos].edges + [edge],
           semiringScore: lattice[next_pos].semiringScore
         )
-        lattice.positions = update(lattice.positions, index: next_pos, value: updatedNode)
+        lattice.positions.update(at: next_pos, to: updatedNode)
       }
     }
 
-    //lattice[sentence.count].recomputeSemiringScore()
-    // TODO: Mutate in place when AD supports it.
+    // lattice[sentence.count].recomputeSemiringScore()
     let updatedNode = Lattice.Node(
       bestEdge: lattice[sentence.count].bestEdge,
       bestScore: lattice[sentence.count].bestScore,
       edges: lattice[sentence.count].edges,
       semiringScore: lattice[sentence.count].computeSemiringScore()
     )
-    lattice.positions = update(lattice.positions, index: sentence.count, value: updatedNode)
+    lattice.positions.update(at: sentence.count, to: updatedNode)
 
     return lattice
   }
 }
 
-func update<T>(_ arr: [T], index: Int, value: T) -> [T] {
-  var m = arr
-  m[index] = value
-  return m
-}
-
-@derivative(of: update)
-func vjpupdate<T: Differentiable>(_ arr: [T], index: Int, value: T) -> (
-  value: [T],
-  pullback: (Array<T>.TangentVector) -> (Array<T>.TangentVector, T.TangentVector)
-) {
-  func pullback(_ tv: Array<T>.TangentVector) -> (Array<T>.TangentVector, T.TangentVector) {
-    var m = tv
-    m[index] = T.TangentVector.zero
-    return (m, tv[index])
+extension Array {
+  // NOTE(TF-1277): this mutating method exists as a workaround for `Array.subscript._modify` not
+  // being differentiable.
+  //
+  // Semantically, it behaves like `Array.subscript.set`.
+  @inlinable
+  mutating func update(at index: Int, to value: Element) {
+    self[index] = value
   }
-  return (update(arr, index: index, value: value), pullback)
+
+  @usableFromInline
+  @derivative(of: update)
+  mutating func vjpUpdate(at index: Int, to value: Element) -> (
+    value: (),
+    pullback: (inout TangentVector) -> Element.TangentVector
+  ) where Element: Differentiable {
+    update(at: index, to: value)
+    func pullback(_ dSelf: inout TangentVector) -> Element.TangentVector {
+      let dElement = dSelf[index]
+      dSelf.base[index] = dElement.zeroTangentVector
+      return dElement
+    }
+    return ((), pullback)
+  }
 }
 
 public struct MLP: Layer {
