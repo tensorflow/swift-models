@@ -95,16 +95,21 @@ public struct WordSegDataset {
 
     WordSegDataset.downloadIfNotPresent(to: localStorageDirectory, downloadDetails: downloadDetails)
 
-    let archiveDirectory = localStorageDirectory
+    let archiveDirectory =
+      localStorageDirectory
       .appendingPathComponent(downloadDetails.archiveFileName)
-    let trainingFilePath = archiveDirectory
+    let trainingFilePath =
+      archiveDirectory
       .appendingPathComponent(downloadDetails.trainingFilePath).path
-    let validationFilePath = archiveDirectory
+    let validationFilePath =
+      archiveDirectory
       .appendingPathComponent(downloadDetails.validationFilePath).path
-    let testingFilePath = archiveDirectory
+    let testingFilePath =
+      archiveDirectory
       .appendingPathComponent(downloadDetails.testingFilePath).path
 
-    try self.init(training: trainingFilePath, validation: validationFilePath,
+    try self.init(
+      training: trainingFilePath, validation: validationFilePath,
       testing: testingFilePath)
   }
 
@@ -140,7 +145,9 @@ public struct WordSegDataset {
     self.testing = try Self.convertDataset(testing, alphabet: self.alphabet)
   }
 
-  public init(training trainingData: Data, validation validationData: Data?, testing testingData: Data?)
+  public init(
+    training trainingData: Data, validation validationData: Data?, testing testingData: Data?
+  )
     throws
   {
     let training = try Self.load(data: trainingData)
@@ -175,5 +182,5 @@ public struct WordSegDataset {
       fileExtension: downloadDetails.archiveExtension,
       remoteRoot: downloadDetails.archiveLocation,
       localStorageDirectory: directory, extract: true)
-    }
+  }
 }
