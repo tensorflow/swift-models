@@ -12,11 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Datasets
 import ModelSupport
 import XCTest
-
-@testable import TextModels
 
 class WordSegSupportTests: XCTestCase {
   func testAlphabetaConstruct() {
