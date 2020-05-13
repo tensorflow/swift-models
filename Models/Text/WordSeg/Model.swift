@@ -125,11 +125,8 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   /// Returns the hidden states of the encoder LSTM applied to the given sentence.
   public func encode(_ x: CharacterSequence) -> [Tensor<Float>] {
     let embedded = drop(embEnc(x.tensor))
-    // TODO: If I inline `makeEncoderInput`, it breaks AD.
-    let encoderStates = lstmEnc(makeEncoderInput(embedded))
-    // TODO: Need to add dropout here, but it breaks AD.
-    // TODO: If I inline `computeEncoderResult`, it breaks AD.
-    return computeEncoderResult(encoderStates)
+    let encoderStates = lstmEnc(embedded.unstacked().differentiableMap { $0.rankLifted() })
+    return encoderStates.differentiableMap { $0.hidden.squeezingShape(at: 0) }
   }
 
   // MARK: - Decode
@@ -166,7 +163,7 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
     let stateBatch = state.rankLifted().tiled(multiples: Tensor([Int32(candidates.count), 1]))
 
     // [time] array of LSTM states whose `hidden` and `cell` fields have shape [batch x ndim]
-    let decoderStates = lstmDec.callAsFunction2(
+    let decoderStates = lstmDec(
       embeddedX.unstacked(),
       initialState: LSTMCell.State(
         cell: Tensor(zeros: stateBatch.shape),
@@ -174,8 +171,8 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 
     // [time x batch x ndim]
     // TODO: Need to add dropout here, but it breaks AD.
-    // TODO: If I inline `computeEncoderResult`, it breaks AD.
-    let decoderResult = computeDecoderResult(decoderStates)
+    let decoderResult = Tensor(
+      stacking: decoderStates.differentiableMap { $0.hidden })
 
     // [time x batch x chrVocab.count]
     let logits = denseDec(decoderResult)
@@ -214,7 +211,6 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
     return logp_lex[Int(index)]
   }
 
-  // TODO: Triggers compiler crash.
   @differentiable
   public func buildLattice(_ sentence: CharacterSequence, maxLen: Int) -> Lattice {
     var lattice = Lattice(count: sentence.count, embEnc.embeddings)
@@ -249,18 +245,17 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
       //  lattice[pos]["semiring_score"] = semiring.add(lattice[pos]["edges"],
       //                                                self.gpu)
       let current_state = states[pos]
-      let logg = scalarsWithADHack(logg_batch[pos])  // [2]
-      let logp_lex = scalarsWithADHack(logp_lex_batch[pos])  // [strVocab.chr.count]
-      let logp_chr = scalarsWithADHack(decode(candidates, current_state))  // [candidates.count]
+      let logg = logg_batch[pos].scalarsADHack  // [2]
+      let logp_lex = logp_lex_batch[pos].scalarsADHack  // [strVocab.chr.count]
+      let logp_chr = decode(candidates, current_state).scalarsADHack  // [candidates.count]
       if pos != 0 {
-        // TODO: Mutate in place when AD supports it.
         let updatedNode = Lattice.Node(
           bestEdge: lattice[pos].bestEdge,
           bestScore: lattice[pos].bestScore,
           edges: lattice[pos].edges,
           semiringScore: lattice[pos].computeSemiringScore()
         )
-        lattice.positions = update(lattice.positions, index: pos, value: updatedNode)
+        lattice.positions.update(at: pos, to: updatedNode)
       }
 
       //for i, candidate in enumerate(candidates):
@@ -287,48 +282,53 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
           previous: lattice[pos].semiringScore,
           order: parameters.order)
 
-        // TODO: Mutate in place when AD supports it.
         let updatedNode = Lattice.Node(
           bestEdge: lattice[next_pos].bestEdge,
           bestScore: lattice[next_pos].bestScore,
           edges: lattice[next_pos].edges + [edge],
           semiringScore: lattice[next_pos].semiringScore
         )
-        lattice.positions = update(lattice.positions, index: next_pos, value: updatedNode)
+        lattice.positions.update(at: next_pos, to: updatedNode)
       }
     }
 
-    //lattice[sentence.count].recomputeSemiringScore()
-    // TODO: Mutate in place when AD supports it.
+    // lattice[sentence.count].recomputeSemiringScore()
     let updatedNode = Lattice.Node(
       bestEdge: lattice[sentence.count].bestEdge,
       bestScore: lattice[sentence.count].bestScore,
       edges: lattice[sentence.count].edges,
       semiringScore: lattice[sentence.count].computeSemiringScore()
     )
-    lattice.positions = update(lattice.positions, index: sentence.count, value: updatedNode)
+    lattice.positions.update(at: sentence.count, to: updatedNode)
 
     return lattice
   }
 }
 
-func update<T>(_ arr: [T], index: Int, value: T) -> [T] {
-  var m = arr
-  m[index] = value
-  return m
-}
-
-@derivative(of: update)
-func vjpupdate<T: Differentiable>(_ arr: [T], index: Int, value: T) -> (
-  value: [T],
-  pullback: (Array<T>.TangentVector) -> (Array<T>.TangentVector, T.TangentVector)
-) {
-  func pullback(_ tv: Array<T>.TangentVector) -> (Array<T>.TangentVector, T.TangentVector) {
-    var m = tv
-    m[index] = T.TangentVector.zero
-    return (m, tv[index])
+extension Array {
+  // NOTE(TF-1277): this mutating method exists as a workaround for `Array.subscript._modify` not
+  // being differentiable.
+  //
+  // Semantically, it behaves like `Array.subscript.set`.
+  @inlinable
+  mutating func update(at index: Int, to value: Element) {
+    self[index] = value
   }
-  return (update(arr, index: index, value: value), pullback)
+
+  @usableFromInline
+  @derivative(of: update)
+  mutating func vjpUpdate(at index: Int, to value: Element) -> (
+    value: (),
+    pullback: (inout TangentVector) -> Element.TangentVector
+  ) where Element: Differentiable {
+    update(at: index, to: value)
+    func pullback(_ dSelf: inout TangentVector) -> Element.TangentVector {
+      let dElement = dSelf[index]
+      dSelf.base[index] = dElement.zeroTangentVector
+      return dElement
+    }
+    return ((), pullback)
+  }
 }
 
 public struct MLP: Layer {
@@ -348,114 +348,30 @@ public struct MLP: Layer {
   }
 }
 
-@differentiable
-func computeDecoderResult(_ states: [LSTMCell<Float>.State]) -> Tensor<Float> {
-  Tensor(stacking: states.differentiableMap(extractHidden))
-}
-
-@differentiable
-func extractHidden(_ state: LSTMCell<Float>.State) -> Tensor<Float> {
-  return state.hidden
-}
-
-@differentiable
-func computeEncoderResult(_ states: [LSTMCell<Float>.State]) -> [Tensor<Float>] {
-  states.differentiableMap(extractHiddenSqueezed)
-}
-
-@differentiable
-func extractHiddenSqueezed(_ state: LSTMCell<Float>.State) -> Tensor<Float> {
-  return state.hidden.squeezingShape(at: 0)
-}
-
-@differentiable
-func rankLift(_ x: Tensor<Float>) -> Tensor<Float> {
-  return x.rankLifted()
-}
-
-@differentiable
-func makeEncoderInput(_ x: Tensor<Float>) -> [Tensor<Float>] {
-  return x.unstacked().differentiableMap(rankLift)
-}
-
-// TODO: Move this derivative into tensorflow-apis
-extension RecurrentLayer {
-  @differentiable(wrt: (self, inputs, initialState))
-  public func callAsFunction2(
-    _ inputs: [Cell.TimeStepInput],
-    initialState: Cell.State
-  ) -> [Cell.TimeStepOutput] {
-    if inputs.isEmpty { return [Cell.TimeStepOutput]() }
-    var currentHiddenState = initialState
-    var timeStepOutputs: [Cell.TimeStepOutput] = []
-    for timeStepInput in inputs {
-      let output = cell(input: timeStepInput, state: currentHiddenState)
-      currentHiddenState = output.state
-      timeStepOutputs.append(output.output)
-    }
-    return timeStepOutputs
+extension Tensor {
+  // NOTE(TF-1008): this is a duplicate of `Tensor.scalars` that is needed for differentiation
+  // correctness. It exists as a workaround for TF-1008: per-instance zero tangent vectors.
+  //
+  // Remove this when differentiation uses per-instance zeros
+  // (`Differentiable.zeroTangentVectorInitializer`) instead of static zeros
+  // (`AdditiveArithmetic.zero`).
+  @differentiable(where Scalar: TensorFlowFloatingPoint)
+  var scalarsADHack: [Scalar] {
+    scalars
   }
 
-  @usableFromInline
-  @derivative(of: callAsFunction2, wrt: (self, inputs, initialState))
-  internal func _vjpCallAsFunctionWrtMore(
-    _ inputs: [Cell.TimeStepInput],
-    initialState: Cell.State
-  ) -> (
-    value: [Cell.TimeStepOutput],
-    pullback: (Array<Cell.TimeStepOutput>.TangentVector)
-      -> (TangentVector, Array<Cell.TimeStepInput>.TangentVector, Cell.State.TangentVector)
-  ) {
-    let timeStepCount = inputs.count
-    var currentHiddenState = initialState
-    var timeStepOutputs: [Cell.TimeStepOutput] = []
-    timeStepOutputs.reserveCapacity(timeStepCount)
-    var backpropagators: [Cell.Backpropagator] = []
-    backpropagators.reserveCapacity(timeStepCount)
-    for timestep in inputs {
-      let (output, backpropagator) = cell.appliedForBackpropagation(
-        to: .init(input: timestep, state: currentHiddenState))
-      currentHiddenState = output.state
-      timeStepOutputs.append(output.output)
-      backpropagators.append(backpropagator)
-    }
-    return (
-      timeStepOutputs,
-      { 𝛁outputs in
-        precondition(
-          𝛁outputs.base.count == timeStepCount,
-          "The number of output gradients must equal the number of time steps")
-        var 𝛁cell = Cell.TangentVector.zero
-        var 𝛁state = Cell.State.TangentVector.zero
-        var reversed𝛁inputs: [Cell.TimeStepInput.TangentVector] = []
-        reversed𝛁inputs.reserveCapacity(timeStepCount)
-        for (𝛁output, backpropagator) in zip(𝛁outputs.base, backpropagators).reversed() {
-          let (new𝛁cell, 𝛁input) = backpropagator(.init(output: 𝛁output, state: 𝛁state))
-          𝛁cell += new𝛁cell
-          𝛁state = 𝛁input.state
-          reversed𝛁inputs.append(𝛁input.input)
-        }
-        return (.init(cell: 𝛁cell), .init(Array(reversed𝛁inputs.reversed())), 𝛁state)
+  @derivative(of: scalarsADHack)
+  func vjpScalarsADHack() -> (
+    value: [Scalar], pullback: (Array<Scalar>.TangentVector) -> Tensor
+  ) where Scalar: TensorFlowFloatingPoint {
+    // In the pullback: capture only `self.shape`, not all of `self`.
+    let shape = self.shape
+    func pullback(_ tv: Array<Scalar>.TangentVector) -> Tensor {
+      if tv.count == 0 {
+        return Tensor(zeros: shape)
       }
-    )
-  }
-}
-
-// TODO: Better way of dealing with this problem.
-func scalarsWithADHack(_ t: Tensor<Float>) -> [Float] {
-  t.scalars
-}
-
-@derivative(of: scalarsWithADHack)
-func vjpScalarsHack(_ t: Tensor<Float>) -> (
-  value: [Float], pullback: (Array<Float>.TangentVector) -> Tensor<Float>
-) {
-  // TODO: Capture less stuff.
-  func pullback(_ tv: Array<Float>.TangentVector) -> Tensor<Float> {
-    if tv.count == 0 {
-      return Tensor(zeros: t.shape)
+      return Tensor(shape: shape, scalars: tv.base)
     }
-    return Tensor(shape: t.shape, scalars: tv.base)
+    return (scalars, pullback)
   }
-  return (t.scalars, pullback)
 }

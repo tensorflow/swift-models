@@ -19,7 +19,6 @@ import XCTest
     return [
       testCase(TextInferenceTests.allTests),
       testCase(WordSegSemiRingTests.allTests),
-      testCase(WordSegVocabularyTests.allTests),
       testCase(WordSegProbeLayerTests.allTests),
     ]
   }
