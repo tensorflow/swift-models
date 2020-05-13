@@ -246,9 +246,9 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
       //  lattice[pos]["semiring_score"] = semiring.add(lattice[pos]["edges"],
       //                                                self.gpu)
       let current_state = states[pos]
-      let logg = scalarsWithADHack(logg_batch[pos])  // [2]
-      let logp_lex = scalarsWithADHack(logp_lex_batch[pos])  // [strVocab.chr.count]
-      let logp_chr = scalarsWithADHack(decode(candidates, current_state))  // [candidates.count]
+      let logg = logg_batch[pos].scalarsADHack  // [2]
+      let logp_lex = logp_lex_batch[pos].scalarsADHack  // [strVocab.chr.count]
+      let logp_chr = decode(candidates, current_state).scalarsADHack  // [candidates.count]
       if pos != 0 {
         // TODO: Mutate in place when AD supports it.
         let updatedNode = Lattice.Node(
@@ -345,21 +345,30 @@ public struct MLP: Layer {
   }
 }
 
-// TODO: Better way of dealing with this problem.
-func scalarsWithADHack(_ t: Tensor<Float>) -> [Float] {
-  t.scalars
-}
-
-@derivative(of: scalarsWithADHack)
-func vjpScalarsHack(_ t: Tensor<Float>) -> (
-  value: [Float], pullback: (Array<Float>.TangentVector) -> Tensor<Float>
-) {
-  // TODO: Capture less stuff.
-  func pullback(_ tv: Array<Float>.TangentVector) -> Tensor<Float> {
-    if tv.count == 0 {
-      return Tensor(zeros: t.shape)
-    }
-    return Tensor(shape: t.shape, scalars: tv.base)
+extension Tensor {
+  // NOTE(TF-1008): this is a duplicate of `Tensor.scalars` that is needed for differentiation
+  // correctness. It exists as a workaround for TF-1008: per-instance zero tangent vectors.
+  //
+  // Remove this when differentiation uses per-instance zeros
+  // (`Differentiable.zeroTangentVectorInitializer`) instead of static zeros
+  // (`AdditiveArithmetic.zero`).
+  @differentiable(where Scalar: TensorFlowFloatingPoint)
+  var scalarsADHack: [Scalar] {
+    scalars
   }
-  return (t.scalars, pullback)
+
+  @derivative(of: scalarsADHack)
+  func vjpScalarsADHack() -> (
+    value: [Scalar], pullback: (Array<Scalar>.TangentVector) -> Tensor
+  ) where Scalar: TensorFlowFloatingPoint {
+    // In the pullback: capture only `self.shape`, not all of `self`.
+    let shape = self.shape
+    func pullback(_ tv: Array<Scalar>.TangentVector) -> Tensor {
+      if tv.count == 0 {
+        return Tensor(zeros: shape)
+      }
+      return Tensor(shape: shape, scalars: tv.base)
+    }
+    return (scalars, pullback)
+  }
 }
