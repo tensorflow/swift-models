@@ -97,7 +97,7 @@ public struct Lattice: Differentiable {
     @differentiable
     func computeSemiringScore() -> SemiRing {
       // TODO: Reduceinto and +=
-      edges.differentiableMap { $0.totalScore }.differentiableReduce(SemiRing.zero) { $0 + $1 }
+      semiRingSum(edges.differentiableMap{ $0.totalScore })
     }
   }
 

@@ -20,27 +20,38 @@
   import Glibc
 #endif
 
+/// logSumExp(_:)
+///
+/// logSumExp (see https://en.wikipedia.org/wiki/LogSumExp)
+@differentiable
+public func logSumExp(_ x: [Float]) -> Float {
+  if x.count == 0 { return -Float.infinity}
+  let maxVal = x.max()!
+  let exps = x.map { exp($0 - maxVal) }
+  return maxVal + log(exps.reduce(into: 0, +=))
+}
+
+@derivative(of: logSumExp)
+public func vjpLogSumExp(_ x: [Float]) -> (
+  value: Float,
+  pullback: (Float) -> (Array<Float>.TangentVector)
+) {
+  func pb(v: Float) -> (Array<Float>.TangentVector) {
+    if x.count == 0 { return Array<Float>.TangentVector([]) }
+    let maxVal = x.max()!
+    let exps = x.map { exp($0 - maxVal) }
+    let sumExp = exps.reduce(into: 0, +=)
+    return Array<Float>.TangentVector(exps.map{ v * $0 / sumExp })
+  }
+  return (logSumExp(x), pb)
+}
+
 /// logSumExp(_:_:)
 ///
 /// Specialized logSumExp for 2 float.
 @differentiable
 public func logSumExp(_ lhs: Float, _ rhs: Float) -> Float {
-  let maxVal = max(lhs, rhs)
-  let sumExp = exp(lhs - maxVal) + exp(rhs - maxVal)
-  return maxVal + log(sumExp)
-}
-
-@derivative(of: logSumExp)
-public func vjpLogSumExp(_ lhs: Float, _ rhs: Float) -> (
-  value: Float,
-  pullback: (Float) -> (Float, Float)
-) {
-  func pb(v: Float) -> (Float, Float) {
-    let maxVal = max(lhs, rhs)
-    let sumExp = exp(lhs - maxVal) + exp(rhs - maxVal)
-    return (v * exp(lhs - maxVal) / sumExp, v * exp(rhs - maxVal) / sumExp)
-  }
-  return (logSumExp(lhs, rhs), pb)
+  return logSumExp([lhs, rhs])
 }
 
 /// SemiRing
@@ -72,6 +83,13 @@ func + (_ lhs: SemiRing, _ rhs: SemiRing) -> SemiRing {
   return SemiRing(
     logp: logSumExp(lhs.logp, rhs.logp),
     logr: logSumExp(lhs.logr, rhs.logr))
+}
+
+@differentiable
+func semiRingSum(_ x: [SemiRing]) -> SemiRing {
+  return SemiRing(
+    logp: logSumExp(x.differentiableMap{ $0.logp }),
+    logr: logSumExp(x.differentiableMap{ $0.logr }))
 }
 
 extension SemiRing {
