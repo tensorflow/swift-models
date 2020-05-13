@@ -13,8 +13,9 @@
 // limitations under the License.
 
 import Foundation
+import ModelSupport
 
-internal struct DataSet {
+public struct WordSegDataset {
   public let training: [CharacterSequence]
   public private(set) var testing: [CharacterSequence]?
   public private(set) var validation: [CharacterSequence]?
@@ -110,7 +111,7 @@ internal struct DataSet {
     self.testing = try Self.convertDataset(testing, alphabet: self.alphabet)
   }
 
-  init(training trainingData: Data, validation validationData: Data?, testing testingData: Data?)
+  public init(training trainingData: Data, validation validationData: Data?, testing testingData: Data?)
     throws
   {
     let training = try Self.load(data: trainingData)
