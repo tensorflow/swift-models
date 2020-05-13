@@ -16,7 +16,7 @@ import XCTest
 
 @testable import TextModels
 
-class DataSetTests: XCTestCase {
+class WordSegDataSetTests: XCTestCase {
   func test_DataSetLoad() {
     let buffer: [UInt8] = [
       0x61, 0x6c, 0x70, 0x68, 0x61, 0x0a,  // alpha.
@@ -42,7 +42,7 @@ class DataSetTests: XCTestCase {
   ]
 }
 
-class SemiRingTests: XCTestCase {
+class WordSegSemiRingTests: XCTestCase {
   func test_SemiRingAdd() {
     let value: SemiRing =
       SemiRing(logp: 1.0, logr: 2.0) + SemiRing(logp: 3.0, logr: 4.0)
@@ -98,7 +98,7 @@ class SemiRingTests: XCTestCase {
   ]
 }
 
-class VocabularyTests: XCTestCase {
+class WordSegVocabularyTests: XCTestCase {
   func test_AlphabetaConstruct() {
     let characters: Alphabet = Alphabet(
       [

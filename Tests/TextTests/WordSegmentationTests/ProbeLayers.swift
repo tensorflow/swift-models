@@ -121,7 +121,7 @@ func almostEqual(
   return success
 }
 
-class ProbeLayerTests: XCTestCase {
+class WordSegProbeLayerTests: XCTestCase {
   func testProbeEncoder() {
     // chrVocab is:
     // 0 - a
