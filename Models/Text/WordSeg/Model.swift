@@ -125,11 +125,8 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   /// Returns the hidden states of the encoder LSTM applied to the given sentence.
   public func encode(_ x: CharacterSequence) -> [Tensor<Float>] {
     let embedded = drop(embEnc(x.tensor))
-    // TODO: If I inline `makeEncoderInput`, it breaks AD.
-    let encoderStates = lstmEnc(makeEncoderInput(embedded))
-    // TODO: Need to add dropout here, but it breaks AD.
-    // TODO: If I inline `computeEncoderResult`, it breaks AD.
-    return computeEncoderResult(encoderStates)
+    let encoderStates = lstmEnc(embedded.unstacked().differentiableMap { $0.rankLifted() })
+    return encoderStates.differentiableMap { $0.hidden.squeezingShape(at: 0) }
   }
 
   // MARK: - Decode
@@ -166,7 +163,7 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
     let stateBatch = state.rankLifted().tiled(multiples: Tensor([Int32(candidates.count), 1]))
 
     // [time] array of LSTM states whose `hidden` and `cell` fields have shape [batch x ndim]
-    let decoderStates = lstmDec.callAsFunction2(
+    let decoderStates = lstmDec(
       embeddedX.unstacked(),
       initialState: LSTMCell.State(
         cell: Tensor(zeros: stateBatch.shape),
@@ -174,8 +171,8 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 
     // [time x batch x ndim]
     // TODO: Need to add dropout here, but it breaks AD.
-    // TODO: If I inline `computeEncoderResult`, it breaks AD.
-    let decoderResult = computeDecoderResult(decoderStates)
+    let decoderResult = Tensor(
+      stacking: decoderStates.differentiableMap { $0.hidden })
 
     // [time x batch x chrVocab.count]
     let logits = denseDec(decoderResult)
@@ -345,99 +342,6 @@ public struct MLP: Layer {
   @differentiable
   public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
     return dense2(dropout(dense1(input)))
-  }
-}
-
-@differentiable
-func computeDecoderResult(_ states: [LSTMCell<Float>.State]) -> Tensor<Float> {
-  Tensor(stacking: states.differentiableMap(extractHidden))
-}
-
-@differentiable
-func extractHidden(_ state: LSTMCell<Float>.State) -> Tensor<Float> {
-  return state.hidden
-}
-
-@differentiable
-func computeEncoderResult(_ states: [LSTMCell<Float>.State]) -> [Tensor<Float>] {
-  states.differentiableMap(extractHiddenSqueezed)
-}
-
-@differentiable
-func extractHiddenSqueezed(_ state: LSTMCell<Float>.State) -> Tensor<Float> {
-  return state.hidden.squeezingShape(at: 0)
-}
-
-@differentiable
-func rankLift(_ x: Tensor<Float>) -> Tensor<Float> {
-  return x.rankLifted()
-}
-
-@differentiable
-func makeEncoderInput(_ x: Tensor<Float>) -> [Tensor<Float>] {
-  return x.unstacked().differentiableMap(rankLift)
-}
-
-// TODO: Move this derivative into tensorflow-apis
-extension RecurrentLayer {
-  @differentiable(wrt: (self, inputs, initialState))
-  public func callAsFunction2(
-    _ inputs: [Cell.TimeStepInput],
-    initialState: Cell.State
-  ) -> [Cell.TimeStepOutput] {
-    if inputs.isEmpty { return [Cell.TimeStepOutput]() }
-    var currentHiddenState = initialState
-    var timeStepOutputs: [Cell.TimeStepOutput] = []
-    for timeStepInput in inputs {
-      let output = cell(input: timeStepInput, state: currentHiddenState)
-      currentHiddenState = output.state
-      timeStepOutputs.append(output.output)
-    }
-    return timeStepOutputs
-  }
-
-  @usableFromInline
-  @derivative(of: callAsFunction2, wrt: (self, inputs, initialState))
-  internal func _vjpCallAsFunctionWrtMore(
-    _ inputs: [Cell.TimeStepInput],
-    initialState: Cell.State
-  ) -> (
-    value: [Cell.TimeStepOutput],
-    pullback: (Array<Cell.TimeStepOutput>.TangentVector)
-      -> (TangentVector, Array<Cell.TimeStepInput>.TangentVector, Cell.State.TangentVector)
-  ) {
-    let timeStepCount = inputs.count
-    var currentHiddenState = initialState
-    var timeStepOutputs: [Cell.TimeStepOutput] = []
-    timeStepOutputs.reserveCapacity(timeStepCount)
-    var backpropagators: [Cell.Backpropagator] = []
-    backpropagators.reserveCapacity(timeStepCount)
-    for timestep in inputs {
-      let (output, backpropagator) = cell.appliedForBackpropagation(
-        to: .init(input: timestep, state: currentHiddenState))
-      currentHiddenState = output.state
-      timeStepOutputs.append(output.output)
-      backpropagators.append(backpropagator)
-    }
-    return (
-      timeStepOutputs,
-      { 𝛁outputs in
-        precondition(
-          𝛁outputs.base.count == timeStepCount,
-          "The number of output gradients must equal the number of time steps")
-        var 𝛁cell = Cell.TangentVector.zero
-        var 𝛁state = Cell.State.TangentVector.zero
-        var reversed𝛁inputs: [Cell.TimeStepInput.TangentVector] = []
-        reversed𝛁inputs.reserveCapacity(timeStepCount)
-        for (𝛁output, backpropagator) in zip(𝛁outputs.base, backpropagators).reversed() {
-          let (new𝛁cell, 𝛁input) = backpropagator(.init(output: 𝛁output, state: 𝛁state))
-          𝛁cell += new𝛁cell
-          𝛁state = 𝛁input.state
-          reversed𝛁inputs.append(𝛁input.input)
-        }
-        return (.init(cell: 𝛁cell), .init(Array(reversed𝛁inputs.reversed())), 𝛁state)
-      }
-    )
   }
 }
 
