@@ -19,7 +19,10 @@ add_library(ModelSupport
   Text/BytePairEncoder.swift
   Text/SentencePiece/SentencePieceModel.pb.swift
   Text/TextBatch.swift
-  Text/Tokenization.swift)
+  Text/Tokenization.swift
+  Text/WordSeg/Alphabet.swift
+  Text/WordSeg/CharacterSequence.swift
+  Text/WordSeg/Lexicon.swift)
 set_target_properties(ModelSupport PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
 target_compile_options(ModelSupport PRIVATE

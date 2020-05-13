@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import ModelSupport
 import TensorFlow
 
 #if os(iOS) || os(macOS) || os(tvOS) || os(watchOS)

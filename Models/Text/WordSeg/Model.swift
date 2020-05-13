@@ -20,6 +20,7 @@
 // This implementation is not affiliated with DeepMind and has not been
 // verified by the authors.
 
+import ModelSupport
 import TensorFlow
 
 /// SNLM

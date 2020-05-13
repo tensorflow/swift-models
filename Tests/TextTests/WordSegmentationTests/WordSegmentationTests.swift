@@ -12,24 +12,26 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Datasets
+import ModelSupport
 import XCTest
 
 @testable import TextModels
 
-class WordSegDataSetTests: XCTestCase {
-  func test_DataSetLoad() {
+class WordSegDatasetTests: XCTestCase {
+  func test_WordSegDatasetLoad() {
     let buffer: [UInt8] = [
       0x61, 0x6c, 0x70, 0x68, 0x61, 0x0a,  // alpha.
     ]
 
-    var dataset: DataSet?
+    var dataset: WordSegDataset?
     buffer.withUnsafeBytes { pointer in
       guard let address = pointer.baseAddress else { return }
       let training: Data =
         Data(
           bytesNoCopy: UnsafeMutableRawPointer(mutating: address),
           count: pointer.count, deallocator: .none)
-      dataset = try? DataSet(training: training, validation: nil, testing: nil)
+      dataset = try? WordSegDataset(training: training, validation: nil, testing: nil)
     }
 
     // 'a', 'h', 'l', 'p', '</s>', '</w>', '<pad>'
@@ -38,7 +40,7 @@ class WordSegDataSetTests: XCTestCase {
   }
 
   static var allTests = [
-    ("test_DataSetLoad", test_DataSetLoad)
+    ("test_WordSegDatasetLoad", test_WordSegDatasetLoad)
   ]
 }
 
