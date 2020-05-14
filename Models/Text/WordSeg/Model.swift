@@ -198,13 +198,6 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 
   // MARK: - buildLattice
 
-  //def get_logp_lex(self, logp_lex, candidate):
-  //  if candidate in self.str_vocab:
-  //    candidate_idx = self.str_vocab[candidate]
-  //    return logp_lex[candidate_idx]
-  //  else:
-  //    return torch.log(torch_util.var_from_scaler(0.0, "FloatTensor", self.gpu))
-
   func get_logp_lex(_ logp_lex: [Float], _ candidate: CharacterSequence) -> Float {
     guard let index = parameters.strVocab.dictionary[candidate] else {
       return -Float.infinity
@@ -237,15 +230,6 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
         candidates.append(candidate)
       }
 
-      //# Calculate probabilities
-      //current_state = states[pos]
-      //logg = logg_batch[pos]
-      //logp_lex = logp_lex_batch[pos]
-      //logp_chr = self.decode(candidates, current_state)
-      //# Update semiring score
-      //if pos != 0:
-      //  lattice[pos]["semiring_score"] = semiring.add(lattice[pos]["edges"],
-      //                                                self.gpu)
       let current_state = states[pos]
       let logg = logg_batch[pos].scalarsADHack  // [2]
       let logp_lex = logp_lex_batch[pos].scalarsADHack  // [strVocab.chr.count]
@@ -256,17 +240,6 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
         updatedNode.recomputeSemiringScore()
         lattice.positions.update(at: pos, to: updatedNode)
       }
-
-      //for i, candidate in enumerate(candidates):
-      //  next_pos = pos + len(candidate)
-      //  logp_lex_i = self.get_logp_lex(logp_lex, candidate)
-      //  logp_chr_i = logp_chr[i]
-      //  logp_i = torch_util.logsumexp([logg[0] + logp_lex_i,
-      //                                 logg[1] + logp_chr_i])
-      //  # Create an edge.
-      //  edge = make_edge(pos, next_pos, candidate, logp_i,
-      //                   lattice[pos]["semiring_score"], self.order, self.gpu)
-      //  lattice[next_pos]["edges"].append(edge)
 
       for (i, candidate) in candidates.enumerated() {
         let next_pos = pos + candidate.count
