@@ -55,8 +55,8 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 
   // MARK: - Encoder
 
-  public var embEnc: Embedding<Float>
-  public var lstmEnc: LSTM<Float>
+  public var encoderEmbedding: Embedding<Float>
+  public var encoderLSTM: LSTM<Float>
 
   // MARK: - Interpolation weight
 
@@ -68,13 +68,13 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 
   // MARK: - Character-level decoder
 
-  public var embDec: Embedding<Float>
-  public var lstmDec: LSTM<Float>
-  public var denseDec: Dense<Float>
+  public var decoderEmbedding: Embedding<Float>
+  public var decoderLSTM: LSTM<Float>
+  public var decoderDense: Dense<Float>
 
   // MARK: - Other layers
 
-  public var drop: Dropout<Float>
+  public var dropout: Dropout<Float>
 
   // MARK: - Initializer
 
@@ -82,10 +82,10 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
     self.parameters = parameters
 
     // Encoder
-    self.embEnc = Embedding(
+    self.encoderEmbedding = Embedding(
       vocabularySize: parameters.chrVocab.count,
       embeddingSize: parameters.ndim)
-    self.lstmEnc = LSTM(
+    self.encoderLSTM = LSTM(
       LSTMCell(
         inputSize: parameters.ndim,
         hiddenSize:
@@ -106,26 +106,26 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
       dropoutProbability: parameters.dropoutProb)
 
     // Character-level decoder
-    self.embDec = Embedding(
+    self.decoderEmbedding = Embedding(
       vocabularySize: parameters.chrVocab.count,
       embeddingSize: parameters.ndim)
-    self.lstmDec = LSTM(
+    self.decoderLSTM = LSTM(
       LSTMCell(
         inputSize: parameters.ndim,
         hiddenSize:
           parameters.ndim))
-    self.denseDec = Dense(inputSize: parameters.ndim, outputSize: parameters.chrVocab.count)
+    self.decoderDense = Dense(inputSize: parameters.ndim, outputSize: parameters.chrVocab.count)
 
     // Other layers
-    self.drop = Dropout(probability: parameters.dropoutProb)
+    self.dropout = Dropout(probability: parameters.dropoutProb)
   }
 
   // MARK: - Encode
 
   /// Returns the hidden states of the encoder LSTM applied to the given sentence.
   public func encode(_ x: CharacterSequence) -> [Tensor<Float>] {
-    let embedded = drop(embEnc(x.tensor))
-    let encoderStates = lstmEnc(embedded.unstacked().differentiableMap { $0.rankLifted() })
+    let embedded = dropout(encoderEmbedding(x.tensor))
+    let encoderStates = encoderLSTM(embedded.unstacked().differentiableMap { $0.rankLifted() })
     return encoderStates.differentiableMap { $0.hidden.squeezingShape(at: 0) }
   }
 
@@ -158,13 +158,13 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
     let y: Tensor<Int32> = Tensor(shape: [candidates.count, maxLen], scalars: yBatch).transposed()
 
     // [time x batch x ndim]
-    let embeddedX = drop(embDec(x))
+    let embeddedX = dropout(decoderEmbedding(x))
 
     // [batch x ndim]
     let stateBatch = state.rankLifted().tiled(multiples: Tensor([Int32(candidates.count), 1]))
 
     // [time] array of LSTM states whose `hidden` and `cell` fields have shape [batch x ndim]
-    let decoderStates = lstmDec(
+    let decoderStates = decoderLSTM(
       embeddedX.unstacked(),
       initialState: LSTMCell.State(
         cell: Tensor(zeros: stateBatch.shape),
@@ -176,7 +176,7 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
       stacking: decoderStates.differentiableMap { $0.hidden })
 
     // [time x batch x chrVocab.count]
-    let logits = denseDec(decoderResult)
+    let logits = decoderDense(decoderResult)
 
     // [time x batch]
     let logp =

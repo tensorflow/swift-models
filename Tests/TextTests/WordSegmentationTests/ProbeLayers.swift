@@ -20,13 +20,13 @@ import XCTest
 extension SNLM {
   /// Sets the model parameters to the given parameters exported from the model.
   mutating func setParameters(_ p: SNLMParameters) {
-    setEmbedding(&embEnc, to: p.emb_enc)
-    setLSTM(&lstmEnc.cell, to: p.lstm_enc)
+    setEmbedding(&encoderEmbedding, to: p.emb_enc)
+    setLSTM(&encoderLSTM.cell, to: p.lstm_enc)
     setMLP(&mlpInterpolation, to: p.mlp_interpolation)
     setMLP(&mlpMemory, to: p.mlp_memory)
-    setEmbedding(&embDec, to: p.emb_dec)
-    setLSTM(&lstmDec.cell, to: p.lstm_dec)
-    setDense(&denseDec, to: p.linear_dec)
+    setEmbedding(&decoderEmbedding, to: p.emb_dec)
+    setLSTM(&decoderLSTM.cell, to: p.lstm_dec)
+    setDense(&decoderDense, to: p.linear_dec)
   }
 
   private func checkShapeAndSet(_ tensor: inout Tensor<Float>, to value: Tensor<Float>) {
@@ -91,8 +91,8 @@ func tangentVector(from gradient: SNLMParameters, model: SNLM) -> SNLM.TangentVe
   // `model.setParameters` is for model parameters, not for gradients, so
   // we need to adjust the LSTM biases, whose gradients work differently than
   // `model.setParameters` does.
-  model.lstmEnc.cell.fusedBias /= 2
-  model.lstmDec.cell.fusedBias /= 2
+  model.encoderLSTM.cell.fusedBias /= 2
+  model.decoderLSTM.cell.fusedBias /= 2
 
   return model.differentiableVectorView
 }
