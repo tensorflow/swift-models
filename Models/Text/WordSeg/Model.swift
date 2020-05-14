@@ -213,7 +213,7 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 
   @differentiable
   public func buildLattice(_ sentence: CharacterSequence, maxLen: Int) -> Lattice {
-    var lattice = Lattice(count: sentence.count, embEnc.embeddings)
+    var lattice = Lattice(count: sentence.count)
     let states = encode(sentence)
     let logg_batch = mlpInterpolation(Tensor(stacking: states))
     let logp_lex_batch = mlpMemory(Tensor(stacking: states))

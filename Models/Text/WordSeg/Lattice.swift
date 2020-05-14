@@ -110,9 +110,7 @@ public struct Lattice: Differentiable {
     //_modify { yield &positions[index] }
   }
 
-  // TODO: remove dummy. (workaround to make AD thing that lattice is varied)
-  @differentiable
-  init(count: Int, _ dummy: Tensor<Float>) {
+  init(count: Int) {
     positions = Array(repeating: Node(), count: count + 1)
   }
 
