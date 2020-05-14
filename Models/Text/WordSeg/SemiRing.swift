@@ -85,11 +85,13 @@ func + (_ lhs: SemiRing, _ rhs: SemiRing) -> SemiRing {
     logr: logSumExp(lhs.logr, rhs.logr))
 }
 
-@differentiable
-func semiRingSum(_ x: [SemiRing]) -> SemiRing {
-  return SemiRing(
-    logp: logSumExp(x.differentiableMap{ $0.logp }),
-    logr: logSumExp(x.differentiableMap{ $0.logr }))
+extension Array where Element == SemiRing {
+  @differentiable
+  func sum() -> SemiRing {
+    return SemiRing(
+      logp: logSumExp(differentiableMap { $0.logp }),
+      logr: logSumExp(differentiableMap { $0.logr }))
+  }
 }
 
 extension SemiRing {
