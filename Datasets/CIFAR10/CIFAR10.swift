@@ -44,11 +44,11 @@ public struct CIFAR10<Entropy: RandomNumberGenerator> {
   ///   ordering.  It  will be stored in `self`, so if it is only pseudorandom 
   ///   and has value semantics, the sequence of epochs is deterministic and not 
   ///   dependent on other operations.
-  public init(batchSize: Int, entropy: Entropy) {
+  public init(batchSize: Int, entropy: Entropy, device: Device) {
     self.init(
       batchSize: batchSize,
       entropy: entropy,
-      device: Device.default,
+      device: device,
       remoteBinaryArchiveLocation: URL(
         string: "https://storage.googleapis.com/s4tf-hosted-binaries/datasets/CIFAR10/cifar-10-binary.tar.gz")!, 
       normalizing: true)
@@ -74,25 +74,34 @@ public struct CIFAR10<Entropy: RandomNumberGenerator> {
   ){
     downloadCIFAR10IfNotPresent(from: remoteBinaryArchiveLocation, to: localStorageDirectory)
     
+    var mean: Tensor<Float>?
+    var standardDeviation: Tensor<Float>?
+    if normalizing {
+      mean = Tensor<Float>([0.4913996898, 0.4821584196, 0.4465309242], on: device)
+      standardDeviation = Tensor<Float>([0.2470322324, 0.2434851280, 0.2615878417], on: device)
+    }
+    
     // Training data
     let trainingSamples = loadCIFARTrainingFiles(in: localStorageDirectory)
     training = TrainingEpochs(samples: trainingSamples, batchSize: batchSize, entropy: entropy)
       .lazy.map { (batches: Batches) -> LazyMapSequence<Batches, LabeledImage> in
-        return batches.lazy.map{ makeBatch(samples: $0, normalizing: normalizing, device: device) }
+        return batches.lazy.map{
+          makeBatch(samples: $0, mean: mean, standardDeviation: standardDeviation, device: device)
+        }
       }
       
     // Validation data
     let validationSamples = loadCIFARTestFile(in: localStorageDirectory)
     validation = validationSamples.inBatches(of: batchSize).lazy.map {
-      makeBatch(samples: $0, normalizing: normalizing, device: device)
+      makeBatch(samples: $0, mean: mean, standardDeviation: standardDeviation, device: device)
     }
   }
 }
 
 extension CIFAR10: ImageClassificationData where Entropy == SystemRandomNumberGenerator {
   /// Creates an instance with `batchSize`.
-  public init(batchSize: Int) {
-    self.init(batchSize: batchSize, entropy: SystemRandomNumberGenerator())
+  public init(batchSize: Int, on device: Device = Device.default) {
+    self.init(batchSize: batchSize, entropy: SystemRandomNumberGenerator(), device: device)
   }
 }
 
@@ -148,19 +157,17 @@ func loadCIFARTestFile(in localStorageDirectory: URL) -> [(data: [UInt8], label:
 }
 
 fileprivate func makeBatch<BatchSamples: Collection>(
-  samples: BatchSamples, normalizing: Bool, device: Device
+  samples: BatchSamples, mean: Tensor<Float>?, standardDeviation: Tensor<Float>?, device: Device
 ) -> LabeledImage where BatchSamples.Element == (data: [UInt8], label: Int32) {
   let bytes = samples.lazy.map(\.data).reduce(into: [], +=)
   let images = Tensor<UInt8>(shape: [samples.count, 3, 32, 32], scalars: bytes, on: device)
   
   var imageTensor = Tensor<Float>(images.transposed(permutation: [0, 2, 3, 1]))
   imageTensor /= 255.0
-  if normalizing {
-    let mean = Tensor<Float>([0.4913996898, 0.4821584196, 0.4465309242], on: device)
-    let std = Tensor<Float>([0.2470322324, 0.2434851280, 0.2615878417], on: device)
-    imageTensor = (imageTensor - mean) / std
+  if let mean = mean, let standardDeviation = standardDeviation {
+    imageTensor = (imageTensor - mean) / standardDeviation
   }
   
-  let labels = Tensor<Int32>(samples.map(\.label))
+  let labels = Tensor<Int32>(samples.map(\.label), on: device)
   return LabeledImage(data: imageTensor, label: labels)
 }
