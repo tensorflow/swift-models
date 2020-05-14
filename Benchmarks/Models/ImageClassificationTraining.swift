@@ -60,13 +60,6 @@ where
 
         let dataset = ClassificationDataset(batchSize: batchSize, on: device)
 
-        // Run a blank iteration through the entire dataset to force loading of all data from disk.
-        // let initialEpoch = dataset.training.prefix(1)
-        // for epochBatches in initialEpoch { 
-        //     for _ in epochBatches {
-        //     }
-        // }
-
         Context.local.learningPhase = .training
         for epochBatches in dataset.training {
             for batch in epochBatches {
