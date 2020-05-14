@@ -251,12 +251,9 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
       let logp_lex = logp_lex_batch[pos].scalarsADHack  // [strVocab.chr.count]
       let logp_chr = decode(candidates, current_state).scalarsADHack  // [candidates.count]
       if pos != 0 {
-        let updatedNode = Lattice.Node(
-          bestEdge: lattice[pos].bestEdge,
-          bestScore: lattice[pos].bestScore,
-          edges: lattice[pos].edges,
-          semiringScore: lattice[pos].computeSemiringScore()
-        )
+        // Cleanup: lattice[pos].recomputeSemiringScore()
+        var updatedNode = lattice[pos]
+        updatedNode.recomputeSemiringScore()
         lattice.positions.update(at: pos, to: updatedNode)
       }
 
@@ -284,24 +281,17 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
           previous: lattice[pos].semiringScore,
           order: parameters.order)
 
-        let updatedNode = Lattice.Node(
-          bestEdge: lattice[next_pos].bestEdge,
-          bestScore: lattice[next_pos].bestScore,
-          edges: lattice[next_pos].edges + [edge],
-          semiringScore: lattice[next_pos].semiringScore
-        )
+        // Cleanup: lattice[next_pos].edges.append(edge)
+        var updatedNode = lattice[next_pos]
+        updatedNode.edges.append(edge)
         lattice.positions.update(at: next_pos, to: updatedNode)
       }
     }
 
-    // lattice[sentence.count].recomputeSemiringScore()
-    let updatedNode = Lattice.Node(
-      bestEdge: lattice[sentence.count].bestEdge,
-      bestScore: lattice[sentence.count].bestScore,
-      edges: lattice[sentence.count].edges,
-      semiringScore: lattice[sentence.count].computeSemiringScore()
-    )
-    lattice.positions.update(at: sentence.count, to: updatedNode)
+    // Cleanup: lattice[sentence.count].recomputeSemiringScore()
+    var lastNode = lattice[sentence.count]
+    lastNode.recomputeSemiringScore()
+    lattice.positions.update(at: sentence.count, to: lastNode)
 
     return lattice
   }
