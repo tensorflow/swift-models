@@ -38,13 +38,13 @@ enum ResNetImageNet: BenchmarkModel {
         }
     }
 
-    // Note: using CIFAR-10 as a placeholder dataset, since this is purely synthetic.
+    // Note: using a purely synthetic dataset in all cases until ImageNet is formally implemented.
     static func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return ImageClassificationInference<ResNet50, CIFAR10>(settings: settings)
+        return ImageClassificationInference<ResNet50, SyntheticImageNet>(settings: settings)
     }
 
     static func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return ImageClassificationTraining<ResNet50, CIFAR10>(settings: settings)
+        return ImageClassificationTraining<ResNet50, SyntheticImageNet>(settings: settings)
     }
 }
 
@@ -64,4 +64,15 @@ struct ResNet50: Layer {
 extension ResNet50: ImageClassificationModel {
     static var preferredInputDimensions: [Int] { [224, 224, 3] }
     static var outputLabels: Int { 1000 }
+}
+
+final class SyntheticImageNet: SyntheticImageDataset<SystemRandomNumberGenerator>,
+    ImageClassificationData
+{
+    public init(batchSize: Int, on device: Device = Device.default) {
+        super.init(
+            batchSize: batchSize, labels: ResNet50.outputLabels,
+            dimensions: ResNet50.preferredInputDimensions, entropy: SystemRandomNumberGenerator(),
+            device: device)
+    }
 }
