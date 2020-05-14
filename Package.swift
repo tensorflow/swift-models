@@ -35,6 +35,7 @@ let package = Package(
         .executable(name: "GPT2-WikiText2", targets: ["GPT2-WikiText2"]),
         .executable(name: "NeuMF-MovieLens", targets: ["NeuMF-MovieLens"]),
         .executable(name: "CycleGAN", targets: ["CycleGAN"]),
+        .executable(name: "WordSeg", targets: ["WordSeg"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.7.0"),
@@ -135,6 +136,11 @@ let package = Package(
             name: "pix2pix",
             dependencies: ["Batcher", .product(name: "ArgumentParser", package: "swift-argument-parser"), "ModelSupport", "Datasets"],
             path: "pix2pix"
-        )
+        ),
+        .target(
+            name: "WordSeg",
+            dependencies: ["ModelSupport", "TextModels", "Datasets"],
+            path: "Examples/WordSeg"
+       )
     ]
 )
