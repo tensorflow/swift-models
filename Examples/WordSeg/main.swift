@@ -14,8 +14,8 @@
 
 import Datasets
 import ModelSupport
-import TextModels
 import TensorFlow
+import TextModels
 
 // Model flags
 let ndim = 512  // Hidden unit size.
@@ -27,7 +27,6 @@ let lambd: Float = 0.00075  // Weight of length penalty.
 // Lexicon flags.
 let maxLength = 10  // Maximum length of a string.
 let minFreq = 10  // Minimum frequency of a string.
-
 
 // Load user-provided data files.
 let dataset: WordSegDataset
@@ -109,6 +108,8 @@ func hasNaN<T: KeyPathIterable>(_ t: T) -> Bool {
 }
 
 func usage() -> Never {
-  print("\(CommandLine.arguments[0]) path/to/training_data.txt [path/to/validation_data.txt [path/to/test_data.txt]]")
+  print(
+    "\(CommandLine.arguments[0]) path/to/training_data.txt [path/to/validation_data.txt [path/to/test_data.txt]]"
+  )
   exit(1)
 }
