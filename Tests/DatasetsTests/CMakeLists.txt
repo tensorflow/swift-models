@@ -4,8 +4,10 @@ add_library(DatasetsTests
   COCO/COCODatasetTests.swift
   COCO/COCOVariantTests.swift
   Imagenette/ImagenetteTests.swift
+  MovieLens/MovieLensTests.swift
   MNIST/MNISTTests.swift
   TextUnsupervised/TextUnsupervisedTests.swift
+  WordSeg/WordSegDatasetTests.swift
   XCTestManifests.swift)
 set_target_properties(DatasetsTests PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY $<TARGET_FILE_DIR:ModelTests>

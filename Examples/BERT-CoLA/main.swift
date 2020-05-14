@@ -41,21 +41,17 @@ var bertClassifier = BERTClassifier(bert: bert, classCount: 1)
 let maxSequenceLength = 128
 let batchSize = 1024
 
-// Create a function that converts examples to data batches.
-let exampleMapFn: (CoLA.Example) -> CoLA.DataBatch = { example -> CoLA.DataBatch in
-    let textBatch = bertClassifier.bert.preprocess(
-        sequences: [example.sentence],
-        maxSequenceLength: maxSequenceLength)
-    return CoLA.DataBatch(
-        inputs: textBatch, labels: example.isAcceptable.map { Tensor($0 ? 1 : 0) })
-}
-
 var cola = try CoLA(
-    exampleMap: exampleMapFn,
-    taskDirectoryURL: workspaceURL,
-    maxSequenceLength: maxSequenceLength,
-    batchSize: batchSize,
-    dropRemainder: true)
+  taskDirectoryURL: workspaceURL,
+  maxSequenceLength: maxSequenceLength,
+  batchSize: batchSize,
+  entropy: SystemRandomNumberGenerator()
+) { (example: CoLAExample) -> LabeledTextBatch in
+  let textBatch = bertClassifier.bert.preprocess(
+    sequences: [example.sentence],
+    maxSequenceLength: maxSequenceLength)
+  return (data: textBatch, label: Tensor<Int32>(example.isAcceptable! ? 1 : 0))
+}
 
 print("Dataset acquired.")
 
@@ -72,15 +68,14 @@ var optimizer = WeightDecayedAdam(
     maxGradientGlobalNorm: 1)
 
 print("Training BERT for the CoLA task!")
-for epoch in 1...3 {
-    print("[Epoch \(epoch)]")
+for (epoch, epochBatches) in cola.trainingEpochs.prefix(3).enumerated() {
+    print("[Epoch \(epoch + 1)]")
     Context.local.learningPhase = .training
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
-    var trainingDataIterator = cola.trainDataIterator
 
-    while let batch = withDevice(.cpu, perform: { trainingDataIterator.next() }) {
-        let (documents, labels) = (batch.inputs, Tensor<Float>(batch.labels!))
+    for batch in epochBatches {
+        let (documents, labels) = (batch.data, Tensor<Float>(batch.label))
         let (loss, gradients) = valueWithGradient(at: bertClassifier) { model -> Tensor<Float> in
             let logits = model(documents)
             return sigmoidCrossEntropy(
@@ -103,11 +98,10 @@ for epoch in 1...3 {
     Context.local.learningPhase = .inference
     var devLossSum: Float = 0
     var devBatchCount = 0
-    var devDataIterator = cola.devDataIterator
     var devPredictedLabels = [Bool]()
     var devGroundTruth = [Bool]()
-    while let batch = withDevice(.cpu, perform: { devDataIterator.next() }) {
-        let (documents, labels) = (batch.inputs, batch.labels!)
+    for batch in cola.validationBatches {
+        let (documents, labels) = (batch.data, Tensor<Float>(batch.label))
         let logits = bertClassifier(documents)
         let loss = sigmoidCrossEntropy(
             logits: logits.squeezingShape(at: -1),

@@ -18,7 +18,7 @@ import ModelSupport
 import TensorFlow
 
 let batchSize = 512
-let mnist = MNIST(batchSize: batchSize, flattening: false, normalizing: true)
+let mnist = OldMNIST(batchSize: batchSize, flattening: false, normalizing: true)
 
 let outputFolder = "./output/"
 

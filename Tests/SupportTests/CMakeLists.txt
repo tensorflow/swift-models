@@ -1,6 +1,7 @@
 add_library(SupportTests
   ImageTests.swift
   SupportTests.swift
+  WordSegSupportTests.swift
   XCTestManifests.swift)
 set_target_properties(SupportTests PROPERTIES
   RUNTIME_OUTPUT_DIRECTORY $<TARGET_FILE_DIR:ModelTests>

@@ -24,7 +24,7 @@ let imageHeight = 28
 let imageWidth = 28
 
 let outputFolder = "./output/"
-let dataset = FashionMNIST(batchSize: batchSize, flattening: true)
+let dataset = OldFashionMNIST(batchSize: batchSize, flattening: true)
 // An autoencoder.
 var autoencoder = Sequential {
     // The encoder.

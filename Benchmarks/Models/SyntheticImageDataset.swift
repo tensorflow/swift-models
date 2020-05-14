@@ -16,32 +16,67 @@ import Batcher
 import Datasets
 import TensorFlow
 
-public struct SyntheticImageDataset: ImageClassificationDataset {
-    public typealias SourceDataSet = [TensorPair<Float, Int32>]
-    public let training: Batcher<SourceDataSet>
-    public let test: Batcher<SourceDataSet>
+public class SyntheticImageDataset<Entropy: RandomNumberGenerator> {
+  /// Type of the collection of non-collated batches.
+  public typealias Batches = Slices<Sampling<Range<Int>, ArraySlice<Int>>>
+  /// The type of the training data, represented as a sequence of epochs, which
+  /// are collection of batches.
+  public typealias Training = LazyMapSequence<
+    TrainingEpochs<Range<Int>, Entropy>,
+    LazyMapSequence<Batches, LabeledImage>
+  >
+  /// The type of the validation data, represented as a collection of batches.
+  public typealias Validation = LazyMapSequence<Slices<Range<Int>>, LabeledImage>
+  /// The training epochs.
+  public let training: Training
+  /// The validation batches.
+  public let validation: Validation
 
-    public init(batchSize: Int) {
-        self.init(batchSize: batchSize, batches: 110, labels: 10, dimensions: [224, 224, 3])
-    }
-    
-    // TODO: Use a random seed to create deterministic examples here.
-    public init(batchSize: Int, batches: Int, labels: Int, dimensions: [Int]) {
-        precondition(labels > 0)
-        precondition(dimensions.count == 3)
-        let totalExamples = batchSize * batches
-        
-        let syntheticDataset = (0..<totalExamples).map {_ -> TensorPair<Float, Int32> in
-            let syntheticImage = Tensor<Float>(
-                randomNormal: TensorShape(dimensions), mean: Tensor<Float>(0.5),
-                standardDeviation: Tensor<Float>(0.1))
-            let syntheticLabel = Tensor<Int32>(Int32.random(in: 0..<Int32(labels)))
-            return TensorPair(first: syntheticImage, second: syntheticLabel)
+  /// Creates an instance with `batchSize` on `device` using `remoteBinaryArchiveLocation`.
+  ///
+  /// - Parameters:
+  ///   - entropy: a source of randomness used to shuffle sample ordering.  It
+  ///     will be stored in `self`, so if it is only pseudorandom and has value
+  ///     semantics, the sequence of epochs is deterministic and not dependent
+  ///     on other operations.
+  ///   - labels: the number of output labels in the classification dataset.
+  ///   - dimensions: the height x width x depth dimensions of the generated images.
+
+  public init(
+    batchSize: Int,
+    labels: Int,
+    dimensions: [Int],
+    entropy: Entropy,
+    device: Device
+  ) {
+    precondition(labels > 0)
+    precondition(dimensions.count == 3)
+
+    // Training data
+    training = TrainingEpochs(samples: (0..<batchSize), batchSize: batchSize, entropy: entropy)
+      .lazy.map { (batches: Batches) -> LazyMapSequence<Batches, LabeledImage> in
+        return batches.lazy.map {
+          makeSyntheticBatch(samples: $0, dimensions: dimensions, labels: labels, device: device)
         }
+      }
 
-        training = Batcher<SourceDataSet>(
-            on: syntheticDataset, batchSize: batchSize, numWorkers: 1, shuffle: true)
-        
-        test = Batcher<SourceDataSet>(on: syntheticDataset, batchSize: batchSize, numWorkers: 1)
+    // Validation data
+    validation = (0..<batchSize).inBatches(of: batchSize).lazy.map {
+      makeSyntheticBatch(samples: $0, dimensions: dimensions, labels: labels, device: device)
     }
+  }
+}
+
+fileprivate func makeSyntheticBatch<BatchSamples: Collection>(
+  samples: BatchSamples, dimensions: [Int], labels: Int, device: Device
+) -> LabeledImage where BatchSamples.Element == Int {
+  let syntheticImageBatch = Tensor<Float>(
+    glorotUniform: TensorShape([samples.count] + dimensions), on: device)
+
+  let syntheticLabels = Tensor<Int32>(
+    samples.map { _ -> Int32 in
+      Int32.random(in: 0..<Int32(labels))
+    }, on: device)
+
+  return LabeledImage(data: syntheticImageBatch, label: syntheticLabels)
 }

@@ -14,5 +14,5 @@ To train the model, run:
 
 ```sh
 cd swift-models
-swift run -c release MobileNet-Imagenette
+swift run -c release MobileNetV1-Imagenette
 ```
