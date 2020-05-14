@@ -18,15 +18,15 @@ import TensorFlow
 
 public class SyntheticImageDataset<Entropy: RandomNumberGenerator> {
   /// Type of the collection of non-collated batches.
-  public typealias Batches = Slices<Sampling<[Int], ArraySlice<Int>>>
+  public typealias Batches = Slices<Sampling<Range<Int>, ArraySlice<Int>>>
   /// The type of the training data, represented as a sequence of epochs, which
   /// are collection of batches.
   public typealias Training = LazyMapSequence<
-    TrainingEpochs<[Int], Entropy>,
+    TrainingEpochs<Range<Int>, Entropy>,
     LazyMapSequence<Batches, LabeledImage>
   >
   /// The type of the validation data, represented as a collection of batches.
-  public typealias Validation = LazyMapSequence<Slices<[Int]>, LabeledImage>
+  public typealias Validation = LazyMapSequence<Slices<Range<Int>>, LabeledImage>
   /// The training epochs.
   public let training: Training
   /// The validation batches.
@@ -53,8 +53,7 @@ public class SyntheticImageDataset<Entropy: RandomNumberGenerator> {
     precondition(dimensions.count == 3)
 
     // Training data
-    let trainingSamples = [Int](repeating: 0, count: batchSize)
-    training = TrainingEpochs(samples: trainingSamples, batchSize: batchSize, entropy: entropy)
+    training = TrainingEpochs(samples: (0..<batchSize), batchSize: batchSize, entropy: entropy)
       .lazy.map { (batches: Batches) -> LazyMapSequence<Batches, LabeledImage> in
         return batches.lazy.map {
           makeSyntheticBatch(samples: $0, dimensions: dimensions, labels: labels, device: device)
@@ -62,8 +61,7 @@ public class SyntheticImageDataset<Entropy: RandomNumberGenerator> {
       }
 
     // Validation data
-    let validationSamples = [Int](repeating: 0, count: batchSize)
-    validation = validationSamples.inBatches(of: batchSize).lazy.map {
+    validation = (0..<batchSize).inBatches(of: batchSize).lazy.map {
       makeSyntheticBatch(samples: $0, dimensions: dimensions, labels: labels, device: device)
     }
   }
