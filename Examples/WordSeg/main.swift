@@ -28,7 +28,24 @@ let lambd: Float = 0.00075  // Weight of length penalty.
 let maxLength = 10  // Maximum length of a string.
 let minFreq = 10  // Minimum frequency of a string.
 
-let dataset = try WordSegDataset()
+
+// Load user-provided data files.
+let dataset: WordSegDataset
+switch CommandLine.arguments.count {
+case 1:
+  dataset = try WordSegDataset()
+case 2:
+  dataset = try WordSegDataset(training: CommandLine.arguments[1])
+case 3:
+  dataset = try WordSegDataset(
+    training: CommandLine.arguments[1], validation: CommandLine.arguments[2])
+case 4:
+  dataset = try WordSegDataset(
+    training: CommandLine.arguments[1], validation: CommandLine.arguments[2],
+    testing: CommandLine.arguments[3])
+default:
+  usage()
+}
 
 let lexicon = Lexicon(
   from: dataset.training,
@@ -51,7 +68,7 @@ let optimizer = Adam(for: model)
 
 print("Starting training...")
 
-for epoch in 1...3 {
+for epoch in 1...10 {
   Context.local.learningPhase = .training
   var trainingLossSum: Float = 0
   var trainingBatchCount = 0
@@ -89,4 +106,9 @@ func hasNaN<T: KeyPathIterable>(_ t: T) -> Bool {
     if t[keyPath: kp].isNaN.any() { return true }
   }
   return false
+}
+
+func usage() -> Never {
+  print("\(CommandLine.arguments[0]) path/to/training_data.txt [path/to/validation_data.txt [path/to/test_data.txt]]")
+  exit(1)
 }
