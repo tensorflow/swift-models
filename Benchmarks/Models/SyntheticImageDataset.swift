@@ -48,7 +48,7 @@ public class SyntheticImageDataset<Entropy: RandomNumberGenerator> {
     dimensions: [Int],
     entropy: Entropy,
     device: Device
-  ){
+  ) {
     precondition(labels > 0)
     precondition(dimensions.count == 3)
 
@@ -56,11 +56,11 @@ public class SyntheticImageDataset<Entropy: RandomNumberGenerator> {
     let trainingSamples = [Int](repeating: 0, count: batchSize)
     training = TrainingEpochs(samples: trainingSamples, batchSize: batchSize, entropy: entropy)
       .lazy.map { (batches: Batches) -> LazyMapSequence<Batches, LabeledImage> in
-        return batches.lazy.map{
+        return batches.lazy.map {
           makeSyntheticBatch(samples: $0, dimensions: dimensions, labels: labels, device: device)
         }
       }
-      
+
     // Validation data
     let validationSamples = [Int](repeating: 0, count: batchSize)
     validation = validationSamples.inBatches(of: batchSize).lazy.map {
@@ -73,11 +73,12 @@ fileprivate func makeSyntheticBatch<BatchSamples: Collection>(
   samples: BatchSamples, dimensions: [Int], labels: Int, device: Device
 ) -> LabeledImage where BatchSamples.Element == Int {
   let syntheticImageBatch = Tensor<Float>(
-      glorotUniform: TensorShape([samples.count] + dimensions), on: device)
+    glorotUniform: TensorShape([samples.count] + dimensions), on: device)
 
-  let syntheticLabels = Tensor<Int32>(samples.map{_ -> Int32 in
-    Int32.random(in: 0..<Int32(labels))
-  }, on: device)
+  let syntheticLabels = Tensor<Int32>(
+    samples.map { _ -> Int32 in
+      Int32.random(in: 0..<Int32(labels))
+    }, on: device)
 
   return LabeledImage(data: syntheticImageBatch, label: syntheticLabels)
 }

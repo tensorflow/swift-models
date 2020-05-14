@@ -25,8 +25,10 @@ protocol ImageClassificationModel: Layer where Input == Tensor<Float>, Output ==
 
 // TODO: Ease the tight restriction on Batcher data sources to allow for lazy datasets.
 class ImageClassificationInference<Model, ClassificationDataset>: Benchmark
-where Model: ImageClassificationModel,
-      ClassificationDataset: ImageClassificationData {
+where
+    Model: ImageClassificationModel,
+    ClassificationDataset: ImageClassificationData
+{
     var model: Model
     let batches: Int
     let batchSize: Int
@@ -48,23 +50,23 @@ where Model: ImageClassificationModel,
         case .x10: device = Device.defaultXLA
         }
         let dataset = ClassificationDataset(batchSize: batchSize, on: device)
-        
+
         model.move(to: device)
 
         var batchTimings: [Double] = []
         var currentBatch = 0
-        
+
         for epochBatches in dataset.training {
             for batch in epochBatches {
                 let images = batch.data
 
-                let batchTime = time{
+                let batchTime = time {
                     let _ = model(images)
                     LazyTensorBarrier()
                 }
                 batchTimings.append(batchTime)
                 currentBatch += 1
-                if (currentBatch >= self.batches) {
+                if currentBatch >= self.batches {
                     return batchTimings
                 }
             }

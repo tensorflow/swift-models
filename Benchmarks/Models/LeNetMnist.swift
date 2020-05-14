@@ -20,20 +20,22 @@ enum LeNetMNIST: BenchmarkModel {
     static var name: String { "LeNetMNIST" }
 
     static func examplesPerEpoch(for variety: BenchmarkVariety) -> Int {
-        switch(variety) {
+        switch variety {
         case .inferenceThroughput: return 10000
         case .trainingThroughput: return 60000
         }
     }
 
     static func defaults(for variety: BenchmarkVariety) -> BenchmarkSettings {
-        switch(variety) {
+        switch variety {
         case .inferenceThroughput:
-            return BenchmarkSettings(batches: 1000, batchSize: 128, iterations: 10,
-                                     warmupBatches: 1, synthetic: false, backend: .eager)
+            return BenchmarkSettings(
+                batches: 1000, batchSize: 128, iterations: 10,
+                warmupBatches: 1, synthetic: false, backend: .eager)
         case .trainingThroughput:
-            return BenchmarkSettings(batches: 110, batchSize: 128, iterations: 1, warmupBatches: 1,
-                                     synthetic: false, backend: .eager)
+            return BenchmarkSettings(
+                batches: 110, batchSize: 128, iterations: 1, warmupBatches: 1,
+                synthetic: false, backend: .eager)
         }
     }
 
@@ -41,7 +43,8 @@ enum LeNetMNIST: BenchmarkModel {
         if settings.synthetic {
             return ImageClassificationInference<LeNet, SyntheticMNIST>(settings: settings)
         } else {
-            return ImageClassificationInference<LeNet, MNIST<SystemRandomNumberGenerator>>(settings: settings)
+            return ImageClassificationInference<LeNet, MNIST<SystemRandomNumberGenerator>>(
+                settings: settings)
         }
     }
 
@@ -49,7 +52,8 @@ enum LeNetMNIST: BenchmarkModel {
         if settings.synthetic {
             return ImageClassificationTraining<LeNet, SyntheticMNIST>(settings: settings)
         } else {
-            return ImageClassificationTraining<LeNet, MNIST<SystemRandomNumberGenerator>>(settings: settings)
+            return ImageClassificationTraining<LeNet, MNIST<SystemRandomNumberGenerator>>(
+                settings: settings)
         }
     }
 }
@@ -59,10 +63,13 @@ extension LeNet: ImageClassificationModel {
     static var outputLabels: Int { 10 }
 }
 
-final class SyntheticMNIST: SyntheticImageDataset<SystemRandomNumberGenerator>, ImageClassificationData {
-  public init(batchSize: Int, on device: Device = Device.default) {
-    super.init(batchSize: batchSize, labels: LeNet.outputLabels,
-      dimensions: LeNet.preferredInputDimensions, entropy: SystemRandomNumberGenerator(),
-      device: device)
-  }
+final class SyntheticMNIST: SyntheticImageDataset<SystemRandomNumberGenerator>,
+    ImageClassificationData
+{
+    public init(batchSize: Int, on device: Device = Device.default) {
+        super.init(
+            batchSize: batchSize, labels: LeNet.outputLabels,
+            dimensions: LeNet.preferredInputDimensions, entropy: SystemRandomNumberGenerator(),
+            device: device)
+    }
 }

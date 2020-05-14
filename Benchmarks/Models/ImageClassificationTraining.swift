@@ -71,7 +71,7 @@ where
         for epochBatches in dataset.training {
             for batch in epochBatches {
                 let (images, labels) = (batch.data, batch.label)
-                
+
                 let 𝛁model = TensorFlow.gradient(at: model) { model -> Tensor<Float> in
                     let logits = model(images)
                     return softmaxCrossEntropy(logits: logits, labels: labels)
@@ -80,7 +80,7 @@ where
                 LazyTensorBarrier()
                 batchTimings.append(durationInMilliseconds(since: beforeBatch))
                 currentBatch += 1
-                if (currentBatch >= self.batches) {
+                if currentBatch >= self.batches {
                     return batchTimings
                 }
                 beforeBatch = timestampInMilliseconds()
