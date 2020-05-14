@@ -97,7 +97,12 @@ public struct Lattice: Differentiable {
     @differentiable
     func computeSemiringScore() -> SemiRing {
       // TODO: Reduceinto and +=
-      semiRingSum(edges.differentiableMap{ $0.totalScore })
+      semiRingSum(edges.differentiableMap { $0.totalScore })
+    }
+
+    @differentiable
+    mutating func recomputeSemiringScore() {
+      semiringScore = computeSemiringScore()
     }
   }
 
@@ -106,8 +111,14 @@ public struct Lattice: Differentiable {
   @differentiable
   public subscript(index: Int) -> Node {
     get { return positions[index] }
-    set(v) { positions[index] = v }
-    //_modify { yield &positions[index] }
+
+    // TODO(TF-1193): Support derivative registration for accessors.
+    // This enables cleanup:
+    // - Before: `lattice.positions.update(at: i, to: node)`
+    // - After: `lattice[i] = node`
+    set { positions[index] = newValue }
+
+    // _modify { yield &positions[index] }
   }
 
   init(count: Int) {
