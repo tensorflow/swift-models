@@ -52,7 +52,7 @@ public struct SemiRing: Differentiable {
     self.logp = logp
     self.logr = logr
   }
-    
+
   @differentiable
   public init(logp: Float, logr: Float) {
     self.logp = Tensor(logp)
