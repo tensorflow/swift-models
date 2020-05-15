@@ -20,37 +20,23 @@
   import Glibc
 #endif
 
+import TensorFlow
+
 /// logSumExp(_:)
 ///
 /// logSumExp (see https://en.wikipedia.org/wiki/LogSumExp)
 @differentiable
-public func logSumExp(_ x: [Float]) -> Float {
-  if x.count == 0 { return -Float.infinity}
-  let maxVal = x.max()!
-  let exps = x.map { exp($0 - maxVal) }
-  return maxVal + log(exps.reduce(into: 0, +=))
-}
-
-@derivative(of: logSumExp)
-public func vjpLogSumExp(_ x: [Float]) -> (
-  value: Float,
-  pullback: (Float) -> (Array<Float>.TangentVector)
-) {
-  func pb(v: Float) -> (Array<Float>.TangentVector) {
-    if x.count == 0 { return Array<Float>.TangentVector([]) }
-    let maxVal = x.max()!
-    let exps = x.map { exp($0 - maxVal) }
-    let sumExp = exps.reduce(into: 0, +=)
-    return Array<Float>.TangentVector(exps.map{ v * $0 / sumExp })
-  }
-  return (logSumExp(x), pb)
+public func logSumExp(_ x: [Tensor<Float>]) -> Tensor<Float> {
+  // Deal with an empty array first.
+  if x.count == 0 { return Tensor(-Float.infinity) }
+  return Tensor<Float>(stacking: x).logSumExp()
 }
 
 /// logSumExp(_:_:)
 ///
-/// Specialized logSumExp for 2 float.
+/// Specialized logSumExp for 2 tensor of floats.
 @differentiable
-public func logSumExp(_ lhs: Float, _ rhs: Float) -> Float {
+public func logSumExp(_ lhs: Tensor<Float>, _ rhs: Tensor<Float>) -> Tensor<Float> {
   return logSumExp([lhs, rhs])
 }
 
@@ -58,13 +44,19 @@ public func logSumExp(_ lhs: Float, _ rhs: Float) -> Float {
 ///
 /// Represents a SemiRing
 public struct SemiRing: Differentiable {
-  public var logp: Float
-  public var logr: Float
+  public var logp: Tensor<Float>
+  public var logr: Tensor<Float>
 
   @differentiable
-  public init(logp: Float, logr: Float) {
+  public init(logp: Tensor<Float>, logr: Tensor<Float>) {
     self.logp = logp
     self.logr = logr
+  }
+    
+  @differentiable
+  public init(logp: Float, logr: Float) {
+    self.logp = Tensor(logp)
+    self.logr = Tensor(logr)
   }
 
   static var zero: SemiRing { SemiRing(logp: -Float.infinity, logr: -Float.infinity) }
@@ -105,7 +97,7 @@ extension SemiRing {
   // TODO(abdulras) see if we can use ulp as a default tolerance
   @inlinable
   public func isAlmostEqual(to other: Self, tolerance: Float) -> Bool {
-    return self.logp.isAlmostEqual(to: other.logp, tolerance: tolerance)
-      && self.logr.isAlmostEqual(to: other.logr, tolerance: tolerance)
+    return self.logp.scalarized().isAlmostEqual(to: other.logp.scalarized(), tolerance: tolerance)
+      && self.logr.scalarized().isAlmostEqual(to: other.logr.scalarized(), tolerance: tolerance)
   }
 }

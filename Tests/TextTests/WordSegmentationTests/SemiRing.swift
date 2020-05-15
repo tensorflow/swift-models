@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import TensorFlow
 import Datasets
 import ModelSupport
 import XCTest
@@ -22,45 +23,45 @@ class WordSegSemiRingTests: XCTestCase {
   func test_SemiRingAdd() {
     let value: SemiRing =
       SemiRing(logp: 1.0, logr: 2.0) + SemiRing(logp: 3.0, logr: 4.0)
-    XCTAssertEqual(value.logp, 3.126928, accuracy: 0.000001)
-    XCTAssertEqual(value.logr, 4.126928, accuracy: 0.000001)
+    XCTAssertEqual(value.logp.scalarized(), 3.126928, accuracy: 0.000001)
+    XCTAssertEqual(value.logr.scalarized(), 4.126928, accuracy: 0.000001)
   }
 
   func test_SemiRingInit() {
     let value: SemiRing = SemiRing(logp: 1.0, logr: 2.0)
-    XCTAssertEqual(value.logp, 1.0)
-    XCTAssertEqual(value.logr, 2.0)
+    XCTAssertEqual(value.logp.scalarized(), 1.0)
+    XCTAssertEqual(value.logr.scalarized(), 2.0)
   }
 
   func test_SemiRingZero() {
     let value: SemiRing = SemiRing.zero
-    XCTAssertEqual(value.logp, -Float.infinity)
-    XCTAssertEqual(value.logr, -Float.infinity)
+    XCTAssertEqual(value.logp.scalarized(), -Float.infinity)
+    XCTAssertEqual(value.logr.scalarized(), -Float.infinity)
   }
 
   func test_SemiRingAdditiveIdentity() {
     let value: SemiRing = SemiRing.zero + SemiRing(logp: 1.0, logr: 2.0)
-    XCTAssertEqual(value.logp, 1.0)
-    XCTAssertEqual(value.logr, 2.0)
+    XCTAssertEqual(value.logp.scalarized(), 1.0)
+    XCTAssertEqual(value.logr.scalarized(), 2.0)
   }
 
   func test_SemiRingOne() {
     let value: SemiRing = SemiRing.one
-    XCTAssertEqual(value.logp, 0.0)
-    XCTAssertEqual(value.logr, -Float.infinity)
+    XCTAssertEqual(value.logp.scalarized(), 0.0)
+    XCTAssertEqual(value.logr.scalarized(), -Float.infinity)
   }
 
   func test_SemiRingMultiplicativeIdentity() {
     let value: SemiRing = SemiRing.one * SemiRing(logp: 1.0, logr: 2.0)
-    XCTAssertEqual(value.logp, 1.0)
-    XCTAssertEqual(value.logr, 2.0)
+    XCTAssertEqual(value.logp.scalarized(), 1.0)
+    XCTAssertEqual(value.logr.scalarized(), 2.0)
   }
 
   func test_SemiRingMultiply() {
     let value: SemiRing =
       SemiRing(logp: 1.0, logr: 2.0) * SemiRing(logp: 3.0, logr: 4.0)
-    XCTAssertEqual(value.logp, 4.0)
-    XCTAssertEqual(value.logr, 5.693147, accuracy: 0.000001)
+    XCTAssertEqual(value.logp.scalarized(), 4.0)
+    XCTAssertEqual(value.logr.scalarized(), 5.693147, accuracy: 0.000001)
   }
 
   static var allTests = [

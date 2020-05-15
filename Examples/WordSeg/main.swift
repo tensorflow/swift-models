@@ -72,7 +72,7 @@ for epoch in 1...maxEpochs {
   var trainingLossSum: Float = 0
   var trainingBatchCount = 0
   for sentence in dataset.training {
-    let (loss, gradients) = valueWithGradient(at: model) { model -> Float in
+    let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
       let lattice = model.buildLattice(sentence, maxLen: maxLength)
       let score = lattice[sentence.count].semiringScore
       let expectedLength = exp(score.logr - score.logp)
@@ -80,7 +80,7 @@ for epoch in 1...maxEpochs {
       return loss
     }
 
-    trainingLossSum += loss
+    trainingLossSum += loss.scalarized()
     trainingBatchCount += 1
     optimizer.update(&model, along: gradients)
 

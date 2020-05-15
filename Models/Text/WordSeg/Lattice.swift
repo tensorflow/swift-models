@@ -34,7 +34,7 @@ public struct Lattice: Differentiable {
     @noDerivative public var start: Int
     @noDerivative public var end: Int
     @noDerivative public var string: CharacterSequence
-    public var logp: Float
+    public var logp: Tensor<Float>
 
     // expectation
     public var score: SemiRing
@@ -42,7 +42,7 @@ public struct Lattice: Differentiable {
 
     @differentiable
     init(
-      start: Int, end: Int, sentence: CharacterSequence, logp: Float,
+      start: Int, end: Int, sentence: CharacterSequence, logp: Tensor<Float>,
       previous: SemiRing, order: Int
     ) {
       self.start = start
@@ -54,13 +54,13 @@ public struct Lattice: Differentiable {
         SemiRing(
           logp: logp,
           // TODO(abdulras): this should really use integeral pow
-          logr: logp + logf(powf(Float(sentence.count), Float(order))))
+          logr: logp + Tensor(logf(powf(Float(sentence.count), Float(order)))))
       self.totalScore = self.score * previous
     }
 
     @differentiable
     public init(
-      start: Int, end: Int, string: CharacterSequence, logp: Float,
+      start: Int, end: Int, string: CharacterSequence, logp:Tensor<Float>,
       score: SemiRing, totalScore: SemiRing
     ) {
       self.start = start
@@ -135,7 +135,7 @@ public struct Lattice: Differentiable {
       var bestScore = -Float.infinity
       var bestEdge: Edge!
       for edge in self[position].edges {
-        let score: Float = self[edge.start].bestScore + edge.logp
+        let score: Float = self[edge.start].bestScore + edge.logp.scalarized()
         if score > bestScore {
           bestScore = score
           bestEdge = edge
@@ -234,7 +234,7 @@ extension Lattice.Edge {
     return self.start == other.start && self.end == other.end
       // TODO: figure out why the string equality is being ignored
       // self.string == other.string &&
-      && self.logp.isAlmostEqual(to: other.logp, tolerance: tolerance)
+      && self.logp.scalarized().isAlmostEqual(to: other.logp.scalarized(), tolerance: tolerance)
       && self.score.isAlmostEqual(to: other.score, tolerance: tolerance)
       && self.totalScore.isAlmostEqual(to: other.totalScore, tolerance: tolerance)
   }

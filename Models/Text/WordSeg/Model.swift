@@ -198,9 +198,9 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 
   // MARK: - buildLattice
 
-  func get_logp_lex(_ logp_lex: [Float], _ candidate: CharacterSequence) -> Float {
+  func get_logp_lex(_ logp_lex: Tensor<Float>, _ candidate: CharacterSequence) -> Tensor<Float> {
     guard let index = parameters.strVocab.dictionary[candidate] else {
-      return -Float.infinity
+      return Tensor(-Float.infinity)
     }
     return logp_lex[Int(index)]
   }
@@ -231,9 +231,9 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
       }
 
       let current_state = states[pos]
-      let logg = logg_batch[pos].scalarsADHack  // [2]
-      let logp_lex = logp_lex_batch[pos].scalarsADHack  // [strVocab.chr.count]
-      let logp_chr = decode(candidates, current_state).scalarsADHack  // [candidates.count]
+      let logg = logg_batch[pos]  // [2]
+      let logp_lex = logp_lex_batch[pos]  // [strVocab.chr.count]
+      let logp_chr = decode(candidates, current_state)  // [candidates.count]
       if pos != 0 {
         // Cleanup: lattice[pos].recomputeSemiringScore()
         var updatedNode = lattice[pos]
