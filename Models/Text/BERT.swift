@@ -401,10 +401,17 @@ extension BERT {
         ///             https://arxiv.org/pdf/1909.11942.pdf).
         case albert(embeddingSize: Int, hiddenGroupCount: Int)
 
+<<<<<<< HEAD
         /// - Source: [ELECTRA: Pre-training Text Encoders as Discriminators Rather Than Generators]
         ///              https://arxiv.org/abs/2003.10555
         case electra
 
+||||||| parent of d2b0ba7... Adding Support for electra
+=======
+        /// - Source: [ELECTRA: Pre-training Text Encoders as Discriminators Rather Than Generators]
+        ///              https://arxiv.org/abs/2003.10555
+
+>>>>>>> d2b0ba7... Adding Support for electra
         public var description: String {
             switch self {
             case .bert:
