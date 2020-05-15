@@ -291,31 +291,14 @@ public struct EncoderLayer: Layer {
     }
 }
 
-public struct EmbeddingGPT2: Module {
-    var weight: Tensor<Float>
-
-    init(weight: Tensor<Float>) {
-        self.weight = weight
-    }
-
-    init(vocabSize: Int, size: Int) {
-        self.weight = Tensor(randomUniform: [vocabSize, size])
-    }
-
-    @differentiable(wrt: self)
-    public func callAsFunction(_ input: Tensor<Int32>) -> Tensor<Float> {
-        return weight.gathering(atIndices: input)
-    }
-}
-
 public struct TransformerLM: Module {
-    var embedding: EmbeddingGPT2
+    var embedding: Embedding<Float>
     var positionalEmbeddings: Tensor<Float>
     var layers: [EncoderLayer]
     var norm: LayerNorm<Float>
 
     public init(
-        embedding: EmbeddingGPT2, positionalEmbeddings: Tensor<Float>,
+        embedding: Embedding<Float>, positionalEmbeddings: Tensor<Float>,
         layers: [EncoderLayer], norm: LayerNorm<Float>
     ) {
         self.embedding = embedding
@@ -338,7 +321,7 @@ public struct TransformerLM: Module {
         }
         h = norm(h)
         // A somewhat hacky way to share weights.
-        let logits = timeDistributed(h, embedding.weight.transposed())
+        let logits = timeDistributed(h, embedding.embeddings.transposed())
         return logits
     }
 
@@ -352,7 +335,7 @@ public struct TransformerLM: Module {
         h = layers.differentiableReduce(h) { $1($0) }
         h = norm(h)
         // A somewhat hacky way to share weights.
-        let logits = timeDistributed(h, embedding.weight.transposed())
+        let logits = timeDistributed(h, embedding.embeddings.transposed())
         return logits
     }
 }

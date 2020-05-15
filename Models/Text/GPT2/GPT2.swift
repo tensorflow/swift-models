@@ -93,9 +93,9 @@ public class GPT2 {
             // If checkpoint is invalid, load an untrained model.
             print("Initializing empty GPT-2 from scratch.")
 
-            let embedding = EmbeddingGPT2(
-                vocabSize: parameters.vocabSize,
-                size: parameters.embeddingSize)
+            let embedding = Embedding<Float>(
+                vocabularySize: parameters.vocabSize,
+                embeddingSize: parameters.embeddingSize)
             let positionalEmbeddings = Tensor<Float>(zeros: [
                 parameters.embeddingSize / parameters.headCount
             ])

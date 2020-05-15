@@ -124,8 +124,8 @@ extension EncoderLayer: InitializableFromPythonCheckpoint {
 
 extension TransformerLM: InitializableFromPythonCheckpoint {
     public init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
-        embedding = EmbeddingGPT2(
-            weight: reader.readTensor(name: scope + "/wte", scalarType: Float.self))
+        embedding = Embedding(
+            embeddings: reader.readTensor(name: scope + "/wte", scalarType: Float.self))
         positionalEmbeddings = reader.readTensor(
             name: scope + "/wpe",
             scalarType: Float.self)
