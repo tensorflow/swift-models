@@ -92,10 +92,23 @@ for epoch in 1...maxEpochs {
     }
   }
 
+  Context.local.learningPhase = .inference
+  var validationLossSum: Float = 0
+  var validationBatchCount = 0
+  for sentence in dataset.validation! {
+    let lattice = model.buildLattice(sentence, maxLen: maxLength)
+    let score = lattice[sentence.count].semiringScore
+    let expectedLength = exp(score.logr - score.logp)
+    let loss = -1 * score.logp + lambd * expectedLength
+
+    validationLossSum += loss
+    validationBatchCount += 1
+  }
+
   print(
     """
     [Epoch \(epoch)] \
-    Loss: \(trainingLossSum / Float(trainingBatchCount))
+    Validation loss: \(validationLossSum / Float(validationBatchCount))
     """
   )
 }
