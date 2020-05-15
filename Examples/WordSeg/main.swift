@@ -66,9 +66,13 @@ let modelParameters = SNLM.Parameters(
   order: order
 )
 
-var model = SNLM(parameters: modelParameters)
+let device = Device.defaultXLA
 
-let optimizer = Adam(for: model, learningRate: learningRate)
+var model = SNLM(parameters: modelParameters)
+model.move(to: device)
+
+var optimizer = Adam(for: model, learningRate: learningRate)
+optimizer = Adam(copying: optimizer, to: device)
 
 print("Starting training...")
 
@@ -78,18 +82,18 @@ for epoch in 1...maxEpochs {
   var trainingBatchCount = 0
   for record in dataset.training {
     let sentence = record.numericalizedText
-    let (loss, gradients) = valueWithGradient(at: model) { model -> Float in
-      let lattice = model.buildLattice(sentence, maxLen: maxLength)
+    let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
+      let lattice = model.buildLattice(sentence, maxLen: maxLength, device: device)
       let score = lattice[sentence.count].semiringScore
       let expectedLength = exp(score.logr - score.logp)
       let loss = -1 * score.logp + lambd * expectedLength
-      return loss
+      return Tensor(loss, on: device)
     }
 
-    trainingLossSum += loss
+    trainingLossSum += loss.scalarized()
     trainingBatchCount += 1
     optimizer.update(&model, along: gradients)
-
+    LazyTensorBarrier()
     if hasNaN(gradients) {
       print("Warning: grad has NaN")
     }
@@ -129,7 +133,7 @@ for epoch in 1...maxEpochs {
   var validationPlainText: String = ""
   for record in validationDataset {
     let sentence = record.numericalizedText
-    var lattice = model.buildLattice(sentence, maxLen: maxLength)
+    var lattice = model.buildLattice(sentence, maxLen: maxLength, device: device)
     let score = lattice[sentence.count].semiringScore
 
     validationLossSum -= score.logp
