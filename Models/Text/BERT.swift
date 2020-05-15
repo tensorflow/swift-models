@@ -29,6 +29,9 @@ import ModelSupport
 ///       https://arxiv.org/pdf/1907.11692.pdf).
 ///   - [ALBERT: A Lite BERT for Self-Supervised Learning of Language Representations](
 ///       https://arxiv.org/pdf/1909.11942.pdf).
+/// -   [ELECTRA: Pre-training Text Encoders as Discriminators Rather Than Generators](
+///       https://arxiv.org/abs/2003.10555.pdf)
+
 public struct BERT: Module, Regularizable {
     // TODO: Convert to a generic constraint once TF-427 is resolved.
     public typealias Scalar = Float
