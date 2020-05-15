@@ -377,6 +377,7 @@ extension BERT {
 
         /// - Source: [ELECTRA: Pre-training Text Encoders as Discriminators Rather Than Generators]
         ///              https://arxiv.org/abs/2003.10555
+        case electra
 
         public var description: String {
             switch self {
