@@ -24,7 +24,8 @@ let imageHeight = 28
 let imageWidth = 28
 
 let outputFolder = "./output/"
-let dataset = OldFashionMNIST(batchSize: batchSize, flattening: true)
+let dataset = FashionMNIST(batchSize: batchSize, device: Device.default, 
+    entropy: SystemRandomNumberGenerator(), flattening: true)
 // An autoencoder.
 var autoencoder = Sequential {
     // The encoder.
@@ -40,35 +41,11 @@ var autoencoder = Sequential {
 }
 let optimizer = RMSProp(for: autoencoder)
 
-let individualTestImages = Batcher(on: dataset.test.dataset, batchSize: 1)
-var testImageIterator = individualTestImages.sequenced()
 
 // Training loop
-for epoch in 1...epochCount {
-    if let nextIndividualImage = testImageIterator.next() {
-        let sampleTensor = nextIndividualImage.first
-        let sampleImage = Tensor(
-            shape: [1, imageHeight * imageWidth], scalars: sampleTensor.scalars)
-
-        let testImage = autoencoder(sampleImage)
-
-        do {
-            try saveImage(
-                sampleImage, shape: (imageWidth, imageHeight), format: .grayscale,
-                directory: outputFolder, name: "epoch-\(epoch)-input")
-            try saveImage(
-                testImage, shape: (imageWidth, imageHeight), format: .grayscale,
-                directory: outputFolder, name: "epoch-\(epoch)-output")
-        } catch {
-            print("Could not save image with error: \(error)")
-        }
-
-        let sampleLoss = meanSquaredError(predicted: testImage, expected: sampleImage)
-        print("[Epoch: \(epoch)] Loss: \(sampleLoss)")
-    }
-
-    for batch in dataset.training.sequenced() {
-        let x = batch.first
+for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
+    for batch in epochBatches {
+        let x = batch.data
 
         let 𝛁model = TensorFlow.gradient(at: autoencoder) { autoencoder -> Tensor<Float> in
             let image = autoencoder(x)
@@ -77,4 +54,31 @@ for epoch in 1...epochCount {
 
         optimizer.update(&autoencoder, along: 𝛁model)
     }
+
+    var testLossSum: Float = 0
+    var testBatchCount = 0
+    for batch in dataset.validation {
+        let sampleImages = batch.data
+        let testImages = autoencoder(sampleImages)
+
+        do {
+            try saveImage(
+                sampleImages[0..<1], shape: (imageWidth, imageHeight), format: .grayscale,
+                directory: outputFolder, name: "epoch-\(epoch)-input")
+            try saveImage(
+                testImages[0..<1], shape: (imageWidth, imageHeight), format: .grayscale,
+                directory: outputFolder, name: "epoch-\(epoch)-output")
+        } catch {
+            print("Could not save image with error: \(error)")
+        }
+
+        testLossSum += meanSquaredError(predicted: testImages, expected: sampleImages).scalarized()
+        testBatchCount += 1
+    }
+    print(
+        """
+        [Epoch \(epoch)] \
+        Loss: \(testLossSum / Float(testBatchCount))
+        """
+    )
 }
