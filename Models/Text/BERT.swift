@@ -58,6 +58,9 @@ extension Embedding: Regularizable {
 ///       https://arxiv.org/pdf/1907.11692.pdf).
 ///   - [ALBERT: A Lite BERT for Self-Supervised Learning of Language Representations](
 ///       https://arxiv.org/pdf/1909.11942.pdf).
+/// -   [ELECTRA: Pre-training Text Encoders as Discriminators Rather Than Generators](
+///       https://arxiv.org/abs/2003.10555.pdf)
+
 public struct BERT: Module, Regularizable {
     // TODO: Convert to a generic constraint once TF-427 is resolved.
     public typealias Scalar = Float
@@ -400,6 +403,7 @@ extension BERT {
 
         /// - Source: [ELECTRA: Pre-training Text Encoders as Discriminators Rather Than Generators]
         ///              https://arxiv.org/abs/2003.10555
+        case electra
 
         public var description: String {
             switch self {
@@ -711,20 +715,10 @@ extension BERT {
             // Load the appropriate vocabulary file.
             let vocabulary: Vocabulary = {
                 switch self {
-<<<<<<< HEAD
-                case .bertBase, .bertLarge:
-                    let vocabularyURL = storage.appendingPathComponent("vocab.txt")
-||||||| parent of d2b0ba7... Adding Support for electra
-                case .bertBase, .bertLarge:
-                    let vocabularyURL = directory
-                        .appendingPathComponent(subDirectory)
-                        .appendingPathComponent("vocab.txt")
-=======
                 case .bertBase, .bertLarge, .electraSmall, .electraBase, .electraLarge:
                     let vocabularyURL = directory
                         .appendingPathComponent(subDirectory)
                         .appendingPathComponent("vocab.txt")
->>>>>>> d2b0ba7... Adding Support for electra
                     return try! Vocabulary(fromFile: vocabularyURL)
                 case .robertaBase, .robertaLarge:
                     let vocabularyURL = storage.appendingPathComponent("vocab.json")
@@ -796,26 +790,6 @@ extension BERT {
                 initializerStandardDeviation: 0.02,
                 useOneHotEmbeddings: false)
 
-<<<<<<< HEAD
-            model.loadTensors(reader)
-||||||| parent of d2b0ba7... Adding Support for electra
-            // Load the pre-trained model checkpoint.
-            switch self {
-            case .bertBase, .bertLarge:
-                model.load(fromTensorFlowCheckpoint: directory
-                    .appendingPathComponent(subDirectory)
-                    .appendingPathComponent("bert_model.ckpt"))
-            case .robertaBase, .robertaLarge:
-                model.load(fromTensorFlowCheckpoint: directory
-                    .appendingPathComponent(subDirectory)
-                    .appendingPathComponent("roberta_\(subDirectory).ckpt"))
-            case .albertBase, .albertLarge, .albertXLarge, .albertXXLarge:
-                model.load(fromTensorFlowCheckpoint: directory
-                    .appendingPathComponent(subDirectory)
-                    .appendingPathComponent("variables")
-                    .appendingPathComponent("variables"))
-            }
-=======
             // Load the pre-trained model checkpoint.
             switch self {
             case .bertBase, .bertLarge:
@@ -836,33 +810,8 @@ extension BERT {
                     .appendingPathComponent(subDirectory)
                     .appendingPathComponent(""))
             }
->>>>>>> d2b0ba7... Adding Support for electra
             return model
         }
-<<<<<<< HEAD
-||||||| parent of d2b0ba7... Adding Support for electra
-
-        /// Downloads this pre-trained model to the specified directory, if it's not already there.
-        public func maybeDownload(to directory: URL) throws {
-            switch self {
-            case .bertBase, .bertLarge, .robertaBase, .robertaLarge:
-                // Download and extract the pretrained model, if necessary.
-                DatasetUtilities.downloadResource(filename: "\(subDirectory)", fileExtension: "zip",
-                                                  remoteRoot: url.deletingLastPathComponent(),
-                                                  localStorageDirectory: directory)
-            case .albertBase, .albertLarge, .albertXLarge, .albertXXLarge:
-                // Download the model, if necessary.
-                let compressedFileURL = directory.appendingPathComponent("\(subDirectory).tar.gz")
-                try download(from: url, to: compressedFileURL)
-
-                // Extract the data, if necessary.
-                let extractedDirectoryURL = directory.appendingPathComponent(subDirectory)
-                if !FileManager.default.fileExists(atPath: extractedDirectoryURL.path) {
-                    try extract(tarGZippedFileAt: compressedFileURL, to: extractedDirectoryURL)
-                }
-            }
-        }
-=======
 
         /// Downloads this pre-trained model to the specified directory, if it's not already there.
         public func maybeDownload(to directory: URL) throws {
@@ -884,35 +833,11 @@ extension BERT {
                 }
             }
         }
->>>>>>> d2b0ba7... Adding Support for electra
   }
 
     /// Loads a BERT model from the provided CheckpointReader into this BERT model.
     ///
     /// - Parameters:
-<<<<<<< HEAD
-    ///   - reader: CheckpointReader object to load tensors from.
-    public mutating func loadTensors(_ reader: CheckpointReader) {
-        tokenEmbedding.embeddings = reader.readTensor(name: "bert/embeddings/word_embeddings")
-        positionEmbedding.embeddings = reader.readTensor(name: "bert/embeddings/position_embeddings")
-        embeddingLayerNorm.offset = reader.readTensor(name: "bert/embeddings/LayerNorm/beta")
-        embeddingLayerNorm.scale = reader.readTensor(name: "bert/embeddings/LayerNorm/gamma")
-||||||| parent of d2b0ba7... Adding Support for electra
-    ///   - fileURL: Path to the checkpoint file. Note that TensorFlow checkpoints typically
-    ///     consist of multiple files (e.g., `bert_model.ckpt.index`, `bert_model.ckpt.meta`, and
-    ///     `bert_model.ckpt.data-00000-of-00001`). In this case, the file URL should be specified
-    ///     as their common prefix (e.g., `bert_model.ckpt`).
-    public mutating func load(fromTensorFlowCheckpoint fileURL: URL) {
-        let checkpointReader = TensorFlowCheckpointReader(checkpointPath: fileURL.path)
-        tokenEmbedding.embeddings =
-            Tensor(checkpointReader.loadTensor(named: "bert/embeddings/word_embeddings"))
-        positionEmbedding.embeddings =
-            Tensor(checkpointReader.loadTensor(named: "bert/embeddings/position_embeddings"))
-        embeddingLayerNorm.offset =
-            Tensor(checkpointReader.loadTensor(named: "bert/embeddings/LayerNorm/beta"))
-        embeddingLayerNorm.scale =
-            Tensor(checkpointReader.loadTensor(named: "bert/embeddings/LayerNorm/gamma"))
-=======
     ///   - fileURL: Path to the checkpoint file. Note that TensorFlow checkpoints typically
     ///     consist of multiple files (e.g., `bert_model.ckpt.index`, `bert_model.ckpt.meta`, and
     ///     `bert_model.ckpt.data-00000-of-00001`). In this case, the file URL should be specified
@@ -939,7 +864,6 @@ extension BERT {
             embeddingLayerNorm.scale =
                 Tensor(checkpointReader.loadTensor(named: "electra/embeddings/LayerNorm/gamma"))
         }
->>>>>>> d2b0ba7... Adding Support for electra
         switch variant {
         case .bert, .albert:
             tokenTypeEmbedding.embeddings =
@@ -963,6 +887,86 @@ extension BERT {
             for layerIndex in encoderLayers.indices {
                 let prefix = "bert/encoder/transformer/group_\(layerIndex)/inner_group_0"
                 encoderLayers[layerIndex].load(albert: reader, prefix: prefix)
+            }
+        case .electra:
+            for layerIndex in encoderLayers.indices {
+                let prefix = "electra/encoder/layer_\(layerIndex)"
+                encoderLayers[layerIndex].multiHeadAttention.queryWeight =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/self/query/kernel"))
+                encoderLayers[layerIndex].multiHeadAttention.queryBias =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/self/query/bias"))
+                encoderLayers[layerIndex].multiHeadAttention.keyWeight =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/self/key/kernel"))
+                encoderLayers[layerIndex].multiHeadAttention.keyBias =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/self/key/bias"))
+                encoderLayers[layerIndex].multiHeadAttention.valueWeight =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/self/value/kernel"))
+                encoderLayers[layerIndex].multiHeadAttention.valueBias =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/self/value/bias"))
+                encoderLayers[layerIndex].attentionWeight =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/output/dense/kernel"))
+                encoderLayers[layerIndex].attentionBias =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/output/dense/bias"))
+                encoderLayers[layerIndex].attentionLayerNorm.offset =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/output/LayerNorm/beta"))
+                encoderLayers[layerIndex].attentionLayerNorm.scale =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/output/LayerNorm/gamma"))
+                encoderLayers[layerIndex].intermediateWeight =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/intermediate/dense/kernel"))
+                encoderLayers[layerIndex].intermediateBias =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/intermediate/dense/bias"))
+                encoderLayers[layerIndex].outputWeight =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/output/dense/kernel"))
+                encoderLayers[layerIndex].outputBias =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/output/dense/bias"))
+                encoderLayers[layerIndex].outputLayerNorm.offset =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/output/LayerNorm/beta"))
+                encoderLayers[layerIndex].outputLayerNorm.scale =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/output/LayerNorm/gamma"))
+            }
+        case .albert:
+            embeddingProjection[0].weight =
+                Tensor(checkpointReader.loadTensor(
+                    named: "bert/encoder/embedding_hidden_mapping_in/kernel"))
+            embeddingProjection[0].bias =
+                Tensor(checkpointReader.loadTensor(
+                    named: "bert/encoder/embedding_hidden_mapping_in/bias"))
+            for layerIndex in encoderLayers.indices {
+                let prefix = "bert/encoder/transformer/group_\(layerIndex)/inner_group_0"
+                encoderLayers[layerIndex].multiHeadAttention.queryWeight =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention_1/self/query/kernel"))
+                encoderLayers[layerIndex].multiHeadAttention.queryBias =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention_1/self/query/bias"))
+                encoderLayers[layerIndex].multiHeadAttention.keyWeight =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention_1/self/key/kernel"))
+                encoderLayers[layerIndex].multiHeadAttention.keyBias =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention_1/self/key/bias"))
+                encoderLayers[layerIndex].multiHeadAttention.valueWeight =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention_1/self/value/kernel"))
+                encoderLayers[layerIndex].multiHeadAttention.valueBias =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention_1/self/value/bias"))
+                encoderLayers[layerIndex].attentionWeight =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention_1/output/dense/kernel"))
+                encoderLayers[layerIndex].attentionBias =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention_1/output/dense/bias"))
+                encoderLayers[layerIndex].attentionLayerNorm.offset =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/LayerNorm/beta"))
+                encoderLayers[layerIndex].attentionLayerNorm.scale =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/LayerNorm/gamma"))
+                encoderLayers[layerIndex].intermediateWeight =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/ffn_1/intermediate/dense/kernel"))
+                encoderLayers[layerIndex].intermediateBias =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/ffn_1/intermediate/dense/bias"))
+                encoderLayers[layerIndex].outputWeight =
+                    Tensor(checkpointReader.loadTensor(
+                        named: "\(prefix)/ffn_1/intermediate/output/dense/kernel"))
+                encoderLayers[layerIndex].outputBias =
+                    Tensor(checkpointReader.loadTensor(
+                        named: "\(prefix)/ffn_1/intermediate/output/dense/bias"))
+                encoderLayers[layerIndex].outputLayerNorm.offset =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/LayerNorm_1/beta"))
+                encoderLayers[layerIndex].outputLayerNorm.scale =
+                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/LayerNorm_1/gamma"))
             }
         case .electra:
             for layerIndex in encoderLayers.indices {
