@@ -22,15 +22,11 @@ where
     Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == Float,
     ClassificationDataset: ImageClassificationData
 {
-    let batches: Int
+    let duration: BenchmarkDuration
     let batchSize: Int
 
-    var exampleCount: Int {
-        return batches * batchSize
-    }
-
     init(settings: BenchmarkSettings) {
-        self.batches = settings.batches
+        self.duration = settings.duration
         self.batchSize = settings.batchSize
     }
 
@@ -61,7 +57,11 @@ where
         let dataset = ClassificationDataset(batchSize: batchSize, on: device)
 
         Context.local.learningPhase = .training
-        for epochBatches in dataset.training {
+        for (epoch, epochBatches) in dataset.training.enumerated() {
+            if case let .epochs(epochs) = duration, epoch >= epochs {
+                return batchTimings
+            }
+
             for batch in epochBatches {
                 let (images, labels) = (batch.data, batch.label)
 
@@ -73,7 +73,7 @@ where
                 LazyTensorBarrier()
                 batchTimings.append(durationInMilliseconds(since: beforeBatch))
                 currentBatch += 1
-                if currentBatch >= self.batches {
+                if case let .batches(batches) = duration, currentBatch >= batches {
                     return batchTimings
                 }
                 beforeBatch = timestampInMilliseconds()

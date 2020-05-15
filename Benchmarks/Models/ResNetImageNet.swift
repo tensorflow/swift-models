@@ -20,21 +20,14 @@ import TensorFlow
 enum ResNetImageNet: BenchmarkModel {
     static var name: String { "ResNetImageNet" }
 
-    static func examplesPerEpoch(for variety: BenchmarkVariety) -> Int {
-        switch(variety) {
-        case .inferenceThroughput: return 150000
-        case .trainingThroughput: return 1200000
-        }
-    }
-
     static func defaults(for variety: BenchmarkVariety) -> BenchmarkSettings {
         switch(variety) {
         case .inferenceThroughput:
-            return BenchmarkSettings(batches: 1000, batchSize: 128, iterations: 10,
-                                     warmupBatches: 1, synthetic: true, backend: .eager)
+            return BenchmarkSettings(duration: .batches(1000), batchSize: 128, iterations: 10,
+                warmupBatches: 1, synthetic: true, backend: .eager)
         case .trainingThroughput:
-            return BenchmarkSettings(batches: 110, batchSize: 128, iterations: 1, warmupBatches: 1,
-                                     synthetic: true, backend: .eager)
+            return BenchmarkSettings(duration: .batches(110), batchSize: 128, iterations: 1,
+                warmupBatches: 1, synthetic: true, backend: .eager)
         }
     }
 
