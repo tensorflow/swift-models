@@ -105,7 +105,10 @@ extension SemiRing {
   // TODO(abdulras) see if we can use ulp as a default tolerance
   @inlinable
   public func isAlmostEqual(to other: Self, tolerance: Float) -> Bool {
-    return self.logp.isAlmostEqual(to: other.logp, tolerance: tolerance)
-      && self.logr.isAlmostEqual(to: other.logr, tolerance: tolerance)
+    let diffP = abs(self.logp - other.logp)
+    let diffR = abs(self.logp - other.logp)
+
+    return (diffP <= tolerance || diffP.isNaN)
+      && (diffR <= tolerance || diffR.isNaN)
   }
 }
