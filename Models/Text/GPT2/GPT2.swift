@@ -50,15 +50,16 @@ public class GPT2 {
                 "vocab.bpe",
             ]
             let FS: FileManager = FileManager.default
-            let storage: URL = FS.temporaryDirectory.appendingPathComponent("Transformer")
 
             let reader: CheckpointReader = try CheckpointReader(
                 checkpointLocation: checkpoint,
-                modelName: "Transformer",
+                modelName: "GPT2-\(checkpoint.pathComponents.dropLast().last ?? "")",
                 additionalFiles: auxiliary)
             // TODO(michellecasbon): expose this.
             reader.isCRCVerificationEnabled = false
 
+            let storage: URL = reader.localCheckpointLocation.deletingLastPathComponent()
+            
             // Load model configuration.
             let hparamsFile: URL = storage.appendingPathComponent("hparams.json")
             let configuration: (file: URL, data: Data) = try (
