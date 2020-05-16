@@ -95,6 +95,7 @@ for epoch in 1...maxEpochs {
   Context.local.learningPhase = .inference
   var validationLossSum: Float = 0
   var validationBatchCount = 0
+  var validationCharacterCount = 0
   for sentence in dataset.validation! {
     let lattice = model.buildLattice(sentence, maxLen: maxLength)
     let score = lattice[sentence.count].semiringScore
@@ -103,11 +104,15 @@ for epoch in 1...maxEpochs {
 
     validationLossSum += loss
     validationBatchCount += 1
+    validationCharacterCount += sentence.count
   }
+
+  let bpc = validationLossSum / Float(validationCharacterCount) / log(2)
 
   print(
     """
     [Epoch \(epoch)] \
+    Bits per character: \(bpc) \
     Validation loss: \(validationLossSum / Float(validationBatchCount))
     """
   )
