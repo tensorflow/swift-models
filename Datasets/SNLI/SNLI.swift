@@ -16,9 +16,6 @@ import Foundation
 import ModelSupport
 import TensorFlow
 
-/// A `TextBatch` with the corresponding labels.
-public typealias LabeledTextBatch = (data: TextBatch, label: Tensor<Int32>)
-
 /// SNLI example.
 public struct SNLIExample {
   /// The unique identifier representing the `Example`.
@@ -28,10 +25,10 @@ public struct SNLIExample {
   // The hypothesis 
   public let hypothesis: String
   /// The label of the `Example`.
-  public let label: String
+  public let label: String?
 
   /// Creates an instance from `id`, `sentence` and `isAcceptable`.
-  public init(id: String, premise: String, hypothesis: String, isAcceptable: Bool?) {
+  public init(id: String, premise: String, hypothesis: String, label: String?) {
     self.id = id
     self.premise = premise
     self.hypothesis = hypothesis
@@ -43,7 +40,7 @@ public struct SNLI<Entropy: RandomNumberGenerator> {
   /// The directory where the dataset will be downloaded
   public let directoryURL: URL
   /// The type of the labeled samples.
-  public typealias Samples = LazyMapSequence<[CoLAExample], LabeledTextBatch>
+  public typealias Samples = LazyMapSequence<[SNLIExample], LabeledTextBatch>
   /// The training texts.
   public let trainingExamples: Samples
   /// The validation texts.
@@ -79,29 +76,19 @@ extension SNLI {
       return lines.dropFirst().enumerated().map { (i, lineParts) in
         SNLIExample(id: lineParts[8], 
                     premise: lineParts[5], 
-                    hypothesis: lineparts[6], 
+                    hypothesis: lineParts[6], 
                     label: lineParts[0])
       }
     }
 
-    return lines.dropFirst.enumerated().map { (i, lineParts) in
+    return lines.dropFirst().enumerated().map { (i, lineParts) in
       SNLIExample(id: lineParts[8], 
-                    premise: lineParts[5], 
-                    hypothesis: lineparts[6], 
-                    label: lineParts[0])
+                  premise: lineParts[5], 
+                  hypothesis: lineParts[6], 
+                  label: lineParts[0])
       }
     }
   }
-}
-
-internal func parse(tsvFileAt fileURL: URL) throws -> [[String]] {
-    try Data(contentsOf: fileURL).withUnsafeBytes {
-        $0.split(separator: UInt8(ascii: "\n")).map {
-            $0.split(separator: UInt8(ascii: "\t"), omittingEmptySubsequences: false)
-                .map { String(decoding: UnsafeRawBufferPointer(rebasing: $0), as: UTF8.self) }
-        }
-    }
-}
 
 extension SNLI {
   /// Creates an instance in `taskDirectoryURL` with batches of size `batchSize`
@@ -118,7 +105,7 @@ extension SNLI {
     maxSequenceLength: Int,
     batchSize: Int,
     entropy: Entropy,
-    exampleMap: @escaping (CoLAExample) -> LabeledTextBatch
+    exampleMap: @escaping (SNLIExample) -> LabeledTextBatch
   ) throws {
     self.directoryURL = taskDirectoryURL.appendingPathComponent("SNLI")
     let dataURL = directoryURL.appendingPathComponent("data")
@@ -133,23 +120,13 @@ extension SNLI {
       try extract(zipFileAt: compressedDataURL, to: extractedDirectoryURL)
     }
 
-    #if false
-      // FIXME: Need to generalize `DatasetUtilities.downloadResource` to accept
-      // arbitrary full URLs instead of constructing full URL from filename and
-      // file extension.
-      DatasetUtilities.downloadResource(
-        filename: "\(subDirectory)", fileExtension: "zip",
-        remoteRoot: url.deletingLastPathComponent(),
-        localStorageDirectory: directory)
-    #endif
-
     // Load the data files.
-    let dataFilesURL = extractedDirectoryURL.appendingPathComponent("SNLI")
-    trainingExamples = try CoLA.load(
+    let dataFilesURL = extractedDirectoryURL.appendingPathComponent("snli_1.0")
+    trainingExamples = try SNLI.load(
       fromFile: dataFilesURL.appendingPathComponent("snli_1.0_train.txt")
     ).lazy.map(exampleMap)
     
-    validationExamples = try CoLA.load(
+    validationExamples = try SNLI.load(
       fromFile: dataFilesURL.appendingPathComponent("snli_1.0_dev.txt")
     ).lazy.map(exampleMap)
 
