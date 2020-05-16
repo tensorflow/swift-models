@@ -99,10 +99,8 @@ for epoch in 1...maxEpochs {
   for sentence in dataset.validation! {
     let lattice = model.buildLattice(sentence, maxLen: maxLength)
     let score = lattice[sentence.count].semiringScore
-    let expectedLength = exp(score.logr - score.logp)
-    let loss = -1 * score.logp + lambd * expectedLength
 
-    validationLossSum += loss
+    validationLossSum -= score.logp
     validationBatchCount += 1
     validationCharacterCount += sentence.count
   }
