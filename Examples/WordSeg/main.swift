@@ -92,11 +92,12 @@ for epoch in 1...maxEpochs {
     }
   }
 
+  guard let validationDataset = dataset.validation else { return }
   Context.local.learningPhase = .inference
   var validationLossSum: Float = 0
   var validationBatchCount = 0
   var validationCharacterCount = 0
-  for sentence in dataset.validation! {
+  for sentence in validationDataset {
     let lattice = model.buildLattice(sentence, maxLen: maxLength)
     let score = lattice[sentence.count].semiringScore
 
