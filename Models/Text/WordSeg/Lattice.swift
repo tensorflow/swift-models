@@ -232,11 +232,10 @@ extension Lattice.Node {
 
 extension Lattice.Edge {
   public func isAlmostEqual(to other: Self, tolerance: Float) -> Bool {
-    let diffP = abs(self.logp - other.logp).scalarized()
     return self.start == other.start && self.end == other.end
       // TODO: figure out why the string equality is being ignored
       // self.string == other.string &&
-      && (diffP <= tolerance || diffP.isNaN)
+      && self.logp.isAlmostEqual(to: other.logp, tolerance: tolerance)
       && self.score.isAlmostEqual(to: other.score, tolerance: tolerance)
       && self.totalScore.isAlmostEqual(to: other.totalScore, tolerance: tolerance)
   }
