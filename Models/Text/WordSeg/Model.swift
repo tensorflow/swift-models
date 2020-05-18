@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 // Original Paper:
 // "Learning to Discover, Ground, and Use Words with Segmental Neural Language
 // Models"
@@ -19,7 +18,6 @@
 // https://www.aclweb.org/anthology/P19-1645.pdf
 // This implementation is not affiliated with DeepMind and has not been
 // verified by the authors.
-
 import ModelSupport
 import TensorFlow
 
@@ -54,30 +52,24 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   @noDerivative public var parameters: Parameters
 
   // MARK: - Encoder
-
   public var encoderEmbedding: Embedding<Float>
   public var encoderLSTM: LSTM<Float>
 
   // MARK: - Interpolation weight
-
   public var mlpInterpolation: MLP
 
   // MARK: - Lexical memory
-
   public var mlpMemory: MLP
 
   // MARK: - Character-level decoder
-
   public var decoderEmbedding: Embedding<Float>
   public var decoderLSTM: LSTM<Float>
   public var decoderDense: Dense<Float>
 
   // MARK: - Other layers
-
   public var dropout: Dropout<Float>
 
   // MARK: - Initializer
-
   public init(parameters: Parameters) {
     self.parameters = parameters
 
@@ -121,7 +113,6 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   }
 
   // MARK: - Encode
-
   /// Returns the hidden states of the encoder LSTM applied to the given sentence.
   public func encode(_ x: CharacterSequence) -> [Tensor<Float>] {
     let embedded = dropout(encoderEmbedding(x.tensor))
@@ -130,7 +121,6 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   }
 
   // MARK: - Decode
-
   /// Returns log probabilities for each of the candidates.
   public func decode(_ candidates: [CharacterSequence], _ state: Tensor<Float>) -> Tensor<Float> {
     // TODO(TF-433): Remove closure workaround when autodiff supports non-active rethrowing
@@ -197,7 +187,6 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   }
 
   // MARK: - buildLattice
-
   func get_logp_lex(_ logp_lex: Tensor<Float>, _ candidate: CharacterSequence) -> Tensor<Float> {
     guard let index = parameters.strVocab.dictionary[candidate] else {
       return Tensor(-Float.infinity)
@@ -234,7 +223,6 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
       let logg = logg_batch[pos].identityADHack  // [2]
       let logp_lex = logp_lex_batch[pos].identityADHack  // [strVocab.chr.count]
       let logp_chr = decode(candidates, current_state).identityADHack  // [candidates.count]
-
       if pos != 0 {
         // Cleanup: lattice[pos].recomputeSemiringScore()
         var updatedNode = lattice[pos]
@@ -334,36 +322,10 @@ extension Tensor {
     let shape = self.shape
     func pullback(_ v: Tensor) -> Tensor {
       if v.scalarCount == 1 {
-        return Tensor(zeros: shape)
+        return v.broadcasted(to: shape)
       }
       return v
     }
     return (self, pullback)
-  }
-
-  // NOTE(TF-1008): this is a duplicate of `Tensor.scalars` that is needed for differentiation
-  // correctness. It exists as a workaround for TF-1008: per-instance zero tangent vectors.
-  //
-  // Remove this when differentiation uses per-instance zeros
-  // (`Differentiable.zeroTangentVectorInitializer`) instead of static zeros
-  // (`AdditiveArithmetic.zero`).
-  @differentiable(where Scalar: TensorFlowFloatingPoint)
-  var scalarsADHack: [Scalar] {
-    scalars
-  }
-
-  @derivative(of: scalarsADHack)
-  func vjpScalarsADHack() -> (
-    value: [Scalar], pullback: (Array<Scalar>.TangentVector) -> Tensor
-  ) where Scalar: TensorFlowFloatingPoint {
-    // In the pullback: capture only `self.shape`, not all of `self`.
-    let shape = self.shape
-    func pullback(_ tv: Array<Scalar>.TangentVector) -> Tensor {
-      if tv.count == 0 {
-        return Tensor(zeros: shape)
-      }
-      return Tensor(shape: shape, scalars: tv.base)
-    }
-    return (scalars, pullback)
   }
 }
