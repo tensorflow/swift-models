@@ -23,7 +23,7 @@ let ndim = 512  // Hidden unit size.
 let dropoutProb = 0.5  // Dropout rate.
 let order = 5  // Power of length penalty.
 let maxEpochs = 1000  // Maximum number of training epochs.
-var validationLossHistory = Array<Float>() // Keep track of validation loss.
+var lossHistory = Array<Float>() // Keep track of loss.
 var noImprovements = 0 // Consecutive epochs without improvements to loss.
 let lambd: Float = 0.00075  // Weight of length penalty.
 // Lexicon flags.
@@ -95,12 +95,24 @@ for epoch in 1...maxEpochs {
   }
 
   guard let validationDataset = dataset.validation else {
+    let trainingLoss = trainingLossSum / Float(trainingBatchCount)
+
     print(
       """
       [Epoch \(epoch)] \
-      Training loss: \(trainingLossSum / Float(trainingBatchCount))
+      Training loss: \(trainingLoss))
       """
     )
+
+    // Stop training when loss stops improving.
+    lossHistory.append(trainingLoss)
+    if lossHistory.min() == trainingLoss {
+      noImprovements = 0
+    } else {
+      noImprovements += 1
+      if noImprovements >= 5 { break }
+    }
+
     continue
   }
 
@@ -129,8 +141,8 @@ for epoch in 1...maxEpochs {
   )
 
   // Stop training when loss stops improving.
-  validationLossHistory.append(validationLoss)
-  if validationLossHistory.min() == validationLoss {
+  lossHistory.append(validationLoss)
+  if lossHistory.min() == validationLoss {
     noImprovements = 0
   } else {
     noImprovements += 1
