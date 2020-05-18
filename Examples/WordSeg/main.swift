@@ -22,7 +22,9 @@ let ndim = 512  // Hidden unit size.
 // Training flags
 let dropoutProb = 0.5  // Dropout rate.
 let order = 5  // Power of length penalty.
-let maxEpochs = 10  // Maximum number of training epochs.
+let maxEpochs = 1000  // Maximum number of training epochs.
+var validationLossHistory = Array<Float>() // Keep track of validation loss.
+var noImprovements = 0 // Consecutive epochs without improvements to loss.
 let lambd: Float = 0.00075  // Weight of length penalty.
 // Lexicon flags.
 let maxLength = 10  // Maximum length of a string.
@@ -116,14 +118,24 @@ for epoch in 1...maxEpochs {
   }
 
   let bpc = validationLossSum / Float(validationCharacterCount) / log(2)
+  let validationLoss = validationLossSum / Float(validationBatchCount)
 
   print(
     """
     [Epoch \(epoch)] \
     Bits per character: \(bpc) \
-    Validation loss: \(validationLossSum / Float(validationBatchCount))
+    Validation loss: \(validationLoss)
     """
   )
+
+  // Stop training when loss stops improving.
+  validationLossHistory.append(validationLoss)
+  if validationLossHistory.min() == validationLoss {
+    noImprovements = 0
+  } else {
+    noImprovements += 1
+    if noImprovements >= 5 { break }
+  }
 }
 
 func hasNaN<T: KeyPathIterable>(_ t: T) -> Bool {
