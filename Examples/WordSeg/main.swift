@@ -92,10 +92,36 @@ for epoch in 1...maxEpochs {
     }
   }
 
+  guard let validationDataset = dataset.validation else {
+    print(
+      """
+      [Epoch \(epoch)] \
+      Training loss: \(trainingLossSum / Float(trainingBatchCount))
+      """
+    )
+    continue
+  }
+
+  Context.local.learningPhase = .inference
+  var validationLossSum: Float = 0
+  var validationBatchCount = 0
+  var validationCharacterCount = 0
+  for sentence in validationDataset {
+    let lattice = model.buildLattice(sentence, maxLen: maxLength)
+    let score = lattice[sentence.count].semiringScore
+
+    validationLossSum -= score.logp
+    validationBatchCount += 1
+    validationCharacterCount += sentence.count
+  }
+
+  let bpc = validationLossSum / Float(validationCharacterCount) / log(2)
+
   print(
     """
     [Epoch \(epoch)] \
-    Loss: \(trainingLossSum / Float(trainingBatchCount))
+    Bits per character: \(bpc) \
+    Validation loss: \(validationLossSum / Float(validationBatchCount))
     """
   )
 }
