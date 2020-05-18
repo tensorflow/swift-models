@@ -92,7 +92,16 @@ for epoch in 1...maxEpochs {
     }
   }
 
-  guard let validationDataset = dataset.validation else { return }
+  guard let validationDataset = dataset.validation else {
+    print(
+      """
+      [Epoch \(epoch)] \
+      Training loss: \(trainingLossSum / Float(trainingBatchCount))
+      """
+    )
+    continue
+  }
+
   Context.local.learningPhase = .inference
   var validationLossSum: Float = 0
   var validationBatchCount = 0
