@@ -154,7 +154,7 @@ public class GPT2 {
             randomCategorialLogits: logits.squeezingShape(at: 1),
             sampleCount: 1)
 
-        let id = Int32(seed[0][0])!
+        guard let id = Int32(seed[0][0]) else { return "" }
         if id == Int32(endOfTextId) {
             // Replace with newline.
             return "\r\n"
