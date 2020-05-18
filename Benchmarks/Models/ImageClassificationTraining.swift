@@ -31,6 +31,10 @@ where
     }
 
     func run(backend: Backend) -> [Double] {
+        // Include model and optimizer initialization time in first batch, to be part of warmup.
+        // Also include time for following workaround to allocate memory for eager runtime.
+        var beforeBatch = timestampInMilliseconds()
+
         // Note: The this initial eager-mode tensor computation is needed, or all GPU memory
         // will be exhausted on initial allocation of the model.
         // TODO: Remove the following tensor workaround when above is fixed.
@@ -44,8 +48,6 @@ where
         case .x10: device = Device.defaultXLA
         }
 
-        // Include model and optimizer initialization time in first batch, to be part of warmup.
-        var beforeBatch = timestampInMilliseconds()
         var model = Model()
         model.move(to: device)
         // TODO: Split out the optimizer as a separate specification.
