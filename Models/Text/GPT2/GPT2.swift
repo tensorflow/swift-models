@@ -49,7 +49,6 @@ public class GPT2 {
                 "model.ckpt.meta",
                 "vocab.bpe",
             ]
-            let FS: FileManager = FileManager.default
 
             let reader: CheckpointReader = try CheckpointReader(
                 checkpointLocation: checkpoint,
