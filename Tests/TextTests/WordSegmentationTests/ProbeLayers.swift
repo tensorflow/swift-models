@@ -109,14 +109,13 @@ func almostEqual(
       success = false
       continue
     }
-    for (elementIndex, (t1e, t2e)) in zip(t1.scalars, t2.scalars).enumerated() {
-      if !(t1e.isAlmostEqual(to: t2e, tolerance: relTol)
-        || (t1e.isAlmostZero(absoluteTolerance: zeroTol)
-          && t2e.isAlmostZero(absoluteTolerance: zeroTol)))
-      {
-        print("Mismatch on tensor \(kpIndex) element \(elementIndex): \(t1e) & \(t2e)")
-        success = false
-      }
+
+    if !(t1.isAlmostEqual(to: t2, tolerance: relTol)
+      || (t1.isAlmostEqual(to: Tensor(zeros: t1.shape), tolerance: zeroTol)
+        && t1.isAlmostEqual(to: Tensor(zeros: t1.shape), tolerance: zeroTol)))
+    {
+      print("Mismatch on tensor \(kpIndex)")
+      success = false
     }
   }
   return success
