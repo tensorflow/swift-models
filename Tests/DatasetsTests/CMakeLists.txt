@@ -7,6 +7,7 @@ add_library(DatasetsTests
   MovieLens/MovieLensTests.swift
   MNIST/MNISTTests.swift
   TextUnsupervised/TextUnsupervisedTests.swift
+  WordSeg/WordSegDatasetTests.swift
   OxfordIIITPets/OxfordIIITPetsTests.swift
   XCTestManifests.swift)
 set_target_properties(DatasetsTests PROPERTIES
