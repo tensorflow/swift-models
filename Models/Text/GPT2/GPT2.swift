@@ -20,8 +20,9 @@ public class GPT2 {
     public static let remoteCheckpoint: URL =
         URL(string: "https://storage.googleapis.com/gpt-2/models/117M/model.ckpt")!
 
-    enum GPT2Error: Error {
+    public enum GPT2Error: Error {
         case invalidEncoding(id: Int32)
+        case invalidSeed(seed: Tensor<Int32>)
     }
 
     public var model: TransformerLM
@@ -154,7 +155,9 @@ public class GPT2 {
             randomCategorialLogits: logits.squeezingShape(at: 1),
             sampleCount: 1)
 
-        guard let id = Int32(seed[0][0]) else { return "" }
+        guard let id = Int32(seed[0][0]) else {
+          throw GPT2Error.invalidSeed(seed: seed)
+        }
         if id == Int32(endOfTextId) {
             // Replace with newline.
             return "\r\n"
