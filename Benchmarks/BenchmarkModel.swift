@@ -17,9 +17,6 @@ protocol BenchmarkModel {
     /// A string identifier for this model, to be used in logging and at the command line.
     static var name: String { get }
     
-    /// The number of examples per epoch in the training or test dataset for this benchmark.
-    static func examplesPerEpoch(for variety: BenchmarkVariety) -> Int
-
     /// Settings to use in a specific benchmark if no custom flags are given.
     static func defaults(for variety: BenchmarkVariety) -> BenchmarkSettings
 

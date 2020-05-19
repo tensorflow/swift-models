@@ -30,15 +30,11 @@ where
     ClassificationDataset: ImageClassificationData
 {
     var model: Model
-    let batches: Int
+    let duration: BenchmarkDuration
     let batchSize: Int
 
-    var exampleCount: Int {
-        return batches * batchSize
-    }
-
     init(settings: BenchmarkSettings) {
-        self.batches = settings.batches
+        self.duration = settings.duration
         self.batchSize = settings.batchSize
         self.model = Model()
     }
@@ -56,7 +52,11 @@ where
         var batchTimings: [Double] = []
         var currentBatch = 0
 
-        for epochBatches in dataset.training {
+        for (epoch, epochBatches) in dataset.training.enumerated() {
+            if case let .epochs(epochs) = duration, epoch >= epochs {
+                return batchTimings
+            }
+
             for batch in epochBatches {
                 let images = batch.data
 
@@ -66,7 +66,7 @@ where
                 }
                 batchTimings.append(batchTime)
                 currentBatch += 1
-                if currentBatch >= self.batches {
+                if case let .batches(batches) = duration, currentBatch >= batches {
                     return batchTimings
                 }
             }

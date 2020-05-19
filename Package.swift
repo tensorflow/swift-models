@@ -120,7 +120,7 @@ let package = Package(
         .target(
             name: "Benchmarks",
             dependencies: [
-                "Datasets", "ModelSupport", "ImageClassificationModels", .product(name: "ArgumentParser", package: "swift-argument-parser")
+                "Datasets", "ModelSupport", "ImageClassificationModels", "ArgumentParser",
             ],
             path: "Benchmarks"),
         .testTarget(name: "CheckpointTests", dependencies: ["ModelSupport"]),
@@ -129,12 +129,12 @@ let package = Package(
         .testTarget(name: "SupportTests", dependencies: ["ModelSupport"]),
         .target(
             name: "CycleGAN",
-            dependencies: ["Batcher", .product(name: "ArgumentParser", package: "swift-argument-parser"), "ModelSupport", "Datasets"],
+            dependencies: ["Batcher", "ArgumentParser", "ModelSupport", "Datasets"],
             path: "CycleGAN"
         ),
         .target(
             name: "pix2pix",
-            dependencies: ["Batcher", .product(name: "ArgumentParser", package: "swift-argument-parser"), "ModelSupport", "Datasets"],
+            dependencies: ["Batcher", "ArgumentParser", "ModelSupport", "Datasets"],
             path: "pix2pix"
         ),
         .target(
