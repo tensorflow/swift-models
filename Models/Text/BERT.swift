@@ -48,9 +48,9 @@ public struct BERT: Module, Regularizable {
     @noDerivative public let typeVocabularySize: Int
     @noDerivative public let initializerStandardDeviation: Scalar
 
-    public var tokenEmbedding: RegularizableEmbedding<Scalar>
-    public var tokenTypeEmbedding: RegularizableEmbedding<Scalar>
-    public var positionEmbedding: RegularizableEmbedding<Scalar>
+    public var tokenEmbedding: Embedding<Scalar>
+    public var tokenTypeEmbedding: Embedding<Scalar>
+    public var positionEmbedding: Embedding<Scalar>
     public var embeddingLayerNorm: LayerNorm<Scalar>
     @noDerivative public var embeddingDropout: Dropout<Scalar>
     public var embeddingProjection: [Dense<Scalar>]
@@ -129,21 +129,19 @@ public struct BERT: Module, Regularizable {
             }
         }()
 
-        self.tokenEmbedding = RegularizableEmbedding<Scalar>(
+        self.tokenEmbedding = Embedding<Scalar>(
             vocabularySize: vocabulary.count,
             embeddingSize: embeddingSize,
             embeddingsInitializer: truncatedNormalInitializer(
-                standardDeviation: Tensor<Scalar>(initializerStandardDeviation)),
-            useOneHotEmbeddings: useOneHotEmbeddings)
+                standardDeviation: Tensor<Scalar>(initializerStandardDeviation)))
 
         // The token type vocabulary will always be small and so we use the one-hot approach here
         // as it is always faster for small vocabularies.
-        self.tokenTypeEmbedding = RegularizableEmbedding<Scalar>(
+        self.tokenTypeEmbedding = Embedding<Scalar>(
             vocabularySize: typeVocabularySize,
             embeddingSize: embeddingSize,
             embeddingsInitializer: truncatedNormalInitializer(
-                standardDeviation: Tensor<Scalar>(initializerStandardDeviation)),
-            useOneHotEmbeddings: true)
+                standardDeviation: Tensor<Scalar>(initializerStandardDeviation)))
 
         // Since the position embeddings table is a learned variable, we create it using a (long)
         // sequence length, `maxSequenceLength`. The actual sequence length might be shorter than
@@ -157,12 +155,11 @@ public struct BERT: Module, Regularizable {
             case .roberta: return 2
             }
         }()
-        self.positionEmbedding = RegularizableEmbedding(
+        self.positionEmbedding = Embedding(
             vocabularySize: positionPaddingIndex + maxSequenceLength,
             embeddingSize: embeddingSize,
             embeddingsInitializer: truncatedNormalInitializer(
-                standardDeviation: Tensor(initializerStandardDeviation)),
-            useOneHotEmbeddings: false)
+                standardDeviation: Tensor(initializerStandardDeviation)))
 
         self.embeddingLayerNorm = LayerNorm<Scalar>(
             featureCount: hiddenSize,

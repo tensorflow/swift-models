@@ -36,6 +36,12 @@ extension LayerNorm: Regularizable {
     }
 }
 
+extension Embedding: Regularizable {
+    public var regularizationValue: TangentVector {
+        TangentVector(embeddings: embeddings)
+    }
+}
+
 /// A numerical optimizer.
 ///
 /// Optimizers apply an optimization algorithm to update the differentiable models.
