@@ -26,7 +26,8 @@ let imageHeight = 28
 let imageWidth = 28
 
 let outputFolder = "./output/"
-let dataset = OldKuzushijiMNIST(batchSize: batchSize, flattening: true)
+let dataset = KuzushijiMNIST(batchSize: batchSize, device: Device.default, 
+    entropy: SystemRandomNumberGenerator(), flattening: true)
 
 // An autoencoder.
 struct Autoencoder2D: Layer {
@@ -48,50 +49,23 @@ struct Autoencoder2D: Layer {
 
     @differentiable
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        let resize = input.reshaped(to: [localBatchSize, 28, 28, 1])
+        let resize = input.reshaped(to: [batchSize, 28, 28, 1])
         let encoder = resize.sequenced(through: encoder1,
             encoder2, encoder3, encoder4, encoder5, encoder6)
         let decoder = encoder.sequenced(through: decoder1,
             decoder2, decoder3, decoder4, decoder5, decoder6)
-        return output(decoder).reshaped(to: [localBatchSize, imageHeight * imageWidth])
+        return output(decoder).reshaped(to: [batchSize, imageHeight * imageWidth])
     }
 }
 
 var model = Autoencoder2D()
 let optimizer = AdaDelta(for: model)
 
-let individualTestImages = Batcher(on: dataset.test.dataset, batchSize: 1)
-var testImageIterator = individualTestImages.sequenced()
-var localBatchSize = batchSize
-
 // Training loop
-for epoch in 1...epochCount {
-    localBatchSize = 1
-    if let nextIndividualImage = testImageIterator.next() {
-        let sampleTensor = nextIndividualImage.first
-        let sampleImage = Tensor(
-            shape: [28, 28], scalars: sampleTensor.scalars)
-
-        let testImage = model(sampleImage).reshaped(to: [localBatchSize, 28, 28, 1])
-
-        do {
-            try saveImage(
-                sampleImage, shape: (imageWidth, imageHeight), format: .grayscale,
-                directory: outputFolder, name: "epoch-\(epoch)-input")
-            try saveImage(
-                testImage, shape: (imageWidth, imageHeight), format: .grayscale,
-                directory: outputFolder, name: "epoch-\(epoch)-output")
-        } catch {
-            print("Could not save image with error: \(error)")
-        }
-
-        let sampleLoss = meanSquaredError(predicted: testImage, expected: sampleImage)
-        print("[Epoch: \(epoch)] Loss: \(sampleLoss)")
-    }
-
-    localBatchSize = batchSize
-    for batch in dataset.training.sequenced() {
-        let x = batch.first
+for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
+    Context.local.learningPhase = .training
+    for batch in epochBatches {
+        let x = batch.data
 
         let 𝛁model = TensorFlow.gradient(at: model) { model -> Tensor<Float> in
             let image = model(x)
@@ -100,4 +74,33 @@ for epoch in 1...epochCount {
 
         optimizer.update(&model, along: 𝛁model)
     }
+
+    Context.local.learningPhase = .inference
+    var testLossSum: Float = 0
+    var testBatchCount = 0
+    for batch in dataset.validation {
+        let sampleImages = batch.data
+        let testImages = model(sampleImages)
+
+        do {
+            try saveImage(
+                sampleImages[0..<1], shape: (imageWidth, imageHeight), format: .grayscale,
+                directory: outputFolder, name: "epoch-\(epoch)-input")
+            try saveImage(
+                testImages[0..<1], shape: (imageWidth, imageHeight), format: .grayscale,
+                directory: outputFolder, name: "epoch-\(epoch)-output")
+        } catch {
+            print("Could not save image with error: \(error)")
+        }
+
+        testLossSum += meanSquaredError(predicted: testImages, expected: sampleImages).scalarized()
+        testBatchCount += 1
+    }
+
+    print(
+        """
+        [Epoch \(epoch)] \
+        Loss: \(testLossSum / Float(testBatchCount))
+        """
+    )
 }
