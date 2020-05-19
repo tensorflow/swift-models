@@ -170,8 +170,10 @@ func terminateTraining(
 ) -> Bool {
   if lossHistory.count <= patience { return false }
   let window = Array(lossHistory.suffix(patience))
+  guard let loss = lossHistory.last else { return false }
 
-  if window.min() == lossHistory.last && window.max() != lossHistory.last {
+  if window.min() == loss {
+    if window.max() == loss { return true }
     noImprovements = 0
   } else {
     noImprovements += 1
@@ -187,10 +189,11 @@ func reduceLROnPlateau(
 ) {
   let patience = 1
   if lossHistory.count <= patience { return }
+  guard let loss = lossHistory.last else { return }
 
   let window = Array(lossHistory.suffix(patience + 1))
 
-  if window.min() == lossHistory.last && window.max() != lossHistory.last { return }
+  if window.min() == loss && window.max() != loss { return }
 
   optimizer.learningRate = max(0.0, optimizer.learningRate * factor)
 }
