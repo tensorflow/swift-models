@@ -22,11 +22,13 @@ import ModelSupport
 import TensorFlow
 
 let epochCount = 10
+let batchSize = 128
 let imageHeight = 28
 let imageWidth = 28
 
 let outputFolder = "./output/"
-let dataset = OldMNIST(batchSize: 128, flattening: true)
+let dataset = MNIST(batchSize: batchSize, device: Device.default, 
+    entropy: SystemRandomNumberGenerator(), flattening: true)
 
 let inputDim = 784  // 28*28 for any MNIST
 let hiddenDim = 400
@@ -83,44 +85,11 @@ func vaeLossFunction(
     return crossEntropy + klDivergence
 }
 
-// TODO: Find a cleaner way of extracting individual images that doesn't require a second dataset.
-let singleImageDataset = OldMNIST(batchSize: 1, flattening: true)
-let individualTestImages = singleImageDataset.test
-var testImageIterator = individualTestImages.sequenced()
-
 // Training loop
-for epoch in 1...epochCount {
-    // Test for each epoch
-    if let nextIndividualImage = testImageIterator.next() {
-        let sampleTensor = nextIndividualImage.first
-        let sampleImage = Tensor(
-            shape: [1, imageHeight * imageWidth], scalars: sampleTensor.scalars)
-
-        let testOutputs = vae(sampleImage)
-        let testImage = testOutputs[0]
-        let testMu = testOutputs[1]
-        let testLogVar = testOutputs[2]
-        if epoch == 1 || epoch % 10 == 0 {
-            do {
-                try saveImage(
-                    sampleImage, shape: (imageWidth, imageHeight), format: .grayscale,
-                    directory: outputFolder, name: "epoch-\(epoch)-input")
-                try saveImage(
-                    testImage, shape: (imageWidth, imageHeight), format: .grayscale,
-                    directory: outputFolder, name: "epoch-\(epoch)-output")
-            } catch {
-                print("Could not save image with error: \(error)")
-            }
-        }
-
-        let sampleLoss = vaeLossFunction(
-            input: sampleImage, output: testImage, mu: testMu, logVar: testLogVar)
-        print("[Epoch: \(epoch)] Loss: \(sampleLoss)")
-    }
-
-    for batch in dataset.training.sequenced() {
-        let x = batch.first
-
+for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
+    Context.local.learningPhase = .training
+    for batch in epochBatches {
+        let x = batch.data
         let 𝛁model = TensorFlow.gradient(at: vae) { vae -> Tensor<Float> in
             let outputs = vae(x)
             let output = outputs[0]
@@ -128,7 +97,39 @@ for epoch in 1...epochCount {
             let logVar = outputs[2]
             return vaeLossFunction(input: x, output: output, mu: mu, logVar: logVar)
         }
-
         optimizer.update(&vae, along: 𝛁model)
     }
+
+    Context.local.learningPhase = .inference
+    var testLossSum: Float = 0
+    var testBatchCount = 0
+    for batch in dataset.validation {
+        let sampleImages = batch.data
+        let testOutputs = vae(sampleImages)
+        let testImages = testOutputs[0]
+        let testMus = testOutputs[1]
+        let testLogVars = testOutputs[2]
+        if epoch == 0 || (epoch + 1) % 10 == 0 {
+            do {
+                try saveImage(
+                    sampleImages[0..<1], shape: (imageWidth, imageHeight), format: .grayscale,
+                    directory: outputFolder, name: "epoch-\(epoch)-input")
+                try saveImage(
+                    testImages[0..<1], shape: (imageWidth, imageHeight), format: .grayscale,
+                    directory: outputFolder, name: "epoch-\(epoch)-output")
+            } catch {
+                print("Could not save image with error: \(error)")
+            }
+        }
+
+        testLossSum += vaeLossFunction(
+            input: sampleImages, output: testImages, mu: testMus, logVar: testLogVars).scalarized() / Float(batchSize)
+        testBatchCount += 1
+    }
+    print(
+        """
+        [Epoch \(epoch)] \
+        Loss: \(testLossSum / Float(testBatchCount))
+        """
+    )
 }
