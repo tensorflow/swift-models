@@ -18,13 +18,36 @@ import ModelSupport
 import TensorFlow
 import TextModels
 
-let bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
-let workspaceURL = URL(
-    fileURLWithPath: "bert_models", isDirectory: true,
-    relativeTo: URL(
-        fileURLWithPath: NSTemporaryDirectory(),
-        isDirectory: true))
-let bert = try BERT.PreTrainedModel.load(bertPretrained)(from: workspaceURL)
+let bertPretrained: BERT.PreTrainedModel
+let reader: CheckpointReader
+if CommandLine.arguments.count >= 2 {
+    if CommandLine.arguments[1].lowercased() == "albert" {
+        bertPretrained = BERT.PreTrainedModel.albertBase
+        let url = URL(string:
+            "https://storage.googleapis.com/tfhub-modules/google/albert_base/1.tar.gz")!
+        reader = try! CheckpointReader(checkpointLocation: url, modelName: "ALBERT")
+    } else if CommandLine.arguments[1].lowercased() == "roberta" {
+        bertPretrained = BERT.PreTrainedModel.robertaBase
+        let url = URL(string:
+            "https://storage.googleapis.com/s4tf-hosted-binaries/checkpoints/Text/RoBERTa/base.zip")!
+        reader = try! CheckpointReader(checkpointLocation: url, modelName: "RoBERTa")
+    } else {
+        bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
+        let url = URL(string:
+            "https://storage.googleapis.com/bert_models/2018_10_18/uncased_L-12_H-768_A-12.zip")!
+        reader = try! CheckpointReader(checkpointLocation: url, modelName: "BERT")
+    }
+} else {
+    bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
+    let url = URL(string:
+        "https://storage.googleapis.com/bert_models/2018_10_18/uncased_L-12_H-768_A-12.zip")!
+    reader = try! CheckpointReader(checkpointLocation: url, modelName: "BERT")
+}
+
+// TODO(michellecasbon): expose this.
+reader.isCRCVerificationEnabled = false
+
+let bert = try BERT.PreTrainedModel.load(bertPretrained)(from: reader)
 var bertClassifier = BERTClassifier(bert: bert, classCount: 1)
 
 // Regarding the batch size, note that the way batching is performed currently is that we bucket
@@ -40,6 +63,9 @@ var bertClassifier = BERTClassifier(bert: bert, classCount: 1)
 // Google and so the batch size setting here is expected to differ from that one.
 let maxSequenceLength = 128
 let batchSize = 1024
+
+let workspaceURL = URL(fileURLWithPath: "bert_models", isDirectory: true,
+    relativeTo: URL(fileURLWithPath: NSTemporaryDirectory(),isDirectory: true))
 
 var cola = try CoLA(
   taskDirectoryURL: workspaceURL,
