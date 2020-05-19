@@ -97,7 +97,9 @@ extension SemiRing {
   // TODO(abdulras) see if we can use ulp as a default tolerance
   @inlinable
   public func isAlmostEqual(to other: Self, tolerance: Float) -> Bool {
-    return self.logp.isAlmostEqual(to: other.logp, tolerance: tolerance)
-      && self.logr.isAlmostEqual(to: other.logr, tolerance: tolerance)
+    return (self.logp.isAlmostEqual(to: other.logp, tolerance: tolerance)
+      || (self.logp.scalarized().isInfinite && other.logp.scalarized().isInfinite))
+      && (self.logr.isAlmostEqual(to: other.logr, tolerance: tolerance)
+      || (self.logr.scalarized().isInfinite && other.logr.scalarized().isInfinite))
   }
 }
