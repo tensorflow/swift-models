@@ -189,6 +189,7 @@ func reduceLROnPlateau(
 ) {
   let patience = 1
   let threshold: Float = 1e-4
+  let minDecay: Float = 1e-8
   if lossHistory.count <= patience { return }
   guard let loss = lossHistory.last else { return }
 
@@ -196,5 +197,8 @@ func reduceLROnPlateau(
 
   if loss >= window.min()! * (1 - threshold) && loss != window.max() { return }
 
-  optimizer.learningRate = max(0.0, optimizer.learningRate * factor)
+  let newLR = optimizer.learningRate * factor
+  if newLR > minDecay {
+    optimizer.learningRate = newLR
+  }
 }
