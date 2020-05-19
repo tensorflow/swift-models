@@ -124,9 +124,13 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 
   /// Returns the hidden states of the encoder LSTM applied to the given sentence.
   public func encode(_ x: CharacterSequence) -> [Tensor<Float>] {
-    let embedded = dropout(encoderEmbedding(x.tensor))
+    var embedded = encoderEmbedding(x.tensor)
+    embedded = dropout(embedded)
     let encoderStates = encoderLSTM(embedded.unstacked().differentiableMap { $0.rankLifted() })
-    return encoderStates.differentiableMap { $0.hidden.squeezingShape(at: 0) }
+    var encoderResult = Tensor(
+      stacking: encoderStates.differentiableMap { $0.hidden.squeezingShape(at: 0) })
+    encoderResult = dropout(encoderResult)
+    return encoderResult.unstacked()
   }
 
   // MARK: - Decode
@@ -158,7 +162,8 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
     let y: Tensor<Int32> = Tensor(shape: [candidates.count, maxLen], scalars: yBatch).transposed()
 
     // [time x batch x ndim]
-    let embeddedX = dropout(decoderEmbedding(x))
+    var embeddedX = decoderEmbedding(x)
+    embeddedX = dropout(embeddedX)
 
     // [batch x ndim]
     let stateBatch = state.rankLifted().tiled(multiples: Tensor([Int32(candidates.count), 1]))
@@ -171,9 +176,9 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
         hidden: stateBatch))
 
     // [time x batch x ndim]
-    // TODO: Need to add dropout here, but it breaks AD.
-    let decoderResult = Tensor(
+    var decoderResult = Tensor(
       stacking: decoderStates.differentiableMap { $0.hidden })
+    decoderResult = dropout(decoderResult)
 
     // [time x batch x chrVocab.count]
     let logits = decoderDense(decoderResult)
