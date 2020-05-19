@@ -16,5 +16,8 @@ let benchmarkModelTypes: [BenchmarkModel.Type] = [
     LeNetMNIST.self,
     ResNetCIFAR10.self,
     ResNetImageNet.self,
+    WordSegScore.self,
+    WordSegScoreAndGradient.self,
+    WordSegViterbi.self,
 ]
 let benchmarkModels = Dictionary(uniqueKeysWithValues: benchmarkModelTypes.map { ($0.name, $0) })
