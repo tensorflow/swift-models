@@ -26,7 +26,7 @@ let maxEpochs = 1000  // Maximum number of training epochs.
 var trainingLossHistory = [Float]()  // Keep track of loss.
 var validationLossHistory = [Float]()  // Keep track of loss.
 var noImprovements = 0  // Consecutive epochs without improvements to loss.
-var learningRate = 1e-3  // Learning rate.
+let learningRate: Float = 1e-3  // Initial learning rate.
 let lambd: Float = 0.00075  // Weight of length penalty.
 // Lexicon flags.
 let maxLength = 10  // Maximum length of a string.
@@ -67,7 +67,7 @@ let modelParameters = SNLM.Parameters(
 
 var model = SNLM(parameters: modelParameters)
 
-let optimizer = Adam(for: model)
+let optimizer = Adam(for: model, learningRate: learningRate)
 
 print("Starting training...")
 
