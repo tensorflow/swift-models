@@ -195,8 +195,8 @@ func reduceLROnPlateau(
   guard let loss = window.last else { return }
 
   if loss <= previous * (1 - threshold) { return }
-    let newLR = optimizer.learningRate * factor
-    if optimizer.learningRate - newLR > minDecay {
-      optimizer.learningRate = newLR
-    }
+  let newLR = optimizer.learningRate * factor
+  if optimizer.learningRate - newLR > minDecay {
+    optimizer.learningRate = newLR
+  }
 }
