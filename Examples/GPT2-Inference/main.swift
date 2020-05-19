@@ -35,8 +35,12 @@ if CommandLine.arguments.count == 3 {
 for _ in 0..<100 {
     do {
         try print(gpt.generate(), terminator: "")
+    } catch GPT2.GPT2Error.invalidEncoding(let id) {
+        print("ERROR: Invalid encoding: \(id)")
+    } catch GPT2.GPT2Error.invalidSeed(let seed) {
+        print("ERROR: Invalid seed: \(seed)")
     } catch {
-        continue
+        fatalError("ERROR: Unexpected error: \(error).")
     }
 }
 print()
