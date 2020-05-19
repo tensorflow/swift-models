@@ -23,8 +23,8 @@ let ndim = 512  // Hidden unit size.
 let dropoutProb = 0.5  // Dropout rate.
 let order = 5  // Power of length penalty.
 let maxEpochs = 1000  // Maximum number of training epochs.
-var trainingLossHistory = Array<Float>()  // Keep track of loss.
-var validationLossHistory = Array<Float>()  // Keep track of loss.
+var trainingLossHistory = [Float]()  // Keep track of loss.
+var validationLossHistory = [Float]()  // Keep track of loss.
 var noImprovements = 0  // Consecutive epochs without improvements to loss.
 var learningRate = 1e-3  // Learning rate.
 let lambd: Float = 0.00075  // Weight of length penalty.
@@ -110,8 +110,10 @@ for epoch in 1...maxEpochs {
     )
 
     // Stop training when loss stops improving.
-    if terminateTraining(lossHistory: trainingLossHistory,
-      noImprovements: &noImprovements) {
+    if terminateTraining(
+      lossHistory: trainingLossHistory,
+      noImprovements: &noImprovements)
+    {
       break
     }
 
@@ -144,7 +146,9 @@ for epoch in 1...maxEpochs {
 
   // Stop training when loss stops improving.
   validationLossHistory.append(validationLoss)
-  if terminateTraining(lossHistory: validationLossHistory, noImprovements: &noImprovements) { break }
+  if terminateTraining(lossHistory: validationLossHistory, noImprovements: &noImprovements) {
+    break
+  }
 }
 
 func hasNaN<T: KeyPathIterable>(_ t: T) -> Bool {
@@ -162,7 +166,8 @@ func usage() -> Never {
 }
 
 func terminateTraining(
-  lossHistory: [Float], noImprovements: inout Int, patience: Int = 3) -> Bool {
+  lossHistory: [Float], noImprovements: inout Int, patience: Int = 5
+) -> Bool {
   if lossHistory.count <= patience { return false }
   let window = Array(lossHistory.suffix(patience))
 
@@ -176,8 +181,10 @@ func terminateTraining(
   return false
 }
 
-func reduceLROnPlateau(lossHistory: [Float], optimizer: Adam<SNLM>,
-  factor: Float = 0.25) {
+func reduceLROnPlateau(
+  lossHistory: [Float], optimizer: Adam<SNLM>,
+  factor: Float = 0.25
+) {
   let patience = 1
   if lossHistory.count <= patience { return }
 
