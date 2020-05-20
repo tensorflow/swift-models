@@ -80,8 +80,8 @@ let package = Package(
             dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
             path: "Examples/MobileNetV2-Imagenette"),
         .target(
-            name: "Personlab", dependencies: ["ModelSupport", "SwiftCV", .product(name: "ArgumentParser", package: "swift-argument-parser")],
-            path: "Examples/Personlab"),
+            name: "PersonLab", dependencies: ["ModelSupport", "SwiftCV", .product(name: "ArgumentParser", package: "swift-argument-parser")],
+            path: "Examples/PersonLab"),
         .target(
             name: "MiniGo", dependencies: ["Checkpoints"], path: "MiniGo", exclude: ["main.swift"]),
         .target(
