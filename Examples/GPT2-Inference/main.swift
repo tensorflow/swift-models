@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import ModelSupport
 import TextModels
 
 let gpt: GPT2 = try GPT2()
@@ -37,8 +38,8 @@ for _ in 0..<100 {
         try print(gpt.generate(), terminator: "")
     } catch GPT2.GPT2Error.invalidEncoding(let id) {
         print("ERROR: Invalid encoding: \(id)")
-    } catch GPT2.GPT2Error.invalidSeed(let seed) {
-        print("ERROR: Invalid seed: \(seed)")
+    } catch BytePairEncoder.BPEError.unsupported {
+        print(" ", terminator: "")
     } catch {
         fatalError("ERROR: Unexpected error: \(error).")
     }
