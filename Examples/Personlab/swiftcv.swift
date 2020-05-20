@@ -9,8 +9,6 @@ public protocol ConvertibleFromCvMat {
 extension ShapedArray : ConvertibleFromCvMat {
     /// Creates a `ShapedArray` with the same shape and scalars as the specified
     /// `Mat` instance.
-    ///
-    /// TODO sanity checks
     public init?(cvMat: SwiftCV.Mat) {
         let matShape: [Int] = [cvMat.rows, cvMat.cols, cvMat.channels]
         // Make sure that the array is contiguous in memory. This does a copy if
@@ -39,8 +37,6 @@ extension ShapedArray : ConvertibleFromCvMat {
 extension Tensor : ConvertibleFromCvMat {
     /// Creates a tensor with the same shape and scalars as the specified
     /// `Mat` instance.
-    ///
-    /// TODO sanity checks
     public init?(cvMat: SwiftCV.Mat) {
         let matShape: [Int] = [cvMat.rows, cvMat.cols, cvMat.channels]
         let tensorShape = TensorShape(matShape)

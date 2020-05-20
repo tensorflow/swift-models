@@ -1,24 +1,5 @@
 import TensorFlow
 
-struct CPUTensor<T: TensorFlowScalar> {
-  private var flattenedTensor: [T]
-  var shape: TensorShape
-
-  init(_ tensor: Tensor<T>) {
-    self.flattenedTensor = tensor.scalars
-    self.shape = tensor.shape
-  }
-
-  subscript(indexes: Int...) -> T {
-    var oneDimensionalIndex = 0
-    for i in 1..<shape.count {
-      oneDimensionalIndex += indexes[i - 1] * shape[i...].reduce(1, *)
-    }
-    // Last dimension doesn't have multipliers.
-    oneDimensionalIndex += indexes.last!
-    return flattenedTensor[oneDimensionalIndex]
-  }
-}
 
 struct Keypoint {
   var y: Float
