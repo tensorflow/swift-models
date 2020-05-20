@@ -41,9 +41,9 @@ public struct WordSegDataset {
     var strings = [String]()
 
     for line in contents.components(separatedBy: .newlines) {
-      let stripped: String = line.components(separatedBy: .whitespaces).joined()
-      if stripped.isEmpty { continue }
-      strings.append(stripped)
+      let trimmed = line.trimmingCharacters(in: .whitespaces)
+      if trimmed.isEmpty { continue }
+      strings.append(trimmed)
     }
     return strings
   }
@@ -77,10 +77,11 @@ public struct WordSegDataset {
     -> [WordSegRecord]
   {
     return try dataset.map {
-      try WordSegRecord(
+      let trimmed = $0.components(separatedBy: .whitespaces).joined()
+      return try WordSegRecord(
         plainText: $0,
         numericalizedText: CharacterSequence(
-          alphabet: alphabet, appendingEoSTo: $0))
+          alphabet: alphabet, appendingEoSTo: trimmed))
     }
   }
   private static func convertDataset(_ dataset: [String]?, alphabet: Alphabet) throws
