@@ -16,7 +16,7 @@ import Foundation
 
 public struct BytePairEncoder {
     public enum BPEError: Error {
-        case unsupported
+        case invalidGeneratedToken
     }
 
     public let vocabulary: Vocabulary
@@ -293,7 +293,7 @@ extension BytePairEncoder {
 
         // TODO(#385): Support unicode strings with multibyte scalars.
         guard let decodedToken = String(bytes: buffer, encoding: .utf8) else {
-            throw BPEError.unsupported
+            throw BPEError.invalidGeneratedToken
         }
 
         return decodedToken

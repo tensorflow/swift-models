@@ -38,7 +38,7 @@ for _ in 0..<100 {
         try print(gpt.generate(), terminator: "")
     } catch GPT2.GPT2Error.invalidEncoding(let id) {
         print("ERROR: Invalid encoding: \(id)")
-    } catch BytePairEncoder.BPEError.unsupported {
+    } catch BytePairEncoder.BPEError.invalidGeneratedToken {
         print(" ", terminator: "")
     } catch {
         fatalError("ERROR: Unexpected error: \(error).")
