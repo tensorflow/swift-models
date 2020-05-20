@@ -63,7 +63,12 @@ where
     /// The current step.
     public var step: UInt64 = 0 {
         didSet {
-            self.learningRate = self.scheduledLearningRate(forStep: step)
+            if useBiasCorrection {
+                let step = Float(self.step)
+                learningRate *= sqrtf(1 - powf(beta2, step)) / (1 - powf(beta1, step))
+            } else {
+                learningRate = scheduledLearningRate(forStep: step)
+            }
         }
     }
 
@@ -122,10 +127,6 @@ where
         let denominator = Model.TangentVector.sqrt(secondMoments).adding(epsilon)
         let weightDecay = model.regularizationValue.scaled(by: weightDecayRate)
         let update = firstMoments ./ denominator + weightDecay
-        if useBiasCorrection {
-            let step = Float(self.step)
-            learningRate *= sqrtf(1 - powf(beta2, step)) / (1 - powf(beta1, step))
-        }
         model.move(along: update.scaled(by: -learningRate))
     }
 }
