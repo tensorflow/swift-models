@@ -14,10 +14,6 @@ add_library(Datasets
   MNIST/MNIST.swift
   MNIST/FashionMNIST.swift
   MNIST/KuzushijiMNIST.swift
-  MNIST/OldMNISTDatasetHandler.swift
-  MNIST/OldMNIST.swift
-  MNIST/OldFashionMNIST.swift
-  MNIST/OldKuzushijiMNIST.swift
   ObjectDetectionDataset.swift
   BostonHousing/BostonHousing.swift
   TextUnsupervised/TextUnsupervised.swift
