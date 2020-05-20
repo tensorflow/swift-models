@@ -23,4 +23,3 @@ public struct WordSegRecord {
     self.numericalizedText = numericalizedText
   }
 }
-

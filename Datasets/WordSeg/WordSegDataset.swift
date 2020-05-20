@@ -78,7 +78,8 @@ public struct WordSegDataset {
   {
     return try dataset.map {
       try WordSegRecord(
-        plainText: $0, numericalizedText: CharacterSequence(
+        plainText: $0,
+        numericalizedText: CharacterSequence(
           alphabet: alphabet, appendingEoSTo: $0))
     }
   }

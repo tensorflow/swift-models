@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import TensorFlow
 import Datasets
 import ModelSupport
+import TensorFlow
 import XCTest
 
 @testable import TextModels
@@ -74,4 +74,3 @@ class WordSegSemiRingTests: XCTestCase {
     ("test_SemiRingMultiply", test_SemiRingMultiply),
   ]
 }
-

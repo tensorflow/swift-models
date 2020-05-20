@@ -60,7 +60,7 @@ public struct Lattice: Differentiable {
 
     @differentiable
     public init(
-      start: Int, end: Int, string: CharacterSequence, logp:Tensor<Float>,
+      start: Int, end: Int, string: CharacterSequence, logp: Tensor<Float>,
       score: SemiRing, totalScore: SemiRing
     ) {
       self.start = start
