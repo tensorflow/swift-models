@@ -99,9 +99,10 @@ def extract_metrics(result, variety, backend):
   wall_time = total_time / 1000.0
 
   # Average examples per second across the entire benchmark run,
-  # including warmup period. Assumes a single warmup batch.
+  # including warmup period. Assumes two warmup batches.
+  # TODO: Lower to one batch when we have better-shaped zero tangent vectors.
   total_time_s = total_time / 1000.0
-  total_num_examples = batch_size * (batch_count + 1)
+  total_num_examples = batch_size * (batch_count + 2)
   average_examples_per_second = total_num_examples / total_time_s
 
   # Examples per second, calculated after warmup period

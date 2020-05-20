@@ -1,11 +1,17 @@
 # Word Segmentation
 
-This example demonstrates how to train the [word segmentation model][paper]
-against the dataset provided in the paper.
+This example demonstrates how to train the [word segmentation model][model]
+against the dataset provided in the paper
+["Learning to Discover, Ground, and Use Words with Segmental Neural Language
+Models"][paper]
+by Kazuya Kawakami, Chris Dyer, and Phil Blunsom.
 
 A segmental neural language model (SNLM) is instantiated from the library of
 standard models. A custom training loop is defined and the training
 losses for each epoch are shown.
+
+This implementation is not affiliated with DeepMind and has not been verified by
+the authors.
 
 ## Setup
 
@@ -34,5 +40,6 @@ cd swift-models
 swift run -c release WordSeg path/to/training_data.txt [path/to/validation_data.txt [path/to/test_data.txt]]
 ```
 
-[s4tf]: https://github.com/tensorflow/swift/blob/master/Installation.md
+[model]: https://github.com/tensorflow/swift-models/tree/master/Models/Text/WordSeg
 [paper]: https://www.aclweb.org/anthology/P19-1645.pdf
+[s4tf]: https://github.com/tensorflow/swift/blob/master/Installation.md

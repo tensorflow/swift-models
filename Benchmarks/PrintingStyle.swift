@@ -85,7 +85,12 @@ extension BenchmarkConfiguration {
         } else {
             result += "--real "
         }
-        result += "--batches \(settings.batches) "
+        switch settings.duration {
+        case let .batches(value):
+            result += "--batches \(value) "
+        case let .epochs(value):
+            result += "--epochs \(value) "
+        }
         result += "--batchSize \(settings.batchSize) "
         result += "--iterations \(settings.iterations) "
         result += "--warmupBatches \(settings.warmupBatches) "

@@ -20,8 +20,9 @@ public class GPT2 {
     public static let remoteCheckpoint: URL =
         URL(string: "https://storage.googleapis.com/gpt-2/models/117M/model.ckpt")!
 
-    enum GPT2Error: Error {
+    public enum GPT2Error: Error {
         case invalidEncoding(id: Int32)
+        case invalidSeed(seed: Tensor<Int32>)
     }
 
     public var model: TransformerLM
@@ -49,16 +50,16 @@ public class GPT2 {
                 "model.ckpt.meta",
                 "vocab.bpe",
             ]
-            let FS: FileManager = FileManager.default
-            let storage: URL = FS.temporaryDirectory.appendingPathComponent("Transformer")
 
             let reader: CheckpointReader = try CheckpointReader(
                 checkpointLocation: checkpoint,
-                modelName: "Transformer",
+                modelName: "GPT2-\(checkpoint.pathComponents.dropLast().last ?? "")",
                 additionalFiles: auxiliary)
             // TODO(michellecasbon): expose this.
             reader.isCRCVerificationEnabled = false
 
+            let storage: URL = reader.localCheckpointLocation.deletingLastPathComponent()
+            
             // Load model configuration.
             let hparamsFile: URL = storage.appendingPathComponent("hparams.json")
             let configuration: (file: URL, data: Data) = try (
@@ -154,7 +155,9 @@ public class GPT2 {
             randomCategorialLogits: logits.squeezingShape(at: 1),
             sampleCount: 1)
 
-        let id = Int32(seed[0][0])!
+        guard let id = Int32(seed[0][0]) else {
+          throw GPT2Error.invalidSeed(seed: seed)
+        }
         if id == Int32(endOfTextId) {
             // Replace with newline.
             return "\r\n"

@@ -22,19 +22,19 @@ where
     Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == Float,
     ClassificationDataset: ImageClassificationData
 {
-    let batches: Int
+    let duration: BenchmarkDuration
     let batchSize: Int
 
-    var exampleCount: Int {
-        return batches * batchSize
-    }
-
     init(settings: BenchmarkSettings) {
-        self.batches = settings.batches
+        self.duration = settings.duration
         self.batchSize = settings.batchSize
     }
 
     func run(backend: Backend) -> [Double] {
+        // Include model and optimizer initialization time in first batch, to be part of warmup.
+        // Also include time for following workaround to allocate memory for eager runtime.
+        var beforeBatch = timestampInMilliseconds()
+
         // Note: The this initial eager-mode tensor computation is needed, or all GPU memory
         // will be exhausted on initial allocation of the model.
         // TODO: Remove the following tensor workaround when above is fixed.
@@ -48,8 +48,6 @@ where
         case .x10: device = Device.defaultXLA
         }
 
-        // Include model and optimizer initialization time in first batch, to be part of warmup.
-        var beforeBatch = timestampInMilliseconds()
         var model = Model()
         model.move(to: device)
         // TODO: Split out the optimizer as a separate specification.
@@ -61,7 +59,11 @@ where
         let dataset = ClassificationDataset(batchSize: batchSize, on: device)
 
         Context.local.learningPhase = .training
-        for epochBatches in dataset.training {
+        for (epoch, epochBatches) in dataset.training.enumerated() {
+            if case let .epochs(epochs) = duration, epoch >= epochs {
+                return batchTimings
+            }
+
             for batch in epochBatches {
                 let (images, labels) = (batch.data, batch.label)
 
@@ -73,7 +75,7 @@ where
                 LazyTensorBarrier()
                 batchTimings.append(durationInMilliseconds(since: beforeBatch))
                 currentBatch += 1
-                if currentBatch >= self.batches {
+                if case let .batches(batches) = duration, currentBatch >= batches {
                     return batchTimings
                 }
                 beforeBatch = timestampInMilliseconds()

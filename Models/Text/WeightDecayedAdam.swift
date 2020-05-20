@@ -14,26 +14,15 @@
 
 import TensorFlow
 
-/// Represents a type that can contribute to the regularization term when training models.
-public protocol Regularizable: Differentiable {
-    /// The contribution of this term to the regularization term. This should be set to
-    /// `TangentVector.zero` if this term should not contribute to the regularization term
-    /// (e.g., for layer normalization parameters).
-    var regularizationValue: TangentVector { get }
-}
+/// A numerical optimizer.
+///
+/// Optimizers apply an optimization algorithm to update the differentiable models.
+public protocol Optimizer {
+    /// The type of the model whose parameters are optimized.
+    associatedtype Model: Differentiable
 
-extension Dense: Regularizable {
-    public var regularizationValue: TangentVector {
-        TangentVector(weight: weight, bias: Tensor(Scalar(0), on: bias.device))
-    }
-}
-
-extension LayerNorm: Regularizable {
-    public var regularizationValue: TangentVector {
-        TangentVector(
-            offset: Tensor(Scalar(0), on: offset.device), scale: Tensor(Scalar(0), on: scale.device)
-        )
-    }
+    /// Updates the provided model along the specified direction.
+    mutating func update(_ model: inout Model, along direction: Model.TangentVector)
 }
 
 /// Adam optimizer with weight decay.

@@ -23,8 +23,10 @@ let ndim = 512  // Hidden unit size.
 let dropoutProb = 0.5  // Dropout rate.
 let order = 5  // Power of length penalty.
 let maxEpochs = 1000  // Maximum number of training epochs.
-var lossHistory = Array<Float>() // Keep track of loss.
-var noImprovements = 0 // Consecutive epochs without improvements to loss.
+var trainingLossHistory = [Float]()  // Keep track of loss.
+var validationLossHistory = [Float]()  // Keep track of loss.
+var noImprovements = 0  // Consecutive epochs without improvements to loss.
+let learningRate: Float = 1e-3  // Initial learning rate.
 let lambd: Float = 0.00075  // Weight of length penalty.
 // Lexicon flags.
 let maxLength = 10  // Maximum length of a string.
@@ -65,7 +67,7 @@ let modelParameters = SNLM.Parameters(
 
 var model = SNLM(parameters: modelParameters)
 
-let optimizer = Adam(for: model)
+let optimizer = Adam(for: model, learningRate: learningRate)
 
 print("Starting training...")
 
@@ -94,9 +96,12 @@ for epoch in 1...maxEpochs {
     }
   }
 
-  guard let validationDataset = dataset.validation else {
-    let trainingLoss = trainingLossSum / Float(trainingBatchCount)
+  // Decrease the learning rate if loss is stagnant.
+  let trainingLoss = trainingLossSum / Float(trainingBatchCount)
+  trainingLossHistory.append(trainingLoss)
+  reduceLROnPlateau(lossHistory: trainingLossHistory, optimizer: optimizer)
 
+  guard let validationDataset = dataset.validation else {
     print(
       """
       [Epoch \(epoch)] \
@@ -105,12 +110,11 @@ for epoch in 1...maxEpochs {
     )
 
     // Stop training when loss stops improving.
-    lossHistory.append(trainingLoss)
-    if lossHistory.min() == trainingLoss {
-      noImprovements = 0
-    } else {
-      noImprovements += 1
-      if noImprovements >= 5 { break }
+    if terminateTraining(
+      lossHistory: trainingLossHistory,
+      noImprovements: &noImprovements)
+    {
+      break
     }
 
     continue
@@ -141,12 +145,9 @@ for epoch in 1...maxEpochs {
   )
 
   // Stop training when loss stops improving.
-  lossHistory.append(validationLoss)
-  if lossHistory.min() == validationLoss {
-    noImprovements = 0
-  } else {
-    noImprovements += 1
-    if noImprovements >= 5 { break }
+  validationLossHistory.append(validationLoss)
+  if terminateTraining(lossHistory: validationLossHistory, noImprovements: &noImprovements) {
+    break
   }
 }
 
@@ -162,4 +163,40 @@ func usage() -> Never {
     "\(CommandLine.arguments[0]) path/to/training_data.txt [path/to/validation_data.txt [path/to/test_data.txt]]"
   )
   exit(1)
+}
+
+func terminateTraining(
+  lossHistory: [Float], noImprovements: inout Int, patience: Int = 5
+) -> Bool {
+  if lossHistory.count <= patience { return false }
+  let window = Array(lossHistory.suffix(patience))
+  guard let loss = lossHistory.last else { return false }
+
+  if window.min() == loss {
+    if window.max() == loss { return true }
+    noImprovements = 0
+  } else {
+    noImprovements += 1
+    if noImprovements >= patience { return true }
+  }
+
+  return false
+}
+
+func reduceLROnPlateau(
+  lossHistory: [Float], optimizer: Adam<SNLM>,
+  factor: Float = 0.25
+) {
+  let threshold: Float = 1e-4
+  let minDecay: Float = 1e-8
+  if lossHistory.count < 2 { return }
+  let window = Array(lossHistory.suffix(2))
+  guard let previous = window.first else { return }
+  guard let loss = window.last else { return }
+
+  if loss <= previous * (1 - threshold) { return }
+  let newLR = optimizer.learningRate * factor
+  if optimizer.learningRate - newLR > minDecay {
+    optimizer.learningRate = newLR
+  }
 }

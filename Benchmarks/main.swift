@@ -172,20 +172,19 @@ extension BenchmarkCommand {
             let benchmarkModel = benchmarkModels[benchmark!]!
             let defaults = benchmarkModel.defaults(for: variety)
             let batchSizeToUse = batchSize ?? defaults.batchSize
-            let specifiedBatches: Int?
+            var duration: BenchmarkDuration?
             if let epochs = epochs {
-                specifiedBatches = epochs * (benchmarkModel.examplesPerEpoch(for: variety)
-                    / batchSizeToUse)
-            } else {
-                specifiedBatches = batches
+                duration = .epochs(epochs)
+            } else if let batches = batches {
+                duration = .batches(batches)
             }
-            
+            let syntheticDataset = (synthetic || real) ? synthetic : defaults.synthetic
             let settings = BenchmarkSettings(
-                batches: specifiedBatches ?? defaults.batches,
+                duration: duration ?? defaults.duration,
                 batchSize: batchSizeToUse,
                 iterations: iterations ?? defaults.iterations,
                 warmupBatches: warmupBatches ?? defaults.warmupBatches,
-                synthetic: synthetic, backend: backend)
+                synthetic: syntheticDataset, backend: backend)
 
             runBenchmark(
                 benchmarkModel,
