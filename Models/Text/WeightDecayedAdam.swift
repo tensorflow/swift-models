@@ -14,17 +14,6 @@
 
 import TensorFlow
 
-/// A numerical optimizer.
-///
-/// Optimizers apply an optimization algorithm to update the differentiable models.
-public protocol Optimizer {
-    /// The type of the model whose parameters are optimized.
-    associatedtype Model: Differentiable
-
-    /// Updates the provided model along the specified direction.
-    mutating func update(_ model: inout Model, along direction: Model.TangentVector)
-}
-
 /// Adam optimizer with weight decay.
 ///
 /// Reference: ["Adam - A Method for Stochastic Optimization"](
@@ -37,7 +26,9 @@ where
     LearningRate.Scalar == Float
 {
     /// The learning rate to use when updating models.
-    public var learningRate: LearningRate
+    public var scheduledLearningRate: LearningRate
+
+    public var learningRate: Float
 
     /// The weight decay rate.
     public var weightDecayRate: Float
@@ -59,7 +50,16 @@ where
     public var maxGradientGlobalNorm: Float?
 
     /// The current step.
-    public var step: UInt64 = 0
+    public var step: UInt64 = 0 {
+        didSet {
+            if useBiasCorrection {
+                let step = Float(self.step)
+                learningRate *= sqrtf(1 - powf(beta2, step)) / (1 - powf(beta1, step))
+            } else {
+                learningRate = scheduledLearningRate(forStep: step)
+            }
+        }
+    }
 
     /// The first moments of the weights.
     public var firstMoments: Model.TangentVector = .zero
@@ -69,7 +69,7 @@ where
 
     public init(
         for model: __shared Model,
-        learningRate: LearningRate,
+        scheduledLearningRate: LearningRate,
         weightDecayRate: Float = 0.01,
         useBiasCorrection: Bool = true,
         beta1: Float = 0.9,
@@ -80,7 +80,8 @@ where
         precondition(0 <= beta1 && beta1 <= 1, "Beta parameter must be between 0 and 1")
         precondition(0 <= beta2 && beta2 <= 1, "Beta parameter must be between 0 and 1")
 
-        self.learningRate = learningRate
+        self.scheduledLearningRate = scheduledLearningRate
+        self.learningRate = self.scheduledLearningRate(forStep: step)
         self.weightDecayRate = weightDecayRate
         self.useBiasCorrection = useBiasCorrection
         self.beta1 = beta1
@@ -90,6 +91,7 @@ where
     }
 
     public init(copying other: WeightDecayedAdam, to device: Device) {
+        self.scheduledLearningRate = other.scheduledLearningRate
         self.learningRate = other.learningRate
         self.weightDecayRate = other.weightDecayRate
         self.useBiasCorrection = other.useBiasCorrection
@@ -114,11 +116,6 @@ where
         let denominator = Model.TangentVector.sqrt(secondMoments).adding(epsilon)
         let weightDecay = model.regularizationValue.scaled(by: weightDecayRate)
         let update = firstMoments ./ denominator + weightDecay
-        var learningRate = self.learningRate(forStep: step)
-        if useBiasCorrection {
-            let step = Float(self.step)
-            learningRate *= sqrtf(1 - powf(beta2, step)) / (1 - powf(beta1, step))
-        }
         model.move(along: update.scaled(by: -learningRate))
     }
 }

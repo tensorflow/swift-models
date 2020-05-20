@@ -57,7 +57,7 @@ print("Dataset acquired.")
 
 var optimizer = WeightDecayedAdam(
     for: bertClassifier,
-    learningRate: LinearlyDecayedParameter(
+    scheduledLearningRate: LinearlyDecayedParameter(
         baseParameter: LinearlyWarmedUpParameter(
             baseParameter: FixedParameter<Float>(2e-5),
             warmUpStepCount: 10,
