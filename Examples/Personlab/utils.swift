@@ -3,7 +3,9 @@ import ModelSupport
 import SwiftCV
 
 
-struct Config {
+public struct Config {
+    let checkpointPath: String
+    let printProfilingData: Bool
     let inputImageSize = (height: 241, width: 289)
 
     // Decoder
@@ -26,7 +28,7 @@ extension CheckpointReader {
 }
 
 
-func draw(_ pose: Pose, on image: Mat) {
+func draw(_ pose: Pose, on image: Mat, color: Scalar, lineWidth: Int32) {
   var pose = pose
   pose.rescale(to: (height: image.rows, width: image.cols))
 
@@ -36,7 +38,7 @@ func draw(_ pose: Pose, on image: Mat) {
         if let nextKeypoint = pose.getKeypoint(nextKeypointIndex) {
           let point1 = Point(x: Int32(previousKeypoint.x), y: Int32(previousKeypoint.y))
           let point2 = Point(x: Int32(nextKeypoint.x), y: Int32(nextKeypoint.y))
-          line(img: image, pt1: point1, pt2: point2, color: config.color, thickness: config.lineWidth)
+          line(img: image, pt1: point1, pt2: point2, color: color, thickness: lineWidth)
           recursivellyDrawNextKeypoint(after: nextKeypoint, into: image)
         }
       }

@@ -26,9 +26,9 @@ struct Keypoint {
   let index: KeypointIndex
   let score: Float
 
-  init(heatmapY: Int, heatmapX: Int, index: Int, score: Float, offsets: CPUTensor<Float>) {
-    self.y = Float(heatmapY) * Float(config.outputStride) + offsets[heatmapY, heatmapX, index]
-    self.x = Float(heatmapX) * Float(config.outputStride) + offsets[heatmapY, heatmapX, index + KeypointIndex.allCases.count]
+  init(heatmapY: Int, heatmapX: Int, index: Int, score: Float, offsets: CPUTensor<Float>, outputStride: Int) {
+    self.y = Float(heatmapY) * Float(outputStride) + offsets[heatmapY, heatmapX, index]
+    self.x = Float(heatmapX) * Float(outputStride) + offsets[heatmapY, heatmapX, index + KeypointIndex.allCases.count]
     self.index = KeypointIndex(rawValue: index)!
     self.score = score
   }
@@ -40,7 +40,7 @@ struct Keypoint {
     self.score = score
   }
 
-  func isWithinRadiusOfCorrespondingPoint(in poses: [Pose], radius: Float = config.nmsRadius) -> Bool {
+  func isWithinRadiusOfCorrespondingKeypoints(in poses: [Pose], radius: Float) -> Bool {
     return poses.contains { pose in
       let correspondingKeypoint = pose.getKeypoint(self.index)!
       let dy = correspondingKeypoint.y - self.y
@@ -116,9 +116,9 @@ let keypointPairToDisplacementIndexMap: [Set<KeypointIndex>: Int] = [
   Set([.rightKnee, .rightAnkle]): 15
 ]
 
-struct Pose  {
+public struct Pose  {
   var keypoints: [Keypoint?] = Array(repeating: nil, count: KeypointIndex.allCases.count)
-  var resolution = config.inputImageSize
+  var resolution: (height: Int, width: Int)
 
   mutating func add(_ keypoint: Keypoint) {
     keypoints[keypoint.index.rawValue] = keypoint
@@ -141,7 +141,7 @@ struct Pose  {
 }
 
 extension Pose: CustomStringConvertible {
-  var description: String {
+  public var description: String {
     var description = ""
     for keypoint in keypoints {
       description.append("\(keypoint!.index) - \(keypoint!.score) | \(keypoint!.y) - \(keypoint!.x)\n")

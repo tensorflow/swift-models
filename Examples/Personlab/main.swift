@@ -4,12 +4,10 @@ import ModelSupport
 import SwiftCV
 import ArgumentParser
 
-// TODO: Rethink this global config
-let config = Config()
 
-struct InferenceCommand: ParsableCommand {
+struct Inference: ParsableCommand {
   static var configuration = CommandConfiguration(
-    commandName: "Personlab Human Pose Estimator",
+    commandName: "personlab",
     abstract: """
     Runs human pose estimation on a local image file or on a local webcam.
     """
@@ -21,41 +19,27 @@ struct InferenceCommand: ParsableCommand {
   @Option(name: .shortAndLong, help: "Path to local image to run pose estimation on")
   var imagePath: String?
 
-  @Flag(help: "Webcam demo")
+  @Flag(name: .shortAndLong, help: "Run local webcam demo")
   var webcamDemo: Bool
+
+  @Flag(name: .shortAndLong, help: "Print profiling data")
+  var profiling: Bool
 
   func run() {
     Context.local.learningPhase = .inference
-    let checkpointFile = URL(fileURLWithPath: checkpointPath)
-    let ckpt = try! CheckpointReader(checkpointLocation: checkpointFile, modelName: "Personlab")
-
-    // Define network and load pre trained weights
-    let backbone = MobileNetLikeBackbone(checkpoint: ckpt)
-    let personlabHeads = PersonlabHeads(checkpoint: ckpt)
+    let config = Config(checkpointPath: checkpointPath, printProfilingData: profiling)
+    let model = PersonLab(config)
 
     if let imagePath = imagePath {
-      // Get preprocessed tensor
       let frame = imread(imagePath)
-      var image = Image(tensor: Tensor<UInt8>(cvMat: frame)!)
-      image = image.resized(to: config.inputImageSize)  // Adds a batch dimension automagically
-      let normalizedImagesTensorBGR = image.tensor * (2.0 / 255.0) - 1.0
-      let normalizedImagesTensorRGB = _Raw.reverse(normalizedImagesTensorBGR, dims: [false, false, false, true])
+      let image = Image(tensor: Tensor<UInt8>(cvMat: frame)!)
+      let poses = model(image)
 
-      // Run pose estimator
-      let startTime = Date()
-      let convnetResults = personlabHeads(backbone(normalizedImagesTensorRGB))
-      let convnetTime = Date()
-      let poseDecoder = PoseDecoder(for: convnetResults, with: config)
-      let poses = poseDecoder.decode()
-      print("Convnet seconds", convnetTime.timeIntervalSince(startTime))
-      print("Decoder seconds", Date().timeIntervalSince(convnetTime))
-
-      // Draw Results
       for pose in poses {
-        draw(pose, on: frame)
+        draw(pose, on: frame, color: config.color, lineWidth: config.lineWidth)
       }
       ImShow(image: frame)
-      WaitKey(delay: 5000)
+      WaitKey(delay: 0)
     }
 
     if webcamDemo {
@@ -65,21 +49,12 @@ struct InferenceCommand: ParsableCommand {
       
       let frame = Mat()
       while true {
-        // Get preprocessed tensor
         videoCaptureDevice.read(into: frame)
-        var image = Image(tensor: Tensor<UInt8>(cvMat: frame)!)
-        image = image.resized(to: config.inputImageSize)  // Adds a batch dimension automagically
-        let normalizedImagesTensorBGR = image.tensor * (2.0 / 255.0) - 1.0
-        let normalizedImagesTensorRGB = _Raw.reverse(normalizedImagesTensorBGR, dims: [false, false, false, true])
-      
-        // Run pose estimator
-        let convnetResults = personlabHeads(backbone(normalizedImagesTensorRGB))
-        let poseDecoder = PoseDecoder(for: convnetResults, with: config)
-        let poses = poseDecoder.decode()
+        let image = Image(tensor: Tensor<UInt8>(cvMat: frame)!)
+        let poses = model(image)
 
-        // Draw Results
         for pose in poses {
-          draw(pose, on: frame)
+          draw(pose, on: frame, color: config.color, lineWidth: config.lineWidth)
         }
         ImShow(image: frame)
         WaitKey(delay: 1)
@@ -88,4 +63,4 @@ struct InferenceCommand: ParsableCommand {
   }
 }
 
-InferenceCommand.main()
+Inference.main()

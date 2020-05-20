@@ -6,6 +6,7 @@ struct PoseDecoder {
   let offsets: CPUTensor<Float>
   let displacementsFwd: CPUTensor<Float>
   let displacementsBwd: CPUTensor<Float>
+  let config: Config
 
   init(for results: PersonlabHeadsResults, with config: Config) {
     // Remove [0] indexes when we add batchsize > 1 support, which should be really easy
@@ -13,21 +14,21 @@ struct PoseDecoder {
     self.offsets = CPUTensor<Float>(results.offsets[0])
     self.displacementsFwd = CPUTensor<Float>(results.displacementsFwd[0])
     self.displacementsBwd = CPUTensor<Float>(results.displacementsBwd[0])
+    self.config = config
   }
 
-  // TODO: Use callAsFunction? Seem kinda obscene, lol, not sure.
-  //       Only reason I used a struct for the decoder was easy sharing of the
+  // TODO: Only reason I used a struct for the decoder was easy sharing of the
   //       tensors between internal functions, maybe think of a better way.
   func decode() -> [Pose] {
     var poses = [Pose]()
     var keypointPriorityQueue = getKeypointPriorityQueue()
     while keypointPriorityQueue.count > 0 {
       let rootKeypoint = keypointPriorityQueue.dequeue()!
-      if rootKeypoint.isWithinRadiusOfCorrespondingPoint(in: poses) {
+      if rootKeypoint.isWithinRadiusOfCorrespondingKeypoints(in: poses, radius: config.nmsRadius) {
         continue
       }
 
-      var pose = Pose()
+      var pose = Pose(resolution: self.config.inputImageSize)
       pose.add(rootKeypoint)
 
       // Recursivelly parse keypoint tree going in forward direction
@@ -156,7 +157,8 @@ struct PoseDecoder {
                 heatmapX: heatmapX,
                 index: keypointIndex,
                 score: score,
-                offsets: offsets
+                offsets: offsets,
+                outputStride: config.outputStride
               )
             )
           }
@@ -169,7 +171,7 @@ struct PoseDecoder {
   func getPoseScore(for pose: Pose, considering poses: [Pose]) -> Float {
     var notOverlappedKeypointScoreAccumulator: Float = 0
     for keypoint in pose.keypoints {
-      if !keypoint!.isWithinRadiusOfCorrespondingPoint(in: poses) {
+      if !keypoint!.isWithinRadiusOfCorrespondingKeypoints(in: poses, radius: config.nmsRadius) {
         notOverlappedKeypointScoreAccumulator += keypoint!.score
       }
     }
