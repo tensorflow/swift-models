@@ -130,7 +130,7 @@ struct WordSegBenchmark: Benchmark {
             
             for _ in 0..<iterations {
                 operation(model, sentence)
-                LazyTensorBarrier(on: device)
+                LazyTensorBarrier()
                 
                 batchTimings.append(durationInMilliseconds(since: beforeBatch))
                 beforeBatch = timestampInMilliseconds()
