@@ -1,6 +1,9 @@
 import TensorFlow
 import Foundation
 
+
+// This whole struct should probably be merged into the PersonLab model struct when we no longer
+// need to do CPUTensor wrapping when SwiftRT fixes the GPU->CPU copy issue.
 struct PoseDecoder {
   let heatmap: CPUTensor<Float>
   let offsets: CPUTensor<Float>
@@ -9,7 +12,7 @@ struct PoseDecoder {
   let config: Config
 
   init(for results: PersonlabHeadsResults, with config: Config) {
-    // Remove [0] indexes when we add batchsize > 1 support, which should be really easy
+    // Hardcoded to batch size == 1 at the moment
     self.heatmap = CPUTensor<Float>(results.heatmap[0])
     self.offsets = CPUTensor<Float>(results.offsets[0])
     self.displacementsFwd = CPUTensor<Float>(results.displacementsFwd[0])
@@ -29,7 +32,7 @@ struct PoseDecoder {
       var pose = Pose(resolution: self.config.inputImageSize)
       pose.add(rootKeypoint)
 
-      // Recursivelly parse keypoint tree going in forward direction
+      // Recursivelly parse keypoint tree going in both forwards & backwards directions optimally
       recursivellyAddNextKeypoint(
         after: rootKeypoint,
         into: &pose
@@ -57,13 +60,11 @@ struct PoseDecoder {
   }
 
   func followDisplacement(from previousKeypoint: Keypoint, to nextKeypointIndex: KeypointIndex, using displacements: CPUTensor<Float>) -> Keypoint {
-
     let displacementKeypointIndexY = keypointPairToDisplacementIndexMap[Set([previousKeypoint.index, nextKeypointIndex])]!
     let displacementKeypointIndexX = displacementKeypointIndexY + displacements.shape[2] / 2
     let displacementYIndex = getUnstridedIndex(y: previousKeypoint.y)
     let displacementXIndex = getUnstridedIndex(x: previousKeypoint.x)
 
-    // let startt = CFAbsoluteTimeGetCurrent()
     let displacementY = displacements[
       displacementYIndex,
       displacementXIndex,
@@ -74,7 +75,6 @@ struct PoseDecoder {
       displacementXIndex,
       displacementKeypointIndexX
     ]
-    // print(CFAbsoluteTimeGetCurrent() - startt)
 
     let displacedY = getUnstridedIndex(y: previousKeypoint.y + displacementY)
     let displacedX = getUnstridedIndex(x: previousKeypoint.x + displacementX)
