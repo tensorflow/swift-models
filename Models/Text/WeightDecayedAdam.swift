@@ -14,17 +14,6 @@
 
 import TensorFlow
 
-/// A numerical optimizer.
-///
-/// Optimizers apply an optimization algorithm to update the differentiable models.
-public protocol Optimizer {
-    /// The type of the model whose parameters are optimized.
-    associatedtype Model: Differentiable
-
-    /// Updates the provided model along the specified direction.
-    mutating func update(_ model: inout Model, along direction: Model.TangentVector)
-}
-
 /// Adam optimizer with weight decay.
 ///
 /// Reference: ["Adam - A Method for Stochastic Optimization"](
