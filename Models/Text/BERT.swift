@@ -17,6 +17,34 @@ import TensorFlow
 import Datasets
 import ModelSupport
 
+/// Represents a type that can contribute to the regularization term when training models.
+public protocol Regularizable: Differentiable {
+    /// The contribution of this term to the regularization term. This should be set to
+    /// `TangentVector.zero` if this term should not contribute to the regularization term
+    /// (e.g., for layer normalization parameters).
+    var regularizationValue: TangentVector { get }
+}
+
+extension Dense: Regularizable {
+    public var regularizationValue: TangentVector {
+        TangentVector(weight: weight, bias: Tensor(Scalar(0), on: bias.device))
+    }
+}
+
+extension LayerNorm: Regularizable {
+    public var regularizationValue: TangentVector {
+        TangentVector(
+            offset: Tensor(Scalar(0), on: offset.device), scale: Tensor(Scalar(0), on: scale.device)
+        )
+    }
+}
+
+extension Embedding: Regularizable {
+    public var regularizationValue: TangentVector {
+        TangentVector(embeddings: embeddings)
+    }
+}
+
 // TODO: [AD] Avoid using token type embeddings for RoBERTa once optionals are supported in AD.
 // TODO: [AD] Similarly for the embedding projection used in ALBERT.
 
@@ -48,9 +76,9 @@ public struct BERT: Module, Regularizable {
     @noDerivative public let typeVocabularySize: Int
     @noDerivative public let initializerStandardDeviation: Scalar
 
-    public var tokenEmbedding: RegularizableEmbedding<Scalar>
-    public var tokenTypeEmbedding: RegularizableEmbedding<Scalar>
-    public var positionEmbedding: RegularizableEmbedding<Scalar>
+    public var tokenEmbedding: Embedding<Scalar>
+    public var tokenTypeEmbedding: Embedding<Scalar>
+    public var positionEmbedding: Embedding<Scalar>
     public var embeddingLayerNorm: LayerNorm<Scalar>
     @noDerivative public var embeddingDropout: Dropout<Scalar>
     public var embeddingProjection: [Dense<Scalar>]
@@ -129,21 +157,19 @@ public struct BERT: Module, Regularizable {
             }
         }()
 
-        self.tokenEmbedding = RegularizableEmbedding<Scalar>(
+        self.tokenEmbedding = Embedding<Scalar>(
             vocabularySize: vocabulary.count,
             embeddingSize: embeddingSize,
             embeddingsInitializer: truncatedNormalInitializer(
-                standardDeviation: Tensor<Scalar>(initializerStandardDeviation)),
-            useOneHotEmbeddings: useOneHotEmbeddings)
+                standardDeviation: Tensor<Scalar>(initializerStandardDeviation)))
 
         // The token type vocabulary will always be small and so we use the one-hot approach here
         // as it is always faster for small vocabularies.
-        self.tokenTypeEmbedding = RegularizableEmbedding<Scalar>(
+        self.tokenTypeEmbedding = Embedding<Scalar>(
             vocabularySize: typeVocabularySize,
             embeddingSize: embeddingSize,
             embeddingsInitializer: truncatedNormalInitializer(
-                standardDeviation: Tensor<Scalar>(initializerStandardDeviation)),
-            useOneHotEmbeddings: true)
+                standardDeviation: Tensor<Scalar>(initializerStandardDeviation)))
 
         // Since the position embeddings table is a learned variable, we create it using a (long)
         // sequence length, `maxSequenceLength`. The actual sequence length might be shorter than
@@ -157,12 +183,11 @@ public struct BERT: Module, Regularizable {
             case .roberta: return 2
             }
         }()
-        self.positionEmbedding = RegularizableEmbedding(
+        self.positionEmbedding = Embedding(
             vocabularySize: positionPaddingIndex + maxSequenceLength,
             embeddingSize: embeddingSize,
             embeddingsInitializer: truncatedNormalInitializer(
-                standardDeviation: Tensor(initializerStandardDeviation)),
-            useOneHotEmbeddings: false)
+                standardDeviation: Tensor(initializerStandardDeviation)))
 
         self.embeddingLayerNorm = LayerNorm<Scalar>(
             featureCount: hiddenSize,
