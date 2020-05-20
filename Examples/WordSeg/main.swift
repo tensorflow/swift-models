@@ -141,9 +141,8 @@ for epoch in 1...maxEpochs {
 
   print(
     """
-    [Epoch \(epoch)] \
-    Bits per character: \(bpc) \
-    Validation loss: \(validationLoss)
+    [Epoch \(epoch)] Learning rate: \(optimizer.learningRate)
+      Validation loss: \(validationLoss), Bits per character: \(bpc)
     """
   )
 
