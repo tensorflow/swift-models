@@ -200,7 +200,7 @@ class WordSegProbeLayerTests: XCTestCase {
     XCTAssert(lattice.isAlmostEqual(to: Example1.lattice, tolerance: 1e-5))
 
     print("Gradient")
-    func f(_ x: SNLM) -> Float {
+    func f(_ x: SNLM) -> Tensor<Float> {
       x.buildLattice(abab, maxLen: 5)[4].semiringScore.logr
     }
     let (_, grad) = valueWithGradient(at: model, in: f)

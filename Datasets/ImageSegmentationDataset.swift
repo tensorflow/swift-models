@@ -12,21 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import XCTest
+import Batcher
+import TensorFlow
 
-#if !os(macOS)
-    public func allTests() -> [XCTestCaseEntry] {
-        return [
-            testCase(CIFAR10Tests.allTests),
-            testCase(COCOVariantTests.allTests),
-            testCase(COCODatasetTests.allTests),
-            testCase(MNISTTests.allTests),
-            testCase(ImagenetteTests.allTests),
-            testCase(BostonHousingTests.allTests),
-            testCase(TextUnsupervisedTests.allTests),
-            testCase(MovieLensTests.allTests),
-            testCase(WordSegDatasetTests.allTests),
-            testCase(OxfordIIITPetsTests.allTests),
-        ]
-    }
-#endif
+public protocol ImageSegmentationDataset {
+    associatedtype SourceDataSet: Collection
+    where SourceDataSet.Element == TensorPair<Float, Int32>, SourceDataSet.Index == Int
+    init(batchSize: Int)
+    var training: Batcher<SourceDataSet> { get }
+    var test: Batcher<SourceDataSet> { get }
+}

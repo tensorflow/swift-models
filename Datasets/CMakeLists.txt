@@ -14,17 +14,15 @@ add_library(Datasets
   MNIST/MNIST.swift
   MNIST/FashionMNIST.swift
   MNIST/KuzushijiMNIST.swift
-  MNIST/OldMNISTDatasetHandler.swift
-  MNIST/OldMNIST.swift
-  MNIST/OldFashionMNIST.swift
-  MNIST/OldKuzushijiMNIST.swift
   ObjectDetectionDataset.swift
   BostonHousing/BostonHousing.swift
   TextUnsupervised/TextUnsupervised.swift
   MovieLens/MovieLens.swift
   TensorPair.swift
   TextUnsupervised/TextUnsupervised.swift
-  WordSeg/WordSegDataset.swift)
+  WordSeg/WordSegDataset.swift
+  ImageSegmentationDataset.swift
+  OxfordIIITPets/OxfordIIITPets.swift)
 target_link_libraries(Datasets PUBLIC
   Batcher
   ModelSupport)
