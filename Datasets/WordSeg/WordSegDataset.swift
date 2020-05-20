@@ -16,9 +16,9 @@ import Foundation
 import ModelSupport
 
 public struct WordSegDataset {
-  public let training: [CharacterSequence]
-  public private(set) var testing: [CharacterSequence]?
-  public private(set) var validation: [CharacterSequence]?
+  public let training: [WordSegRecord]
+  public private(set) var testing: [WordSegRecord]?
+  public private(set) var validation: [WordSegRecord]?
   public let alphabet: Alphabet
 
   private struct DownloadDetails {
@@ -74,15 +74,19 @@ public struct WordSegDataset {
   }
 
   private static func convertDataset(_ dataset: [String], alphabet: Alphabet) throws
-    -> [CharacterSequence]
+    -> [WordSegRecord]
   {
-    return try dataset.map { try CharacterSequence(alphabet: alphabet, appendingEoSTo: $0) }
+    return try dataset.map {
+      try WordSegRecord(
+        plainText: $0, numericalizedText: CharacterSequence(
+          alphabet: alphabet, appendingEoSTo: $0))
+    }
   }
   private static func convertDataset(_ dataset: [String]?, alphabet: Alphabet) throws
-    -> [CharacterSequence]?
+    -> [WordSegRecord]?
   {
     if let ds = dataset {
-      let tmp: [CharacterSequence] = try convertDataset(ds, alphabet: alphabet)  // Use tmp to disambiguate function
+      let tmp: [WordSegRecord] = try convertDataset(ds, alphabet: alphabet)  // Use tmp to disambiguate function
       return tmp
     }
     return nil

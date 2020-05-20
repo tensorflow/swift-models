@@ -50,8 +50,9 @@ default:
   usage()
 }
 
+let sequences = dataset.training.map { $0.numericalizedText }
 let lexicon = Lexicon(
-  from: dataset.training,
+  from: sequences,
   alphabet: dataset.alphabet,
   maxLength: maxLength,
   minFreq: minFreq
@@ -75,7 +76,8 @@ for epoch in 1...maxEpochs {
   Context.local.learningPhase = .training
   var trainingLossSum: Float = 0
   var trainingBatchCount = 0
-  for sentence in dataset.training {
+  for record in dataset.training {
+    let sentence = record.numericalizedText
     let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
       let lattice = model.buildLattice(sentence, maxLen: maxLength)
       let score = lattice[sentence.count].semiringScore
@@ -124,7 +126,8 @@ for epoch in 1...maxEpochs {
   var validationLossSum: Float = 0
   var validationBatchCount = 0
   var validationCharacterCount = 0
-  for sentence in validationDataset {
+  for record in validationDataset {
+    let sentence = record.numericalizedText
     let lattice = model.buildLattice(sentence, maxLen: maxLength)
     let score = lattice[sentence.count].semiringScore
 
