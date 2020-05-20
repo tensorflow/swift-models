@@ -24,7 +24,9 @@ add_library(Datasets
   MovieLens/MovieLens.swift
   TensorPair.swift
   TextUnsupervised/TextUnsupervised.swift
-  WordSeg/WordSegDataset.swift)
+  WordSeg/WordSegDataset.swift
+  ImageSegmentationDataset.swift
+  OxfordIIITPets/OxfordIIITPets.swift)
 target_link_libraries(Datasets PUBLIC
   Batcher
   ModelSupport)
