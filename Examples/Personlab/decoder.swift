@@ -17,13 +17,11 @@ struct PoseDecoder {
     self.config = config
   }
 
-  // TODO: Only reason I used a struct for the decoder was easy sharing of the
-  //       tensors between internal functions, maybe think of a better way.
   func decode() -> [Pose] {
     var poses = [Pose]()
-    var keypointPriorityQueue = getKeypointPriorityQueue()
-    while keypointPriorityQueue.count > 0 {
-      let rootKeypoint = keypointPriorityQueue.dequeue()!
+    var sortedLocallyMaximumKeypoints = getSortedLocallyMaximumKeypoints()
+    while sortedLocallyMaximumKeypoints.count > 0 {
+      let rootKeypoint = sortedLocallyMaximumKeypoints.removeFirst()
       if rootKeypoint.isWithinRadiusOfCorrespondingKeypoints(in: poses, radius: config.nmsRadius) {
         continue
       }
@@ -135,10 +133,8 @@ struct PoseDecoder {
     return Int(clamped)
   }
 
-  // TODO: Legacy, I am not getting any benefit from using a Heap instead of just sorting normally,
-  //       fix this.
-  func getKeypointPriorityQueue() -> Heap<Keypoint> {
-    var keypointPriorityQueue = Heap<Keypoint>(priorityFunction: {$0.score > $1.score})
+  func getSortedLocallyMaximumKeypoints() -> [Keypoint] {
+    var sortedLocallyMaximumKeypoints = [Keypoint]()
     for heatmapY in 0..<heatmap.shape[0] {
       for heatmapX in 0..<heatmap.shape[1] {
         for keypointIndex in 0..<heatmap.shape[2] {
@@ -151,7 +147,7 @@ struct PoseDecoder {
             score: score,
             keypointIndex: keypointIndex
           )  {
-            keypointPriorityQueue.enqueue(
+            sortedLocallyMaximumKeypoints.append(
               Keypoint(
                 heatmapY: heatmapY,
                 heatmapX: heatmapX,
@@ -165,7 +161,8 @@ struct PoseDecoder {
         }
       }
     }
-    return keypointPriorityQueue
+    sortedLocallyMaximumKeypoints.sort {$0.score > $1.score}
+    return sortedLocallyMaximumKeypoints
   }
 
   func getPoseScore(for pose: Pose, considering poses: [Pose]) -> Float {
