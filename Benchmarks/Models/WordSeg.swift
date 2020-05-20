@@ -162,7 +162,7 @@ extension WordSegBenchmark {
         let lambd: Float = 0.00075
         var mutableModel = model
 
-        let (loss, gradients) = valueWithGradient(at: mutableModel) { model -> Float in
+        let (loss, gradients) = valueWithGradient(at: mutableModel) { model -> Tensor<Float> in
           let lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength)
           let score = lattice[sentence.count].semiringScore
           let expectedLength = exp(score.logr - score.logp)
