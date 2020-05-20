@@ -30,22 +30,21 @@ struct Inference: ParsableCommand {
     let config = Config(checkpointPath: checkpointPath, printProfilingData: profiling)
     let model = PersonLab(config)
 
-    if let imagePath = imagePath {
-      let frame = imread(imagePath)
-      let image = Image(tensor: Tensor<UInt8>(cvMat: frame)!)
+    if imagePath != nil {
+      let swiftcvImage = imread(imagePath!)
+      let image = Image(tensor: Tensor<UInt8>(cvMat: swiftcvImage)!)
       let poses = model(image)
 
       for pose in poses {
-        draw(pose, on: frame, color: config.color, lineWidth: config.lineWidth)
+        draw(pose, on: swiftcvImage, color: config.color, lineWidth: config.lineWidth)
       }
-      ImShow(image: frame)
+      ImShow(image: swiftcvImage)
       WaitKey(delay: 0)
     }
 
     if webcamDemo {
       let videoCaptureDevice = VideoCapture(0)
-      // Optional, reduces latency a bit
-      videoCaptureDevice.set(VideoCaptureProperties.CAP_PROP_BUFFERSIZE, 1)
+      videoCaptureDevice.set(VideoCaptureProperties.CAP_PROP_BUFFERSIZE, 1)  // Reduces latency
       
       let frame = Mat()
       while true {
