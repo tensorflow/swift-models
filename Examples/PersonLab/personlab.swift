@@ -10,9 +10,15 @@ public struct PersonLab {
 
   public init(_ config: Config) {
     self.config = config
-    self.ckpt = try! CheckpointReader(
-      checkpointLocation: URL(fileURLWithPath: config.checkpointPath), modelName: "Personlab"
-    )
+    do {
+      self.ckpt = try CheckpointReader(
+        checkpointLocation: URL(fileURLWithPath: config.checkpointPath), modelName: "Personlab"
+      )
+    } catch {
+      print("Error loading checkpoint file: \(config.checkpointPath)")
+      print(error)
+      exit(0)
+    }
     self.backbone = MobileNetLikeBackbone(checkpoint: ckpt)
     self.personlabHeads = PersonlabHeads(checkpoint: ckpt)
   }

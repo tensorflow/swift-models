@@ -30,8 +30,13 @@ struct Inference: ParsableCommand {
     let config = Config(checkpointPath: checkpointPath, printProfilingData: profiling)
     let model = PersonLab(config)
 
-    if imagePath != nil {
-      let swiftcvImage = imread(imagePath!)
+    if let imagePath = imagePath {
+      let fileManager = FileManager()
+      if !fileManager.fileExists(atPath: imagePath) {
+        print("No image found at path: \(imagePath)")
+        return
+      }
+      let swiftcvImage = imread(imagePath)
       let image = Image(tensor: Tensor<UInt8>(cvMat: swiftcvImage)!)
       let poses = model(image)
 

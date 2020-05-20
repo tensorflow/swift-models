@@ -14,6 +14,8 @@ The installation of SwiftCV should be handled automatically by the SPM, but open
 Finally download the [checkpoint](https://github.com/joaqo/swift-models/releases/download/PersonlabDemo/personlabCheckpoint.tar.gz) from the releases page in this repo, whose path you'll have to provide to the CLI demo.
 
 ## Running
-```
+```bash
 swift run PersonLab --help
 ```
+
+Note: Compiling for release (`swift run -c release PersonLab`) makes the decoder run about 10 times faster.
