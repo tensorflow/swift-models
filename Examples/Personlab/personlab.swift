@@ -18,13 +18,12 @@ public struct PersonLab {
   }
 
   public func callAsFunction(_ inputImage: Image) -> [Pose] {
-    let startTime = Date()
     // Careful, `resized` adds a batch dimension automagically.
     let resizedImages = inputImage.resized(to: config.inputImageSize)
     let normalizedImagesTensorBGR = resizedImages.tensor * (2.0 / 255.0) - 1.0
     let normalizedImagesTensorRGB = _Raw.reverse(normalizedImagesTensorBGR, dims: [false, false, false, true])
-    let preprocessingTime = Date()
 
+    let startTime = Date()
     let convnetResults = personlabHeads(backbone(normalizedImagesTensorRGB))
     let convnetTime = Date()
 
@@ -33,9 +32,11 @@ public struct PersonLab {
     let decoderTime = Date()
 
     if self.config.printProfilingData {
-      print("Preprocessing seconds (slow on first iteration):", preprocessingTime.timeIntervalSince(startTime))
-      print("Convnet seconds:", convnetTime.timeIntervalSince(preprocessingTime))
-      print("Decoder seconds:", decoderTime.timeIntervalSince(convnetTime))
+      print(
+        String(format: "Backbone: %.2f ms", convnetTime.timeIntervalSince(startTime) * 1000),
+        "|",
+        String(format: "Decoder: %.2f ms", decoderTime.timeIntervalSince(convnetTime) * 1000)
+      )
     }
 
     return poses 
