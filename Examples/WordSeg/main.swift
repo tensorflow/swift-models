@@ -138,8 +138,7 @@ for epoch in 1...maxEpochs {
 
     // View a sample segmentation once per epoch.
     if validationBatchCount == validationDataset.count {
-      let trimmed = record.plainText.components(separatedBy: .whitespaces).joined()
-      let bestPath = lattice.viterbi(sentence: trimmed)
+      let bestPath = lattice.viterbi(sentence: record.numericalizedText)
       validationPlainText = Lattice.pathToPlainText(path: bestPath, alphabet: dataset.alphabet)
     }
   }
