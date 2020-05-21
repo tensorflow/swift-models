@@ -126,14 +126,22 @@ for epoch in 1...maxEpochs {
   var validationLossSum: Float = 0
   var validationBatchCount = 0
   var validationCharacterCount = 0
+  var validationPlainText: String = ""
   for record in validationDataset {
     let sentence = record.numericalizedText
-    let lattice = model.buildLattice(sentence, maxLen: maxLength)
+    var lattice = model.buildLattice(sentence, maxLen: maxLength)
     let score = lattice[sentence.count].semiringScore
 
     validationLossSum -= score.logp.scalarized()
     validationBatchCount += 1
     validationCharacterCount += sentence.count
+
+    // View a sample segmentation once per epoch.
+    if validationBatchCount == validationDataset.count {
+      let trimmed = record.plainText.components(separatedBy: .whitespaces).joined()
+      let bestPath = lattice.viterbi(sentence: trimmed)
+      validationPlainText = Lattice.pathToPlainText(path: bestPath, alphabet: dataset.alphabet)
+    }
   }
 
   let bpc = validationLossSum / Float(validationCharacterCount) / log(2)
@@ -143,6 +151,7 @@ for epoch in 1...maxEpochs {
     """
     [Epoch \(epoch)] Learning rate: \(optimizer.learningRate)
       Validation loss: \(validationLoss), Bits per character: \(bpc)
+      \(validationPlainText)
     """
   )
 
