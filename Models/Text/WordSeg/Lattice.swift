@@ -54,7 +54,7 @@ public struct Lattice: Differentiable {
         SemiRing(
           logp: logp,
           // TODO(abdulras): this should really use integeral pow
-          logr: logp + Tensor(logf(powf(Float(sentence.count), Float(order)))), on: logp.device)
+          logr: logp + Tensor(logf(powf(Float(sentence.count), Float(order))), on: logp.device))
       self.totalScore = self.score * previous
     }
 
