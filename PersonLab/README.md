@@ -1,21 +1,23 @@
 # PersonLab
 
-PersonLab human pose estimator, inference only version. Runs optimally in the 0.8 version of the S4TF toolchain, newer versions of the toolchain run more slowly.
+[PersonLab](https://arxiv.org/abs/1803.08225) human pose estimator, inference only version.
 
-Had to build slightly custom mobilenet backbone as the checkpoint I used does not fit into the mobilenet versions available in this repo.
+CLI demo with option to run benchmarks on a local image file or on live video from a local webcam using SwiftCV. Very fast at over 200 fps on a GeForce GTX 1080 Ti, which it vastly underutilizes.
 
-CLI demo with option to run inference on a local image file and on live video from a local webcam using SwiftCV.
+## SwiftCV installation
+Installation of SwiftCV should be handled automatically by the SPM, but openCV has to be installed manually beforehand. OpenCV instsallation is easy though, just run the `install/install_cv4.sh` [script](https://github.com/joaqo/SwiftCV/blob/master/install/install_cv4.sh) in the SwiftCV repo. Note: This has only been tested in Ubuntu.
 
-## Demo set up (only tested in Ubuntu)
-Installation of a [slightly improved version of SwiftCV](https://github.com/joaqo/SwiftCV) is required. I'll upstream the features I had to add to it for this demo to the official SwiftCV repo soon.
+I had to add several features to SwiftCV for this demo to run, most are merged upstream (webcam and gui support), but some are not (line drawing), so I had to use [my own branch](https://github.com/joaqo/SwiftCV) of SwiftCV as a dependency for this demo. I'll upstream the features to SwiftCV soon though.
 
-The installation of SwiftCV should be handled automatically by the SPM, but openCV has to be installed manually. OpenCV instsallation is simple, just run the `install/install_cv4.sh` [script](https://github.com/joaqo/SwiftCV/blob/master/install/install_cv4.sh) in the SwiftCV repo.
-
-Finally download the [checkpoint](https://github.com/joaqo/swift-models/releases/download/PersonlabDemo/personlabCheckpoint.tar.gz) from the releases page in this repo, whose path you'll have to provide to the CLI demo.
+## Checkpoints
+Download the [checkpoint](https://github.com/joaqo/swift-models/releases/download/PersonlabDemo/personlabCheckpoint.tar.gz) from the releases page in this repo, whose path you'll have to provide to the CLI demo.
 
 ## Running
 ```bash
 swift run PersonLab --help
 ```
 
-Note: Compiling for release (`swift run -c release PersonLab`) makes the decoder run about 10 times faster.
+## Notes
+- Compiling for release (`swift run -c release PersonLab`) makes the decoder run about 10 times faster.
+- Had to build slightly custom mobilenet backbone as the checkpoint I used does not fit into the mobilenet versions available in this repo.
+- First part of this [video](https://www.youtube.com/watch?v=WxFPrypPBpU) is a short summary of how the model works and an explanation of some key parts of the codebase.
