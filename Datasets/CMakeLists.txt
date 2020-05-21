@@ -21,6 +21,7 @@ add_library(Datasets
   TensorPair.swift
   TextUnsupervised/TextUnsupervised.swift
   WordSeg/WordSegDataset.swift
+  WordSeg/WordSegRecord.swift
   ImageSegmentationDataset.swift
   OxfordIIITPets/OxfordIIITPets.swift)
 target_link_libraries(Datasets PUBLIC

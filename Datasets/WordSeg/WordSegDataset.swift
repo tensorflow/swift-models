@@ -16,9 +16,9 @@ import Foundation
 import ModelSupport
 
 public struct WordSegDataset {
-  public let training: [CharacterSequence]
-  public private(set) var testing: [CharacterSequence]?
-  public private(set) var validation: [CharacterSequence]?
+  public let training: [WordSegRecord]
+  public private(set) var testing: [WordSegRecord]?
+  public private(set) var validation: [WordSegRecord]?
   public let alphabet: Alphabet
 
   private struct DownloadDetails {
@@ -41,9 +41,9 @@ public struct WordSegDataset {
     var strings = [String]()
 
     for line in contents.components(separatedBy: .newlines) {
-      let stripped: String = line.components(separatedBy: .whitespaces).joined()
-      if stripped.isEmpty { continue }
-      strings.append(stripped)
+      let trimmed = line.trimmingCharacters(in: .whitespaces)
+      if trimmed.isEmpty { continue }
+      strings.append(trimmed)
     }
     return strings
   }
@@ -61,7 +61,7 @@ public struct WordSegDataset {
       guard let dataset = dataset else { continue }
       for sentence in dataset {
         for character in sentence {
-          letters.insert(character)
+          if !character.isWhitespace { letters.insert(character) }
         }
       }
     }
@@ -74,15 +74,21 @@ public struct WordSegDataset {
   }
 
   private static func convertDataset(_ dataset: [String], alphabet: Alphabet) throws
-    -> [CharacterSequence]
+    -> [WordSegRecord]
   {
-    return try dataset.map { try CharacterSequence(alphabet: alphabet, appendingEoSTo: $0) }
+    return try dataset.map {
+      let trimmed = $0.components(separatedBy: .whitespaces).joined()
+      return try WordSegRecord(
+        plainText: $0,
+        numericalizedText: CharacterSequence(
+          alphabet: alphabet, appendingEoSTo: trimmed))
+    }
   }
   private static func convertDataset(_ dataset: [String]?, alphabet: Alphabet) throws
-    -> [CharacterSequence]?
+    -> [WordSegRecord]?
   {
     if let ds = dataset {
-      let tmp: [CharacterSequence] = try convertDataset(ds, alphabet: alphabet)  // Use tmp to disambiguate function
+      let tmp: [WordSegRecord] = try convertDataset(ds, alphabet: alphabet)  // Use tmp to disambiguate function
       return tmp
     }
     return nil

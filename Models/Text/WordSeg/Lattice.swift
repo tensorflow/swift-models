@@ -60,7 +60,7 @@ public struct Lattice: Differentiable {
 
     @differentiable
     public init(
-      start: Int, end: Int, string: CharacterSequence, logp:Tensor<Float>,
+      start: Int, end: Int, string: CharacterSequence, logp: Tensor<Float>,
       score: SemiRing, totalScore: SemiRing
     ) {
       self.start = start
@@ -129,9 +129,9 @@ public struct Lattice: Differentiable {
     self.positions = positions
   }
 
-  mutating func viterbi(sentence: String) -> [Edge] {
+  public mutating func viterbi(sentence: String) -> [Edge] {
     // Forwards pass
-    for position in 0...sentence.count {
+    for position in 1...sentence.count {
       var bestScore = -Float.infinity
       var bestEdge: Edge!
       for edge in self[position].edges {
@@ -155,6 +155,18 @@ public struct Lattice: Differentiable {
     bestPath.append(nextEdge)
 
     return bestPath.reversed()
+  }
+
+  public static func pathToPlainText(path: [Edge], alphabet: Alphabet) -> String {
+    var plainText = [String]()
+    for edge in path {
+      for id in edge.string.characters {
+        guard let character = alphabet.dictionary.key(id) else { continue }
+        plainText.append(character)
+      }
+      plainText.append(" ")
+    }
+    return plainText.joined()
   }
 }
 
