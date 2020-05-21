@@ -22,7 +22,6 @@ public class GPT2 {
 
     public enum GPT2Error: Error {
         case invalidEncoding(id: Int32)
-        case invalidSeed(seed: Tensor<Int32>)
     }
 
     public var model: TransformerLM
@@ -155,15 +154,13 @@ public class GPT2 {
             randomCategorialLogits: logits.squeezingShape(at: 1),
             sampleCount: 1)
 
-        guard let id = Int32(seed[0][0]) else {
-          throw GPT2Error.invalidSeed(seed: seed)
-        }
+        let id = Int32(seed[0][0])!
         if id == Int32(endOfTextId) {
             // Replace with newline.
             return "\r\n"
         }
         if let token: String = bpe.vocabulary.token(forId: Int(id)) {
-            let decodedToken = BytePairEncoder.decode(token: token)
+            let decodedToken = try BytePairEncoder.decode(token: token)
             // Make any line breaks universal.
             return decodedToken.replacingOccurrences(of: "\n", with: "\r\n")
         }
