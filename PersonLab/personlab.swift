@@ -1,6 +1,6 @@
-import TensorFlow
-import ModelSupport
 import Foundation
+import ModelSupport
+import TensorFlow
 
 public struct PersonLab {
   let config: Config
@@ -28,7 +28,8 @@ public struct PersonLab {
 
     let resizedImage = inputImage.resized(to: config.inputImageSize)
     let normalizedImagesTensorBGR = resizedImage.tensor * (2.0 / 255.0) - 1.0
-    let normalizedImagesTensorRGB = _Raw.reverse(normalizedImagesTensorBGR, dims: [false, false, true])
+    let normalizedImagesTensorRGB = _Raw.reverse(
+      normalizedImagesTensorBGR, dims: [false, false, true])
     let batchedNormalizedImagesTensorRGB = normalizedImagesTensorRGB.expandingShape(at: 0)
     let preprocessingTime = Date()
 
@@ -41,15 +42,17 @@ public struct PersonLab {
 
     if self.config.printProfilingData {
       print(
-        String(format: "Preprocessing: %.2f ms", preprocessingTime.timeIntervalSince(startTime) * 1000),
+        String(
+          format: "Preprocessing: %.2f ms", preprocessingTime.timeIntervalSince(startTime) * 1000),
         "|",
-        String(format: "Backbone: %.2f ms", convnetTime.timeIntervalSince(preprocessingTime) * 1000),
+        String(
+          format: "Backbone: %.2f ms", convnetTime.timeIntervalSince(preprocessingTime) * 1000),
         "|",
         String(format: "Decoder: %.2f ms", decoderTime.timeIntervalSince(convnetTime) * 1000)
       )
     }
 
-    return poses 
+    return poses
   }
 
 }

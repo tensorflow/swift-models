@@ -1,15 +1,19 @@
 import TensorFlow
 
-
 struct Keypoint {
   var y: Float
   var x: Float
   let index: KeypointIndex
   let score: Float
 
-  init(heatmapY: Int, heatmapX: Int, index: Int, score: Float, offsets: CPUTensor<Float>, outputStride: Int) {
+  init(
+    heatmapY: Int, heatmapX: Int, index: Int, score: Float, offsets: CPUTensor<Float>,
+    outputStride: Int
+  ) {
     self.y = Float(heatmapY) * Float(outputStride) + offsets[heatmapY, heatmapX, index]
-    self.x = Float(heatmapX) * Float(outputStride) + offsets[heatmapY, heatmapX, index + KeypointIndex.allCases.count]
+    self.x =
+      Float(heatmapX) * Float(outputStride)
+      + offsets[heatmapY, heatmapX, index + KeypointIndex.allCases.count]
     self.index = KeypointIndex(rawValue: index)!
     self.score = score
   }
@@ -56,7 +60,8 @@ enum Direction { case fwd, bwd }
 
 func getNextKeypointIndexAndDirection(_ keypointId: KeypointIndex) -> [(KeypointIndex, Direction)] {
   switch keypointId {
-  case .nose: return [(.leftEye, .fwd), (.rightEye, .fwd), (.leftShoulder, .fwd), (.rightShoulder, .fwd)]
+  case .nose:
+    return [(.leftEye, .fwd), (.rightEye, .fwd), (.leftShoulder, .fwd), (.rightShoulder, .fwd)]
   case .leftEye: return [(.nose, .bwd), (.leftEar, .fwd)]
   case .rightEye: return [(.nose, .bwd), (.rightEar, .fwd)]
   case .leftEar: return [(.leftEye, .bwd)]
@@ -94,10 +99,10 @@ let keypointPairToDisplacementIndexMap: [Set<KeypointIndex>: Int] = [
   Set([.rightElbow, .rightWrist]): 12,
   Set([.rightShoulder, .rightHip]): 13,
   Set([.rightHip, .rightKnee]): 14,
-  Set([.rightKnee, .rightAnkle]): 15
+  Set([.rightKnee, .rightAnkle]): 15,
 ]
 
-public struct Pose  {
+public struct Pose {
   var keypoints: [Keypoint?] = Array(repeating: nil, count: KeypointIndex.allCases.count)
   var resolution: (height: Int, width: Int)
 
@@ -125,7 +130,8 @@ extension Pose: CustomStringConvertible {
   public var description: String {
     var description = ""
     for keypoint in keypoints {
-      description.append("\(keypoint!.index) - \(keypoint!.score) | \(keypoint!.y) - \(keypoint!.x)\n")
+      description.append(
+        "\(keypoint!.index) - \(keypoint!.score) | \(keypoint!.y) - \(keypoint!.x)\n")
     }
     return description
   }

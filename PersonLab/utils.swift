@@ -1,32 +1,29 @@
-import TensorFlow
 import ModelSupport
 import SwiftCV
-
+import TensorFlow
 
 public struct Config {
-    let checkpointPath: String
-    let printProfilingData: Bool
-    let inputImageSize = (height: 241, width: 289)
+  let checkpointPath: String
+  let printProfilingData: Bool
+  let inputImageSize = (height: 241, width: 289)
 
-    // Decoder
-    let outputStride = 16
-    let poseScoreThreshold: Float = 0.15
-    let keypointScoreThreshold: Float = 0.1
-    let nmsRadius: Float = 20.0
-    let keypointLocalMaximumRadius = 1
+  // Decoder
+  let outputStride = 16
+  let poseScoreThreshold: Float = 0.15
+  let keypointScoreThreshold: Float = 0.1
+  let nmsRadius: Float = 20.0
+  let keypointLocalMaximumRadius = 1
 
-    // Drawing
-    let color = Scalar(val1: 0, val2: 255, val3: 255, val4: 1)
-    let lineWidth: Int32 = 2
+  // Drawing
+  let color = Scalar(val1: 0, val2: 255, val3: 255, val4: 1)
+  let lineWidth: Int32 = 2
 }
-
 
 extension CheckpointReader {
-    func load(from name: String) -> Tensor<Float> {
-        return Tensor(self.loadTensor(named: "MobilenetV1/\(name)"))
-    }
+  func load(from name: String) -> Tensor<Float> {
+    return Tensor(self.loadTensor(named: "MobilenetV1/\(name)"))
+  }
 }
-
 
 func draw(_ pose: Pose, on image: Mat, color: Scalar, lineWidth: Int32) {
   var pose = pose
@@ -48,13 +45,13 @@ func draw(_ pose: Pose, on image: Mat, color: Scalar, lineWidth: Int32) {
   recursivellyDrawNextKeypoint(after: pose.getKeypoint(.nose)!, into: image)
 }
 
-
 /// Used as an ad-hoc "hash" for tensor checking when copying the backbone from
 /// our Python Tensorflow 1.5 version
 func hash(_ tensor: Tensor<Float>) {
-    print("[\(tensor.flattened().sum()), \(tensor[0, 0, 0]) \(tensor[0, -1, 1]), \(tensor[0, 1, 0]), \(tensor[0, -1, -1])]")
+  print(
+    "[\(tensor.flattened().sum()), \(tensor[0, 0, 0]) \(tensor[0, -1, 1]), \(tensor[0, 1, 0]), \(tensor[0, -1, -1])]"
+  )
 }
-
 
 /// Wrapper for Tensor which allows several order of magnitude faster subscript access,
 /// as it avoids unnecesary GPU->CPU copies on each access.

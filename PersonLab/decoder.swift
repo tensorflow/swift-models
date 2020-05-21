@@ -1,6 +1,5 @@
-import TensorFlow
 import Foundation
-
+import TensorFlow
 
 // This whole struct should probably be merged into the PersonLab model struct when we no longer
 // need to do CPUTensor wrapping when SwiftRT fixes the GPU->CPU copy issue.
@@ -59,8 +58,12 @@ struct PoseDecoder {
     }
   }
 
-  func followDisplacement(from previousKeypoint: Keypoint, to nextKeypointIndex: KeypointIndex, using displacements: CPUTensor<Float>) -> Keypoint {
-    let displacementKeypointIndexY = keypointPairToDisplacementIndexMap[Set([previousKeypoint.index, nextKeypointIndex])]!
+  func followDisplacement(
+    from previousKeypoint: Keypoint, to nextKeypointIndex: KeypointIndex,
+    using displacements: CPUTensor<Float>
+  ) -> Keypoint {
+    let displacementKeypointIndexY = keypointPairToDisplacementIndexMap[
+      Set([previousKeypoint.index, nextKeypointIndex])]!
     let displacementKeypointIndexX = displacementKeypointIndexY + displacements.shape[2] / 2
     let displacementYIndex = getUnstridedIndex(y: previousKeypoint.y)
     let displacementXIndex = getUnstridedIndex(x: previousKeypoint.x)
@@ -106,7 +109,9 @@ struct PoseDecoder {
     )
   }
 
-  func scoreIsMaximumInLocalWindow(heatmapY: Int, heatmapX: Int, score: Float, keypointIndex: Int) -> Bool {
+  func scoreIsMaximumInLocalWindow(heatmapY: Int, heatmapX: Int, score: Float, keypointIndex: Int)
+    -> Bool
+  {
     let yStart = max(heatmapY - config.keypointLocalMaximumRadius, 0)
     let yEnd = min(heatmapY + config.keypointLocalMaximumRadius, heatmap.shape[0] - 1)
     for windowY in yStart...yEnd {
@@ -146,7 +151,7 @@ struct PoseDecoder {
             heatmapX: heatmapX,
             score: score,
             keypointIndex: keypointIndex
-          )  {
+          ) {
             sortedLocallyMaximumKeypoints.append(
               Keypoint(
                 heatmapY: heatmapY,
@@ -161,7 +166,7 @@ struct PoseDecoder {
         }
       }
     }
-    sortedLocallyMaximumKeypoints.sort {$0.score > $1.score}
+    sortedLocallyMaximumKeypoints.sort { $0.score > $1.score }
     return sortedLocallyMaximumKeypoints
   }
 

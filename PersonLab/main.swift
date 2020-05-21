@@ -1,16 +1,15 @@
+import ArgumentParser
 import Foundation
-import TensorFlow
 import ModelSupport
 import SwiftCV
-import ArgumentParser
-
+import TensorFlow
 
 struct Inference: ParsableCommand {
   static var configuration = CommandConfiguration(
     commandName: "personlab",
     abstract: """
-    Runs human pose estimation on a local image file or on a local webcam.
-    """
+      Runs human pose estimation on a local image file or on a local webcam.
+      """
   )
 
   @Argument(help: "Path to checkpoint directory")
@@ -59,7 +58,7 @@ struct Inference: ParsableCommand {
     if webcamDemo {
       let videoCaptureDevice = VideoCapture(0)
       videoCaptureDevice.set(VideoCaptureProperties.CAP_PROP_BUFFERSIZE, 1)  // Reduces latency
-      
+
       let frame = Mat()
       while true {
         videoCaptureDevice.read(into: frame)
