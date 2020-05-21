@@ -131,12 +131,12 @@ public struct Lattice: Differentiable {
 
   public mutating func viterbi(sentence: String) -> [Edge] {
     // Forwards pass
-    for position in 0...sentence.count {
-      var bestScore = Float(0)
+    for position in 1...sentence.count {
+      var bestScore = -Float.infinity
       var bestEdge: Edge!
       for edge in self[position].edges {
         let score: Float = self[edge.start].bestScore + edge.logp.scalarized()
-        if score < bestScore {
+        if score > bestScore {
           bestScore = score
           bestEdge = edge
         }
