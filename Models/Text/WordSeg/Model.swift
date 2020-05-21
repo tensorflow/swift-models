@@ -194,7 +194,7 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   // MARK: - buildLattice
   func get_logp_lex(_ logp_lex: Tensor<Float>, _ candidate: CharacterSequence) -> Tensor<Float> {
     guard let index = parameters.strVocab.dictionary[candidate] else {
-      return Tensor(-Float.infinity)
+      return Tensor(-Float.infinity, on: logp_lex.device)
     }
     return logp_lex[Int(index)]
   }

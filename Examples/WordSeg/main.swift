@@ -73,7 +73,7 @@ print("Starting training...")
 
 for epoch in 1...maxEpochs {
   Context.local.learningPhase = .training
-  var trainingLossSum: Float = 0
+  var trainingLossSum: Tensor<Float> = .zero
   var trainingBatchCount = 0
   for sentence in dataset.training {
     let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
@@ -84,7 +84,7 @@ for epoch in 1...maxEpochs {
       return loss
     }
 
-    trainingLossSum += loss.scalarized()
+    trainingLossSum += loss
     trainingBatchCount += 1
     optimizer.update(&model, along: gradients)
 
@@ -97,7 +97,7 @@ for epoch in 1...maxEpochs {
   }
 
   // Decrease the learning rate if loss is stagnant.
-  let trainingLoss = trainingLossSum / Float(trainingBatchCount)
+  let trainingLoss = trainingLossSum.scalarized() / Float(trainingBatchCount)
   trainingLossHistory.append(trainingLoss)
   reduceLROnPlateau(lossHistory: trainingLossHistory, optimizer: optimizer)
 
@@ -121,20 +121,20 @@ for epoch in 1...maxEpochs {
   }
 
   Context.local.learningPhase = .inference
-  var validationLossSum: Float = 0
+  var validationLossSum: Tensor<Float> = .zero
   var validationBatchCount = 0
   var validationCharacterCount = 0
   for sentence in validationDataset {
     let lattice = model.buildLattice(sentence, maxLen: maxLength)
     let score = lattice[sentence.count].semiringScore
 
-    validationLossSum -= score.logp.scalarized()
+    validationLossSum -= score.logp
     validationBatchCount += 1
     validationCharacterCount += sentence.count
   }
 
-  let bpc = validationLossSum / Float(validationCharacterCount) / log(2)
-  let validationLoss = validationLossSum / Float(validationBatchCount)
+  let bpc = validationLossSum.scalarized() / Float(validationCharacterCount) / log(2)
+  let validationLoss = validationLossSum.scalarized() / Float(validationBatchCount)
 
   print(
     """
