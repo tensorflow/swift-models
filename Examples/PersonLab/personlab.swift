@@ -24,13 +24,13 @@ public struct PersonLab {
   }
 
   public func callAsFunction(_ inputImage: Image) -> [Pose] {
-    // Careful, `resized` adds a batch dimension automagically.
-    let resizedImages = inputImage.resized(to: config.inputImageSize)
-    let normalizedImagesTensorBGR = resizedImages.tensor * (2.0 / 255.0) - 1.0
-    let normalizedImagesTensorRGB = _Raw.reverse(normalizedImagesTensorBGR, dims: [false, false, false, true])
+    let resizedImage = inputImage.resized(to: config.inputImageSize)
+    let normalizedImagesTensorBGR = resizedImage.tensor * (2.0 / 255.0) - 1.0
+    let normalizedImagesTensorRGB = _Raw.reverse(normalizedImagesTensorBGR, dims: [false, false, true])
+    let batchedNormalizedImagesTensorRGB = normalizedImagesTensorRGB.expandingShape(at: 0)
 
     let startTime = Date()
-    let convnetResults = personlabHeads(backbone(normalizedImagesTensorRGB))
+    let convnetResults = personlabHeads(backbone(batchedNormalizedImagesTensorRGB))
     let convnetTime = Date()
 
     let poseDecoder = PoseDecoder(for: convnetResults, with: self.config)
