@@ -38,7 +38,16 @@ struct Inference: ParsableCommand {
       }
       let swiftcvImage = imread(imagePath)
       let image = Image(tensor: Tensor<UInt8>(cvMat: swiftcvImage)!)
-      let poses = model(image)
+
+      var poses = [Pose]()
+      if profiling {
+        print("Running model 10 times to see how inference time improves.")
+        for _ in 1...10 {
+          poses = model(image)
+        }
+      } else {
+        poses = model(image)
+      }
 
       for pose in poses {
         draw(pose, on: swiftcvImage, color: config.color, lineWidth: config.lineWidth)
