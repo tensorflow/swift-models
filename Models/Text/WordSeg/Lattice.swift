@@ -129,7 +129,7 @@ public struct Lattice: Differentiable {
     self.positions = positions
   }
 
-  public mutating func viterbi(sentence: String) -> [Edge] {
+  public mutating func viterbi(sentence: CharacterSequence) -> [Edge] {
     // Forwards pass
     for position in 1...sentence.count {
       var bestScore = -Float.infinity

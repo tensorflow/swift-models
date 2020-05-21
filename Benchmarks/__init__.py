@@ -44,6 +44,21 @@ class SwiftBenchmark(tf.test.Benchmark):
     """Nothing to do here, but we need this for perfzero compat reasons."""
     pass
 
+  def sentence_4(self):
+    """Runner-callable benchmark entry point for WordSeg sentence-length 4 benchmark."""
+    result = run_swift_wordseg_benchmark(name=self.benchmark_name, sentence_length='4', backend='eager')
+    self.report_benchmark(**result)
+
+  def sentence_8(self):
+    """Runner-callable benchmark entry point for WordSeg sentence-length 8 benchmark."""
+    result = run_swift_wordseg_benchmark(name=self.benchmark_name, sentence_length='8', backend='eager')
+    self.report_benchmark(**result)
+
+  def sentence_14(self):
+    """Runner-callable benchmark entry point for WordSeg sentence-length 14 benchmark."""
+    result = run_swift_wordseg_benchmark(name=self.benchmark_name, sentence_length='14', backend='eager')
+    self.report_benchmark(**result)
+
   def training(self):
     """Runner-callable benchmark entry point for eager training benchmark."""
     result = run_swift_benchmark(name=self.benchmark_name, variety='training', backend='eager')
@@ -146,6 +161,55 @@ def run_swift_benchmark(name, variety, backend):
   print(result)
   settings = result['configuration']['settings']
   wall_time, metrics = extract_metrics(result, variety, backend)
+  return {
+      'iters': settings['iterations'],
+      'wall_time': wall_time,
+      'extras': extract_extras(settings),
+      'metrics': metrics
+  }
+
+def extract_wordseg_metrics(result, backend):
+  """Extract PerfZero WordSeg metrics based on the measurements.
+
+  Extracts timing metrics for the WordSeg model, based on the the original raw timings.
+  """
+
+  timings = result['timings']
+  warmup_time = result['warmupTime']
+  total_time = result['totalTime']
+
+  timings_s = np.array(timings) / 1000
+  wall_time = total_time / 1000.0
+
+  metrics = [{
+      'name': 'time_median',
+      'value': np.median(timings_s)
+  }, {
+      'name': 'time_min',
+      'value': np.min(timings_s)
+  }, {
+      'name': 'time_max',
+      'value': np.max(timings_s)
+  }, {
+      'name': 'startup_time',
+      'value': warmup_time / 1000.0
+  }]
+
+  return (wall_time, metrics)
+
+
+# TODO: Generalize the parameters here to eliminate this custom benchmark case.
+def run_swift_wordseg_benchmark(name, sentence_length, backend):
+  print('running swift benchmark {} ({})'.format(name, sentence_length))
+  output = subp.check_output([
+      'swift', 'run', '-c', 'release', 'Benchmarks', 'measure', '--benchmark', name, '--training',
+      '--' + backend, '--batchSize', sentence_length, '--warmupBatches', '10', '--json'
+  ], cwd=cwd)
+  result = json.loads(output)
+  print('got json result back from swift: ')
+  print(result)
+  settings = result['configuration']['settings']
+  wall_time, metrics = extract_wordseg_metrics(result, backend)
   return {
       'iters': settings['iterations'],
       'wall_time': wall_time,
