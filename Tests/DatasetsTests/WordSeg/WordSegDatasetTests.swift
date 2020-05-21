@@ -26,18 +26,18 @@ class WordSegDatasetTests: XCTestCase {
 
       // Check the first example in each set.
       let trainingExample: [Int32] = [
-        27, 17, 23, 25, 3, 16, 22, 22, 17, 21, 7, 7, 22,
-        10, 7, 4, 17, 17, 13, 29
+        26, 16, 22, 24, 2, 15, 21, 21, 16, 20, 6, 6, 21,
+        9, 6, 3, 16, 16, 12, 28,
       ]
       XCTAssertEqual(dataset.training[0].numericalizedText.characters, trainingExample)
 
-      let validationExample: [Int32] = [10, 7, 14, 14, 17, 15, 11, 15, 11, 29]
+      let validationExample: [Int32] = [9, 6, 13, 13, 16, 14, 10, 14, 10, 28]
       XCTAssertEqual(dataset.validation![0].numericalizedText.characters, validationExample)
 
       let testingExample: [Int32] = [
-        14, 7, 22, 15, 7, 21, 7, 7, 11, 8, 11, 5,
-        3, 16, 21, 7, 7, 3, 16, 27, 4, 17, 6, 27, 11, 16, 22, 10, 3, 22, 15,
-        11, 20, 20, 17, 20, 29
+        13, 6, 21, 14, 6, 20, 6, 6, 10, 7, 10, 4,
+        2, 15, 20, 6, 6, 2, 15, 26, 3, 16, 5, 26, 10, 15, 21, 9, 2, 21, 14, 10,
+        19, 19, 16, 19, 28,
       ]
       XCTAssertEqual(dataset.testing![0].numericalizedText.characters, testingExample)
     } catch {

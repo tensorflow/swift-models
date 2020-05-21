@@ -61,7 +61,7 @@ public struct WordSegDataset {
       guard let dataset = dataset else { continue }
       for sentence in dataset {
         for character in sentence {
-          letters.insert(character)
+          if !character.isWhitespace { letters.insert(character) }
         }
       }
     }
