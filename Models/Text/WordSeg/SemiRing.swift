@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import TensorFlow
+
 #if os(iOS) || os(macOS) || os(tvOS) || os(watchOS)
   import Darwin
 #elseif os(Windows)
@@ -19,8 +21,6 @@
 #else
   import Glibc
 #endif
-
-import TensorFlow
 
 /// logSumExp(_:)
 ///
@@ -97,9 +97,10 @@ extension SemiRing {
   // TODO(abdulras) see if we can use ulp as a default tolerance
   @inlinable
   public func isAlmostEqual(to other: Self, tolerance: Float) -> Bool {
-    return (self.logp.isAlmostEqual(to: other.logp, tolerance: tolerance)
+    return
+      (self.logp.isAlmostEqual(to: other.logp, tolerance: tolerance)
       || (self.logp.scalarized().isInfinite && other.logp.scalarized().isInfinite))
       && (self.logr.isAlmostEqual(to: other.logr, tolerance: tolerance)
-      || (self.logr.scalarized().isInfinite && other.logr.scalarized().isInfinite))
+        || (self.logr.scalarized().isInfinite && other.logr.scalarized().isInfinite))
   }
 }

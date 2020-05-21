@@ -29,17 +29,17 @@ class WordSegDatasetTests: XCTestCase {
         26, 16, 22, 24, 2, 15, 21, 21, 16, 20, 6, 6, 21,
         9, 6, 3, 16, 16, 12, 28,
       ]
-      XCTAssertEqual(dataset.training[0].characters, trainingExample)
+      XCTAssertEqual(dataset.training[0].numericalizedText.characters, trainingExample)
 
       let validationExample: [Int32] = [9, 6, 13, 13, 16, 14, 10, 14, 10, 28]
-      XCTAssertEqual(dataset.validation![0].characters, validationExample)
+      XCTAssertEqual(dataset.validation![0].numericalizedText.characters, validationExample)
 
       let testingExample: [Int32] = [
         13, 6, 21, 14, 6, 20, 6, 6, 10, 7, 10, 4,
         2, 15, 20, 6, 6, 2, 15, 26, 3, 16, 5, 26, 10, 15, 21, 9, 2, 21, 14, 10,
         19, 19, 16, 19, 28,
       ]
-      XCTAssertEqual(dataset.testing![0].characters, testingExample)
+      XCTAssertEqual(dataset.testing![0].numericalizedText.characters, testingExample)
     } catch {
       XCTFail(error.localizedDescription)
     }
