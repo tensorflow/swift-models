@@ -142,6 +142,11 @@ let package = Package(
             name: "WordSeg",
             dependencies: ["ModelSupport", "TextModels", "Datasets"],
             path: "Examples/WordSeg"
+        ),
+       .target(
+           name: "Fractals",
+           dependencies: ["ArgumentParser", "ModelSupport"],
+           path: "Examples/Fractals"
        )
     ]
 )
