@@ -229,8 +229,12 @@ struct MultiHeadAttentionGPT2: Layer {
     @differentiable(wrt: (self,input))
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         let qkvProjected = wqkv(input)
-        let qkvSplit = splitHeads(qkvProjected, headCount: headCount)
-        let attentionInput = splitQKV(qkvSplit)
+        let qkvSplit = splitQKV(qkvProjected)
+        let attentionInput = makeAttentionInput(
+            query: splitHeads(qkvSplit.query, headCount: headCount),
+            key: splitHeads(qkvSplit.key, headCount: headCount),
+            value: splitHeads(qkvSplit.value, headCount: headCount)
+        )
         let outputs = attention(attentionInput)
         return wo(joinHeads(outputs, headCount: headCount))
     }
