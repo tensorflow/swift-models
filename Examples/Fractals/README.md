@@ -1,15 +1,11 @@
 # Fractal image generation
 
 This example illustrates how to generate images of different types of fractals and save them to disk. All key
-parameters can be specified at the command line, to produce a variety of views and imagery. 
+parameters can be specified at the command line, to produce a variety of calculations and views. 
 
 Internally, calculations are performed using the Tensor type, allowing for efficient parallel computation. Both
 eager-mode and X10 backends are supported, demonstrating how to perform parallel calculations on the CPU or
 various accelerators.
-
-Size and region values are comma-separated.
-
-
 
 ## Generating the Mandelbrot set
 
@@ -30,7 +26,8 @@ otherwise change how it is calculated or rendered. Here's an example that explic
 parameters, and has the calculation run via XLA on the default accelerator using the X10 backend:
 
 ```sh
-swift run -c release Fractals MandelbrotSet --iterations 200 --tolerance 4.0 --region=-2.0,1.0,-1.3,1.3 --image-size 256,256 --x10 --output-file mandelbrot 
+swift run -c release Fractals MandelbrotSet --iterations 200 --tolerance 4.0 \
+  --region=-2.0,1.0,-1.3,1.3 --image-size 256,256 --x10 --output-file mandelbrot 
 ```
 
 The relevant parameters are:
@@ -59,7 +56,8 @@ the command line. Here's an example that explicitly specifies all the parameters
 on the default accelerator using the X10 backend:
 
 ```sh
-swift run -c release Fractals JuliaSet --constant=-0.8,0.156 --iterations 200 --tolerance 4.0 --region=-1.7,1.7,-1.7,1.7 --image-size 256,256 --x10 --output-file julia 
+swift run -c release Fractals JuliaSet --constant=-0.8,0.156 --iterations 200 --tolerance 4.0 \
+  --region=-1.7,1.7,-1.7,1.7 --image-size 256,256 --x10 --output-file julia 
 ```
 The relevant parameters are:
 
