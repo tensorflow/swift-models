@@ -78,6 +78,6 @@ extension ComplexConstant: ExpressibleByArgument {
   }
 
   var defaultValueDescription: String {
-    "\(self.real) \(self.imaginary)"
+    "\(self.real),\(self.imaginary)"
   }
 }

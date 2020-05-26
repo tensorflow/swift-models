@@ -55,6 +55,6 @@ extension ComplexRegion: ExpressibleByArgument {
     }
 
     var defaultValueDescription: String {
-        "\(self.realMinimum) \(self.realMaximum) \(self.imaginaryMinimum) \(self.imaginaryMaximum)"
+        "\(self.realMinimum),\(self.realMaximum),\(self.imaginaryMinimum),\(self.imaginaryMaximum)"
     }
 }
