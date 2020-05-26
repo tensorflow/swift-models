@@ -22,7 +22,7 @@ func mandelbrotSet(
     linearSpaceFrom: region.realMinimum, to: region.realMaximum, count: imageSize.width, on: device
   ).broadcasted(to: [imageSize.width, imageSize.height])
   let ys = Tensor<Float>(
-    linearSpaceFrom: region.imaginaryMinimum, to: region.imaginaryMaximum, count: imageSize.height,
+    linearSpaceFrom: region.imaginaryMaximum, to: region.imaginaryMinimum, count: imageSize.height,
     on: device
   ).expandingShape(at: 1).broadcasted(to: [imageSize.width, imageSize.height])
   let X = ComplexTensor(real: xs, imaginary: ys)
