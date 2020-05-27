@@ -74,7 +74,7 @@ final class TextUnsupervisedTests: XCTestCase {
                 XCTAssertEqual(example.second.shape[0], 1024)
                 totalCount += 1
             }
-            XCTAssertEqual(totalCount, 12)
+            XCTAssertEqual(totalCount, 64)
         } catch {
             XCTFail(error.localizedDescription)
         }
