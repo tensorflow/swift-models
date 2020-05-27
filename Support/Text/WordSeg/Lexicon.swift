@@ -14,22 +14,39 @@
 
 import TensorFlow
 
-/// A mapping from characters to logical words.
+/// A collection that maps character sequences to logical words.
 ///
-/// In Python implementations, this is sometimes called the String Vocabulary (which is in
-/// contrast with the character vocabulary which maps the alphabet to Int32's).
+/// In Python implementations, this is sometimes called the string vocabulary
+/// (in contrast to the character vocabulary or `Alphabet`, which maps
+/// characters to integers).
 public struct Lexicon {
+  /// A type whose instances represent a sequence of characters.
   public typealias Element = CharacterSequence
 
+  /// A one-to-one mapping between a sequence of characters and unique
+  /// integers.
   // TODO(marcrasi): if the value is not used to construct Tensor, switch to Int
   public var dictionary: BijectiveDictionary<CharacterSequence, Int32>
 
+  /// A count of unique logical words in the lexicon.
   public var count: Int { return dictionary.count }
 
+  /// Creates an instance containing a mapping from `sequences` to unique
+  /// integers.
+  ///
+  /// - Parameter sequences: character sequences to compose the lexicon.
   public init<C: Collection>(_ sequences: C) where C.Element == Element {
     self.dictionary = .init(zip(sequences, 0...))
   }
 
+  /// Creates an instance containing a mapping from `sequences` to unique
+  /// integers, using `alphabet`. Sequences are truncated at `maxLength` and
+  /// only those occurring `minFreq` times are included.
+  ///
+  /// - Parameter sequences: character sequences to compose the lexicon.
+  /// - Parameter alphabet: all characters contained in `sequences`.
+  /// - Parameter maxLength: sequence length at which truncation occurs.
+  /// - Parameter minFreq: minimum required occurrence of each sequence.
   public init(
     from sequences: [CharacterSequence],
     alphabet: Alphabet,
@@ -57,22 +74,5 @@ public struct Lexicon {
     }
 
     self.init(vocab)
-  }
-}
-
-public enum CharacterErrors: Error {
-  case unknownCharacter(character: Character, index: Int, sentence: String)
-  case nonUtf8Data
-}
-
-extension CharacterErrors: CustomStringConvertible {
-  public var description: String {
-    switch self {
-    case let .unknownCharacter(character, index, sentence):
-      return
-        "Unknown character '\(character)' encountered at index \(index) while converting sentence \"\(sentence)\" to a character sequence."
-    case .nonUtf8Data:
-      return "Non-UTF8 data encountered."
-    }
   }
 }
