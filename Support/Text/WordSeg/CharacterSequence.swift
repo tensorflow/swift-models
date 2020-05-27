@@ -95,7 +95,6 @@ extension CharacterSequence: CustomStringConvertible {
   }
 }
 
-
 /// An error that can be encountered when processing characters.
 public enum CharacterErrors: Error {
   case unknownCharacter(character: Character, index: Int, sentence: String)
