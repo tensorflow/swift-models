@@ -14,10 +14,18 @@
 
 import ModelSupport
 
+/// A sequence of text for use in word segmentation.
 public struct WordSegRecord {
+  /// A raw, unprocessed sequence of text.
   public let plainText: String
+  /// A sequence of text in numeric form, derived from `plainText`.
   public let numericalizedText: CharacterSequence
 
+  /// Creates an instance containing both raw and processed forms of a
+  /// sequence of text.
+  ///
+  /// - Parameter plainText: raw, unprocessed text.
+  /// - Parameter numericalizedText: processed text in numeric form.
   public init(plainText: String, numericalizedText: CharacterSequence) {
     self.plainText = plainText
     self.numericalizedText = numericalizedText

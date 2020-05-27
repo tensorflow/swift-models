@@ -15,21 +15,37 @@
 import Foundation
 import ModelSupport
 
+/// A collection of raw and processed text used for training and validation
+/// of word segmentation models.
 public struct WordSegDataset {
+  /// A collection of text used for training.
   public let training: [WordSegRecord]
+  /// A collection of text used for testing.
   public private(set) var testing: [WordSegRecord]?
+  /// A collection of text used for validation.
   public private(set) var validation: [WordSegRecord]?
+  /// The set of characters found in all included texts.
   public let alphabet: Alphabet
 
+  /// Details used for downloading source data.
   private struct DownloadDetails {
+    /// The location of the archive.
     var archiveLocation = URL(string: "https://s3.eu-west-2.amazonaws.com/k-kawakami")!
+    /// The basename of the archive.
     var archiveFileName = "seg"
+    /// The extension of the archive.
     var archiveExtension = "zip"
+    /// The path to the test source.
     var testingFilePath = "br/br-text/te.txt"
+    /// The path to the training source.
     var trainingFilePath = "br/br-text/tr.txt"
+    /// The path to the validation source.
     var validationFilePath = "br/br-text/va.txt"
   }
 
+  /// Returns a list of records parsed from `data` in UTF8.
+  ///
+  /// - Parameter data: text in UTF8 format.
   private static func load(data: Data) throws -> [String] {
     guard let contents: String = String(data: data, encoding: .utf8) else {
       throw CharacterErrors.nonUtf8Data
@@ -37,6 +53,10 @@ public struct WordSegDataset {
     return load(contents: contents)
   }
 
+  /// Separates `contents` into a collection of strings by newlines, trimming
+  /// leading and trailing whitespace and excluding blank lines.
+  ///
+  /// - Parameter contents: text to be separated by newline.
   private static func load(contents: String) -> [String] {
     var strings = [String]()
 
@@ -48,6 +68,15 @@ public struct WordSegDataset {
     return strings
   }
 
+  /// Returns an alphabet composed of all characters found in `training` and
+  /// `otherSequences`.
+  ///
+  /// - Parameter training: full text of the training data.
+  /// - Parameter otherSequences: optional full text of the validation and
+  ///   test data.
+  /// - Parameter eos: text to be used as the end of sequence marker.
+  /// - Parameter eow: text to be used as the end of word marker.
+  /// - Parameter pad: text to be used as the padding marker.
   private static func makeAlphabet(
     datasets training: [String],
     _ otherSequences: [String]?...,
@@ -73,6 +102,10 @@ public struct WordSegDataset {
     return Alphabet(sorted, eos: eos, eow: eow, pad: pad)
   }
 
+  /// Creates a collection of records to be used with the WordSeg model.
+  ///
+  /// - Parameter dataset: text to be converted.
+  /// - Parameter alphabet: set of all characters used in `dataset`.
   private static func convertDataset(_ dataset: [String], alphabet: Alphabet) throws
     -> [WordSegRecord]
   {
@@ -84,6 +117,12 @@ public struct WordSegDataset {
           alphabet: alphabet, appendingEoSTo: trimmed))
     }
   }
+
+  /// Returns a collection of records to be used with the WordSeg model, or
+  /// `nil` if `dataset` is empty.
+  ///
+  /// - Parameter dataset: text to be converted.
+  /// - Parameter alphabet: set of all characters used in `dataset`.
   private static func convertDataset(_ dataset: [String]?, alphabet: Alphabet) throws
     -> [WordSegRecord]?
   {
@@ -94,6 +133,8 @@ public struct WordSegDataset {
     return nil
   }
 
+  /// Creates an instance containing `WordSegRecords` from the default
+  /// location.
   public init() throws {
     let downloadDetails = DownloadDetails()
     let localStorageDirectory: URL = FileManager.default.temporaryDirectory
@@ -119,6 +160,11 @@ public struct WordSegDataset {
       testing: testingFilePath)
   }
 
+  /// Creates an instance containing `WordSegRecords` from the given files.
+  ///
+  /// - Parameter training: path to the file containing training data.
+  /// - Parameter validation: path to the file containing validation data.
+  /// - Parameter testing: path to the file containing test data.
   public init(
     training trainingFile: String,
     validation validationFile: String? = nil,
@@ -151,6 +197,11 @@ public struct WordSegDataset {
     self.testing = try Self.convertDataset(testing, alphabet: self.alphabet)
   }
 
+  /// Creates an instance containing `WordSegRecords` from the given data.
+  ///
+  /// - Parameter training: contents of the training data.
+  /// - Parameter validation: contents of the validation data.
+  /// - Parameter testing: contents of the test data.
   public init(
     training trainingData: Data, validation validationData: Data?, testing testingData: Data?
   )
@@ -172,6 +223,10 @@ public struct WordSegDataset {
     self.testing = try Self.convertDataset(testing, alphabet: self.alphabet)
   }
 
+  /// Downloads and unpacks the source archive if it does not exist locally.
+  ///
+  /// - Parameter directory: local directory to store files.
+  /// - Parameter downloadDetails: where to find the source archive.
   private static func downloadIfNotPresent(
     to directory: URL, downloadDetails: DownloadDetails
   ) {
