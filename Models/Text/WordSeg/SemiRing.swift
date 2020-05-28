@@ -22,9 +22,8 @@ import TensorFlow
   import Glibc
 #endif
 
-/// logSumExp(_:)
-///
-/// logSumExp (see https://en.wikipedia.org/wiki/LogSumExp)
+/// Returns a single tensor containing the log of the sum of the exponentials
+/// in `x`. Used for numerical stability when dealing with very small values.
 @differentiable
 public func logSumExp(_ x: [Tensor<Float>]) -> Tensor<Float> {
   // Deal with an empty array first.
@@ -32,37 +31,45 @@ public func logSumExp(_ x: [Tensor<Float>]) -> Tensor<Float> {
   return Tensor<Float>(stacking: x).logSumExp()
 }
 
-/// logSumExp(_:_:)
-///
-/// Specialized logSumExp for 2 tensor of floats.
+/// Returns a single tensor containing the log of the sum of the exponentials
+/// in `lhs` and `rhs`. Used for numerical stability when dealing with very
+/// small values.
 @differentiable
 public func logSumExp(_ lhs: Tensor<Float>, _ rhs: Tensor<Float>) -> Tensor<Float> {
   return logSumExp([lhs, rhs])
 }
 
-/// SemiRing
-///
-/// Represents a SemiRing
+/// A storage mechanism for scoring inside a lattice.
 public struct SemiRing: Differentiable {
+  /// The log likelihood.
   public var logp: Tensor<Float>
+  /// The regularization factor.
   public var logr: Tensor<Float>
 
+  /// Creates an instance with log likelihood `logp` and regularization
+  /// factor `logr`.
   @differentiable
   public init(logp: Tensor<Float>, logr: Tensor<Float>) {
     self.logp = logp
     self.logr = logr
   }
 
+  /// Creates an instance with log likelihood `logp` and regularization
+  /// factor `logr`.
   @differentiable
   public init(logp: Float, logr: Float) {
     self.logp = Tensor(logp)
     self.logr = Tensor(logr)
   }
 
+  /// The baseline score of zero.
   static var zero: SemiRing { SemiRing(logp: -Float.infinity, logr: -Float.infinity) }
+  /// The baseline score of one.
   static var one: SemiRing { SemiRing(logp: 0.0, logr: -Float.infinity) }
 }
 
+/// Multiplies `lhs` by `rhs`. Since scores are on a logarithmic scale,
+/// products become sums.
 @differentiable
 func * (_ lhs: SemiRing, _ rhs: SemiRing) -> SemiRing {
   return SemiRing(
@@ -70,6 +77,7 @@ func * (_ lhs: SemiRing, _ rhs: SemiRing) -> SemiRing {
     logr: logSumExp(lhs.logp + rhs.logr, rhs.logp + lhs.logr))
 }
 
+/// Sums `lhs` by `rhs`.
 @differentiable
 func + (_ lhs: SemiRing, _ rhs: SemiRing) -> SemiRing {
   return SemiRing(
@@ -78,6 +86,7 @@ func + (_ lhs: SemiRing, _ rhs: SemiRing) -> SemiRing {
 }
 
 extension Array where Element == SemiRing {
+  /// Returns a sum of all scores in the collection.
   @differentiable
   func sum() -> SemiRing {
     return SemiRing(
@@ -87,13 +96,19 @@ extension Array where Element == SemiRing {
 }
 
 extension SemiRing {
+  /// The plain text description of this instance with score details.
   var shortDescription: String {
     "(\(logp), \(logr))"
   }
 }
 
-/// SE-0259-esque equality with tolerance
 extension SemiRing {
+  /// Returns true when `self` is within `tolerance` of `other`. This behavior
+  /// is modeled after SE-0259.
+  ///
+  /// - Parameter other: the instance to be compared with `self`.
+  /// - Parameter tolerance: the amount of variability considered acceptable
+  ///   in determining equality.
   // TODO(abdulras) see if we can use ulp as a default tolerance
   @inlinable
   public func isAlmostEqual(to other: Self, tolerance: Float) -> Bool {
