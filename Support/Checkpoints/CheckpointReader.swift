@@ -70,21 +70,9 @@ open class CheckpointReader {
         let checkpointBase = finalCheckpointLocation.lastPathComponent
         let indexReader: CheckpointIndexReader
         if finalCheckpointLocation.isFileURL {
-            let indexFile = finalCheckpointLocation.appendingPathExtension("index")
-            if FileManager.default.fileExists(atPath: indexFile.path) {
-                self.localCheckpointLocation = finalCheckpointLocation
-                indexReader = try CheckpointIndexReader(file: indexFile)
-            } else {
-                // Albert checkpoint hosted is from TfHub, the directory structure is different.
-                let indexFile = finalCheckpointLocation
-                        .deletingLastPathComponent()
-                        .appendingPathComponent("variables")
-                        .appendingPathComponent("variables.index")
-                self.localCheckpointLocation = indexFile
-                        .deletingLastPathComponent()
-                        .appendingPathComponent("variables")
-                indexReader = try CheckpointIndexReader(file: indexFile)
-            }
+            self.localCheckpointLocation = finalCheckpointLocation
+            indexReader = try CheckpointIndexReader(
+                file: finalCheckpointLocation.appendingPathExtension("index"))
             self.header = try indexReader.readHeader()
         } else {
             let temporaryCheckpointBase = temporaryDirectory.appendingPathComponent(checkpointBase)

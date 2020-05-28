@@ -2,6 +2,7 @@ add_library(TextModels
   Attention.swift
   BERT.swift
   BERTClassifier.swift
+  BERT/BERTCheckpointReader.swift
   Evaluation.swift
   GPT2/CheckpointWriter.swift
   GPT2/GPT2.swift

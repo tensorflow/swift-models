@@ -681,9 +681,9 @@ extension BERT {
                         dictionaryFile: dictionaryURL)
                 case .albertBase, .albertLarge, .albertXLarge, .albertXXLarge:
                     let vocabularyURL = storage
-                            .deletingLastPathComponent()
-                            .appendingPathComponent("assets")
-                            .appendingPathComponent("30k-clean.model")
+                        .deletingLastPathComponent()
+                        .appendingPathComponent("assets")
+                        .appendingPathComponent("30k-clean.model")
                     return try! Vocabulary(fromSentencePieceModel: vocabularyURL)
                 }
             }()
