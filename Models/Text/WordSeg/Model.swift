@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 // Original Paper:
 // "Learning to Discover, Ground, and Use Words with Segmental Neural Language
 // Models"
@@ -18,22 +19,29 @@
 // https://www.aclweb.org/anthology/P19-1645.pdf
 // This implementation is not affiliated with DeepMind and has not been
 // verified by the authors.
+
 import ModelSupport
 import TensorFlow
 
-/// SNLM
-///
-/// A representation of the Segmental Neural Language Model.
-///
-/// \ref https://www.aclweb.org/anthology/P19-1645.pdf
+/// A Segmental Neural Language Model for word segmentation, as described in
+/// the above paper.
 public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
+  /// A set of configuration parameters that define model behavior.
   public struct Parameters {
+    /// The hidden unit size.
     public var ndim: Int
+    /// The dropout rate.
     public var dropoutProb: Double
+    /// The character vocabulary.
     public var chrVocab: Alphabet
+    /// The string vocabulary.
     public var strVocab: Lexicon
+    /// The power of the length penalty.
     public var order: Int
 
+    /// Creates an instance with `ndim` hidden units, `dropoutProb` dropout
+    /// rate, `chrVocab` alphabet, `strVocab` lexicon, and `order` power of
+    /// length penalty.
     public init(
       ndim: Int,
       dropoutProb: Double,
@@ -49,27 +57,40 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
     }
   }
 
+  /// The configuration parameters that define model behavior.
   @noDerivative public var parameters: Parameters
 
   // MARK: - Encoder
+  /// The embedding layer for the encoder.
   public var encoderEmbedding: Embedding<Float>
+  /// The LSTM layer for the encoder.
   public var encoderLSTM: LSTM<Float>
 
   // MARK: - Interpolation weight
+  /// The interpolation weight, which determines the proportion of
+  /// contributions from the lexical memory and character generation.
   public var mlpInterpolation: MLP
 
   // MARK: - Lexical memory
+  /// The lexical memory.
   public var mlpMemory: MLP
 
   // MARK: - Character-level decoder
+  /// The embedding layer for the decoder.
   public var decoderEmbedding: Embedding<Float>
+  /// The LSTM layer for the decoder.
   public var decoderLSTM: LSTM<Float>
+  /// The dense layer for the decoder.
   public var decoderDense: Dense<Float>
 
   // MARK: - Other layers
+  /// The dropout layer for both the encoder and decoder.
   public var dropout: Dropout<Float>
 
   // MARK: - Initializer
+  /// Creates an instance with the configuration defined by `parameters`.
+  ///
+  /// - Parameter parameters: the model configuration.
   public init(parameters: Parameters) {
     self.parameters = parameters
 
@@ -113,7 +134,9 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   }
 
   // MARK: - Encode
-  /// Returns the hidden states of the encoder LSTM applied to the given sentence.
+  /// Returns the hidden states of the encoder LSTM applied to `x`.
+  ///
+  /// - Parameter x: the character sequence to encode.
   public func encode(_ x: CharacterSequence) -> [Tensor<Float>] {
     var embedded = encoderEmbedding(x.tensor)
     embedded = dropout(embedded)
@@ -125,7 +148,10 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   }
 
   // MARK: - Decode
-  /// Returns log probabilities for each of the candidates.
+  /// Returns the log probabilities for each of the candidates.
+  ///
+  /// - Parameter candidates: the character sequences to decode.
+  /// - Parameter state: the hidden state from the encoder LSTM.
   public func decode(_ candidates: [CharacterSequence], _ state: Tensor<Float>) -> Tensor<Float> {
     // TODO(TF-433): Remove closure workaround when autodiff supports non-active rethrowing
     // functions (`Array.map`).
@@ -192,6 +218,12 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   }
 
   // MARK: - buildLattice
+  /// Returns the log likelihood for `candidate` from the lexical memory
+  /// `logp_lex`.
+  ///
+  /// - Parameter logp_lex: all log likelihoods in the lexical memory.
+  /// - Parameter candidate: the character sequence for which to retrieve the
+  ///   log likelihood.
   func get_logp_lex(_ logp_lex: Tensor<Float>, _ candidate: CharacterSequence) -> Tensor<Float> {
     guard let index = parameters.strVocab.dictionary[candidate] else {
       return Tensor(-Float.infinity)
@@ -199,6 +231,12 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
     return logp_lex[Int(index)]
   }
 
+  /// Returns a complete lattice for `sentence` with a maximum length of
+  /// `maxLen`.
+  ///
+  /// - Parameter sentence: the character sequence used for determining
+  ///   segmentation.
+  /// - Parameter maxLen: the maximum allowable sequence length.
   @differentiable
   public func buildLattice(_ sentence: CharacterSequence, maxLen: Int) -> Lattice {
     var lattice = Lattice(count: sentence.count)
@@ -265,15 +303,17 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 }
 
 extension Array {
-  // NOTE(TF-1277): this mutating method exists as a workaround for `Array.subscript._modify` not
-  // being differentiable.
-  //
-  // Semantically, it behaves like `Array.subscript.set`.
+  /// Sets the `index`th element of `self` to `value`. Semantically, it
+  /// behaves like `Array.subscript.set`.
+  ///
+  /// - Note: this mutating method exists as a workaround for
+  ///   `Array.subscript._modify` not being differentiable (TF-1277).
   @inlinable
   mutating func update(at index: Int, to value: Element) {
     self[index] = value
   }
 
+  /// Returns the value and pullback of `self.update`.
   @usableFromInline
   @derivative(of: update)
   mutating func vjpUpdate(at index: Int, to value: Element) -> (
@@ -290,17 +330,29 @@ extension Array {
   }
 }
 
+/// A multilayer perceptron with three layers.
 public struct MLP: Layer {
+  /// The first dense layer.
   public var dense1: Dense<Float>
+  /// The dropout layer.
   public var dropout: Dropout<Float>
+  /// The second dense layer.
   public var dense2: Dense<Float>
 
+  /// Creates an instance with input size `nIn`, `nHidden` hidden units,
+  /// dropout probability `dropoutProbability` and output size `nOut`.
+  ///
+  /// - Parameter nIn: input size.
+  /// - Parameter nHidden: number of hidden units.
+  /// - Parameter nOut: output size.
+  /// - Parameter dropoutProbability: probability that an input is dropped.
   public init(nIn: Int, nHidden: Int, nOut: Int, dropoutProbability: Double) {
     dense1 = Dense(inputSize: nIn, outputSize: nHidden, activation: tanh)
     dropout = Dropout(probability: dropoutProbability)
     dense2 = Dense(inputSize: nHidden, outputSize: nOut, activation: logSoftmax)
   }
 
+  /// Returns the result of applying all three layers in sequence to `input`.
   @differentiable
   public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
     return dense2(dropout(dense1(input)))
@@ -308,10 +360,11 @@ public struct MLP: Layer {
 }
 
 extension Tensor {
-  // NOTE(TF-1008): this is a workaround for TF-1008 that is needed for differentiation
-  // correctness.
-  //
-  // Remove this when differentiation uses per-instance zeros
+  /// Returns `self`.
+  ///
+  /// - Note: this is a workaround for TF-1008 that is needed for
+  /// differentiation correctness.
+  // TODO: Remove this when differentiation uses per-instance zeros
   // (`Differentiable.zeroTangentVectorInitializer`) instead of static zeros
   // (`AdditiveArithmetic.zero`).
   @differentiable(where Scalar: TensorFlowFloatingPoint)
@@ -319,6 +372,7 @@ extension Tensor {
     self
   }
 
+  /// Returns the value and pullback of `self.identityADHack`.
   @derivative(of: identityADHack)
   func vjpIdentityADHack() -> (
     value: Tensor, pullback: (Tensor) -> Tensor
