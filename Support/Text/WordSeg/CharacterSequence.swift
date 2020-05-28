@@ -33,6 +33,8 @@ public struct CharacterSequence: Hashable {
   /// - Parameter alphabet: character to integer mapping.
   /// - Parameter appendingEoSTo: string to be converted to a sequence of
   ///   integers.
+  ///
+  /// - Throws: An error of type 'CharacterErrors'.
   public init(alphabet: Alphabet, appendingEoSTo string: String) throws {
     var characters = [Int32]()
     characters.reserveCapacity(string.count + 1)

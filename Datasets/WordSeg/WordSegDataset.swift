@@ -46,6 +46,8 @@ public struct WordSegDataset {
   /// Returns a list of records parsed from `data` in UTF8.
   ///
   /// - Parameter data: text in UTF8 format.
+  ///
+  /// - Throws: An error of type 'CharacterErrors'.
   private static func load(data: Data) throws -> [String] {
     guard let contents: String = String(data: data, encoding: .utf8) else {
       throw CharacterErrors.nonUtf8Data
@@ -53,8 +55,9 @@ public struct WordSegDataset {
     return load(contents: contents)
   }
 
-  /// Separates `contents` into a collection of strings by newlines, trimming
-  /// leading and trailing whitespace and excluding blank lines.
+  /// Returns a collection of strings created by separating `contents` by
+  /// newlines, trimming leading and trailing whitespace, and excluding blank
+  /// lines.
   ///
   /// - Parameter contents: text to be separated by newline.
   private static func load(contents: String) -> [String] {
@@ -102,10 +105,12 @@ public struct WordSegDataset {
     return Alphabet(sorted, eos: eos, eow: eow, pad: pad)
   }
 
-  /// Creates a collection of records to be used with the WordSeg model.
+  /// Returns a collection of records to be used with the WordSeg model.
   ///
   /// - Parameter dataset: text to be converted.
   /// - Parameter alphabet: set of all characters used in `dataset`.
+  ///
+  /// - Throws: An error of type 'CharacterErrors'.
   private static func convertDataset(_ dataset: [String], alphabet: Alphabet) throws
     -> [WordSegRecord]
   {
@@ -123,6 +128,8 @@ public struct WordSegDataset {
   ///
   /// - Parameter dataset: text to be converted.
   /// - Parameter alphabet: set of all characters used in `dataset`.
+  ///
+  /// - Throws: An error of type 'CharacterErrors'.
   private static func convertDataset(_ dataset: [String]?, alphabet: Alphabet) throws
     -> [WordSegRecord]?
   {
@@ -135,6 +142,8 @@ public struct WordSegDataset {
 
   /// Creates an instance containing `WordSegRecords` from the default
   /// location.
+  ///
+  /// - Throws: An error of type 'CharacterErrors'.
   public init() throws {
     let downloadDetails = DownloadDetails()
     let localStorageDirectory: URL = FileManager.default.temporaryDirectory
@@ -165,6 +174,8 @@ public struct WordSegDataset {
   /// - Parameter training: path to the file containing training data.
   /// - Parameter validation: path to the file containing validation data.
   /// - Parameter testing: path to the file containing test data.
+  ///
+  /// - Throws: An error of type 'CharacterErrors'.
   public init(
     training trainingFile: String,
     validation validationFile: String? = nil,
@@ -202,6 +213,8 @@ public struct WordSegDataset {
   /// - Parameter training: contents of the training data.
   /// - Parameter validation: contents of the validation data.
   /// - Parameter testing: contents of the test data.
+  ///
+  /// - Throws: An error of type 'CharacterErrors'.
   public init(
     training trainingData: Data, validation validationData: Data?, testing testingData: Data?
   )
