@@ -96,7 +96,7 @@ public struct WordSegDataset {
 
   public init() throws {
     let downloadDetails = DownloadDetails()
-    let localStorageDirectory: URL = FileManager.default.temporaryDirectory
+    let localStorageDirectory: URL = DatasetUtilities.defaultDirectory
       .appendingPathComponent("WordSeg", isDirectory: true)
 
     WordSegDataset.downloadIfNotPresent(to: localStorageDirectory, downloadDetails: downloadDetails)
