@@ -284,7 +284,7 @@ extension BytePairEncoder {
     /// - Parameters:
     ///   - token: BPE-coded token to decode.
     /// - Returns: String containing the decoded tokens.
-    public static func decode(token: String) throws -> String {
+    public static func decode(token: String) -> String {
         var buffer = [UInt8]()
 
         for scalar in token.unicodeScalars {
@@ -293,7 +293,7 @@ extension BytePairEncoder {
 
         // TODO(#385): Support unicode strings with multibyte scalars.
         guard let decodedToken = String(bytes: buffer, encoding: .utf8) else {
-            throw BPEError.invalidGeneratedToken
+            return "�"
         }
 
         return decodedToken
