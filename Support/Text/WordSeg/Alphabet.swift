@@ -28,10 +28,8 @@ public struct Alphabet {
 
   /// A marker denoting the end of a sequence.
   public let eos: Int32
-
   /// A marker denoting the end of a word.
   public let eow: Int32
-
   /// A marker used for padding inside a sequence.
   public let pad: Int32
 

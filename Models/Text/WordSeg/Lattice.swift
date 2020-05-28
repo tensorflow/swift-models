@@ -23,23 +23,40 @@ import TensorFlow
   import Glibc
 #endif
 
-/// Lattice
-///
-/// Represents the lattice used by the WordSeg algorithm.
+/// A structure used for scoring all possible segmentations of a character
+/// sequence. The path with the best score provides the most likely
+/// segmentation at inference.
 public struct Lattice: Differentiable {
-  /// Edge
+  /// Represents a word.
   ///
-  /// Represents an Edge
+  /// At each character position, an edge is constructed for every possible
+  /// segmentation of the preceding portion of the sequence.
   public struct Edge: Differentiable {
+    /// The node position immediately preceding this edge.
     @noDerivative public var start: Int
+    /// The node position immediately following this edge.
     @noDerivative public var end: Int
+    /// The characters composing a word.
     @noDerivative public var string: CharacterSequence
+    /// The log likelihood of this segmentation.
     public var logp: Tensor<Float>
 
-    // expectation
+    /// The expected score for this segmentation.
     public var score: SemiRing
+    /// The expected total score for this segmentation.
     public var totalScore: SemiRing
 
+    /// Creates an edge for `sentence` between `start` and `end` node
+    /// positions. Sets the log probability to `logp` and uses this value to
+    /// calculate the score. Sums the score with `previous` to determine the
+    /// total score.
+    ///
+    /// - Parameter start: the position of the start node.
+    /// - Parameter end: the position of the end node.
+    /// - Parameter sentence: the character sequence.
+    /// - Parameter logp: the log likelihood.
+    /// - Parameter previous: the total score of the preceding edge.
+    /// - Parameter order: the power of the length penalty.
     @differentiable
     init(
       start: Int, end: Int, sentence: CharacterSequence, logp: Tensor<Float>,
@@ -58,6 +75,15 @@ public struct Lattice: Differentiable {
       self.totalScore = self.score * previous
     }
 
+    /// Creates an edge for `string` between `start` and `end` node
+    /// positions. Sets the log probability, score, and total score.
+    ///
+    /// - Parameter start: the position of the start node.
+    /// - Parameter end: the position of the end node.
+    /// - Parameter string: the character sequence.
+    /// - Parameter logp: the log likelihood.
+    /// - Parameter score: the current score.
+    /// - Parameter totalScore: the total score.
     @differentiable
     public init(
       start: Int, end: Int, string: CharacterSequence, logp: Tensor<Float>,
@@ -72,17 +98,32 @@ public struct Lattice: Differentiable {
     }
   }
 
-  /// Node
+  /// Represents a word boundary. When a lattice is built, a start node is
+  /// created, followed by one for every character in the sequence,
+  /// representing every potential boundary.
   ///
-  /// Represents a node in the lattice
+  /// - Note: Scores are only meaningful in relation to incoming edges and the
+  ///   start node has no incoming edges.
   public struct Node: Differentiable {
+    /// The incoming edge with the highest score.
     @noDerivative public var bestEdge: Edge?
+    /// The score of the best incoming edge.
     public var bestScore: Float = 0.0
+    /// All incoming edges.
     public var edges = [Edge]()
+    /// A composite score of all incoming edges.
     public var semiringScore: SemiRing = SemiRing.one
 
+    /// Creates an empty instance.
     init() {}
 
+    /// Creates a node preceded by `bestEdge`. Stores `bestScore` and
+    /// `semiringScore`. Sets incoming edges to `edges`.
+    ///
+    /// - Parameter bestEdge: the best incoming edge.
+    /// - Parameter bestScore: the score of the best incoming edge.
+    /// - Parameter edges: the incoming edges.
+    /// - Parameter semiringScore: the composite score of all incoming edges.
     @differentiable
     public init(
       bestEdge: Edge?, bestScore: Float, edges: [Edge],
@@ -94,20 +135,24 @@ public struct Lattice: Differentiable {
       self.semiringScore = semiringScore
     }
 
+    /// Calculates the semiring score by summing the total score of all edges.
     @differentiable
     func computeSemiringScore() -> SemiRing {
       // TODO: Reduceinto and +=
       edges.differentiableMap { $0.totalScore }.sum()
     }
 
+    /// Calculates the current semiring score and sets `semiringScore`.
     @differentiable
     mutating func recomputeSemiringScore() {
       semiringScore = computeSemiringScore()
     }
   }
 
+  /// An ordered collection of nodes.
   var positions: [Node]
 
+  /// Accesses the node at the `index`th position.
   @differentiable
   public subscript(index: Int) -> Node {
     get { return positions[index] }
@@ -121,16 +166,28 @@ public struct Lattice: Differentiable {
     // _modify { yield &positions[index] }
   }
 
+  /// Creates an empty instance with a start node, followed by `count` nodes.
+  ///
+  /// - Parameter count: the length of the lattice, e.g. number of characters
+  ///   in the sequence.
   init(count: Int) {
     positions = Array(repeating: Node(), count: count + 1)
   }
 
+  /// Creates an instance with the nodes in `positions`.
+  ///
+  /// - Parameter positions: the nodes composing the lattice.
   public init(positions: [Node]) {
     self.positions = positions
   }
 
+  /// Returns a set of edges with the best total score. Traversing this path
+  /// produces a segmented version of `sentence`.
+  ///
+  /// - Parameter sentence: the text to be segmented.
   public mutating func viterbi(sentence: CharacterSequence) -> [Edge] {
-    // Forwards pass
+    // Forward pass
+    // Starts at 1 since the 0 node has no incoming edges.
     for position in 1...sentence.count {
       var bestScore = -Float.infinity
       var bestEdge: Edge!
@@ -145,7 +202,7 @@ public struct Lattice: Differentiable {
       self[position].bestEdge = bestEdge
     }
 
-    // Backwards
+    // Backward pass
     var bestPath: [Edge] = []
     var nextEdge = self[sentence.count].bestEdge!
     while nextEdge.start != 0 {
@@ -157,6 +214,11 @@ public struct Lattice: Differentiable {
     return bestPath.reversed()
   }
 
+  /// Returns the plain text encoded in `path`, e.g. the segmentation of the
+  /// full character sequence.
+  ///
+  /// - Parameter path: a lattice path.
+  /// - Parameter alphabet: the alphabet used in path creation.
   public static func pathToPlainText(path: [Edge], alphabet: Alphabet) -> String {
     var plainText = [String]()
     for edge in path {
@@ -171,6 +233,7 @@ public struct Lattice: Differentiable {
 }
 
 extension Lattice: CustomStringConvertible {
+  /// The plain text description of this instance that describes all nodes.
   public var description: String {
     """
     [
@@ -181,6 +244,8 @@ extension Lattice: CustomStringConvertible {
 }
 
 extension Lattice.Node: CustomStringConvertible {
+  /// The plain text description of this instance that describes all incoming
+  /// edges.
   public var description: String {
     var edgesStr: String
     if edges.isEmpty {
@@ -196,13 +261,19 @@ extension Lattice.Node: CustomStringConvertible {
 }
 
 extension Lattice.Edge: CustomStringConvertible {
+  /// The plain text description of this instance with all edge details.
   public var description: String {
     "[\(start)->\(end)] logp: \(logp), score: \(score.shortDescription), total score: \(totalScore.shortDescription), sentence: \(string)"
   }
 }
 
-/// SE-0259-esque equality with tolerance
 extension Lattice {
+  /// Returns true when all nodes in `self` are within `tolerance` of all
+  /// nodes in `other`. This behavior is modeled after SE-0259.
+  ///
+  /// - Parameter other: the instance to be compared with `self`.
+  /// - Parameter tolerance: the amount of variability considered acceptable
+  ///   in determining equality.
   public func isAlmostEqual(to other: Self, tolerance: Float) -> Bool {
     guard self.positions.count == other.positions.count else {
       print("positions count mismatch: \(self.positions.count) != \(other.positions.count)")
@@ -221,6 +292,13 @@ extension Lattice {
 }
 
 extension Lattice.Node {
+  /// Returns true when all properties and edges in `self` are within
+  /// `tolerance` of all properties and edges in `other`. This behavior is
+  /// modeled after SE-0259.
+  ///
+  /// - Parameter other: the instance to be compared with `self`.
+  /// - Parameter tolerance: the amount of variability considered acceptable
+  ///   in determining equality.
   public func isAlmostEqual(to other: Self, tolerance: Float) -> Bool {
     guard self.edges.count == other.edges.count else { return false }
 
@@ -243,6 +321,13 @@ extension Lattice.Node {
 }
 
 extension Lattice.Edge {
+  /// Returns true when the log likelihood and scores in `self` are within
+  /// `tolerance` of the log likelihood and scores in `other`. This behavior
+  /// is modeled after SE-0259.
+  ///
+  /// - Parameter other: the instance to be compared with `self`.
+  /// - Parameter tolerance: the amount of variability considered acceptable
+  ///   in determining equality.
   public func isAlmostEqual(to other: Self, tolerance: Float) -> Bool {
     return self.start == other.start && self.end == other.end
       // TODO: figure out why the string equality is being ignored
