@@ -43,18 +43,16 @@ func timeDistributed(_ input: Tensor<Float>, _ weight: Tensor<Float>) -> Tensor<
 struct FeedForward: Layer {
     var dense1: TimeDistributed
     var dense2: TimeDistributed
-    @noDerivative var dropout: Dropout<Float>
 
-    init(size: Int, hidden: Int, dropProbability: Double) {
+    init(size: Int, hidden: Int) {
         dense1 = TimeDistributed(
             Dense<Float>(inputSize: size, outputSize: hidden, activation: gelu))
         dense2 = TimeDistributed(Dense<Float>(inputSize: hidden, outputSize: size))
-        dropout = Dropout<Float>(probability: dropProbability)
     }
 
     @differentiable(wrt: (self,input))
     func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        return input.sequenced(through: dense1, dropout, dense2)
+        return input.sequenced(through: dense1, dense2)
     }
 }
 
@@ -267,7 +265,7 @@ public struct EncoderLayer: Layer {
             headCount: headCount)
         selfAttentionDropout = Dropout(probability: dropProbability)
         selfAttentionNorm = LayerNorm(featureCount: size, axis: 2, epsilon: 1e-5)
-        feedForward = FeedForward(size: size, hidden: 4 * size, dropProbability: dropProbability)
+        feedForward = FeedForward(size: size, hidden: 4 * size)
         feedForwardDropout = Dropout(probability: dropProbability)
         feedForwardNorm = LayerNorm(featureCount: size, axis: 2, epsilon: 1e-5)
     }
@@ -298,15 +296,18 @@ public struct EncoderLayer: Layer {
 public struct TransformerLM: Module {
     var embedding: Embedding<Float>
     var positionalEmbeddings: Tensor<Float>
+    var embeddingDropout: Dropout<Float> 
     var layers: [EncoderLayer]
     var norm: LayerNorm<Float>
 
     public init(
         embedding: Embedding<Float>, positionalEmbeddings: Tensor<Float>,
+        dropProbability: Double,
         layers: [EncoderLayer], norm: LayerNorm<Float>
     ) {
         self.embedding = embedding
         self.positionalEmbeddings = positionalEmbeddings
+        self.embeddingDropout = Dropout<Float>(probability: dropProbability)
         self.layers = layers
         self.norm = norm
     }
@@ -319,6 +320,7 @@ public struct TransformerLM: Module {
         let positionsTensor = Tensor<Int32>(shape: [1, tokens.shape[1]], scalars: positions)
         var h = embedding(tokens)
         h = h + positionalEmbeddings.gathering(atIndices: positionsTensor)
+        h = embeddingDropout(h)
         for i in 0..<layers.count {
             // Remove the .call when TF-516 is fixed.
             h = layers[i].callAsFunction(h, state: &states[i])
