@@ -140,7 +140,7 @@ public class GPT2 {
             return "\r\n"
         }
         if let token: String = bpe.vocabulary.token(forId: Int(id)) {
-            let decodedToken = try BytePairEncoder.decode(token: token)
+            let decodedToken = BytePairEncoder.decode(token: token)
             // Make any line breaks universal.
             return decodedToken.replacingOccurrences(of: "\n", with: "\r\n")
         }
