@@ -1,5 +1,5 @@
 add_library(TextTests
-  Inference.swift
+  GPT2Tests.swift
   WordSegmentationTests/ExampleData.swift
   WordSegmentationTests/ProbeLayers.swift
   WordSegmentationTests/Parameters.swift

@@ -90,29 +90,9 @@ public class GPT2 {
 
             print("GPT-2 loaded from checkpoint successfully.")
         } catch {
-            // If checkpoint is invalid, load an untrained model.
-            print("Initializing empty GPT-2 from scratch.")
-
-            let embedding = Embedding<Float>(
-                vocabularySize: parameters.vocabSize,
-                embeddingSize: parameters.embeddingSize)
-            let positionalEmbeddings = Tensor<Float>(zeros: [
-                parameters.embeddingSize / parameters.headCount
-            ])
-            let layers = (0..<parameters.layerCount).map { _ in
-                EncoderLayer(
-                    size: parameters.embeddingSize,
-                    headCount: parameters.headCount, dropProbability: 0.1)
-            }
-            let layerNorm = LayerNorm<Float>(featureCount: parameters.embeddingSize, axis: -1)
-            model = TransformerLM(
-                embedding: embedding,
-                positionalEmbeddings: positionalEmbeddings, layers: layers, norm: layerNorm)
-
-            // Empty vocab and merges.
-            let vocabulary = Vocabulary(tokensToIds: [endOfText: endOfTextId])
-            let mergePairs = [BytePairEncoder.Pair: Int]()
-            bpe = BytePairEncoder(vocabulary: vocabulary, mergePairs: mergePairs)
+            // If checkpoint is invalid, throw the error and exit.
+            print("Fail to load GPT-2 from checkpoint. \(error)")
+            throw error
         }
 
         contextSize = parameters.contextSize

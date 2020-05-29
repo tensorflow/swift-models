@@ -17,7 +17,7 @@ import XCTest
 #if !os(macOS)
   public func allTests() -> [XCTestCaseEntry] {
     return [
-      testCase(TextInferenceTests.allTests),
+      testCase(GPT2Tests.allTests),
       testCase(WordSegSemiRingTests.allTests),
       testCase(WordSegProbeLayerTests.allTests),
     ]
