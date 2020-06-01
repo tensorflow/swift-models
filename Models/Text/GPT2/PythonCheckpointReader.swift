@@ -128,7 +128,7 @@ extension TransformerLM: InitializableFromPythonCheckpoint {
         positionalEmbeddings = reader.readTensor(
             name: scope + "/wpe",
             scalarType: Float.self)
-        embeddingDropout = Dropout<Float>(probability: 0.1)
+        embeddingDropout = Dropout(probability: 0.1)
         layers = (0..<config.layerCount).map { i in
             EncoderLayer(reader: reader, config: config, scope: scope + "/h\(i)")
         }

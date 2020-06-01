@@ -307,7 +307,7 @@ public struct TransformerLM: Module {
     ) {
         self.embedding = embedding
         self.positionalEmbeddings = positionalEmbeddings
-        self.embeddingDropout = Dropout<Float>(probability: dropProbability)
+        self.embeddingDropout = Dropout(probability: dropProbability)
         self.layers = layers
         self.norm = norm
     }
@@ -338,6 +338,7 @@ public struct TransformerLM: Module {
         let positionsTensor = Tensor<Int32>(shape: [1, tokens.shape[1]], scalars: positions, on: tokens.device)
         var h = embedding(tokens)
         h = h + positionalEmbeddings.gathering(atIndices: positionsTensor)
+        h = embeddingDropout(h)
         h = layers.differentiableReduce(h) { $1($0) }
         h = norm(h)
         // A somewhat hacky way to share weights.
