@@ -127,7 +127,7 @@ public func extractArchive(
     case "zip":
         binaryLocation = "/usr/bin/"
         toolName = "unzip"
-        arguments = [archivePath, "-d", localStorageDirectory.path]
+        arguments = ["-qq", archivePath, "-d", localStorageDirectory.path]
     default:
         printError(
             "Unable to find archiver for extension \(fileExtension ?? adjustedPathExtension).")
