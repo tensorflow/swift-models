@@ -139,7 +139,8 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
         inputSize: parameters.hiddenSize,
         hiddenSize:
           parameters.hiddenSize))
-    self.decoderDense = Dense(inputSize: parameters.hiddenSize, outputSize: parameters.alphabet.count)
+    self.decoderDense = Dense(
+      inputSize: parameters.hiddenSize, outputSize: parameters.alphabet.count)
 
     // Other layers
     self.dropout = Dropout(probability: parameters.dropoutProbability)
