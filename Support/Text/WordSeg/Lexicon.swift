@@ -20,6 +20,7 @@ import TensorFlow
 /// (in contrast to the character vocabulary or `Alphabet`, which maps
 /// characters to integers).
 public struct Lexicon {
+
   /// A type whose instances represent a sequence of characters.
   public typealias Element = CharacterSequence
 

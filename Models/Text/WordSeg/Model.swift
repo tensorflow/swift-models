@@ -26,16 +26,22 @@ import TensorFlow
 /// A Segmental Neural Language Model for word segmentation, as described in
 /// the above paper.
 public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
+
   /// A set of configuration parameters that define model behavior.
   public struct Parameters {
+
     /// The hidden unit size.
     public var ndim: Int
+
     /// The dropout rate.
     public var dropoutProb: Double
+
     /// The character vocabulary.
     public var chrVocab: Alphabet
+
     /// The string vocabulary.
     public var strVocab: Lexicon
+
     /// The power of the length penalty.
     public var order: Int
 
@@ -61,33 +67,42 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   @noDerivative public var parameters: Parameters
 
   // MARK: - Encoder
+
   /// The embedding layer for the encoder.
   public var encoderEmbedding: Embedding<Float>
+
   /// The LSTM layer for the encoder.
   public var encoderLSTM: LSTM<Float>
 
   // MARK: - Interpolation weight
+
   /// The interpolation weight, which determines the proportion of
   /// contributions from the lexical memory and character generation.
   public var mlpInterpolation: MLP
 
   // MARK: - Lexical memory
+
   /// The lexical memory.
   public var mlpMemory: MLP
 
   // MARK: - Character-level decoder
+
   /// The embedding layer for the decoder.
   public var decoderEmbedding: Embedding<Float>
+
   /// The LSTM layer for the decoder.
   public var decoderLSTM: LSTM<Float>
+
   /// The dense layer for the decoder.
   public var decoderDense: Dense<Float>
 
   // MARK: - Other layers
+
   /// The dropout layer for both the encoder and decoder.
   public var dropout: Dropout<Float>
 
   // MARK: - Initializer
+
   /// Creates an instance with the configuration defined by `parameters`.
   ///
   /// - Parameter parameters: the model configuration.
@@ -134,6 +149,7 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   }
 
   // MARK: - Encode
+
   /// Returns the hidden states of the encoder LSTM applied to `x`.
   ///
   /// - Parameter x: the character sequence to encode.
@@ -148,6 +164,7 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   }
 
   // MARK: - Decode
+
   /// Returns the log probabilities for each of the candidates.
   ///
   /// - Parameter candidates: the character sequences to decode.
@@ -218,6 +235,7 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   }
 
   // MARK: - buildLattice
+
   /// Returns the log likelihood for `candidate` from the lexical memory
   /// `logp_lex`.
   ///
@@ -303,6 +321,7 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 }
 
 extension Array {
+
   /// Sets the `index`th element of `self` to `value`. Semantically, it
   /// behaves like `Array.subscript.set`.
   ///
@@ -332,10 +351,13 @@ extension Array {
 
 /// A multilayer perceptron with three layers.
 public struct MLP: Layer {
+
   /// The first dense layer.
   public var dense1: Dense<Float>
+
   /// The dropout layer.
   public var dropout: Dropout<Float>
+
   /// The second dense layer.
   public var dense2: Dense<Float>
 
@@ -360,6 +382,7 @@ public struct MLP: Layer {
 }
 
 extension Tensor {
+
   /// Returns `self`.
   ///
   /// - Note: this is a workaround for TF-1008 that is needed for

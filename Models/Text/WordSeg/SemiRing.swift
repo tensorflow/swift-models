@@ -41,8 +41,10 @@ public func logSumExp(_ lhs: Tensor<Float>, _ rhs: Tensor<Float>) -> Tensor<Floa
 
 /// A storage mechanism for scoring inside a lattice.
 public struct SemiRing: Differentiable {
+
   /// The log likelihood.
   public var logp: Tensor<Float>
+
   /// The regularization factor.
   public var logr: Tensor<Float>
 
@@ -64,6 +66,7 @@ public struct SemiRing: Differentiable {
 
   /// The baseline score of zero.
   static var zero: SemiRing { SemiRing(logp: -Float.infinity, logr: -Float.infinity) }
+
   /// The baseline score of one.
   static var one: SemiRing { SemiRing(logp: 0.0, logr: -Float.infinity) }
 }
@@ -86,6 +89,7 @@ func + (_ lhs: SemiRing, _ rhs: SemiRing) -> SemiRing {
 }
 
 extension Array where Element == SemiRing {
+
   /// Returns a sum of all scores in the collection.
   @differentiable
   func sum() -> SemiRing {
@@ -96,6 +100,7 @@ extension Array where Element == SemiRing {
 }
 
 extension SemiRing {
+
   /// The plain text description of this instance with score details.
   var shortDescription: String {
     "(\(logp), \(logr))"
@@ -103,6 +108,7 @@ extension SemiRing {
 }
 
 extension SemiRing {
+
   /// Returns true when `self` is within `tolerance` of `other`. This behavior
   /// is modeled after SE-0259.
   ///

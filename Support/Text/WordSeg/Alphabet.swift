@@ -20,6 +20,7 @@ import TensorFlow
 ///
 /// - Note: We map from String in order to support multi-character metadata sequences such as `</s>`.
 public struct Alphabet {
+
   /// A type whose instances represent a character.
   public typealias Element = String
 
@@ -28,8 +29,10 @@ public struct Alphabet {
 
   /// A marker denoting the end of a sequence.
   public let eos: Int32
+
   /// A marker denoting the end of a word.
   public let eow: Int32
+
   /// A marker used for padding inside a sequence.
   public let pad: Int32
 

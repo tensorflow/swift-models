@@ -27,22 +27,28 @@ import TensorFlow
 /// sequence. The path with the best score provides the most likely
 /// segmentation at inference.
 public struct Lattice: Differentiable {
+
   /// Represents a word.
   ///
   /// At each character position, an edge is constructed for every possible
   /// segmentation of the preceding portion of the sequence.
   public struct Edge: Differentiable {
+
     /// The node position immediately preceding this edge.
     @noDerivative public var start: Int
+
     /// The node position immediately following this edge.
     @noDerivative public var end: Int
+
     /// The characters composing a word.
     @noDerivative public var string: CharacterSequence
+
     /// The log likelihood of this segmentation.
     public var logp: Tensor<Float>
 
     /// The expected score for this segmentation.
     public var score: SemiRing
+
     /// The expected total score for this segmentation.
     public var totalScore: SemiRing
 
@@ -105,12 +111,16 @@ public struct Lattice: Differentiable {
   /// - Note: Scores are only meaningful in relation to incoming edges and the
   ///   start node has no incoming edges.
   public struct Node: Differentiable {
+
     /// The incoming edge with the highest score.
     @noDerivative public var bestEdge: Edge?
+
     /// The score of the best incoming edge.
     public var bestScore: Float = 0.0
+
     /// All incoming edges.
     public var edges = [Edge]()
+
     /// A composite score of all incoming edges.
     public var semiringScore: SemiRing = SemiRing.one
 
@@ -233,6 +243,7 @@ public struct Lattice: Differentiable {
 }
 
 extension Lattice: CustomStringConvertible {
+
   /// The plain text description of this instance that describes all nodes.
   public var description: String {
     """
@@ -244,6 +255,7 @@ extension Lattice: CustomStringConvertible {
 }
 
 extension Lattice.Node: CustomStringConvertible {
+
   /// The plain text description of this instance that describes all incoming
   /// edges.
   public var description: String {
@@ -261,6 +273,7 @@ extension Lattice.Node: CustomStringConvertible {
 }
 
 extension Lattice.Edge: CustomStringConvertible {
+
   /// The plain text description of this instance with all edge details.
   public var description: String {
     "[\(start)->\(end)] logp: \(logp), score: \(score.shortDescription), total score: \(totalScore.shortDescription), sentence: \(string)"
@@ -268,6 +281,7 @@ extension Lattice.Edge: CustomStringConvertible {
 }
 
 extension Lattice {
+
   /// Returns true when all nodes in `self` are within `tolerance` of all
   /// nodes in `other`. This behavior is modeled after SE-0259.
   ///
@@ -292,6 +306,7 @@ extension Lattice {
 }
 
 extension Lattice.Node {
+
   /// Returns true when all properties and edges in `self` are within
   /// `tolerance` of all properties and edges in `other`. This behavior is
   /// modeled after SE-0259.
@@ -321,6 +336,7 @@ extension Lattice.Node {
 }
 
 extension Lattice.Edge {
+
   /// Returns true when the log likelihood and scores in `self` are within
   /// `tolerance` of the log likelihood and scores in `other`. This behavior
   /// is modeled after SE-0259.

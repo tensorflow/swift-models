@@ -23,11 +23,8 @@ public struct Phrase {
   /// A sequence of text in numeric form, derived from `plainText`.
   public let numericalizedText: CharacterSequence
 
-  /// Creates an instance containing both raw and processed forms of a
-  /// sequence of text.
-  ///
-  /// - Parameter plainText: raw, unprocessed text.
-  /// - Parameter numericalizedText: processed text in numeric form.
+  /// Creates an instance containing both raw (`plainText`) and processed
+  /// (`numericalizedText`) forms of a sequence of text.
   public init(plainText: String, numericalizedText: CharacterSequence) {
     self.plainText = plainText
     self.numericalizedText = numericalizedText

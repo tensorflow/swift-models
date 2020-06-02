@@ -16,8 +16,10 @@ import TensorFlow
 
 /// A sequence of characters represented by integers.
 public struct CharacterSequence: Hashable {
+
   /// A collection of integers representing a sequence of characters.
   public let characters: [Int32]
+
   /// A marker denoting the end of the sequence.
   private let eos: Int32
 
@@ -82,8 +84,10 @@ public struct CharacterSequence: Hashable {
 
   /// Count of characters in the sequence, including the end marker.
   public var count: Int { return characters.count }
+
   /// The last character in the sequence, i.e. the end marker.
   public var last: Int32? { return characters.last }
+
   /// TODO: what's happening here?
   public var tensor: Tensor<Int32> {
     Tensor<Int32>([self.eos] + characters[0..<characters.count - 1])
@@ -91,6 +95,7 @@ public struct CharacterSequence: Hashable {
 }
 
 extension CharacterSequence: CustomStringConvertible {
+
   /// A string representation of the collection of integers representing the character sequence.
   public var description: String {
     "\(characters)"
@@ -103,6 +108,7 @@ public enum CharacterErrors: Error {
 }
 
 extension CharacterErrors: CustomStringConvertible {
+
   /// A description of the error with all included details.
   public var description: String {
     switch self {
