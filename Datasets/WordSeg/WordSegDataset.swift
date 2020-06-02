@@ -113,8 +113,10 @@ public struct WordSegDataset {
 
     for data in dataset {
       let trimmed = data.components(separatedBy: .whitespaces).joined()
-      guard let numericalizedText = try? CharacterSequence(
-          alphabet: alphabet, appendingEoSTo: trimmed) else { continue }
+      guard
+        let numericalizedText = try? CharacterSequence(
+          alphabet: alphabet, appendingEoSTo: trimmed)
+      else { continue }
       let phrase = Phrase(
         plainText: data,
         numericalizedText: numericalizedText)
@@ -133,7 +135,8 @@ public struct WordSegDataset {
     let localStorageDirectory: URL = DatasetUtilities.defaultDirectory
       .appendingPathComponent("WordSeg", isDirectory: true)
 
-    WordSegDataset.downloadIfNotPresent(to: localStorageDirectory, referenceArchive: referenceArchive)
+    WordSegDataset.downloadIfNotPresent(
+      to: localStorageDirectory, referenceArchive: referenceArchive)
 
     let archiveFileName =
       referenceArchive
@@ -202,8 +205,7 @@ public struct WordSegDataset {
   /// optionally `validationData` and `testingData`.
   public init(
     training trainingData: Data, validation validationData: Data?, testing testingData: Data?
-  )
-  {
+  ) {
     let training = Self.load(data: trainingData)
     let validation: [String]
     let testing: [String]
