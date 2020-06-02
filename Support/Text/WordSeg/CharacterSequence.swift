@@ -100,7 +100,6 @@ extension CharacterSequence: CustomStringConvertible {
 /// An error that can be encountered when processing characters.
 public enum CharacterErrors: Error {
   case unknownCharacter(character: Character, index: Int, sentence: String)
-  case nonUtf8Data
 }
 
 extension CharacterErrors: CustomStringConvertible {
@@ -110,8 +109,6 @@ extension CharacterErrors: CustomStringConvertible {
     case let .unknownCharacter(character, index, sentence):
       return
         "Unknown character '\(character)' encountered at index \(index) while converting sentence \"\(sentence)\" to a character sequence."
-    case .nonUtf8Data:
-      return "Non-UTF8 data encountered."
     }
   }
 }

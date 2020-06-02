@@ -32,10 +32,10 @@ public struct WordSegDataset {
   /// The text used for validation.
   public private(set) var validationPhrases: [Phrase]?
 
-  /// The set of characters found in all included texts.
+  /// The union of all characters in the included dataset.
   public let alphabet: Alphabet
 
-  /// Details used for downloading source data.
+  /// A pointer to source data.
   private struct ReferenceArchive {
 
     /// The location of the archive.
@@ -51,23 +51,15 @@ public struct WordSegDataset {
     var validationFilePath = "br/br-text/va.txt"
   }
 
-  /// Returns a list of records parsed from `data` in UTF8.
-  ///
-  /// - Parameter data: text in UTF8 format.
-  ///
-  /// - Throws: An error of type 'CharacterErrors'.
-  private static func load(data: Data) throws -> [String] {
+  /// Returns the text of all phrases parsed from `data` in UTF8.
+  private static func load(data: Data) -> [String] {
     guard let contents: String = String(data: data, encoding: .utf8) else {
-      throw CharacterErrors.nonUtf8Data
+      return []
     }
     return load(contents: contents)
   }
 
-  /// Returns a collection of strings created by separating `contents` by
-  /// newlines, trimming leading and trailing whitespace, and excluding blank
-  /// lines.
-  ///
-  /// - Parameter contents: text to be separated by newline.
+  /// Returns the text of all phrases from `contents`.
   private static func load(contents: String) -> [String] {
     var strings = [String]()
 
@@ -79,12 +71,8 @@ public struct WordSegDataset {
     return strings
   }
 
-  /// Returns an alphabet composed of all characters found in `trainingPhrases` and
-  /// `otherSequences`.
+  /// Returns the union of all characters in `training` and `otherSequences`.
   ///
-  /// - Parameter training: full text of the training data.
-  /// - Parameter otherSequences: optional full text of the validation and
-  ///   test data.
   /// - Parameter eos: text to be used as the end of sequence marker.
   /// - Parameter eow: text to be used as the end of word marker.
   /// - Parameter pad: text to be used as the padding marker.
@@ -113,45 +101,33 @@ public struct WordSegDataset {
     return Alphabet(sorted, eos: eos, eow: eow, pad: pad)
   }
 
-  /// Returns a collection of records to be used with the WordSeg model.
+  /// Returns phrases from `dataset`, using `alphabet`, to be used with the
+  /// WordSeg model.
   ///
-  /// - Parameter dataset: text to be converted.
-  /// - Parameter alphabet: set of all characters used in `dataset`.
-  ///
-  /// - Throws: An error of type 'CharacterErrors'.
-  private static func convertDataset(_ dataset: [String], alphabet: Alphabet) throws
+  /// - Note: Omits any part of the dataset that cannot be converted to
+  ///   `CharacterSequence`.
+  private static func convertDataset(_ dataset: [String], alphabet: Alphabet)
     -> [Phrase]
   {
-    return try dataset.map {
-      let trimmed = $0.components(separatedBy: .whitespaces).joined()
-      return try Phrase(
-        plainText: $0,
-        numericalizedText: CharacterSequence(
-          alphabet: alphabet, appendingEoSTo: trimmed))
+    var phrases = [Phrase]()
+
+    for data in dataset {
+      let trimmed = data.components(separatedBy: .whitespaces).joined()
+      guard let numericalizedText = try? CharacterSequence(
+          alphabet: alphabet, appendingEoSTo: trimmed) else { continue }
+      let phrase = Phrase(
+        plainText: data,
+        numericalizedText: numericalizedText)
+      phrases.append(phrase)
     }
+
+    return phrases
   }
 
-  /// Returns a collection of records to be used with the WordSeg model, or
-  /// `nil` if `dataset` is empty.
+  /// Creates an instance containing phrases from the default location.
   ///
-  /// - Parameter dataset: text to be converted.
-  /// - Parameter alphabet: set of all characters used in `dataset`.
-  ///
-  /// - Throws: An error of type 'CharacterErrors'.
-  private static func convertDataset(_ dataset: [String]?, alphabet: Alphabet) throws
-    -> [Phrase]?
-  {
-    if let ds = dataset {
-      let tmp: [Phrase] = try convertDataset(ds, alphabet: alphabet)  // Use tmp to disambiguate function
-      return tmp
-    }
-    return nil
-  }
-
-  /// Creates an instance containing `Phrase`s from the default
-  /// location.
-  ///
-  /// - Throws: An error of type 'CharacterErrors'.
+  /// - Throws: an error in the Cocoa domain, if the default training file
+  ///   cannot be read.
   public init() throws {
     let referenceArchive = ReferenceArchive()
     let localStorageDirectory: URL = DatasetUtilities.defaultDirectory
@@ -180,13 +156,11 @@ public struct WordSegDataset {
       testing: testingFilePath)
   }
 
-  /// Creates an instance containing `Phrase`s from the given files.
+  /// Creates an instance containing phrases from `trainingFile`, and
+  /// optionally `validationFile` and `testingFile`.
   ///
-  /// - Parameter training: path to the file containing training data.
-  /// - Parameter validation: path to the file containing validation data.
-  /// - Parameter testing: path to the file containing test data.
-  ///
-  /// - Throws: An error of type 'CharacterErrors'.
+  /// - Throws: an error in the Cocoa domain, if `trainingFile` cannot be
+  ///   read.
   public init(
     training trainingFile: String,
     validation validationFile: String? = nil,
@@ -195,62 +169,63 @@ public struct WordSegDataset {
     let trainingData = try Data(
       contentsOf: URL(fileURLWithPath: trainingFile),
       options: .alwaysMapped)
-    let training = try Self.load(data: trainingData)
+    let training = Self.load(data: trainingData)
 
-    var validation: [String]? = nil
-    var testing: [String]? = nil
+    let validation: [String]
+    let testing: [String]
 
     if let validationFile = validationFile {
       let data = try Data(
         contentsOf: URL(fileURLWithPath: validationFile),
         options: .alwaysMapped)
-      validation = try Self.load(data: data)
+      validation = Self.load(data: data)
+    } else {
+      validation = [String]()
     }
 
     if let testingFile = testingFile {
       let data: Data = try Data(
         contentsOf: URL(fileURLWithPath: testingFile),
         options: .alwaysMapped)
-      testing = try Self.load(data: data)
+      testing = Self.load(data: data)
+    } else {
+      testing = [String]()
     }
+
     self.alphabet = Self.makeAlphabet(datasets: training, validation, testing)
-    self.trainingPhrases = try Self.convertDataset(training, alphabet: self.alphabet)
-    self.validationPhrases = try Self.convertDataset(validation, alphabet: self.alphabet)
-    self.testingPhrases = try Self.convertDataset(testing, alphabet: self.alphabet)
+    self.trainingPhrases = Self.convertDataset(training, alphabet: self.alphabet)
+    self.validationPhrases = Self.convertDataset(validation, alphabet: self.alphabet)
+    self.testingPhrases = Self.convertDataset(testing, alphabet: self.alphabet)
   }
 
-  /// Creates an instance containing `Phrase`s from the given data.
-  ///
-  /// - Parameter training: contents of the training data.
-  /// - Parameter validation: contents of the validation data.
-  /// - Parameter testing: contents of the test data.
-  ///
-  /// - Throws: An error of type 'CharacterErrors'.
+  /// Creates an instance containing phrases from `trainingData`, and
+  /// optionally `validationData` and `testingData`.
   public init(
     training trainingData: Data, validation validationData: Data?, testing testingData: Data?
   )
-    throws
   {
-    let training = try Self.load(data: trainingData)
-    var validation: [String]? = nil
-    var testing: [String]? = nil
+    let training = Self.load(data: trainingData)
+    let validation: [String]
+    let testing: [String]
     if let validationData = validationData {
-      validation = try Self.load(data: validationData)
+      validation = Self.load(data: validationData)
+    } else {
+      validation = [String]()
     }
     if let testingData = testingData {
-      testing = try Self.load(data: testingData)
+      testing = Self.load(data: testingData)
+    } else {
+      testing = [String]()
     }
 
     self.alphabet = Self.makeAlphabet(datasets: training, validation, testing)
-    self.trainingPhrases = try Self.convertDataset(training, alphabet: self.alphabet)
-    self.validationPhrases = try Self.convertDataset(validation, alphabet: self.alphabet)
-    self.testingPhrases = try Self.convertDataset(testing, alphabet: self.alphabet)
+    self.trainingPhrases = Self.convertDataset(training, alphabet: self.alphabet)
+    self.validationPhrases = Self.convertDataset(validation, alphabet: self.alphabet)
+    self.testingPhrases = Self.convertDataset(testing, alphabet: self.alphabet)
   }
 
-  /// Downloads and unpacks the source archive if it does not exist locally.
-  ///
-  /// - Parameter directory: local directory to store files.
-  /// - Parameter referenceArchive: where to find the source archive.
+  /// Downloads and unpacks `referenceArchive` to `directory` if it does not
+  /// exist locally.
   private static func downloadIfNotPresent(
     to directory: URL, referenceArchive: ReferenceArchive
   ) {
