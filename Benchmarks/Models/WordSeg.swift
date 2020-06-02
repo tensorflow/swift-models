@@ -161,7 +161,7 @@ extension WordSegBenchmark {
     static func scoreAndGradient(model: SNLM, sentence: CharacterSequence) {
         let lambd: Float = 0.00075
 
-        let _ = valueWithGradient(at: model) { model -> Tensor<Float> in
+        let _ = valueWithGradient(at: model) { model -> Float in
           let lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength)
           let score = lattice[sentence.count].semiringScore
           let expectedLength = exp(score.logr - score.logp)
