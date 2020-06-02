@@ -40,7 +40,7 @@ private protocol TextUnsupervisedVariantDetails {
   var fileExtension: String { get set }
 }
 
-public struct TextUnsupervised {
+public struct TextUnsupervised<Entropy: RandomNumberGenerator> {
   private struct WikiText103Details: TextUnsupervisedVariantDetails {
     var variant = TextUnsupervisedVariant.wikiText103
     var location = URL(string: "https://s3.amazonaws.com/fast-ai-nlp/")!
@@ -64,8 +64,25 @@ public struct TextUnsupervised {
     var fileExtension = "tgz"
   }
 
-  public let trainingDataset: LanguageModelDataset<[[Int]]>
-  public let validationDataset: LanguageModelDataset<[[Int]]>
+  public typealias Samples = LanguageModelDataset<[[Int]]>
+  public typealias LabeledTextBatch = (data: Tensor<Int32>, label: Tensor<Int32>)
+
+  public typealias Batches = Slices<Sampling<Samples, ArraySlice<Int>>>
+  public typealias Training = LazyMapSequence<
+    TrainingEpochs<Samples, Entropy>, 
+    LazyMapSequence<Batches, LabeledTextBatch>
+  >
+
+  public typealias Validation = LazyMapSequence<
+    Slices<Samples>, 
+    LabeledTextBatch
+  >
+
+  public let training: Training
+  public let validation: Validation
+
+  public let trainingDataset: Samples
+  public let validationDataset: Samples
   public let bpe: BytePairEncoder?
   public let variant: TextUnsupervisedVariant
   private let variantDetails: TextUnsupervisedVariantDetails
@@ -74,7 +91,8 @@ public struct TextUnsupervised {
     bpe: BytePairEncoder? = nil,
     variant: TextUnsupervisedVariant = TextUnsupervisedVariant.wikiText2,
     trainingBatchSize: Int = 8, validationBatchSize: Int = 4, sequenceLength: Int = 1024,
-    trainingDocumentCount: Int = 4, validationDocumentCount: Int = 4
+    trainingDocumentCount: Int = 4, validationDocumentCount: Int = 4,
+    entropy: Entropy
   ) {
     do {
       self.bpe = bpe
@@ -100,6 +118,27 @@ public struct TextUnsupervised {
         localStorageDirectory: localStorageDirectory, bpe: bpe,
         variantDetails: variantDetails, batchSize: validationBatchSize,
         sequenceLength: sequenceLength, documentCount: validationDocumentCount)
+
+      training = TrainingEpochs(
+        samples: trainingDataset, 
+        batchSize: trainingBatchSize, 
+        entropy: entropy
+      ).lazy.map { (batches: Batches) -> LazyMapSequence<Batches, LabeledTextBatch> in
+        batches.lazy.map {
+          (
+            data: Tensor<Int32>($0.map(\.first)),
+            label: Tensor<Int32>($0.map(\.second))
+          )
+        }
+      }
+
+      validation = validationDataset.inBatches(of: validationBatchSize).lazy.map {
+        (
+          data: Tensor<Int32>($0.map(\.first)),
+          label: Tensor<Int32>($0.map(\.second))
+        )
+      }
+
     } catch {
       fatalError("Could not load dataset for \(variant): \(error)")
     }
@@ -224,6 +263,26 @@ public struct TextUnsupervised {
       named: variantDetails.validationDirectoryName, in: localStorageDirectory, bpe: bpe,
       variantDetails: variantDetails, batchSize: batchSize, sequenceLength: sequenceLength,
       documentCount: documentCount)
+  }
+}
+
+extension TextUnsupervised where Entropy == SystemRandomNumberGenerator {
+  public init(
+    bpe: BytePairEncoder? = nil,
+    variant: TextUnsupervisedVariant = TextUnsupervisedVariant.wikiText2,
+    trainingBatchSize: Int = 8, validationBatchSize: Int = 4, sequenceLength: Int = 1024,
+    trainingDocumentCount: Int = 4, validationDocumentCount: Int = 4
+  ) {
+    self.init(
+      bpe: bpe,
+      variant: variant,
+      trainingBatchSize: trainingBatchSize,
+      validationBatchSize: validationBatchSize,
+      sequenceLength: sequenceLength,
+      trainingDocumentCount: trainingDocumentCount,
+      validationDocumentCount: validationDocumentCount,
+      entropy: SystemRandomNumberGenerator()
+    )
   }
 }
 
