@@ -15,30 +15,38 @@
 import Foundation
 import ModelSupport
 
-/// A collection of raw and processed text used for training and validation
-/// of word segmentation models.
+/// A dataset targeted at the problem of word segmentation.
+///
+/// The reference archive was published in the paper "Learning to Discover,
+/// Ground, and Use Words with Segmental Neural Language Models" by Kazuya
+/// Kawakami, Chris Dyer, and Phil Blunsom:
+/// https://www.aclweb.org/anthology/P19-1645.pdf.
 public struct WordSegDataset {
-  /// A collection of text used for training.
-  public let training: [WordSegRecord]
-  /// A collection of text used for testing.
-  public private(set) var testing: [WordSegRecord]?
-  /// A collection of text used for validation.
-  public private(set) var validation: [WordSegRecord]?
+
+  /// The text used for training.
+  public let trainingPhrases: [Phrase]
+
+  /// The text used for testing.
+  public private(set) var testingPhrases: [Phrase]?
+
+  /// The text used for validation.
+  public private(set) var validationPhrases: [Phrase]?
+
   /// The set of characters found in all included texts.
   public let alphabet: Alphabet
 
   /// Details used for downloading source data.
-  private struct DownloadDetails {
+  private struct ReferenceArchive {
+
     /// The location of the archive.
-    var archiveLocation = URL(string: "https://s3.eu-west-2.amazonaws.com/k-kawakami")!
-    /// The basename of the archive.
-    var archiveFileName = "seg"
-    /// The extension of the archive.
-    var archiveExtension = "zip"
+    var location = URL(string: "https://s3.eu-west-2.amazonaws.com/k-kawakami/seg.zip")!
+
     /// The path to the test source.
     var testingFilePath = "br/br-text/te.txt"
+
     /// The path to the training source.
     var trainingFilePath = "br/br-text/tr.txt"
+
     /// The path to the validation source.
     var validationFilePath = "br/br-text/va.txt"
   }
@@ -71,7 +79,7 @@ public struct WordSegDataset {
     return strings
   }
 
-  /// Returns an alphabet composed of all characters found in `training` and
+  /// Returns an alphabet composed of all characters found in `trainingPhrases` and
   /// `otherSequences`.
   ///
   /// - Parameter training: full text of the training data.
@@ -112,11 +120,11 @@ public struct WordSegDataset {
   ///
   /// - Throws: An error of type 'CharacterErrors'.
   private static func convertDataset(_ dataset: [String], alphabet: Alphabet) throws
-    -> [WordSegRecord]
+    -> [Phrase]
   {
     return try dataset.map {
       let trimmed = $0.components(separatedBy: .whitespaces).joined()
-      return try WordSegRecord(
+      return try Phrase(
         plainText: $0,
         numericalizedText: CharacterSequence(
           alphabet: alphabet, appendingEoSTo: trimmed))
@@ -131,45 +139,48 @@ public struct WordSegDataset {
   ///
   /// - Throws: An error of type 'CharacterErrors'.
   private static func convertDataset(_ dataset: [String]?, alphabet: Alphabet) throws
-    -> [WordSegRecord]?
+    -> [Phrase]?
   {
     if let ds = dataset {
-      let tmp: [WordSegRecord] = try convertDataset(ds, alphabet: alphabet)  // Use tmp to disambiguate function
+      let tmp: [Phrase] = try convertDataset(ds, alphabet: alphabet)  // Use tmp to disambiguate function
       return tmp
     }
     return nil
   }
 
-  /// Creates an instance containing `WordSegRecords` from the default
+  /// Creates an instance containing `Phrase`s from the default
   /// location.
   ///
   /// - Throws: An error of type 'CharacterErrors'.
   public init() throws {
-    let downloadDetails = DownloadDetails()
+    let referenceArchive = ReferenceArchive()
     let localStorageDirectory: URL = DatasetUtilities.defaultDirectory
       .appendingPathComponent("WordSeg", isDirectory: true)
 
-    WordSegDataset.downloadIfNotPresent(to: localStorageDirectory, downloadDetails: downloadDetails)
+    WordSegDataset.downloadIfNotPresent(to: localStorageDirectory, referenceArchive: referenceArchive)
 
+    let archiveFileName =
+      referenceArchive
+      .location.deletingPathExtension().lastPathComponent
     let archiveDirectory =
       localStorageDirectory
-      .appendingPathComponent(downloadDetails.archiveFileName)
+      .appendingPathComponent(archiveFileName)
     let trainingFilePath =
       archiveDirectory
-      .appendingPathComponent(downloadDetails.trainingFilePath).path
+      .appendingPathComponent(referenceArchive.trainingFilePath).path
     let validationFilePath =
       archiveDirectory
-      .appendingPathComponent(downloadDetails.validationFilePath).path
+      .appendingPathComponent(referenceArchive.validationFilePath).path
     let testingFilePath =
       archiveDirectory
-      .appendingPathComponent(downloadDetails.testingFilePath).path
+      .appendingPathComponent(referenceArchive.testingFilePath).path
 
     try self.init(
       training: trainingFilePath, validation: validationFilePath,
       testing: testingFilePath)
   }
 
-  /// Creates an instance containing `WordSegRecords` from the given files.
+  /// Creates an instance containing `Phrase`s from the given files.
   ///
   /// - Parameter training: path to the file containing training data.
   /// - Parameter validation: path to the file containing validation data.
@@ -203,12 +214,12 @@ public struct WordSegDataset {
       testing = try Self.load(data: data)
     }
     self.alphabet = Self.makeAlphabet(datasets: training, validation, testing)
-    self.training = try Self.convertDataset(training, alphabet: self.alphabet)
-    self.validation = try Self.convertDataset(validation, alphabet: self.alphabet)
-    self.testing = try Self.convertDataset(testing, alphabet: self.alphabet)
+    self.trainingPhrases = try Self.convertDataset(training, alphabet: self.alphabet)
+    self.validationPhrases = try Self.convertDataset(validation, alphabet: self.alphabet)
+    self.testingPhrases = try Self.convertDataset(testing, alphabet: self.alphabet)
   }
 
-  /// Creates an instance containing `WordSegRecords` from the given data.
+  /// Creates an instance containing `Phrase`s from the given data.
   ///
   /// - Parameter training: contents of the training data.
   /// - Parameter validation: contents of the validation data.
@@ -231,17 +242,17 @@ public struct WordSegDataset {
     }
 
     self.alphabet = Self.makeAlphabet(datasets: training, validation, testing)
-    self.training = try Self.convertDataset(training, alphabet: self.alphabet)
-    self.validation = try Self.convertDataset(validation, alphabet: self.alphabet)
-    self.testing = try Self.convertDataset(testing, alphabet: self.alphabet)
+    self.trainingPhrases = try Self.convertDataset(training, alphabet: self.alphabet)
+    self.validationPhrases = try Self.convertDataset(validation, alphabet: self.alphabet)
+    self.testingPhrases = try Self.convertDataset(testing, alphabet: self.alphabet)
   }
 
   /// Downloads and unpacks the source archive if it does not exist locally.
   ///
   /// - Parameter directory: local directory to store files.
-  /// - Parameter downloadDetails: where to find the source archive.
+  /// - Parameter referenceArchive: where to find the source archive.
   private static func downloadIfNotPresent(
-    to directory: URL, downloadDetails: DownloadDetails
+    to directory: URL, referenceArchive: ReferenceArchive
   ) {
     let downloadPath = directory.path
     let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
@@ -250,11 +261,15 @@ public struct WordSegDataset {
 
     guard !directoryExists || directoryEmpty else { return }
 
+    let remoteRoot = referenceArchive.location.deletingLastPathComponent()
+    let filename = referenceArchive.location.deletingPathExtension().lastPathComponent
+    let fileExtension = referenceArchive.location.pathExtension
+
     // Downloads and extracts dataset files.
     let _ = DatasetUtilities.downloadResource(
-      filename: downloadDetails.archiveFileName,
-      fileExtension: downloadDetails.archiveExtension,
-      remoteRoot: downloadDetails.archiveLocation,
+      filename: filename,
+      fileExtension: fileExtension,
+      remoteRoot: remoteRoot,
       localStorageDirectory: directory, extract: true)
   }
 }

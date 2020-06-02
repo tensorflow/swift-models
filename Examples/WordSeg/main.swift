@@ -50,7 +50,7 @@ default:
   usage()
 }
 
-let sequences = dataset.training.map { $0.numericalizedText }
+let sequences = dataset.trainingPhrases.map { $0.numericalizedText }
 let lexicon = Lexicon(
   from: sequences,
   alphabet: dataset.alphabet,
@@ -76,8 +76,8 @@ for epoch in 1...maxEpochs {
   Context.local.learningPhase = .training
   var trainingLossSum: Float = 0
   var trainingBatchCount = 0
-  for record in dataset.training {
-    let sentence = record.numericalizedText
+  for phrase in dataset.trainingPhrases {
+    let sentence = phrase.numericalizedText
     let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
       let lattice = model.buildLattice(sentence, maxLen: maxLength)
       let score = lattice[sentence.count].semiringScore
@@ -103,7 +103,7 @@ for epoch in 1...maxEpochs {
   trainingLossHistory.append(trainingLoss)
   reduceLROnPlateau(lossHistory: trainingLossHistory, optimizer: optimizer)
 
-  guard let validationDataset = dataset.validation else {
+  guard let validationPhrases = dataset.validationPhrases else {
     print(
       """
       [Epoch \(epoch)] \
@@ -127,8 +127,8 @@ for epoch in 1...maxEpochs {
   var validationBatchCount = 0
   var validationCharacterCount = 0
   var validationPlainText: String = ""
-  for record in validationDataset {
-    let sentence = record.numericalizedText
+  for phrase in validationPhrases {
+    let sentence = phrase.numericalizedText
     var lattice = model.buildLattice(sentence, maxLen: maxLength)
     let score = lattice[sentence.count].semiringScore
 
@@ -137,8 +137,8 @@ for epoch in 1...maxEpochs {
     validationCharacterCount += sentence.count
 
     // View a sample segmentation once per epoch.
-    if validationBatchCount == validationDataset.count {
-      let bestPath = lattice.viterbi(sentence: record.numericalizedText)
+    if validationBatchCount == validationPhrases.count {
+      let bestPath = lattice.viterbi(sentence: phrase.numericalizedText)
       validationPlainText = Lattice.pathToPlainText(path: bestPath, alphabet: dataset.alphabet)
     }
   }
