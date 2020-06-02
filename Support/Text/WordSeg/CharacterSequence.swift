@@ -17,7 +17,7 @@ import TensorFlow
 /// A sequence of characters represented by integers.
 public struct CharacterSequence: Hashable {
 
-  /// Representing an ordered sequence of characters.
+  /// Represents an ordered sequence of characters.
   public let characters: [Int32]
 
   /// A marker denoting the end of the sequence.
@@ -30,7 +30,7 @@ public struct CharacterSequence: Hashable {
   }
 
   /// Creates a sequence from `string`, using `alphabet`, appended with the
-  /// end of sequence marker.
+  /// end marker.
   ///
   /// - Throws: `CharacterErrors.unknownCharacter` if `string` contains a
   ///   character that does not exist in `alphabet`.
@@ -47,15 +47,15 @@ public struct CharacterSequence: Hashable {
     self.init(alphabet: alphabet, characters: characters)
   }
 
-  /// Creates a sequence from `characters` and sets the end of sequence marker
-  /// from `alphabet`.
+  /// Creates a sequence from `characters` and sets the end marker from
+  /// `alphabet`.
   private init(alphabet: Alphabet, characters: [Int32]) {
     self.characters = characters
     self.eos = alphabet.eos
   }
 
-  /// Creates a sequence from `characters` and sets the end of sequence marker
-  /// from `alphabet`.
+  /// Creates a sequence from `characters` and sets the end marker from
+  /// `alphabet`.
   public init(alphabet: Alphabet, characters: ArraySlice<Int32>) {
     self.characters = [Int32](characters)
     self.eos = alphabet.eos
