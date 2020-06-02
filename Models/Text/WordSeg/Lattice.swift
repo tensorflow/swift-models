@@ -24,8 +24,9 @@ import TensorFlow
 #endif
 
 /// A structure used for scoring all possible segmentations of a character
-/// sequence. The path with the best score provides the most likely
-/// segmentation at inference.
+/// sequence.
+///
+/// The path with the best score provides the most likely segmentation.
 public struct Lattice: Differentiable {
 
   /// Represents a word.
