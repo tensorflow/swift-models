@@ -14,11 +14,13 @@
 
 import TensorFlow
 
-/// A collection that maps individual characters to an integer representation.
+/// A mapping between individual characters and their integer representation.
 ///
-/// In Python implementations, this is sometimes called the character vocabulary.
+/// - Note: We map from String in order to support multi-character metadata
+///   sequences such as `</s>`.
 ///
-/// - Note: We map from String in order to support multi-character metadata sequences such as `</s>`.
+/// - Note: In Python implementations, this is sometimes called the character
+///   vocabulary.
 public struct Alphabet {
 
   /// A type whose instances represent a character.
@@ -37,7 +39,7 @@ public struct Alphabet {
   public let pad: Int32
 
   /// Creates an instance containing a mapping from `letters` to unique
-  /// integers, including markers.
+  /// integers, including markers `eos`, `eow`, and `pad`.
   public init<C: Collection>(_ letters: C, eos: String, eow: String, pad: String)
   where C.Element == Character {
     self.dictionary = .init(zip(letters.lazy.map { String($0) }, 0...))
@@ -53,7 +55,7 @@ public struct Alphabet {
   }
 
   /// Creates an instance containing a mapping from `letters` to unique
-  /// integers, including markers.
+  /// integers, including markers `eos`, `eow`, and `pad`.
   public init<C: Collection>(_ letters: C, eos: String, eow: String, pad: String)
   where C.Element == Element {
     self.dictionary = .init(zip(letters.lazy.map { String($0) }, 0...))
@@ -68,10 +70,10 @@ public struct Alphabet {
     self.dictionary[pad] = self.pad
   }
 
-  /// A count of the characters in the alphabet, including markers.
+  /// A count of unique characters, including markers.
   public var count: Int { return dictionary.count }
 
-  /// Accesses the `key`th element.
+  /// Accesses the `key`th element, returning `nil` if it does not exist.
   public subscript(key: String) -> Int32? {
     return dictionary[key]
   }

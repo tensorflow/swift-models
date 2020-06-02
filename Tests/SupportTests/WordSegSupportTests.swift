@@ -72,7 +72,7 @@ class WordSegSupportTests: XCTestCase {
         try! CharacterSequence(alphabet: alphabet, appendingEoSTo: "alpha"),
         try! CharacterSequence(alphabet: alphabet, appendingEoSTo: "beta"),
         try! CharacterSequence(alphabet: alphabet, appendingEoSTo: "gamma"),
-      ], alphabet: alphabet, maxLength: 5, minFreq: 4)
+      ], alphabet: alphabet, maxLength: 5, minFrequency: 4)
 
     XCTAssertEqual(lexicon.count, 3)
   }

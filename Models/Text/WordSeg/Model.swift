@@ -31,34 +31,33 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   public struct Parameters {
 
     /// The hidden unit size.
-    public var ndim: Int
+    public var hiddenSize: Int
 
     /// The dropout rate.
-    public var dropoutProb: Double
+    public var dropoutProbability: Double
 
-    /// The character vocabulary.
-    public var chrVocab: Alphabet
+    /// The union of characters used in this model.
+    public var alphabet: Alphabet
 
-    /// The string vocabulary.
-    public var strVocab: Lexicon
+    /// Contiguous sequences of characters encountered in the training data.
+    public var lexicon: Lexicon
 
     /// The power of the length penalty.
     public var order: Int
 
-    /// Creates an instance with `ndim` hidden units, `dropoutProb` dropout
-    /// rate, `chrVocab` alphabet, `strVocab` lexicon, and `order` power of
-    /// length penalty.
+    /// Creates an instance with `hiddenSize` units, `dropoutProbability`
+    /// rate, `alphabet`, `lexicon`, and `order` power of length penalty.
     public init(
-      ndim: Int,
-      dropoutProb: Double,
-      chrVocab: Alphabet,
-      strVocab: Lexicon,
+      hiddenSize: Int,
+      dropoutProbability: Double,
+      alphabet: Alphabet,
+      lexicon: Lexicon,
       order: Int
     ) {
-      self.ndim = ndim
-      self.dropoutProb = dropoutProb
-      self.chrVocab = chrVocab
-      self.strVocab = strVocab
+      self.hiddenSize = hiddenSize
+      self.dropoutProbability = dropoutProbability
+      self.alphabet = alphabet
+      self.lexicon = lexicon
       self.order = order
     }
   }
@@ -104,55 +103,51 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   // MARK: - Initializer
 
   /// Creates an instance with the configuration defined by `parameters`.
-  ///
-  /// - Parameter parameters: the model configuration.
   public init(parameters: Parameters) {
     self.parameters = parameters
 
     // Encoder
     self.encoderEmbedding = Embedding(
-      vocabularySize: parameters.chrVocab.count,
-      embeddingSize: parameters.ndim)
+      vocabularySize: parameters.alphabet.count,
+      embeddingSize: parameters.hiddenSize)
     self.encoderLSTM = LSTM(
       LSTMCell(
-        inputSize: parameters.ndim,
+        inputSize: parameters.hiddenSize,
         hiddenSize:
-          parameters.ndim))
+          parameters.hiddenSize))
 
     // Interpolation weight
     self.mlpInterpolation = MLP(
-      nIn: parameters.ndim,
-      nHidden: parameters.ndim,
-      nOut: 2,
-      dropoutProbability: parameters.dropoutProb)
+      inputSize: parameters.hiddenSize,
+      hiddenSize: parameters.hiddenSize,
+      outputSize: 2,
+      dropoutProbability: parameters.dropoutProbability)
 
     // Lexical memory
     self.mlpMemory = MLP(
-      nIn: parameters.ndim,
-      nHidden: parameters.ndim,
-      nOut: parameters.strVocab.count,
-      dropoutProbability: parameters.dropoutProb)
+      inputSize: parameters.hiddenSize,
+      hiddenSize: parameters.hiddenSize,
+      outputSize: parameters.lexicon.count,
+      dropoutProbability: parameters.dropoutProbability)
 
     // Character-level decoder
     self.decoderEmbedding = Embedding(
-      vocabularySize: parameters.chrVocab.count,
-      embeddingSize: parameters.ndim)
+      vocabularySize: parameters.alphabet.count,
+      embeddingSize: parameters.hiddenSize)
     self.decoderLSTM = LSTM(
       LSTMCell(
-        inputSize: parameters.ndim,
+        inputSize: parameters.hiddenSize,
         hiddenSize:
-          parameters.ndim))
-    self.decoderDense = Dense(inputSize: parameters.ndim, outputSize: parameters.chrVocab.count)
+          parameters.hiddenSize))
+    self.decoderDense = Dense(inputSize: parameters.hiddenSize, outputSize: parameters.alphabet.count)
 
     // Other layers
-    self.dropout = Dropout(probability: parameters.dropoutProb)
+    self.dropout = Dropout(probability: parameters.dropoutProbability)
   }
 
   // MARK: - Encode
 
   /// Returns the hidden states of the encoder LSTM applied to `x`.
-  ///
-  /// - Parameter x: the character sequence to encode.
   public func encode(_ x: CharacterSequence) -> [Tensor<Float>] {
     var embedded = encoderEmbedding(x.tensor)
     embedded = dropout(embedded)
@@ -165,10 +160,8 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 
   // MARK: - Decode
 
-  /// Returns the log probabilities for each of the candidates.
-  ///
-  /// - Parameter candidates: the character sequences to decode.
-  /// - Parameter state: the hidden state from the encoder LSTM.
+  /// Returns the log probabilities for each sequence in `candidates`, given
+  /// hidden `state` from the encoder LSTM.
   public func decode(_ candidates: [CharacterSequence], _ state: Tensor<Float>) -> Tensor<Float> {
     // TODO(TF-433): Remove closure workaround when autodiff supports non-active rethrowing
     // functions (`Array.map`).
@@ -176,16 +169,16 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
     var xBatch: [Int32] = []
     var yBatch: [Int32] = []
     for candidate in candidates {
-      let padding = Array(repeating: parameters.chrVocab.pad, count: maxLen - candidate.count - 1)
+      let padding = Array(repeating: parameters.alphabet.pad, count: maxLen - candidate.count - 1)
 
       // x is </w>{sentence}{padding}
-      xBatch.append(parameters.chrVocab.eow)
+      xBatch.append(parameters.alphabet.eow)
       xBatch.append(contentsOf: candidate.characters)
       xBatch.append(contentsOf: padding)
 
       // y is {sentence}</w>{padding}
       yBatch.append(contentsOf: candidate.characters)
-      yBatch.append(parameters.chrVocab.eow)
+      yBatch.append(parameters.alphabet.eow)
       yBatch.append(contentsOf: padding)
     }
 
@@ -194,26 +187,26 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
     let x: Tensor<Int32> = Tensor(shape: [candidates.count, maxLen], scalars: xBatch).transposed()
     let y: Tensor<Int32> = Tensor(shape: [candidates.count, maxLen], scalars: yBatch).transposed()
 
-    // [time x batch x ndim]
+    // [time x batch x hiddenSize]
     var embeddedX = decoderEmbedding(x)
     embeddedX = dropout(embeddedX)
 
-    // [batch x ndim]
+    // [batch x hiddenSize]
     let stateBatch = state.rankLifted().tiled(multiples: Tensor([Int32(candidates.count), 1]))
 
-    // [time] array of LSTM states whose `hidden` and `cell` fields have shape [batch x ndim]
+    // [time] array of LSTM states whose `hidden` and `cell` fields have shape [batch x hiddenSize]
     let decoderStates = decoderLSTM(
       embeddedX.unstacked(),
       initialState: LSTMCell.State(
         cell: Tensor(zeros: stateBatch.shape),
         hidden: stateBatch))
 
-    // [time x batch x ndim]
+    // [time x batch x hiddenSize]
     var decoderResult = Tensor(
       stacking: decoderStates.differentiableMap { $0.hidden })
     decoderResult = dropout(decoderResult)
 
-    // [time x batch x chrVocab.count]
+    // [time x batch x alphabet.count]
     let logits = decoderDense(decoderResult)
 
     // [time x batch]
@@ -226,7 +219,7 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
       ).reshaped(to: y.shape)
 
     // [time x batch]
-    let logpExcludingPad = logp * Tensor<Float>(y .!= parameters.chrVocab.pad)
+    let logpExcludingPad = logp * Tensor<Float>(y .!= parameters.alphabet.pad)
 
     // [batch]
     let candidateLogP = logpExcludingPad.transposed().sum(squeezingAxes: 1)
@@ -236,25 +229,16 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 
   // MARK: - buildLattice
 
-  /// Returns the log likelihood for `candidate` from the lexical memory
+  /// Returns the log probability for `candidate` from the lexical memory
   /// `logp_lex`.
-  ///
-  /// - Parameter logp_lex: all log likelihoods in the lexical memory.
-  /// - Parameter candidate: the character sequence for which to retrieve the
-  ///   log likelihood.
   func get_logp_lex(_ logp_lex: Tensor<Float>, _ candidate: CharacterSequence) -> Tensor<Float> {
-    guard let index = parameters.strVocab.dictionary[candidate] else {
+    guard let index = parameters.lexicon.dictionary[candidate] else {
       return Tensor(-Float.infinity)
     }
     return logp_lex[Int(index)]
   }
 
-  /// Returns a complete lattice for `sentence` with a maximum length of
-  /// `maxLen`.
-  ///
-  /// - Parameter sentence: the character sequence used for determining
-  ///   segmentation.
-  /// - Parameter maxLen: the maximum allowable sequence length.
+  /// Returns a lattice for `sentence` with `maxLen` maximum sequence length.
   @differentiable
   public func buildLattice(_ sentence: CharacterSequence, maxLen: Int) -> Lattice {
     var lattice = Lattice(count: sentence.count)
@@ -267,12 +251,12 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
         // TODO: avoid copies?
         let candidate =
           CharacterSequence(
-            alphabet: parameters.chrVocab,
+            alphabet: parameters.alphabet,
             characters: sentence[pos..<pos + span])
         // TODO(TF-433): Use `Bool.&&` instead of nested if statements when autodiff supports
         // non-active rethrowing functions (`Bool.&&`).
         if candidate.count != 1 {
-          if candidate.last == parameters.chrVocab.eos {
+          if candidate.last == parameters.alphabet.eos {
             // Prohibit strings such as ["t", "h", "e", "</s>"]
             continue
           }
@@ -282,7 +266,7 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 
       let current_state = states[pos]
       let logg = logg_batch[pos].identityADHack  // [2]
-      let logp_lex = logp_lex_batch[pos].identityADHack  // [strVocab.chr.count]
+      let logp_lex = logp_lex_batch[pos].identityADHack  // [lexicon.chr.count]
       let logp_chr = decode(candidates, current_state).identityADHack  // [candidates.count]
       if pos != 0 {
         // Cleanup: lattice[pos].recomputeSemiringScore()
@@ -322,8 +306,9 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 
 extension Array {
 
-  /// Sets the `index`th element of `self` to `value`. Semantically, it
-  /// behaves like `Array.subscript.set`.
+  /// Sets the `index`th element of `self` to `value`.
+  ///
+  /// Semantically, this function behaves like `Array.subscript.set`.
   ///
   /// - Note: this mutating method exists as a workaround for
   ///   `Array.subscript._modify` not being differentiable (TF-1277).
@@ -361,17 +346,12 @@ public struct MLP: Layer {
   /// The second dense layer.
   public var dense2: Dense<Float>
 
-  /// Creates an instance with input size `nIn`, `nHidden` hidden units,
-  /// dropout probability `dropoutProbability` and output size `nOut`.
-  ///
-  /// - Parameter nIn: input size.
-  /// - Parameter nHidden: number of hidden units.
-  /// - Parameter nOut: output size.
-  /// - Parameter dropoutProbability: probability that an input is dropped.
-  public init(nIn: Int, nHidden: Int, nOut: Int, dropoutProbability: Double) {
-    dense1 = Dense(inputSize: nIn, outputSize: nHidden, activation: tanh)
+  /// Creates an instance with `inputSize`, `hiddenSize`,
+  /// `dropoutProbability`, and `outputSize`.
+  public init(inputSize: Int, hiddenSize: Int, outputSize: Int, dropoutProbability: Double) {
+    dense1 = Dense(inputSize: inputSize, outputSize: hiddenSize, activation: tanh)
     dropout = Dropout(probability: dropoutProbability)
-    dense2 = Dense(inputSize: nHidden, outputSize: nOut, activation: logSoftmax)
+    dense2 = Dense(inputSize: hiddenSize, outputSize: outputSize, activation: logSoftmax)
   }
 
   /// Returns the result of applying all three layers in sequence to `input`.

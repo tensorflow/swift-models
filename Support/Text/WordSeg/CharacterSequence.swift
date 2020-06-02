@@ -17,26 +17,23 @@ import TensorFlow
 /// A sequence of characters represented by integers.
 public struct CharacterSequence: Hashable {
 
-  /// A collection of integers representing a sequence of characters.
+  /// Representing an ordered sequence of characters.
   public let characters: [Int32]
 
   /// A marker denoting the end of the sequence.
   private let eos: Int32
 
-  /// Creates an instance without meaningful contents.
+  /// Creates an empty instance without meaningful contents.
   public init(_debug: Int) {
     self.characters = []
     self.eos = -1
   }
 
-  /// Creates a sequence from `string`, using the integers from `alphabet`,
-  /// appended with the end of sequence marker.
+  /// Creates a sequence from `string`, using `alphabet`, appended with the
+  /// end of sequence marker.
   ///
-  /// - Parameter alphabet: character to integer mapping.
-  /// - Parameter appendingEoSTo: string to be converted to a sequence of
-  ///   integers.
-  ///
-  /// - Throws: An error of type 'CharacterErrors'.
+  /// - Throws: `CharacterErrors.unknownCharacter` if `string` contains a
+  ///   character that does not exist in `alphabet`.
   public init(alphabet: Alphabet, appendingEoSTo string: String) throws {
     var characters = [Int32]()
     characters.reserveCapacity(string.count + 1)
@@ -51,22 +48,14 @@ public struct CharacterSequence: Hashable {
   }
 
   /// Creates a sequence from `characters` and sets the end of sequence marker
-  ///  from `alphabet`.
-  ///
-  /// - Parameter alphabet: character to integer mapping.
-  /// - Parameter characters: sequence of integers with a terminal end of
-  ///   sequence marker.
+  /// from `alphabet`.
   private init(alphabet: Alphabet, characters: [Int32]) {
     self.characters = characters
     self.eos = alphabet.eos
   }
 
-  /// Creates a sequenxe from `characters` and sets the end of sequence marker
+  /// Creates a sequence from `characters` and sets the end of sequence marker
   /// from `alphabet`.
-  ///
-  /// - Parameter alphabet: character to integer mapping.
-  /// - Parameter characters: sequence of integers with a terminal end of
-  ///   sequence marker.
   public init(alphabet: Alphabet, characters: ArraySlice<Int32>) {
     self.characters = [Int32](characters)
     self.eos = alphabet.eos
@@ -85,7 +74,9 @@ public struct CharacterSequence: Hashable {
   /// Count of characters in the sequence, including the end marker.
   public var count: Int { return characters.count }
 
-  /// The last character in the sequence, i.e. the end marker.
+  /// The last character in the sequence, if `characters` is not empty.
+  ///
+  /// - Note: This is usually the end marker.
   public var last: Int32? { return characters.last }
 
   /// TODO: what's happening here?
@@ -96,7 +87,7 @@ public struct CharacterSequence: Hashable {
 
 extension CharacterSequence: CustomStringConvertible {
 
-  /// A string representation of the collection of integers representing the character sequence.
+  /// A string representation of the integers in the character sequence.
   public var description: String {
     "\(characters)"
   }

@@ -123,42 +123,42 @@ func almostEqual(
 
 class WordSegProbeLayerTests: XCTestCase {
   func testProbeEncoder() {
-    // chrVocab is:
+    // alphabet is:
     // 0 - a
     // 1 - b
     // 2 - </s>
     // 3 - </w>
     // 4 - <pad>
-    let chrVocab: Alphabet = Alphabet(
+    let alphabet: Alphabet = Alphabet(
       [
         "a",
         "b",
       ], eos: "</s>", eow: "</w>", pad: "<pad>")
 
-    // strVocab is:
+    // lexicon is:
     // 0 - aaaa
     // 1 - bbbb
     // 2 - abab
-    let strVocab: Lexicon = Lexicon([
-      CharacterSequence(alphabet: chrVocab, characters: [0, 0]),  // "aa"
-      CharacterSequence(alphabet: chrVocab, characters: [1, 1]),  // "bb"
-      CharacterSequence(alphabet: chrVocab, characters: [0, 1]),  // "ab"
-      CharacterSequence(alphabet: chrVocab, characters: [1, 0]),  // "ba"
+    let lexicon: Lexicon = Lexicon([
+      CharacterSequence(alphabet: alphabet, characters: [0, 0]),  // "aa"
+      CharacterSequence(alphabet: alphabet, characters: [1, 1]),  // "bb"
+      CharacterSequence(alphabet: alphabet, characters: [0, 1]),  // "ab"
+      CharacterSequence(alphabet: alphabet, characters: [1, 0]),  // "ba"
     ])
 
     var model = SNLM(
       parameters: SNLM.Parameters(
-        ndim: 2,
-        dropoutProb: 0,
-        chrVocab: chrVocab,
-        strVocab: strVocab,
+        hiddenSize: 2,
+        dropoutProbability: 0,
+        alphabet: alphabet,
+        lexicon: lexicon,
         order: 5))
 
     model.setParameters(Example1.parameters)
 
     print("Encoding")
     let encoderStates = model.encode(
-      CharacterSequence(alphabet: chrVocab, characters: [0, 1, 0, 1]))  // "abab"
+      CharacterSequence(alphabet: alphabet, characters: [0, 1, 0, 1]))  // "abab"
     let encoderStatesTensor = Tensor(stacking: encoderStates)
     print("Expected: \(Example1.expectedEncoding)")
     print("Actual: \(encoderStatesTensor)")
@@ -184,8 +184,8 @@ class WordSegProbeLayerTests: XCTestCase {
     print("Decode")
     let decoded = model.decode(
       [
-        CharacterSequence(alphabet: chrVocab, characters: [0, 0, 0]),  // "aaa"
-        CharacterSequence(alphabet: chrVocab, characters: [0, 1]),  // "ab"
+        CharacterSequence(alphabet: alphabet, characters: [0, 0, 0]),  // "aaa"
+        CharacterSequence(alphabet: alphabet, characters: [0, 1]),  // "ab"
       ],
       encoderStates[0]
     )
@@ -195,7 +195,7 @@ class WordSegProbeLayerTests: XCTestCase {
     print("OK!\n")
 
     print("Build Lattice")
-    let abab = CharacterSequence(alphabet: chrVocab, characters: [0, 1, 0, 1])
+    let abab = CharacterSequence(alphabet: alphabet, characters: [0, 1, 0, 1])
     let lattice = model.buildLattice(abab, maxLen: 5)
     XCTAssert(lattice.isAlmostEqual(to: Example1.lattice, tolerance: 1e-5))
 

@@ -18,9 +18,9 @@ import TensorFlow
 import TextModels
 
 // Model flags
-let ndim = 512  // Hidden unit size.
+let hiddenSize = 512  // Hidden unit size.
 // Training flags
-let dropoutProb = 0.5  // Dropout rate.
+let dropoutProbability = 0.5  // Dropout rate.
 let order = 5  // Power of length penalty.
 let maxEpochs = 1000  // Maximum number of training epochs.
 var trainingLossHistory = [Float]()  // Keep track of loss.
@@ -30,7 +30,7 @@ let learningRate: Float = 1e-3  // Initial learning rate.
 let lambd: Float = 0.00075  // Weight of length penalty.
 // Lexicon flags.
 let maxLength = 10  // Maximum length of a string.
-let minFreq = 10  // Minimum frequency of a string.
+let minFrequency = 10  // Minimum frequency of a string.
 
 // Load user-provided data files.
 let dataset: WordSegDataset
@@ -55,14 +55,14 @@ let lexicon = Lexicon(
   from: sequences,
   alphabet: dataset.alphabet,
   maxLength: maxLength,
-  minFreq: minFreq
+  minFrequency: minFrequency
 )
 
 let modelParameters = SNLM.Parameters(
-  ndim: ndim,
-  dropoutProb: dropoutProb,
-  chrVocab: dataset.alphabet,
-  strVocab: lexicon,
+  hiddenSize: hiddenSize,
+  dropoutProbability: dropoutProbability,
+  alphabet: dataset.alphabet,
+  lexicon: lexicon,
   order: order
 )
 

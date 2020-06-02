@@ -23,7 +23,9 @@ import TensorFlow
 #endif
 
 /// Returns a single tensor containing the log of the sum of the exponentials
-/// in `x`. Used for numerical stability when dealing with very small values.
+/// in `x`.
+///
+/// Used for numerical stability when dealing with very small values.
 @differentiable
 public func logSumExp(_ x: [Tensor<Float>]) -> Tensor<Float> {
   // Deal with an empty array first.
@@ -32,8 +34,9 @@ public func logSumExp(_ x: [Tensor<Float>]) -> Tensor<Float> {
 }
 
 /// Returns a single tensor containing the log of the sum of the exponentials
-/// in `lhs` and `rhs`. Used for numerical stability when dealing with very
-/// small values.
+/// in `lhs` and `rhs`.
+///
+/// Used for numerical stability when dealing with very small values.
 @differentiable
 public func logSumExp(_ lhs: Tensor<Float>, _ rhs: Tensor<Float>) -> Tensor<Float> {
   return logSumExp([lhs, rhs])
@@ -71,8 +74,9 @@ public struct SemiRing: Differentiable {
   static var one: SemiRing { SemiRing(logp: 0.0, logr: -Float.infinity) }
 }
 
-/// Multiplies `lhs` by `rhs`. Since scores are on a logarithmic scale,
-/// products become sums.
+/// Multiplies `lhs` by `rhs`.
+///
+/// Since scores are on a logarithmic scale, products become sums.
 @differentiable
 func * (_ lhs: SemiRing, _ rhs: SemiRing) -> SemiRing {
   return SemiRing(
@@ -109,12 +113,9 @@ extension SemiRing {
 
 extension SemiRing {
 
-  /// Returns true when `self` is within `tolerance` of `other`. This behavior
-  /// is modeled after SE-0259.
+  /// Returns true when `self` is within `tolerance` of `other`.
   ///
-  /// - Parameter other: the instance to be compared with `self`.
-  /// - Parameter tolerance: the amount of variability considered acceptable
-  ///   in determining equality.
+  /// - Note: This behavior is modeled after SE-0259.
   // TODO(abdulras) see if we can use ulp as a default tolerance
   @inlinable
   public func isAlmostEqual(to other: Self, tolerance: Float) -> Bool {
