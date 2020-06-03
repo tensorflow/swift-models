@@ -225,9 +225,9 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
       }
 
       let current_state = states[pos]
-        let logg = logg_batch[pos].identityADHack.scalars  // [2]
-      let logp_lex = logp_lex_batch[pos].identityADHack.scalars  // [strVocab.chr.count]
-      let logp_chr = decode(candidates, current_state).identityADHack.scalars  // [candidates.count]
+      let logg = logg_batch[pos].scalarsADHack  // [2]
+      let logp_lex = logp_lex_batch[pos].scalarsADHack  // [strVocab.chr.count]
+      let logp_chr = decode(candidates, current_state).scalarsADHack  // [candidates.count]
       if pos != 0 {
         // Cleanup: lattice[pos].recomputeSemiringScore()
         var updatedNode = lattice[pos]
@@ -308,29 +308,29 @@ public struct MLP: Layer {
 }
 
 extension Tensor {
-  // NOTE(TF-1008): this is a workaround for TF-1008 that is needed for differentiation
-  // correctness.
+  // NOTE(TF-1008): this is a duplicate of `Tensor.scalars` that is needed for differentiation
+  // correctness. It exists as a workaround for TF-1008: per-instance zero tangent vectors.
   //
   // Remove this when differentiation uses per-instance zeros
   // (`Differentiable.zeroTangentVectorInitializer`) instead of static zeros
   // (`AdditiveArithmetic.zero`).
   @differentiable(where Scalar: TensorFlowFloatingPoint)
-  var identityADHack: Tensor {
-    self
+  var scalarsADHack: [Scalar] {
+    scalars
   }
 
-  @derivative(of: identityADHack)
-  func vjpIdentityADHack() -> (
-    value: Tensor, pullback: (Tensor) -> Tensor
+  @derivative(of: scalarsADHack)
+  func vjpScalarsADHack() -> (
+    value: [Scalar], pullback: (Array<Scalar>.TangentVector) -> Tensor
   ) where Scalar: TensorFlowFloatingPoint {
     // In the pullback: capture only `self.shape`, not all of `self`.
     let shape = self.shape
-    func pullback(_ v: Tensor) -> Tensor {
-      if v.scalarCount == 1 {
-        return v.broadcasted(to: shape)
+    func pullback(_ tv: Array<Scalar>.TangentVector) -> Tensor {
+      if tv.count == 0 {
+        return Tensor(zeros: shape)
       }
-      return v
+      return Tensor(shape: shape, scalars: tv.base)
     }
-    return (self, pullback)
+    return (scalars, pullback)
   }
 }
