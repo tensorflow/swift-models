@@ -45,6 +45,7 @@ bertClassifier.move(to: device)
 // Google and so the batch size setting here is expected to differ from that one.
 let maxSequenceLength = 128
 let batchSize = 1024
+let stepsPerBatch = 1068 // function of training set size and batching configuration
 
 var cola = try CoLA(
   taskDirectoryURL: workspaceURL,
@@ -60,41 +61,6 @@ var cola = try CoLA(
 
 print("Dataset acquired.")
 
-public func makeWeightDecayedAdam(
-  learningRate: Float = 0.01,
-  beta1: Float = 0.9,
-  beta2: Float = 0.999,
-  weightDecayRate: Float = 0.01,
-  epsilon: Float = 1e-6
-) -> ParameterGroupOptimizer {
-  var b = ParameterGroupOptimizerBuilder()
-  let lr = b.makeParameter("learningRate", learningRate)
-  let beta1 = b.makeParameter("beta1", beta1)
-  let beta2 = b.makeParameter("beta2", beta2)
-  let wd = b.makeParameter("weightDecay", weightDecayRate)
-
-  let firstMoment = b[state: "firstMoment"]
-  let secondMoment = b[state: "secondMoment"]
-
-  b.appendCallback { (state: inout OptimizerWeightStepState, optState: inout OptimizerState) in
-    optState[state, firstMoment] =
-      state[beta1] * optState[state, firstMoment] + state.grad * (1 - state[beta1])
-  }
-
-  b.appendCallback { (state: inout OptimizerWeightStepState, optState: inout OptimizerState) in
-    optState[state, secondMoment] =
-      state[beta2] * optState[state, secondMoment] + state.grad .* state.grad * (1 - state[beta2])
-  }
-
-  b.appendCallback { (state: inout OptimizerWeightStepState, optState: inout OptimizerState) in
-    let denominator = sqrt(optState[state, secondMoment]).adding(epsilon)
-    let update = optState[state, firstMoment] ./ denominator + state.weight * state[wd]
-    state.step = -state[lr] * update
-  }
-
-  return b.makeOptimizer()
-}
-
 let beta1: Float = 0.9
 let beta2: Float = 0.999
 let useBiasCorrection = true
@@ -109,14 +75,12 @@ var optimizer = x10_optimizers_optimizer.GeneralOptimizer(
     )
 )
 
-// TOOD(shadaj): 1068 is a magic number for the number of batches in each epoch, where does this come from?
-// TODO(shadaj): learning rate originally went to zero very early, changed to decay until the last step
 var scheduledLearningRate = LinearlyDecayedParameter(
   baseParameter: LinearlyWarmedUpParameter(
       baseParameter: FixedParameter<Float>(2e-5),
       warmUpStepCount: 10,
       warmUpOffset: 0),
-  slope: -(2e-5 / (1068 * 3)),  // The LR decays linearly to zero in 3*1068 steps.
+  slope: -(2e-5 / (Float(stepsPerBatch) * 3)),  // The LR decays linearly to zero.
   startStep: 10
 )
 
