@@ -121,6 +121,9 @@ public func extractArchive(
     case "gz":
         toolName = "gunzip"
         arguments = [archivePath]
+    case "tar":
+        toolName = "tar"
+        arguments = ["xf", archivePath, "-C", localStorageDirectory.path]
     case "tar.gz", "tgz":
         toolName = "tar"
         arguments = ["xzf", archivePath, "-C", localStorageDirectory.path]
