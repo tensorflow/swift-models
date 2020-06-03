@@ -15,6 +15,10 @@
 import TensorFlow
 import x10_optimizers_optimizer
 
+/// Adam optimizer with weight decay.
+///
+/// Reference: ["Adam - A Method for Stochastic Optimization"](
+/// https://arxiv.org/abs/1412.6980v8)
 public func makeWeightDecayedAdam(
   learningRate: Float = 0.01,
   beta1: Float = 0.9,
