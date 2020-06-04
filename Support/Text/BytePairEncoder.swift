@@ -15,10 +15,6 @@
 import Foundation
 
 public struct BytePairEncoder {
-    public enum BPEError: Error {
-        case invalidGeneratedToken
-    }
-
     public let vocabulary: Vocabulary
     public let mergePairs: [Pair: Int]
     public let reversedMergePairs: [String: Pair]
@@ -284,16 +280,15 @@ extension BytePairEncoder {
     /// - Parameters:
     ///   - token: BPE-coded token to decode.
     /// - Returns: String containing the decoded tokens.
-    public static func decode(token: String) throws -> String {
+    public static func decode(token: String) -> String {
         var buffer = [UInt8]()
 
         for scalar in token.unicodeScalars {
             buffer.append(BytePairEncoder.unicodeToBytes[scalar]!)
         }
 
-        // TODO(#385): Support unicode strings with multibyte scalars.
         guard let decodedToken = String(bytes: buffer, encoding: .utf8) else {
-            throw BPEError.invalidGeneratedToken
+            return String("\u{FFFD}")
         }
 
         return decodedToken

@@ -89,7 +89,7 @@ extension MultiHeadAttentionGPT2: InitializableFromPythonCheckpoint {
         attention = Attention(
             size: config.embeddingSize / config.headCount,
             causal: true,
-            dropProbability: 0.2)
+            dropProbability: 0.1)
         wqkv = TimeDistributed(
             Dense<Float>(reader: reader, config: config, scope: scope + "/c_attn"))
         wo = TimeDistributed(
@@ -105,7 +105,6 @@ extension FeedForward: InitializableFromPythonCheckpoint {
         )
         dense2 = TimeDistributed(
             Dense<Float>(reader: reader, config: config, scope: scope + "/c_proj"))
-        dropout = Dropout(probability: 0.2)
     }
 }
 
@@ -113,10 +112,10 @@ extension EncoderLayer: InitializableFromPythonCheckpoint {
     init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
         selfAttention = MultiHeadAttentionGPT2(
             reader: reader, config: config, scope: scope + "/attn")
-        selfAttentionDropout = Dropout(probability: 0.2)
+        selfAttentionDropout = Dropout(probability: 0.1)
         selfAttentionNorm = LayerNorm(reader: reader, config: config, scope: scope + "/ln_1")
         feedForward = FeedForward(reader: reader, config: config, scope: scope + "/mlp")
-        feedForwardDropout = Dropout(probability: 0.2)
+        feedForwardDropout = Dropout(probability: 0.1)
         feedForwardNorm = LayerNorm(reader: reader, config: config, scope: scope + "/ln_2")
     }
 }
@@ -125,6 +124,7 @@ extension TransformerLM: InitializableFromPythonCheckpoint {
     public init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
         embedding = Embedding(embeddings: reader.readTensor(name: scope + "/wte"))
         positionalEmbeddings = reader.readTensor(name: scope + "/wpe")
+        embeddingDropout = Dropout(probability: 0.1)
         layers = (0..<config.layerCount).map { i in
             EncoderLayer(reader: reader, config: config, scope: scope + "/h\(i)")
         }
