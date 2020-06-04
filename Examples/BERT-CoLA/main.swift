@@ -19,8 +19,7 @@ import TensorFlow
 import TextModels
 import x10_optimizers_optimizer
 
-// TODO(shadaj): Device.defaultXLA causes CUDA OOM
-let device = Device(kind: .GPU, ordinal: 0, backend: .XLA)
+let device = Device.defaultXLA
 
 let bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
 let workspaceURL = URL(
