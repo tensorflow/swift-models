@@ -232,9 +232,9 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 
   /// Returns the log probability for `candidate` from the lexical memory
   /// `logp_lex`.
-  func get_logp_lex(_ logp_lex: Tensor<Float>, _ candidate: CharacterSequence) -> Tensor<Float> {
+  func get_logp_lex(_ logp_lex: [Float], _ candidate: CharacterSequence) -> Float {
     guard let index = parameters.lexicon.dictionary[candidate] else {
-      return Tensor(-Float.infinity)
+      return -Float.infinity
     }
     return logp_lex[Int(index)]
   }
@@ -266,9 +266,9 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
       }
 
       let current_state = states[pos]
-      let logg = logg_batch[pos].identityADHack  // [2]
-      let logp_lex = logp_lex_batch[pos].identityADHack  // [lexicon.chr.count]
-      let logp_chr = decode(candidates, current_state).identityADHack  // [candidates.count]
+      let logg = logg_batch[pos].scalarsADHack  // [2]
+      let logp_lex = logp_lex_batch[pos].scalarsADHack  // [strVocab.chr.count]
+      let logp_chr = decode(candidates, current_state).scalarsADHack  // [candidates.count]
       if pos != 0 {
         // Cleanup: lattice[pos].recomputeSemiringScore()
         var updatedNode = lattice[pos]
@@ -372,23 +372,24 @@ extension Tensor {
   // (`Differentiable.zeroTangentVectorInitializer`) instead of static zeros
   // (`AdditiveArithmetic.zero`).
   @differentiable(where Scalar: TensorFlowFloatingPoint)
-  var identityADHack: Tensor {
-    self
+  var scalarsADHack: [Scalar] {
+    scalars
   }
 
-  /// Returns the value and pullback of `self.identityADHack`.
-  @derivative(of: identityADHack)
-  func vjpIdentityADHack() -> (
-    value: Tensor, pullback: (Tensor) -> Tensor
+  /// Returns the value and pullback of `self.scalarsADHack`.
+  @derivative(of: scalarsADHack)
+  func vjpScalarsADHack() -> (
+    value: [Scalar], pullback: (Array<Scalar>.TangentVector) -> Tensor
   ) where Scalar: TensorFlowFloatingPoint {
     // In the pullback: capture only `self.shape`, not all of `self`.
     let shape = self.shape
-    func pullback(_ v: Tensor) -> Tensor {
-      if v.scalarCount == 1 {
-        return v.broadcasted(to: shape)
+    func pullback(_ tv: Array<Scalar>.TangentVector) -> Tensor {
+      if tv.count == 0 {
+        return Tensor(zeros: shape)
       }
-      return v
+      return Tensor(shape: shape, scalars: tv.base)
     }
-    return (self, pullback)
+    return (scalars, pullback)
   }
 }
+ 
