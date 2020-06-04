@@ -36,6 +36,7 @@ let package = Package(
         .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),
         .target(name: "RecommendationModels", path: "Models/Recommendation"),
         .target(name: "TrainingLoop", dependencies: ["ModelSupport"], path: "TrainingLoop"),
+        .target(name: "LayerInit", path: "Models/LayerInit"),
         .target(
             name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport"],
             path: "Autoencoder/Autoencoder1D"),
