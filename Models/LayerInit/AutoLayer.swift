@@ -2,7 +2,13 @@ import TensorFlow
 
 public protocol AutoLayer {
     associatedtype InstanceType: Layer
-    func buildModel(inputShape: Int) -> (InstanceType, Int)
+    func buildModelWithOutputShape(inputShape: Int) -> (InstanceType, Int)
+}
+
+extension AutoLayer {
+    public func buildModel(inputShape: Int) -> InstanceType {
+        return self.buildModelWithOutputShape(inputShape: inputShape).0
+    }
 }
 
 public struct AutoSequencedDefinition<Layer1: AutoLayer, Layer2: AutoLayer>: AutoLayer
@@ -19,9 +25,9 @@ where
         self.second = second
     }
 
-    public func buildModel(inputShape: Int) -> (InstanceType, Int) {
-        let (firstInstance, firstOutputShape) = first.buildModel(inputShape: inputShape)
-        let (secondInstance, secondOutputShape) = second.buildModel(inputShape: firstOutputShape)
+    public func buildModelWithOutputShape(inputShape: Int) -> (InstanceType, Int) {
+        let (firstInstance, firstOutputShape) = first.buildModelWithOutputShape(inputShape: inputShape)
+        let (secondInstance, secondOutputShape) = second.buildModelWithOutputShape(inputShape: firstOutputShape)
         return (Sequential(firstInstance, secondInstance), secondOutputShape)
     }
 }
@@ -43,7 +49,7 @@ public struct AutoDenseDefinition<Scalar>: AutoLayer where Scalar: TensorFlowFlo
         self.activation = activation
     }
 
-    public func buildModel(inputShape: Int) -> (InstanceType, Int) {
+    public func buildModelWithOutputShape(inputShape: Int) -> (InstanceType, Int) {
         return (Dense<Scalar>(inputSize: inputShape, outputSize: self.outputSize, activation: self.activation), self.outputSize)
     }
 }
