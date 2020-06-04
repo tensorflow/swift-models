@@ -225,7 +225,7 @@ enum Example1 {
             start: 0,
             end: 1,
             string: CharacterSequence(_debug: 1),
-            logp: Tensor(-3.9122378826141357),
+            logp: -3.9122378826141357,
             score: SemiRing(logp: -3.9122378826141357, logr: -3.9122378826141357),
             totalScore: SemiRing(logp: -3.9122378826141357, logr: -3.9122378826141357)
           )
@@ -240,7 +240,7 @@ enum Example1 {
             start: 0,
             end: 2,
             string: CharacterSequence(_debug: 1),
-            logp: Tensor(-2.0545620918273926),
+            logp: -2.0545620918273926,
             score: SemiRing(logp: -2.0545620918273926, logr: 1.4111738204956055),
             totalScore: SemiRing(logp: -2.0545620918273926, logr: 1.4111738204956055)
           ),
@@ -248,7 +248,7 @@ enum Example1 {
             start: 1,
             end: 2,
             string: CharacterSequence(_debug: 1),
-            logp: Tensor(-3.936295986175537),
+            logp: -3.936295986175537,
             score: SemiRing(logp: -3.936295986175537, logr: -3.936295986175537),
             totalScore: SemiRing(logp: -7.848533630371094, logr: -7.155386447906494)
           ),
@@ -263,7 +263,7 @@ enum Example1 {
             start: 0,
             end: 3,
             string: CharacterSequence(_debug: 1),
-            logp: Tensor(-7.253466606140137),
+            logp: -7.253466606140137,
             score: SemiRing(logp: -7.253466606140137, logr: -1.7604050636291504),
             totalScore: SemiRing(logp: -7.253466606140137, logr: -1.7604050636291504)
           ),
@@ -271,7 +271,7 @@ enum Example1 {
             start: 1,
             end: 3,
             string: CharacterSequence(_debug: 1),
-            logp: Tensor(-2.0307273864746094),
+            logp: -2.0307273864746094,
             score: SemiRing(logp: -2.0307273864746094, logr: 1.4350085258483887),
             totalScore: SemiRing(logp: -5.942965507507324, logr: -2.446457624435425)
           ),
@@ -279,7 +279,7 @@ enum Example1 {
             start: 2,
             end: 3,
             string: CharacterSequence(_debug: 1),
-            logp: Tensor(-3.912229061126709),
+            logp: -3.912229061126709,
             score: SemiRing(logp: -3.912229061126709, logr: -3.912229061126709),
             totalScore: SemiRing(logp: -5.963749885559082, logr: -2.4700069427490234)
           ),
@@ -294,7 +294,7 @@ enum Example1 {
             start: 0,
             end: 4,
             string: CharacterSequence(_debug: 1),
-            logp: Tensor(-8.936973571777344),
+            logp: -8.936973571777344,
             score: SemiRing(logp: -8.936973571777344, logr: -2.0055017471313477),
             totalScore: SemiRing(logp: -8.936973571777344, logr: -2.0055017471313477)
           ),
@@ -302,7 +302,7 @@ enum Example1 {
             start: 1,
             end: 4,
             string: CharacterSequence(_debug: 1),
-            logp: Tensor(-7.277979850769043),
+            logp: -7.277979850769043,
             score: SemiRing(logp: -7.277979850769043, logr: -1.7849183082580566),
             totalScore: SemiRing(logp: -11.190217971801758, logr: -5.69304895401001)
           ),
@@ -310,7 +310,7 @@ enum Example1 {
             start: 2,
             end: 4,
             string: CharacterSequence(_debug: 1),
-            logp: Tensor(-2.0545456409454346),
+            logp: -2.0545456409454346,
             score: SemiRing(logp: -2.0545456409454346, logr: 1.4111902713775635),
             totalScore: SemiRing(logp: -4.106066703796387, logr: 0.051392197608947754)
           ),
@@ -318,7 +318,7 @@ enum Example1 {
             start: 3,
             end: 4,
             string: CharacterSequence(_debug: 1),
-            logp: Tensor(-3.936281204223633),
+            logp: -3.936281204223633,
             score: SemiRing(logp: -3.936281204223633, logr: -3.936281204223633),
             totalScore: SemiRing(logp: -9.068710327148438, logr: -4.98878812789917)
           ),
