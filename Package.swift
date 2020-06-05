@@ -18,6 +18,7 @@ let package = Package(
         .library(name: "TextModels", targets: ["TextModels"]),
         .library(name: "FastStyleTransfer", targets: ["FastStyleTransfer"]),
         .library(name: "MiniGo", targets: ["MiniGo"]),
+        .library(name: "TrainingLoop", targets: ["TrainingLoop"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.9.0"),
@@ -34,6 +35,7 @@ let package = Package(
         .target(name: "VideoClassificationModels", path: "Models/Spatiotemporal"),
         .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),
         .target(name: "RecommendationModels", path: "Models/Recommendation"),
+        .target(name: "TrainingLoop", path: "TrainingLoop"),
         .target(
             name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport"],
             path: "Autoencoder/Autoencoder1D"),
@@ -57,7 +59,8 @@ let package = Package(
             name: "Custom-CIFAR10", dependencies: ["Datasets"],
             path: "Examples/Custom-CIFAR10"),
         .target(
-            name: "ResNet-CIFAR10", dependencies: ["ImageClassificationModels", "Datasets"],
+            name: "ResNet-CIFAR10",
+            dependencies: ["ImageClassificationModels", "Datasets", "TrainingLoop"],
             path: "Examples/ResNet-CIFAR10"),
         .target(
             name: "LeNet-MNIST", dependencies: ["ImageClassificationModels", "Datasets"],
