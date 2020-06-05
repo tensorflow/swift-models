@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import Foundation
+import ModelSupport
 import TensorFlow
 
 /// A Swift-native TensorFlow v2 checkpoint writer. This writer has no dependencies

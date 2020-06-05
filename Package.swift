@@ -10,6 +10,7 @@ let package = Package(
     ],
     products: [
         .library(name: "Batcher", targets: ["Batcher"]),
+        .library(name: "Checkpoints", targets: ["Checkpoints"]),
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
@@ -25,14 +26,17 @@ let package = Package(
     ],
     targets: [
         .target(name: "Batcher", path: "Batcher"),
-        .target(name: "Datasets", dependencies: ["ModelSupport", "Batcher"], path: "Datasets"),
+        .target(
+            name: "Checkpoints", dependencies: ["SwiftProtobuf", "ModelSupport"],
+            path: "Checkpoints"),
+        .target(name: "Datasets", dependencies: ["Batcher", "ModelSupport"], path: "Datasets"),
         .target(name: "STBImage", path: "Support/STBImage"),
         .target(
             name: "ModelSupport", dependencies: ["SwiftProtobuf", "STBImage"], path: "Support",
             exclude: ["STBImage"]),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "VideoClassificationModels", path: "Models/Spatiotemporal"),
-        .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),
+        .target(name: "TextModels", dependencies: ["Checkpoints", "Datasets"], path: "Models/Text"),
         .target(name: "RecommendationModels", path: "Models/Recommendation"),
         .target(
             name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport"],
@@ -93,7 +97,7 @@ let package = Package(
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
         .target(name: "DCGAN", dependencies: ["Datasets", "ModelSupport"], path: "DCGAN"),
         .target(
-            name: "FastStyleTransfer", dependencies: ["ModelSupport"], path: "FastStyleTransfer",
+            name: "FastStyleTransfer", dependencies: ["Checkpoints"], path: "FastStyleTransfer",
             exclude: ["Demo"]),
         .target(
             name: "FastStyleTransferDemo", dependencies: ["FastStyleTransfer"],
@@ -106,7 +110,7 @@ let package = Package(
                 "TextModels"
             ],
             path: "Benchmarks"),
-        .testTarget(name: "CheckpointTests", dependencies: ["ModelSupport"]),
+        .testTarget(name: "CheckpointTests", dependencies: ["Checkpoints"]),
         .target(
             name: "BERT-CoLA", dependencies: ["TextModels", "Datasets"], path: "Examples/BERT-CoLA"),
         .testTarget(name: "SupportTests", dependencies: ["ModelSupport"]),

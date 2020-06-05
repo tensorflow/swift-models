@@ -1,5 +1,5 @@
 import TensorFlow
-import ModelSupport
+import Checkpoints
 
 public protocol ImportableLayer: KeyPathIterable {}
 

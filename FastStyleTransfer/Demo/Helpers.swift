@@ -1,6 +1,6 @@
 import FastStyleTransfer
 import Foundation
-import ModelSupport
+import Checkpoints
 import TensorFlow
 
 extension TransformerNet: ImportableLayer {}

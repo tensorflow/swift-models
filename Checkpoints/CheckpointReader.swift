@@ -20,6 +20,7 @@
 // shards to obtain their raw bytes.
 
 import Foundation
+import ModelSupport
 import TensorFlow
 
 /// A Swift-native TensorFlow v2 checkpoint reader that can download all checkpoint files from 

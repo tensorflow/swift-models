@@ -15,7 +15,7 @@
 import TensorFlow
 import XCTest
 
-@testable import ModelSupport
+@testable import Checkpoints
 
 final class CheckpointIndexReaderTests: XCTestCase {
     let resourceBaseLocation = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
