@@ -49,6 +49,8 @@ public struct CharacterSequence: Hashable {
 
   /// Creates a sequence from `characters` and sets the end marker from
   /// `alphabet`.
+  ///
+  /// - Note: Assumes `characters` contains an end marker.
   private init(alphabet: Alphabet, characters: [Int32]) {
     self.characters = characters
     self.eos = alphabet.eos
@@ -56,6 +58,8 @@ public struct CharacterSequence: Hashable {
 
   /// Creates a sequence from `characters` and sets the end marker from
   /// `alphabet`.
+  ///
+  /// - Note: Assumes `characters` contains an end marker.
   public init(alphabet: Alphabet, characters: ArraySlice<Int32>) {
     self.characters = [Int32](characters)
     self.eos = alphabet.eos
@@ -79,7 +83,8 @@ public struct CharacterSequence: Hashable {
   /// - Note: This is usually the end marker.
   public var last: Int32? { return characters.last }
 
-  /// TODO: what's happening here?
+  /// Representation for character generation, with the end marker moved to
+  /// the beginning.
   public var tensor: Tensor<Int32> {
     Tensor<Int32>([self.eos] + characters[0..<characters.count - 1])
   }
