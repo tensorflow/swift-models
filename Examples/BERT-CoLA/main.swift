@@ -18,31 +18,20 @@ import ModelSupport
 import TensorFlow
 import TextModels
 
-let bertPretrained: BERT.PreTrainedModel
-let checkpoint: URL
-
+var bertPretrained: BERT.PreTrainedModel
 if CommandLine.arguments.count >= 2 {
     if CommandLine.arguments[1].lowercased() == "albert" {
         bertPretrained = BERT.PreTrainedModel.albertBase
-        checkpoint = URL(string:
-            "https://storage.googleapis.com/tfhub-modules/google/albert_base/1.tar.gz")!
     } else if CommandLine.arguments[1].lowercased() == "roberta" {
         bertPretrained = BERT.PreTrainedModel.robertaBase
-        checkpoint = URL(string:
-            "https://storage.googleapis.com/s4tf-hosted-binaries/checkpoints/Text/RoBERTa/base.zip")!
     } else {
         bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
-        checkpoint = URL(string:
-            "https://storage.googleapis.com/bert_models/2018_10_18/uncased_L-12_H-768_A-12.zip")!
     }
 } else {
     bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
-    checkpoint = URL(string:
-        "https://storage.googleapis.com/bert_models/2018_10_18/uncased_L-12_H-768_A-12.zip")!
 }
 
-
-let bert = try BERT.PreTrainedModel.load(bertPretrained)(from: checkpoint)
+let bert = try bertPretrained.load()
 var bertClassifier = BERTClassifier(bert: bert, classCount: 1)
 
 // Regarding the batch size, note that the way batching is performed currently is that we bucket

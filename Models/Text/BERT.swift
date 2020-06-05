@@ -662,10 +662,10 @@ extension BERT {
         ///
         /// - Parameters:
         ///   - url: URL to load the pretrained model from.
-        public func load(from url: URL) throws -> BERT {
+        public func load(from url: URL? = nil) throws -> BERT {
             print("Loading BERT pre-trained model '\(name)'.")
             
-            let reader = try CheckpointReader(checkpointLocation: url, modelName: name)
+            let reader = try CheckpointReader(checkpointLocation: url ?? self.url, modelName: name)
             // TODO(michellecasbon): expose this.
             reader.isCRCVerificationEnabled = false
 
