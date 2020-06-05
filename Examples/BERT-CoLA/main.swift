@@ -19,40 +19,30 @@ import TensorFlow
 import TextModels
 
 let bertPretrained: BERT.PreTrainedModel
-let reader: CheckpointReader
-let modelName: String
+let checkpoint: URL
+
 if CommandLine.arguments.count >= 2 {
     if CommandLine.arguments[1].lowercased() == "albert" {
-        modelName = "ALBERT"
         bertPretrained = BERT.PreTrainedModel.albertBase
-        let url = URL(string:
+        checkpoint = URL(string:
             "https://storage.googleapis.com/tfhub-modules/google/albert_base/1.tar.gz")!
-        reader = try! CheckpointReader(checkpointLocation: url, modelName: "ALBERT")
     } else if CommandLine.arguments[1].lowercased() == "roberta" {
-        modelName = "RoBERTa"
         bertPretrained = BERT.PreTrainedModel.robertaBase
-        let url = URL(string:
+        checkpoint = URL(string:
             "https://storage.googleapis.com/s4tf-hosted-binaries/checkpoints/Text/RoBERTa/base.zip")!
-        reader = try! CheckpointReader(checkpointLocation: url, modelName: "RoBERTa")
     } else {
-        modelName = "BERT"
         bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
-        let url = URL(string:
+        checkpoint = URL(string:
             "https://storage.googleapis.com/bert_models/2018_10_18/uncased_L-12_H-768_A-12.zip")!
-        reader = try! CheckpointReader(checkpointLocation: url, modelName: "BERT")
     }
 } else {
-    modelName = "BERT"
     bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
-    let url = URL(string:
+    checkpoint = URL(string:
         "https://storage.googleapis.com/bert_models/2018_10_18/uncased_L-12_H-768_A-12.zip")!
-    reader = try! CheckpointReader(checkpointLocation: url, modelName: "BERT")
 }
 
-// TODO(michellecasbon): expose this.
-reader.isCRCVerificationEnabled = false
 
-let bert = try BERT.PreTrainedModel.load(bertPretrained)(from: reader)
+let bert = try BERT.PreTrainedModel.load(bertPretrained)(from: checkpoint)
 var bertClassifier = BERTClassifier(bert: bert, classCount: 1)
 
 // Regarding the batch size, note that the way batching is performed currently is that we bucket
@@ -98,7 +88,7 @@ var optimizer = WeightDecayedAdam(
     weightDecayRate: 0.01,
     maxGradientGlobalNorm: 1)
 
-print("Training \(modelName) for the CoLA task!")
+print("Training \(bertPretrained.name) for the CoLA task!")
 for (epoch, epochBatches) in cola.trainingEpochs.prefix(3).enumerated() {
     print("[Epoch \(epoch + 1)]")
     Context.local.learningPhase = .training

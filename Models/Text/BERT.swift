@@ -655,16 +655,20 @@ extension BERT {
             }
         }
 
-        /// Loads this pre-trained BERT model from the specified directory.
+        /// Loads this pre-trained BERT model from the specified URL.
         ///
         /// - Note: This function will download the pre-trained model files to the specified
         //    directory, if they are not already there.
         ///
         /// - Parameters:
-        ///   - directory: Directory to load the pretrained model from.
-        public func load(from reader: CheckpointReader) throws -> BERT {
+        ///   - url: URL to load the pretrained model from.
+        public func load(from url: URL) throws -> BERT {
             print("Loading BERT pre-trained model '\(name)'.")
             
+            let reader = try CheckpointReader(checkpointLocation: url, modelName: name)
+            // TODO(michellecasbon): expose this.
+            reader.isCRCVerificationEnabled = false
+
             let storage = reader.localCheckpointLocation.deletingLastPathComponent()
 
             // Load the appropriate vocabulary file.
@@ -747,13 +751,10 @@ extension BERT {
         }
   }
 
-    /// Loads a BERT model from the provided TensorFlow checkpoint file into this BERT model.
+    /// Loads a BERT model from the provided CheckpointReader into this BERT model.
     ///
     /// - Parameters:
-    ///   - fileURL: Path to the checkpoint file. Note that TensorFlow checkpoints typically
-    ///     consist of multiple files (e.g., `bert_model.ckpt.index`, `bert_model.ckpt.meta`, and
-    ///     `bert_model.ckpt.data-00000-of-00001`). In this case, the file URL should be specified
-    ///     as their common prefix (e.g., `bert_model.ckpt`).
+    ///   - reader: CheckpointReader object to load tensors from.
     public mutating func loadTensors(_ reader: CheckpointReader) {
         tokenEmbedding.embeddings = reader.readTensor(name: "bert/embeddings/word_embeddings")
         positionEmbedding.embeddings = reader.readTensor(name: "bert/embeddings/position_embeddings")
