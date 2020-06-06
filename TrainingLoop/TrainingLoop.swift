@@ -224,6 +224,7 @@ public extension TrainingLoop {
     guard let target = lastTarget else { return }
     try handleEvent(.inferencePredictionEnd)
     lastLoss = lossFunction.f(lastOutput!, target)
+    LazyTensorBarrier()
   }
 
   /// The step used for training.
@@ -231,6 +232,7 @@ public extension TrainingLoop {
     try differentiableStep(&self)
     try handleEvent(.updateStart)
     optimizer.update(&model, along: lastGradient!)
+    LazyTensorBarrier()
   }
 }
 
@@ -286,7 +288,7 @@ public extension TrainingLoop {
   ///   - trainingStep: The step used during the training phase of each epoch. The default value
   ///     uses the `trainingStep` method of `TrainingLoop`.
   mutating func fit(
-    for epochs: Int, callbacks: [TrainingLoopCallback<Self>] = [],
+    epochs: Int, callbacks: [TrainingLoopCallback<Self>] = [],
     differentiableStep: (inout Self) throws -> Void = { try $0.differentiableStep() }
   ) throws {
     let callbacksCount = self.callbacks.count
@@ -296,6 +298,8 @@ public extension TrainingLoop {
       
     do{
       try handleEvent(.fitStart)
+      LazyTensorBarrier()
+
       for (i, batches) in training.prefix(epochs).enumerated() {
         epochIndex = i
         do {

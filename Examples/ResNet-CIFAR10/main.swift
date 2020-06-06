@@ -17,19 +17,22 @@ import ImageClassificationModels
 import TensorFlow
 import TrainingLoop
 
-let batchSize = 10
+// TODO: Replace this when macOS does not segfault on use of X10 here.
+#if os(macOS)
+let device = Device.defaultTFEager
+#else
+let device = Device.defaultXLA
+#endif
 
-let dataset = CIFAR10(batchSize: batchSize)
+let dataset = CIFAR10(batchSize: 10, on: device)
 
-// Use the network sized for CIFAR-10
 var model = ResNet(classCount: 10, depth: .resNet56, downsamplingInFirstStage: false)
+model.move(to: device)
 
-// the classic ImageNet optimizer setting diverges on CIFAR-10
-// let optimizer = SGD(for: model, learningRate: 0.1, momentum: 0.9)
-let optimizer = SGD(for: model, learningRate: 0.001)
+var optimizer = SGD(for: model, learningRate: 0.001)
+optimizer = SGD(copying: optimizer, to: device)
 
-// TODO: Selection of XLA device
-// TODO: Callbacks: statistics
+let trainingProgress = TrainingProgress()
 
 var trainingLoop = TrainingLoop(
     training: dataset.training,
@@ -37,6 +40,6 @@ var trainingLoop = TrainingLoop(
     model: model,
     optimizer: optimizer,
     lossFunction: softmaxCrossEntropy,
-    callbacks: [trainingProgress])
+    callbacks: [trainingProgress.update])
 
-try! trainingLoop.fit(for: 10)
+try! trainingLoop.fit(epochs: 10)
