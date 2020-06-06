@@ -28,22 +28,15 @@ var model = ResNet(classCount: 10, depth: .resNet56, downsamplingInFirstStage: f
 // let optimizer = SGD(for: model, learningRate: 0.1, momentum: 0.9)
 let optimizer = SGD(for: model, learningRate: 0.001)
 
-func softmaxLoss(logits: Tensor<Float>, labels: Tensor<Int32>) -> Tensor<Float> {
-    return softmaxCrossEntropy(logits: logits, labels: labels)
-}
-
 // TODO: Selection of XLA device
-// TODO: Callbacks: progress, statistics
+// TODO: Callbacks: statistics
 
 var trainingLoop = TrainingLoop(
     training: dataset.training,
     validation: dataset.validation,
     model: model,
     optimizer: optimizer,
-    lossFunction: softmaxLoss)
+    lossFunction: softmaxCrossEntropy,
+    callbacks: [trainingProgress])
 
-print("Starting training.")
-
-trainingLoop.fit(for: 10)
-
-print("Completed training.")
+try! trainingLoop.fit(for: 10)

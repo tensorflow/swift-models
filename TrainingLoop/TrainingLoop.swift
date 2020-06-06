@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import ModelSupport
 import TensorFlow
 
 // Workaround https://bugs.swift.org/browse/TF-1122 that prevents us from registering a
