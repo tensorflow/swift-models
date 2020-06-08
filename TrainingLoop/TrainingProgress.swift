@@ -19,11 +19,13 @@ let progressBarLength = 30
 public class TrainingProgress {
   var statistics: TrainingStatistics?
   let metrics: Set<TrainingMetrics>
+  let liveStatistics: Bool
 
-  public init(metrics: Set<TrainingMetrics> = [.loss]) {
+  public init(metrics: Set<TrainingMetrics> = [.accuracy, .loss], liveStatistics: Bool = true) {
     self.metrics = metrics
-    if metrics.contains(.loss) {
-      statistics = TrainingStatistics()
+    self.liveStatistics = liveStatistics
+    if !metrics.isEmpty {
+      statistics = TrainingStatistics(metrics: metrics)
     }
   }
 
@@ -47,6 +49,10 @@ public class TrainingProgress {
     if metrics.contains(.loss) {
       result += " - loss: \(String(format: "%.4f", statistics!.averageLoss()))"
     }
+    if metrics.contains(.accuracy) {
+      result += " - accuracy: \(String(format: "%.4f", statistics!.accuracy()))"
+    }
+
     return result
   }
 
@@ -65,7 +71,12 @@ public class TrainingProgress {
       }
       let epochProgress = Float(batchIndex + 1) / Float(batchCount)
       let progressBarComponent = progressBar(progress: epochProgress, length: progressBarLength)
-      let metricDescriptionComponent = metricDescription()
+      let metricDescriptionComponent: String
+      if liveStatistics || (batchCount == (batchIndex + 1)) {
+        metricDescriptionComponent = metricDescription()
+      } else {
+        metricDescriptionComponent = ""
+      }
       print(
         "\u{1B}[1A\u{1B}[K\(batchIndex + 1)/\(batchCount) \(progressBarComponent)\(metricDescriptionComponent)"
       )

@@ -17,7 +17,8 @@ import ImageClassificationModels
 import TensorFlow
 import TrainingLoop
 
-// TODO: Replace this when macOS does not segfault on use of X10 here.
+// Until https://github.com/tensorflow/swift-models/issues/588 is fixed, default to the eager-mode
+// device on macOS instead of X10.
 #if os(macOS)
   let device = Device.defaultTFEager
 #else
