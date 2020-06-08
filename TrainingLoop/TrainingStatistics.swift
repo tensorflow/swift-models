@@ -13,26 +13,26 @@
 // limitations under the License.
 
 public enum TrainingMetrics {
-    case loss
+  case loss
 }
 
 public class TrainingStatistics {
-    var batchLosses: [Float] = []
-    
-    func averageLoss() -> Float {
-        return batchLosses.reduce(0.0, +) / Float(batchLosses.count)
-    }
+  var batchLosses: [Float] = []
 
-    public func record<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
-        switch event {
-        case .epochStart:
-            batchLosses.removeAll()
-        case .batchEnd:
-            if let loss = loop.lastLoss {
-                batchLosses.append(loss.scalarized())
-            }
-        default:
-            return
-        }
+  func averageLoss() -> Float {
+    return batchLosses.reduce(0.0, +) / Float(batchLosses.count)
+  }
+
+  public func record<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
+    switch event {
+    case .epochStart:
+      batchLosses.removeAll()
+    case .batchEnd:
+      if let loss = loop.lastLoss {
+        batchLosses.append(loss.scalarized())
+      }
+    default:
+      return
     }
+  }
 }

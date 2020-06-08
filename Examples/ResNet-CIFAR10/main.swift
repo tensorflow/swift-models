@@ -19,9 +19,9 @@ import TrainingLoop
 
 // TODO: Replace this when macOS does not segfault on use of X10 here.
 #if os(macOS)
-let device = Device.defaultTFEager
+  let device = Device.defaultTFEager
 #else
-let device = Device.defaultXLA
+  let device = Device.defaultXLA
 #endif
 
 let dataset = CIFAR10(batchSize: 10, on: device)
@@ -35,11 +35,11 @@ optimizer = SGD(copying: optimizer, to: device)
 let trainingProgress = TrainingProgress()
 
 var trainingLoop = TrainingLoop(
-    training: dataset.training,
-    validation: dataset.validation,
-    model: model,
-    optimizer: optimizer,
-    lossFunction: softmaxCrossEntropy,
-    callbacks: [trainingProgress.update])
+  training: dataset.training,
+  validation: dataset.validation,
+  model: model,
+  optimizer: optimizer,
+  lossFunction: softmaxCrossEntropy,
+  callbacks: [trainingProgress.update])
 
 try! trainingLoop.fit(epochs: 10)

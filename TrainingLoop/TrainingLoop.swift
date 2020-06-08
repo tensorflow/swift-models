@@ -30,10 +30,14 @@ public final class LossFunctionWrapper<Output: Differentiable, Target> {
 public protocol TrainingLoopProtocol {
   // Associatedtypes
   /// The type of the sequence of epochs for the training data.
-  associatedtype Training where Training: Sequence, Training.Element: Collection,
+  associatedtype Training
+  where
+    Training: Sequence, Training.Element: Collection,
     Training.Element.Element == LabeledData<Opt.Model.Input, Target>
   /// The type of the collection of batches for the validation data.
-  associatedtype Validation where Validation: Collection,
+  associatedtype Validation
+  where
+    Validation: Collection,
     Validation.Element == LabeledData<Opt.Model.Input, Target>
   /// The type of the target of our model.
   associatedtype Target
@@ -124,8 +128,9 @@ public enum TrainingLoopEvent {
 }
 
 /// Callbacks that can inject custom behavior in a training loop.
-public typealias TrainingLoopCallback<L: TrainingLoopProtocol>
-  = (_ loop: inout L, _ event: TrainingLoopEvent) throws -> Void
+public typealias TrainingLoopCallback<L: TrainingLoopProtocol> = (
+  _ loop: inout L, _ event: TrainingLoopEvent
+) throws -> Void
 
 /// A generic training loop.
 ///
@@ -135,7 +140,8 @@ public typealias TrainingLoopCallback<L: TrainingLoopProtocol>
 /// - Parameter `Opt`: the type of the optimizer used.
 public struct TrainingLoop<
   Training: Sequence, Validation: Collection, Target, Opt: Optimizer
->: TrainingLoopProtocol where
+>: TrainingLoopProtocol
+where
   Training.Element: Collection, Training.Element.Element == LabeledData<Opt.Model.Input, Target>,
   Validation.Element == LabeledData<Opt.Model.Input, Target>, Opt.Model: Module
 {
@@ -151,13 +157,13 @@ public struct TrainingLoop<
   // In a wrapper for now because of TF-1122.
   /// The type of the loss function.
   public typealias LossFunction = LossFunctionWrapper<Output, Target>
-      
+
   // Data
   /// The training epochs.
   public let training: Training
   /// The validation batches.
   public let validation: Validation
-  
+
   // Model, optimizer and loss function
   /// The model.
   public var model: Model
@@ -165,11 +171,11 @@ public struct TrainingLoop<
   public var optimizer: Opt
   /// The loss function
   public var lossFunction: LossFunction
-      
+
   // Callbacks
   /// The callbacks used to customize the training loop.
   public var callbacks: [TrainingLoopCallback<Self>] = []
-  
+
   // Temporary data
   /// The last input fed to the model.
   public var lastInput: Input? = nil
@@ -189,13 +195,15 @@ public struct TrainingLoop<
   public var batchCount: Int? = nil
   /// The index of the current batch.
   public var batchIndex: Int? = nil
-      
+
   /// Creates an instance from `training` and `validation` data, a `model`, an `optimizer` and a
   /// `lossFunction`.
   ///
   /// Parameter callbacks: Callbacks that the `TrainingLoop` will use in every call to fit.
-  public init(training: Training, validation: Validation, model: Model, optimizer: Opt,
-      lossFunction: @escaping LossFunction.F, callbacks: [TrainingLoopCallback<Self>] = []) {
+  public init(
+    training: Training, validation: Validation, model: Model, optimizer: Opt,
+    lossFunction: @escaping LossFunction.F, callbacks: [TrainingLoopCallback<Self>] = []
+  ) {
     self.training = training
     self.validation = validation
     self.model = model
@@ -205,9 +213,9 @@ public struct TrainingLoop<
   }
 }
 
-public extension TrainingLoop {
+extension TrainingLoop {
   /// The default differentiable step.
-  mutating func differentiableStep() throws {
+  public mutating func differentiableStep() throws {
     guard let data = lastInput else { return }
     guard let target = lastTarget else { return }
     (lastLoss, lastGradient) = valueWithGradient(at: model) { (model: Model) -> Tensor<Float> in
@@ -216,9 +224,9 @@ public extension TrainingLoop {
       return lossFunction.f(predictions, target)
     }
   }
-    
+
   /// The step used for inference.
-  mutating func inferenceStep() throws {
+  public mutating func inferenceStep() throws {
     guard let data = lastInput else { return }
     lastOutput = model(data)
     guard let target = lastTarget else { return }
@@ -228,7 +236,7 @@ public extension TrainingLoop {
   }
 
   /// The step used for training.
-  mutating func trainingStep(differentiableStep: (inout Self) throws -> Void) throws {
+  public mutating func trainingStep(differentiableStep: (inout Self) throws -> Void) throws {
     try differentiableStep(&self)
     try handleEvent(.updateStart)
     optimizer.update(&model, along: lastGradient!)
@@ -279,7 +287,7 @@ extension TrainingLoop {
   }
 }
 
-public extension TrainingLoop {
+extension TrainingLoop {
   /// Fit the model for `epochs` using `callbacks` to customize the default training loop.
   ///
   /// - Parameters:
@@ -287,7 +295,7 @@ public extension TrainingLoop {
   ///     uses the `inferenceStep` method of `TrainingLoop`.
   ///   - trainingStep: The step used during the training phase of each epoch. The default value
   ///     uses the `trainingStep` method of `TrainingLoop`.
-  mutating func fit(
+  public mutating func fit(
     epochs: Int, callbacks: [TrainingLoopCallback<Self>] = [],
     differentiableStep: (inout Self) throws -> Void = { try $0.differentiableStep() }
   ) throws {
@@ -295,8 +303,8 @@ public extension TrainingLoop {
     self.callbacks += callbacks
     defer { self.callbacks = Array(self.callbacks.prefix(callbacksCount)) }
     epochCount = epochs
-      
-    do{
+
+    do {
       try handleEvent(.fitStart)
       LazyTensorBarrier()
 
@@ -309,8 +317,11 @@ public extension TrainingLoop {
           do {
             Context.local.learningPhase = .training
             try handleEvent(.trainingStart)
-            try multipleSteps(on: batches, step: {
-              try $0.trainingStep(differentiableStep: differentiableStep) })
+            try multipleSteps(
+              on: batches,
+              step: {
+                try $0.trainingStep(differentiableStep: differentiableStep)
+              })
           } catch TrainingLoopAction.cancelTraining {}
           try handleEvent(.trainingEnd)
 

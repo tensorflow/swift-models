@@ -17,7 +17,8 @@ import TensorFlow
 // This is a convenience function to provide a two-argument version of softmaxCrossEntropy()
 // for common image-based training loops.
 @differentiable
-public func softmaxCrossEntropy<Scalar>(logits: Tensor<Scalar>, labels: Tensor<Int32>) -> Tensor<Scalar> where Scalar : TensorFlowFloatingPoint {
-    return softmaxCrossEntropy(logits: logits, labels: labels, reduction: _mean)
+public func softmaxCrossEntropy<Scalar>(logits: Tensor<Scalar>, labels: Tensor<Int32>) -> Tensor<
+  Scalar
+> where Scalar: TensorFlowFloatingPoint {
+  return softmaxCrossEntropy(logits: logits, labels: labels, reduction: _mean)
 }
-

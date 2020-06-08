@@ -17,59 +17,61 @@ import Foundation
 let progressBarLength = 30
 
 public class TrainingProgress {
-    var statistics: TrainingStatistics?
-    let metrics: Set<TrainingMetrics>
-    
-    public init(metrics: Set<TrainingMetrics> = [.loss]) {
-        self.metrics = metrics
-        if metrics.contains(.loss) {
-            statistics = TrainingStatistics()
-        }
-    }
-    
-    func progressBar(progress: Float, length: Int) -> String {
-        let progressSteps = Int(round(Float(length) * progress))
-        let leading = String(repeating: "=", count: progressSteps)
-        let separator: String
-        let trailing: String
-        if progressSteps < progressBarLength {
-            separator = ">"
-            trailing = String(repeating: ".", count: progressBarLength - progressSteps - 1)
-        } else {
-            separator = ""
-            trailing = ""
-        }
-        return "[\(leading)\(separator)\(trailing)]"
-    }
-    
-    func metricDescription() -> String {
-        var result: String = ""
-        if metrics.contains(.loss) {
-            result += " - loss: \(String(format: "%.4f", statistics!.averageLoss()))"
-        }
-        return result
-    }
+  var statistics: TrainingStatistics?
+  let metrics: Set<TrainingMetrics>
 
-    public func update<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
-        try statistics?.record(&loop, event: event)
-        
-        switch event {
-        case .epochStart:
-            guard let epochIndex = loop.epochIndex, let epochCount = loop.epochCount else {
-                return
-            }
-            print("Epoch \(epochIndex + 1)/\(epochCount)\n")
-        case .batchEnd:
-            guard let batchIndex = loop.batchIndex, let batchCount = loop.batchCount else {
-                return
-            }
-            let epochProgress = Float(batchIndex + 1) / Float(batchCount)
-            let progressBarComponent = progressBar(progress: epochProgress, length: progressBarLength)
-            let metricDescriptionComponent = metricDescription()
-            print("\u{1B}[1A\u{1B}[K\(batchIndex + 1)/\(batchCount) \(progressBarComponent)\(metricDescriptionComponent)")
-        case .validationStart:
-            print("")
-        default: break
-        }
+  public init(metrics: Set<TrainingMetrics> = [.loss]) {
+    self.metrics = metrics
+    if metrics.contains(.loss) {
+      statistics = TrainingStatistics()
     }
+  }
+
+  func progressBar(progress: Float, length: Int) -> String {
+    let progressSteps = Int(round(Float(length) * progress))
+    let leading = String(repeating: "=", count: progressSteps)
+    let separator: String
+    let trailing: String
+    if progressSteps < progressBarLength {
+      separator = ">"
+      trailing = String(repeating: ".", count: progressBarLength - progressSteps - 1)
+    } else {
+      separator = ""
+      trailing = ""
+    }
+    return "[\(leading)\(separator)\(trailing)]"
+  }
+
+  func metricDescription() -> String {
+    var result: String = ""
+    if metrics.contains(.loss) {
+      result += " - loss: \(String(format: "%.4f", statistics!.averageLoss()))"
+    }
+    return result
+  }
+
+  public func update<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
+    try statistics?.record(&loop, event: event)
+
+    switch event {
+    case .epochStart:
+      guard let epochIndex = loop.epochIndex, let epochCount = loop.epochCount else {
+        return
+      }
+      print("Epoch \(epochIndex + 1)/\(epochCount)\n")
+    case .batchEnd:
+      guard let batchIndex = loop.batchIndex, let batchCount = loop.batchCount else {
+        return
+      }
+      let epochProgress = Float(batchIndex + 1) / Float(batchCount)
+      let progressBarComponent = progressBar(progress: epochProgress, length: progressBarLength)
+      let metricDescriptionComponent = metricDescription()
+      print(
+        "\u{1B}[1A\u{1B}[K\(batchIndex + 1)/\(batchCount) \(progressBarComponent)\(metricDescriptionComponent)"
+      )
+    case .validationStart:
+      print("")
+    default: break
+    }
+  }
 }
