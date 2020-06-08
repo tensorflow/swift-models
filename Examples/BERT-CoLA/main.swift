@@ -44,7 +44,9 @@ bertClassifier.move(to: device)
 // Google and so the batch size setting here is expected to differ from that one.
 let maxSequenceLength = 128
 let batchSize = 1024
-let stepsPerBatch = 1068 // function of training set size and batching configuration
+let epochCount = 3
+let stepsPerEpoch = 1068 // function of training set size and batching configuration
+let peakLearningRate: Float = 2e-5
 
 var cola = try CoLA(
   taskDirectoryURL: workspaceURL,
@@ -68,7 +70,7 @@ var optimizer = x10_optimizers_optimizer.GeneralOptimizer(
     for: bertClassifier,
     TensorVisitorPlan(bertClassifier.differentiableVectorView),
     defaultOptimizer: makeWeightDecayedAdam(
-      learningRate: 2e-5,
+      learningRate: peakLearningRate,
       beta1: beta1,
       beta2: beta2
     )
@@ -76,10 +78,10 @@ var optimizer = x10_optimizers_optimizer.GeneralOptimizer(
 
 var scheduledLearningRate = LinearlyDecayedParameter(
   baseParameter: LinearlyWarmedUpParameter(
-      baseParameter: FixedParameter<Float>(2e-5),
+      baseParameter: FixedParameter<Float>(peakLearningRate),
       warmUpStepCount: 10,
       warmUpOffset: 0),
-  slope: -(2e-5 / (Float(stepsPerBatch) * 3)),  // The LR decays linearly to zero.
+  slope: -(peakLearningRate / Float(stepsPerEpoch * epochCount)),  // The LR decays linearly to zero.
   startStep: 10
 )
 
