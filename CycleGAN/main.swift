@@ -19,44 +19,10 @@ import Datasets
 
 let options = Options.parseOrExit()
 
-let datasetFolder: URL
-let trainFolderA: URL
-let trainFolderB: URL
-let testFolderA: URL
-let testFolderB: URL
-
-if let datasetPath = options.datasetPath {
-    datasetFolder = URL(fileURLWithPath: datasetPath, isDirectory: true)
-    trainFolderA = datasetFolder.appendingPathComponent("trainA")
-    trainFolderB = datasetFolder.appendingPathComponent("trainB")
-    testFolderA = datasetFolder.appendingPathComponent("testA")
-    testFolderB = datasetFolder.appendingPathComponent("testB")
-} else {
-    func downloadZebraDataSetIfNotPresent(to directory: URL) {
-        let downloadPath = directory.appendingPathComponent("horse2zebra").path
-        let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
-        let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: downloadPath)
-        let directoryEmpty = (contentsOfDir == nil) || (contentsOfDir!.isEmpty)
-
-        guard !directoryExists || directoryEmpty else { return }
-
-        let location = URL(
-            string: "https://people.eecs.berkeley.edu/~taesung_park/CycleGAN/datasets/horse2zebra.zip")!
-        let _ = DatasetUtilities.downloadResource(
-            filename: "horse2zebra", fileExtension: "zip",
-            remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
-    }
-
-    datasetFolder = DatasetUtilities.defaultDirectory.appendingPathComponent("CycleGAN", isDirectory: true)
-    downloadZebraDataSetIfNotPresent(to: datasetFolder)
-    trainFolderA = datasetFolder.appendingPathComponent("horse2zebra/trainA")
-    trainFolderB = datasetFolder.appendingPathComponent("horse2zebra/trainB")
-    testFolderA = datasetFolder.appendingPathComponent("horse2zebra/testA")
-    testFolderB = datasetFolder.appendingPathComponent("horse2zebra/testB")
-}
-
-let trainDatasetA = try Images(folderURL: trainFolderA)
-let trainDatasetB = try Images(folderURL: trainFolderB)
+let dataset = try! CycleGANDataset(
+    from: options.datasetPath,
+    trainBatchSize: 1,
+    testBatchSize: 1)
 
 var generatorG = ResNetGenerator(inputChannels: 3, outputChannels: 3, blocks: 9, ngf: 64, normalization: InstanceNorm2D.self)
 var generatorF = ResNetGenerator(inputChannels: 3, outputChannels: 3, blocks: 9, ngf: 64, normalization: InstanceNorm2D.self)
@@ -68,30 +34,27 @@ let optimizerGG = Adam(for: generatorG, learningRate: 0.0002, beta1: 0.5)
 let optimizerDX = Adam(for: discriminatorX, learningRate: 0.0002, beta1: 0.5)
 let optimizerDY = Adam(for: discriminatorY, learningRate: 0.0002, beta1: 0.5)
 
-let epochs = options.epochs
-let batchSize = 1
+let epochCount = options.epochs
 let lambdaL1 = Tensorf(10)
 let _zeros = Tensorf.zero
 let _ones = Tensorf.one
 
 var step = 0
 
-var sampleImage = trainDatasetA.batcher.dataset[0].expandingShape(at: 0)
-let sampleImageURL = URL(string: FileManager.default.currentDirectoryPath)!.appendingPathComponent("sample.jpg")
+var validationImage = dataset.trainSamples[0].domainA.expandingShape(at: 0)
+let validationImageURL = URL(string: FileManager.default.currentDirectoryPath)!.appendingPathComponent("sample.jpg")
 
 // MARK: Train
 
-for epoch in 0 ..< epochs {
+for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
     print("Epoch \(epoch) started at: \(Date())")
     Context.local.learningPhase = .training
-
-    let zippedAB = zip(trainDatasetA.batcher.sequenced(), trainDatasetB.batcher.sequenced())
     
-    for batch in zippedAB {
+    for batch in epochBatches {
         Context.local.learningPhase = .training
         
-        let inputX = batch.0
-        let inputY = batch.1
+        let inputX = batch.domainA
+        let inputY = batch.domainB
 
         // we do it outside of GPU scope so that dataset shuffling happens on CPU side
         let concatanatedImages = inputX.concatenated(with: inputY)
@@ -187,10 +150,10 @@ for epoch in 0 ..< epochs {
         if step % options.sampleLogPeriod == 0 {
             Context.local.learningPhase = .inference
             
-            let fakeSample = generatorG(sampleImage) * 0.5 + 0.5
+            let fakeSample = generatorG(validationImage) * 0.5 + 0.5
 
             let fakeSampleImage = Image(tensor: fakeSample[0] * 255)
-            fakeSampleImage.save(to: sampleImageURL, format: .rgb)
+            fakeSampleImage.save(to: validationImageURL, format: .rgb)
 
             print("GeneratorG loss: \(gLoss.scalars[0])")
             print("GeneratorF loss: \(fLoss.scalars[0])")
@@ -204,20 +167,16 @@ for epoch in 0 ..< epochs {
 
 // MARK: Final test
 
-let testDatasetA = try Images(folderURL: testFolderA).batcher.sequenced()
-let testDatasetB = try Images(folderURL: testFolderB).batcher.sequenced()
-
-let zippedTest = zip(testDatasetA, testDatasetB)
-
 let aResultsFolder = try createDirectoryIfNeeded(path: FileManager.default
                                                                   .currentDirectoryPath + "/testA_results")
 let bResultsFolder = try createDirectoryIfNeeded(path: FileManager.default
                                                                   .currentDirectoryPath + "/testB_results")
 
 var testStep = 0
-for testBatch in zippedTest {
-    let realX = testBatch.0
-    let realY = testBatch.1
+for testBatch in dataset.testing {
+// for testBatch in zippedTest {
+    let realX = testBatch.domainA
+    let realY = testBatch.domainB
 
     let fakeY = generatorG(realX)
     let fakeX = generatorF(realY)
