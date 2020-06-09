@@ -86,7 +86,7 @@ let package = Package(
             exclude: ["UI/Windows/main.swift", "UI/macOS/main.swift"]),
         .target(
             name: "GPT2-WikiText2",
-            dependencies: ["Batcher", "Datasets", "TextModels"],
+            dependencies: ["Datasets", "TextModels"],
             path: "Examples/GPT2-WikiText2",
             exclude: ["UI/Windows/main.swift"]),
         .testTarget(name: "TextTests", dependencies: ["TextModels"]),
@@ -112,7 +112,7 @@ let package = Package(
         .testTarget(name: "SupportTests", dependencies: ["ModelSupport"]),
         .target(
             name: "CycleGAN",
-            dependencies: ["Batcher", "ArgumentParser", "ModelSupport", "Datasets"],
+            dependencies: ["ArgumentParser", "ModelSupport", "Datasets"],
             path: "CycleGAN"
         ),
         .target(

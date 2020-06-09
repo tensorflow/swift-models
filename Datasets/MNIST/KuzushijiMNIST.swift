@@ -18,7 +18,6 @@
 
 import Foundation
 import TensorFlow
-import Batcher
 
 public struct KuzushijiMNIST<Entropy: RandomNumberGenerator> {
   /// Type of the collection of non-collated batches.
