@@ -59,6 +59,21 @@ class SwiftBenchmark(tf.test.Benchmark):
     result = run_swift_wordseg_benchmark(name=self.benchmark_name, sentence_length='14', backend='eager')
     self.report_benchmark(**result)
 
+  def sentence_4_x10(self):
+    """Runner-callable benchmark entry point for WordSeg sentence-length 4 benchmark on X10."""
+    result = run_swift_wordseg_benchmark(name=self.benchmark_name, sentence_length='4', backend='x10')
+    self.report_benchmark(**result)
+
+  def sentence_8_x10(self):
+    """Runner-callable benchmark entry point for WordSeg sentence-length 8 benchmark on X10."""
+    result = run_swift_wordseg_benchmark(name=self.benchmark_name, sentence_length='8', backend='x10')
+    self.report_benchmark(**result)
+
+  def sentence_14_x10(self):
+    """Runner-callable benchmark entry point for WordSeg sentence-length 14 benchmark on X10."""
+    result = run_swift_wordseg_benchmark(name=self.benchmark_name, sentence_length='14', backend='x10')
+    self.report_benchmark(**result)
+
   def training(self):
     """Runner-callable benchmark entry point for eager training benchmark."""
     result = run_swift_benchmark(name=self.benchmark_name, variety='training', backend='eager')
