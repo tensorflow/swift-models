@@ -38,7 +38,8 @@ public struct WordSegDataset {
   /// A pointer to source data.
   private struct DownloadableArchive {
 
-    /// The location of the archive.
+    /// A [web resource](https://en.wikipedia.org/wiki/Web_resource) that can be unpacked
+    /// into data files described by other properties of `self`. 
     let location = URL(string: "https://s3.eu-west-2.amazonaws.com/k-kawakami/seg.zip")!
 
     /// The path to the test source within the unpacked archive.
