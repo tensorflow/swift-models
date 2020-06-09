@@ -1,3 +1,4 @@
 add_subdirectory(ImageClassification)
+add_subdirectory(LayerInit)
 add_subdirectory(Recommendation)
 add_subdirectory(Text)
