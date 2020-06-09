@@ -14,11 +14,14 @@
 
 import TensorFlow
 
+/// Metrics that can be tracked or displayed during training or validation.
 public enum TrainingMetrics {
   case accuracy
   case loss
 }
 
+/// A callback-based handler of statistics obtained during a training loop. This can be employed
+/// by progress bars, recorders, or logging functionality.
 public class TrainingStatistics {
   let metrics: Set<TrainingMetrics>
   var totalBatchLoss: Tensor<Float>?
@@ -26,10 +29,16 @@ public class TrainingStatistics {
   var totalCorrect: Tensor<Int32>?
   var totalExamples: Int32?
 
+  /// Initializes the statistics tracker with
+  ///
+  /// - Parameters:
+  ///   - metrics: A set of TrainingMetrics to capture during the training loop.
   public init(metrics: Set<TrainingMetrics>) {
     self.metrics = metrics
   }
   
+  /// The current average loss, calculated from the batches seen since the previous start of
+  /// training or validation.
   public func averageLoss() -> Float {
     guard let totalBatches = totalBatches, let totalBatchLoss = totalBatchLoss else {
       return Float.nan
@@ -37,6 +46,8 @@ public class TrainingStatistics {
     return (totalBatchLoss / totalBatches).scalarized()
   }
 
+  /// The current accuracy, calculated from the batches seen since the previous start of
+  /// training or validation. Not all models support class-based accuracy as a metric.
   public func accuracy() -> Float {
     guard let totalCorrect = totalCorrect, let totalExamples = totalExamples else {
       return Float.nan
@@ -44,6 +55,12 @@ public class TrainingStatistics {
     return Float(totalCorrect.scalarized()) / Float(totalExamples)
   }
 
+  /// The callback used to hook into the TrainingLoop. This is updated once per event.
+  ///
+  /// - Parameters:
+  ///   - loop: The TrainingLoop where an event has occurred. This can be accessed to obtain
+  ///     the last measure loss and other values.
+  ///   - event: The training or validation event that this callback is responding to.
   public func record<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
     switch event {
     case .trainingStart, .validationStart:
@@ -70,7 +87,8 @@ public class TrainingStatistics {
   
   func measureAccuracy<L: TrainingLoopProtocol>(_ loop: L) {
     guard let possibleOutput = loop.lastOutput, let possibleTarget = loop.lastTarget else { return }
-    guard let output = possibleOutput as? Tensor<Float>, let target = possibleTarget as? Tensor<Int32> else {
+    guard let output = possibleOutput as? Tensor<Float>,
+      let target = possibleTarget as? Tensor<Int32> else {
       fatalError(
         "For accuracy measurements, the model output must be Tensor<Float>, and the labels must be Tensor<Int>.")
     }
@@ -86,4 +104,3 @@ public class TrainingStatistics {
     }
   }
 }
-

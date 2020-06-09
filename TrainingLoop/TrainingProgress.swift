@@ -16,11 +16,23 @@ import Foundation
 
 let progressBarLength = 30
 
+/// A progress bar that displays to the console as a model trains, and as validation is performed.
+/// It hooks into a TrainingLoop via a callback method.
 public class TrainingProgress {
   var statistics: TrainingStatistics?
   let metrics: Set<TrainingMetrics>
   let liveStatistics: Bool
 
+  /// Initializes the progress bar with the metrics to be displayed (if any), and whether to
+  /// provide a live update of training and validation metrics as they are calculated.
+  ///
+  /// - Parameters:
+  ///   - metrics: A set of TrainingMetrics that specify which metrics to monitor and display
+  ///     during training and validation. By default, all available metrics are selected.
+  ///   - liveStatistics: Whether or not to update the metrics at the command line on every batch
+  ///     as it is processed, or if these values should just be provided at the end of an epoch.
+  ///     This has an impact on performance, due to materialization of tensors, and updating values
+  ///     on every batch can reduce training speed by up to 30%.
   public init(metrics: Set<TrainingMetrics> = [.accuracy, .loss], liveStatistics: Bool = true) {
     self.metrics = metrics
     self.liveStatistics = liveStatistics
@@ -56,6 +68,12 @@ public class TrainingProgress {
     return result
   }
 
+  /// The callback used to hook into the TrainingLoop. This is updated once per event.
+  ///
+  /// - Parameters:
+  ///   - loop: The TrainingLoop where an event has occurred. This can be accessed to obtain
+  ///     the last measure loss and other values.
+  ///   - event: The training or validation event that this callback is responding to.
   public func update<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
     try statistics?.record(&loop, event: event)
 

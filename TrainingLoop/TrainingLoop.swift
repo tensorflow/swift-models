@@ -232,7 +232,6 @@ extension TrainingLoop {
     guard let target = lastTarget else { return }
     try handleEvent(.inferencePredictionEnd)
     lastLoss = lossFunction.f(lastOutput!, target)
-    LazyTensorBarrier()
   }
 
   /// The step used for training.
@@ -240,7 +239,6 @@ extension TrainingLoop {
     try differentiableStep(&self)
     try handleEvent(.updateStart)
     optimizer.update(&model, along: lastGradient!)
-    LazyTensorBarrier()
   }
 }
 
@@ -283,6 +281,7 @@ extension TrainingLoop {
         try step(&self)
       } catch TrainingLoopAction.cancelBatch {}
       try handleEvent(.batchEnd)
+      LazyTensorBarrier()
     }
   }
 }
