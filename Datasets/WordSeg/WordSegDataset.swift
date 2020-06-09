@@ -27,10 +27,10 @@ public struct WordSegDataset {
   public let trainingPhrases: [Phrase]
 
   /// The test data.
-  public private(set) var testingPhrases: [Phrase]?
+  public private(set) var testingPhrases: [Phrase]
 
   /// The validation data.
-  public private(set) var validationPhrases: [Phrase]?
+  public private(set) var validationPhrases: [Phrase]
 
   /// The union of all characters in the included dataset.
   public let alphabet: Alphabet
@@ -52,24 +52,11 @@ public struct WordSegDataset {
     let validationFilePath = "br/br-text/va.txt"
   }
 
-  /// Returns all phrases parsed from `data` in UTF8.
+  /// Returns phrases parsed from `data` in UTF8, separated by newlines.
   private static func load(data: Data) -> [String] {
-    guard let contents: String = String(data: data, encoding: .utf8) else {
-      return []
-    }
-    return load(contents: contents)
-  }
-
-  /// Returns all phrases from `contents`.
-  private static func load(contents: String) -> [String] {
-    var strings = [String]()
-
-    for line in contents.components(separatedBy: .newlines) {
-      let trimmed = line.trimmingCharacters(in: .whitespaces)
-      if trimmed.isEmpty { continue }
-      strings.append(trimmed)
-    }
-    return strings
+    let contents = String(decoding: data, as: Unicode.UTF8.self)
+    let splitContents = contents.split(separator: "\n", omittingEmptySubsequences: true)
+    return splitContents.map { String($0) }
   }
 
   /// Returns the union of all characters in `training` and `otherSequences`.
@@ -113,7 +100,7 @@ public struct WordSegDataset {
     var phrases = [Phrase]()
 
     for data in dataset {
-      let trimmed = data.components(separatedBy: .whitespaces).joined()
+      let trimmed = data.split(separator: " ", omittingEmptySubsequences: true).joined()
       guard
         let numericalizedText = try? CharacterSequence(
           alphabet: alphabet, appendingEoSTo: trimmed)
@@ -175,26 +162,15 @@ public struct WordSegDataset {
       options: .alwaysMapped)
     let training = Self.load(data: trainingData)
 
-    let validation: [String]
-    let testing: [String]
+    let validationData = try Data(
+      contentsOf: URL(fileURLWithPath: validationFile ?? "/dev/null"),
+      options: .alwaysMapped)
+    let validation = Self.load(data: validationData)
 
-    if let validationFile = validationFile {
-      let data = try Data(
-        contentsOf: URL(fileURLWithPath: validationFile),
-        options: .alwaysMapped)
-      validation = Self.load(data: data)
-    } else {
-      validation = [String]()
-    }
-
-    if let testingFile = testingFile {
-      let data: Data = try Data(
-        contentsOf: URL(fileURLWithPath: testingFile),
-        options: .alwaysMapped)
-      testing = Self.load(data: data)
-    } else {
-      testing = [String]()
-    }
+    let testingData = try Data(
+      contentsOf: URL(fileURLWithPath: testingFile ?? "/dev/null"),
+      options: .alwaysMapped)
+    let testing = Self.load(data: testingData)
 
     self.alphabet = Self.makeAlphabet(datasets: training, validation, testing)
     self.trainingPhrases = Self.convertDataset(training, alphabet: self.alphabet)

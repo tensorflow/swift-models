@@ -103,11 +103,11 @@ for epoch in 1...maxEpochs {
   trainingLossHistory.append(trainingLoss)
   reduceLROnPlateau(lossHistory: trainingLossHistory, optimizer: optimizer)
 
-  guard let validationPhrases = dataset.validationPhrases else {
+  if dataset.validationPhrases.count < 1 {
     print(
       """
       [Epoch \(epoch)] \
-      Training loss: \(trainingLoss))
+      Training loss: \(trainingLoss)
       """
     )
 
@@ -127,7 +127,7 @@ for epoch in 1...maxEpochs {
   var validationBatchCount = 0
   var validationCharacterCount = 0
   var validationPlainText: String = ""
-  for phrase in validationPhrases {
+  for phrase in dataset.validationPhrases {
     let sentence = phrase.numericalizedText
     var lattice = model.buildLattice(sentence, maxLen: maxLength)
     let score = lattice[sentence.count].semiringScore
@@ -137,7 +137,7 @@ for epoch in 1...maxEpochs {
     validationCharacterCount += sentence.count
 
     // View a sample segmentation once per epoch.
-    if validationBatchCount == validationPhrases.count {
+    if validationBatchCount == dataset.validationPhrases.count {
       let bestPath = lattice.viterbi(sentence: phrase.numericalizedText)
       validationPlainText = Lattice.pathToPlainText(path: bestPath, alphabet: dataset.alphabet)
     }
