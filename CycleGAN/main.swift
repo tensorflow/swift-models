@@ -174,7 +174,6 @@ let bResultsFolder = try createDirectoryIfNeeded(path: FileManager.default
 
 var testStep = 0
 for testBatch in dataset.testing {
-// for testBatch in zippedTest {
     let realX = testBatch.domainA
     let realY = testBatch.domainB
 
