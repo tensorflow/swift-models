@@ -23,13 +23,13 @@ import ModelSupport
 /// https://www.aclweb.org/anthology/P19-1645.pdf.
 public struct WordSegDataset {
 
-  /// The text used for training.
+  /// The training data.
   public let trainingPhrases: [Phrase]
 
-  /// The text used for testing.
+  /// The test data.
   public private(set) var testingPhrases: [Phrase]?
 
-  /// The text used for validation.
+  /// The validation data.
   public private(set) var validationPhrases: [Phrase]?
 
   /// The union of all characters in the included dataset.
@@ -42,17 +42,17 @@ public struct WordSegDataset {
     /// into data files described by other properties of `self`. 
     let location = URL(string: "https://s3.eu-west-2.amazonaws.com/k-kawakami/seg.zip")!
 
-    /// The path to the test source within the unpacked archive.
+    /// The path to the test data within the unpacked archive.
     let testingFilePath = "br/br-text/te.txt"
 
-    /// The path to the training source.
+    /// The path to the training data within the unpacked archive.
     let trainingFilePath = "br/br-text/tr.txt"
 
-    /// The path to the validation source.
+    /// The path to the validation data within the unpacked archive.
     let validationFilePath = "br/br-text/va.txt"
   }
 
-  /// Returns the text of all phrases parsed from `data` in UTF8.
+  /// Returns all phrases parsed from `data` in UTF8.
   private static func load(data: Data) -> [String] {
     guard let contents: String = String(data: data, encoding: .utf8) else {
       return []
@@ -60,7 +60,7 @@ public struct WordSegDataset {
     return load(contents: contents)
   }
 
-  /// Returns the text of all phrases from `contents`.
+  /// Returns all phrases from `contents`.
   private static func load(contents: String) -> [String] {
     var strings = [String]()
 
@@ -127,7 +127,7 @@ public struct WordSegDataset {
     return phrases
   }
 
-  /// Creates an instance containing phrases from the default location.
+  /// Creates an instance containing phrases from the reference archive.
   ///
   /// - Throws: an error in the Cocoa domain, if the default training file
   ///   cannot be read.
