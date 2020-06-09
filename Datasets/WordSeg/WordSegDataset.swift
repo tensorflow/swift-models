@@ -41,7 +41,7 @@ public struct WordSegDataset {
     /// The location of the archive.
     let location = URL(string: "https://s3.eu-west-2.amazonaws.com/k-kawakami/seg.zip")!
 
-    /// The path to the test source.
+    /// The path to the test source within the unpacked archive.
     let testingFilePath = "br/br-text/te.txt"
 
     /// The path to the training source.
