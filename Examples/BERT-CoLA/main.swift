@@ -21,13 +21,20 @@ import x10_optimizers_optimizer
 
 let device = Device.defaultXLA
 
-let bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
-let workspaceURL = URL(
-    fileURLWithPath: "bert_models", isDirectory: true,
-    relativeTo: URL(
-        fileURLWithPath: NSTemporaryDirectory(),
-        isDirectory: true))
-let bert = try BERT.PreTrainedModel.load(bertPretrained)(from: workspaceURL)
+var bertPretrained: BERT.PreTrainedModel
+if CommandLine.arguments.count >= 2 {
+    if CommandLine.arguments[1].lowercased() == "albert" {
+        bertPretrained = BERT.PreTrainedModel.albertBase
+    } else if CommandLine.arguments[1].lowercased() == "roberta" {
+        bertPretrained = BERT.PreTrainedModel.robertaBase
+    } else {
+        bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
+    }
+} else {
+    bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
+}
+
+let bert = try bertPretrained.load()
 var bertClassifier = BERTClassifier(bert: bert, classCount: 1)
 bertClassifier.move(to: device)
 
@@ -47,6 +54,9 @@ let batchSize = 1024
 let epochCount = 3
 let stepsPerEpoch = 1068 // function of training set size and batching configuration
 let peakLearningRate: Float = 2e-5
+
+let workspaceURL = URL(fileURLWithPath: "bert_models", isDirectory: true,
+    relativeTo: URL(fileURLWithPath: NSTemporaryDirectory(),isDirectory: true))
 
 var cola = try CoLA(
   taskDirectoryURL: workspaceURL,
@@ -85,7 +95,7 @@ var scheduledLearningRate = LinearlyDecayedParameter(
   startStep: 10
 )
 
-print("Training BERT for the CoLA task!")
+print("Training \(bertPretrained.name) for the CoLA task!")
 for (epoch, epochBatches) in cola.trainingEpochs.prefix(3).enumerated() {
     print("[Epoch \(epoch + 1)]")
     Context.local.learningPhase = .training
