@@ -36,19 +36,19 @@ public struct WordSegDataset {
   public let alphabet: Alphabet
 
   /// A pointer to source data.
-  private struct ReferenceArchive {
+  private struct DownloadableArchive {
 
     /// The location of the archive.
-    var location = URL(string: "https://s3.eu-west-2.amazonaws.com/k-kawakami/seg.zip")!
+    let location = URL(string: "https://s3.eu-west-2.amazonaws.com/k-kawakami/seg.zip")!
 
     /// The path to the test source.
-    var testingFilePath = "br/br-text/te.txt"
+    let testingFilePath = "br/br-text/te.txt"
 
     /// The path to the training source.
-    var trainingFilePath = "br/br-text/tr.txt"
+    let trainingFilePath = "br/br-text/tr.txt"
 
     /// The path to the validation source.
-    var validationFilePath = "br/br-text/va.txt"
+    let validationFilePath = "br/br-text/va.txt"
   }
 
   /// Returns the text of all phrases parsed from `data` in UTF8.
@@ -131,28 +131,28 @@ public struct WordSegDataset {
   /// - Throws: an error in the Cocoa domain, if the default training file
   ///   cannot be read.
   public init() throws {
-    let referenceArchive = ReferenceArchive()
+    let downloadableArchive = DownloadableArchive()
     let localStorageDirectory: URL = DatasetUtilities.defaultDirectory
       .appendingPathComponent("WordSeg", isDirectory: true)
 
     WordSegDataset.downloadIfNotPresent(
-      to: localStorageDirectory, referenceArchive: referenceArchive)
+      to: localStorageDirectory, downloadableArchive: downloadableArchive)
 
     let archiveFileName =
-      referenceArchive
+      downloadableArchive
       .location.deletingPathExtension().lastPathComponent
     let archiveDirectory =
       localStorageDirectory
       .appendingPathComponent(archiveFileName)
     let trainingFilePath =
       archiveDirectory
-      .appendingPathComponent(referenceArchive.trainingFilePath).path
+      .appendingPathComponent(downloadableArchive.trainingFilePath).path
     let validationFilePath =
       archiveDirectory
-      .appendingPathComponent(referenceArchive.validationFilePath).path
+      .appendingPathComponent(downloadableArchive.validationFilePath).path
     let testingFilePath =
       archiveDirectory
-      .appendingPathComponent(referenceArchive.testingFilePath).path
+      .appendingPathComponent(downloadableArchive.testingFilePath).path
 
     try self.init(
       training: trainingFilePath, validation: validationFilePath,
@@ -226,10 +226,10 @@ public struct WordSegDataset {
     self.testingPhrases = Self.convertDataset(testing, alphabet: self.alphabet)
   }
 
-  /// Downloads and unpacks `referenceArchive` to `directory` if it does not
+  /// Downloads and unpacks `downloadableArchive` to `directory` if it does not
   /// exist locally.
   private static func downloadIfNotPresent(
-    to directory: URL, referenceArchive: ReferenceArchive
+    to directory: URL, downloadableArchive: DownloadableArchive
   ) {
     let downloadPath = directory.path
     let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
@@ -238,9 +238,9 @@ public struct WordSegDataset {
 
     guard !directoryExists || directoryEmpty else { return }
 
-    let remoteRoot = referenceArchive.location.deletingLastPathComponent()
-    let filename = referenceArchive.location.deletingPathExtension().lastPathComponent
-    let fileExtension = referenceArchive.location.pathExtension
+    let remoteRoot = downloadableArchive.location.deletingLastPathComponent()
+    let filename = downloadableArchive.location.deletingPathExtension().lastPathComponent
+    let fileExtension = downloadableArchive.location.pathExtension
 
     // Downloads and extracts dataset files.
     let _ = DatasetUtilities.downloadResource(
