@@ -61,9 +61,9 @@ public struct WordSegDataset {
 
   /// Returns the union of all characters in `training` and `otherSequences`.
   ///
-  /// - Parameter eos: text to be used as the end of sequence marker.
-  /// - Parameter eow: text to be used as the end of word marker.
-  /// - Parameter pad: text to be used as the padding marker.
+  /// - Parameter eos: the end of sequence marker.
+  /// - Parameter eow:the end of word marker.
+  /// - Parameter pad: the padding marker.
   private static func makeAlphabet(
     datasets training: [String],
     _ otherSequences: [String]?...,
