@@ -17,7 +17,14 @@ import Datasets
 
 let epochCount = 12
 let batchSize = 128
-let device = Device.defaultXLA
+
+// Until https://github.com/tensorflow/swift-models/issues/588 is fixed, default to the eager-mode
+// device on macOS instead of X10.
+#if os(macOS)
+  let device = Device.defaultTFEager
+#else
+  let device = Device.defaultXLA
+#endif
 
 let dataset = MNIST(batchSize: batchSize)
 // The LeNet-5 model, equivalent to `LeNet` in `ImageClassificationModels`.
