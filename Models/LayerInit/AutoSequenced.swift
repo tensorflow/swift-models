@@ -27,3 +27,37 @@ extension AutoLayer {
         return AutoSequencedDefinition<Self, T>(first: self, second: other)
     }
 }
+
+public struct AutoSequencedManyInstance<LayerType: Layer>: Layer
+where LayerType.Input == LayerType.Output {
+    var layers: [LayerType]
+
+    @differentiable
+    public func callAsFunction(_ input: LayerType.Input) -> LayerType.Output {
+        return layers.differentiableReduce(input) { $1($0) }
+    }
+}
+
+public struct AutoSequencedMany<LayerType: AutoLayer>: AutoLayer
+where
+  LayerType.OutputShape == LayerType.InputShape,
+  LayerType.InstanceType.Input == LayerType.InstanceType.Output {
+    let layers: [LayerType]
+
+    public typealias InstanceType = AutoSequencedManyInstance<LayerType.InstanceType>
+
+    public init(layers: [LayerType]) {
+        self.layers = layers
+    }
+
+    public func buildModelWithOutputShape(inputShape: LayerType.InputShape) -> (InstanceType, LayerType.OutputShape) {
+        var lastOutputShape = inputShape
+        let builtInstances = self.layers.map({ autoLayer -> LayerType.InstanceType in
+            let (instance, outputShape) = autoLayer.buildModelWithOutputShape(inputShape: lastOutputShape)
+            lastOutputShape = outputShape
+            return instance
+        })
+
+        return (AutoSequencedManyInstance(layers: builtInstances), lastOutputShape)
+    }
+}
