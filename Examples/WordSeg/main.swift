@@ -66,7 +66,7 @@ let modelParameters = SNLM.Parameters(
   order: order
 )
 
-let device = Device.defaultXLA
+let device = Device.defaultTFEager
 
 var model = SNLM(parameters: modelParameters)
 model.move(to: device)
