@@ -63,7 +63,8 @@ let package = Package(
             dependencies: ["ImageClassificationModels", "Datasets", "TrainingLoop"],
             path: "Examples/ResNet-CIFAR10"),
         .target(
-            name: "LeNet-MNIST", dependencies: ["ImageClassificationModels", "Datasets"],
+            name: "LeNet-MNIST",
+            dependencies: ["ImageClassificationModels", "Datasets", "TrainingLoop"],
             path: "Examples/LeNet-MNIST"),
         .target(
             name: "MobileNetV1-Imagenette", dependencies: ["ImageClassificationModels", "Datasets"],
