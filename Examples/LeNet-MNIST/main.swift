@@ -27,7 +27,8 @@ let batchSize = 128
   let device = Device.defaultXLA
 #endif
 
-let dataset = MNIST(batchSize: batchSize)
+let dataset = MNIST(batchSize: batchSize, on: device)
+
 // The LeNet-5 model, equivalent to `LeNet` in `ImageClassificationModels`.
 var classifier = Sequential {
     Conv2D<Float>(filterShape: (5, 5, 1, 6), padding: .same, activation: relu)
