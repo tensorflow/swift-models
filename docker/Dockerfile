@@ -6,7 +6,7 @@ ARG swift_tf_url=https://storage.googleapis.com/swift-tensorflow-artifacts/night
 # Download and extract S4TF
 WORKDIR /swift-tensorflow-toolchain
 RUN if ! curl -fSsL --retry 5 $swift_tf_url -o swift.tar.gz; \
-    then curl -fSsL --retry 5 $swift_tf_url -o swift.tar.gz; \
+    then sleep 30 && curl -fSsL --retry 5 $swift_tf_url -o swift.tar.gz; \
     fi;
 
 RUN mkdir usr \
