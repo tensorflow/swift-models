@@ -28,11 +28,7 @@ struct FractalCommand: ParsableCommand {
 }
 
 extension FractalCommand {
-  struct JuliaSubcommand: ParsableCommand {
-    static var configuration = CommandConfiguration(
-      commandName: "JuliaSet",
-      abstract: "Calculate and save an image of the Julia set.")
-
+  struct Parameters: ParsableArguments {
     @Flag(help: "Use eager backend.")
     var eager: Bool
 
@@ -48,9 +44,6 @@ extension FractalCommand {
     @Option(help: "Tolerance threshold to mark divergence.")
     var tolerance: Float?
 
-    @Option(help: "Complex constant.")
-    var constant: ComplexConstant?
-
     @Option(help: "Output image file.")
     var outputFile: String?
 
@@ -63,27 +56,42 @@ extension FractalCommand {
           "Can't specify both --eager and --x10 backends.")
       }
     }
+  }
+}
+
+extension FractalCommand {
+  struct JuliaSubcommand: ParsableCommand {
+    static var configuration = CommandConfiguration(
+      commandName: "JuliaSet",
+      abstract: "Calculate and save an image of the Julia set.")
+
+    @OptionGroup()
+    var parameters: FractalCommand.Parameters
+    
+    @Option(help: "Complex constant.")
+    var constant: ComplexConstant?
 
     func run() throws {
       let device: Device
-      if x10 {
+      if parameters.x10 {
         device = Device.defaultXLA
       } else {
         device = Device.defaultTFEager
       }
 
       let divergenceGrid = juliaSet(
-        iterations: iterations ?? 200,
+        iterations: parameters.iterations ?? 200,
         constant: constant ?? ComplexConstant(real: -0.8, imaginary: 0.156),
-        tolerance: tolerance ?? 4.0,
-        region: region
+        tolerance: parameters.tolerance ?? 4.0,
+        region: parameters.region
           ?? ComplexRegion(
             realMinimum: -1.7, realMaximum: 1.7, imaginaryMinimum: -1.7, imaginaryMaximum: 1.7),
-        imageSize: imageSize ?? ImageSize(width: 1030, height: 1030), device: device)
+        imageSize: parameters.imageSize ?? ImageSize(width: 1030, height: 1030), device: device)
 
       do {
         try saveFractalImage(
-          divergenceGrid, iterations: iterations ?? 200, fileName: outputFile ?? "julia")
+          divergenceGrid, iterations: parameters.iterations ?? 200,
+          fileName: parameters.outputFile ?? "julia")
       } catch {
         print("Error saving fractal image: \(error)")
       }
@@ -97,51 +105,27 @@ extension FractalCommand {
       commandName: "MandelbrotSet",
       abstract: "Calculate and save an image of the Mandelbrot set.")
 
-    @Flag(help: "Use eager backend.")
-    var eager: Bool
-
-    @Flag(help: "Use X10 backend.")
-    var x10: Bool
-
-    @Option(help: "Number of iterations to run.")
-    var iterations: Int?
-
-    @Option(help: "The region of complex numbers to operate over.")
-    var region: ComplexRegion?
-
-    @Option(help: "Tolerance threshold to mark divergence.")
-    var tolerance: Float?
-
-    @Option(help: "Output image file.")
-    var outputFile: String?
-
-    @Option(help: "Output image size.")
-    var imageSize: ImageSize?
-
-    func validate() throws {
-      guard !(eager && x10) else {
-        throw ValidationError(
-          "Can't specify both --eager and --x10 backends.")
-      }
-    }
+    @OptionGroup()
+    var parameters: FractalCommand.Parameters
 
     func run() throws {
       let device: Device
-      if x10 {
+      if parameters.x10 {
         device = Device.defaultXLA
       } else {
         device = Device.defaultTFEager
       }
       let divergenceGrid = mandelbrotSet(
-        iterations: iterations ?? 200, tolerance: tolerance ?? 4.0,
-        region: region
+        iterations: parameters.iterations ?? 200, tolerance: parameters.tolerance ?? 4.0,
+        region: parameters.region
           ?? ComplexRegion(
             realMinimum: -2.0, realMaximum: 1.0, imaginaryMinimum: -1.3, imaginaryMaximum: 1.3),
-        imageSize: imageSize ?? ImageSize(width: 1030, height: 1030), device: device)
+        imageSize: parameters.imageSize ?? ImageSize(width: 1030, height: 1030), device: device)
 
       do {
         try saveFractalImage(
-          divergenceGrid, iterations: iterations ?? 200, fileName: outputFile ?? "mandelbrot")
+          divergenceGrid, iterations: parameters.iterations ?? 200,
+          fileName: parameters.outputFile ?? "mandelbrot")
       } catch {
         print("Error saving fractal image: \(error)")
       }
