@@ -43,6 +43,19 @@ public struct AutoAvgPool2D<Scalar>: AutoLayer where Scalar: TensorFlowFloatingP
     }
 }
 
+public struct AutoGlobalAvgPool2D<Scalar>: AutoLayer where Scalar: TensorFlowFloatingPoint {
+    public typealias InstanceType = GlobalAvgPool2D<Scalar>
+    public typealias InputShape = (Int, Int, Int)
+    public typealias OutputShape = Int
+
+    public init() {
+    }
+
+    public func buildModelWithOutputShape(inputShape: (Int, Int, Int)) -> (InstanceType, Int) {
+        return (GlobalAvgPool2D<Scalar>(), inputShape.2)
+    }
+}
+
 public struct AutoMaxPool2D<Scalar>: AutoLayer where Scalar: TensorFlowFloatingPoint {
     let poolSize: (Int, Int)
     let strides: (Int, Int)
