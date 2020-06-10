@@ -55,11 +55,12 @@ public struct CharacterSequence: Hashable {
     return characters[range]
   }
 
+  public func tensor(device: Device) -> Tensor<Int32> {
+    Tensor<Int32>([self.eos] + characters[0..<characters.count - 1], on: device)
+  }
+
   public var count: Int { return characters.count }
   public var last: Int32? { return characters.last }
-  public var tensor: Tensor<Int32> {
-    Tensor<Int32>([self.eos] + characters[0..<characters.count - 1])
-  }
 }
 
 extension CharacterSequence: CustomStringConvertible {
