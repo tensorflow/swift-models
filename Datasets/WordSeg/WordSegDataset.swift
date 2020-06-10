@@ -59,26 +59,22 @@ public struct WordSegDataset {
     return splitContents.map { String($0) }
   }
 
-  /// Returns the union of all characters in `training` and `otherSequences`.
+  /// Returns the union of all characters in `phrases`.
   ///
   /// - Parameter eos: the end of sequence marker.
   /// - Parameter eow:the end of word marker.
   /// - Parameter pad: the padding marker.
   private static func makeAlphabet(
-    datasets training: [String],
-    _ otherSequences: [String]?...,
+    phrases: [String],
     eos: String = "</s>",
     eow: String = "</w>",
     pad: String = "</pad>"
   ) -> Alphabet {
     var letters: Set<Character> = []
 
-    for dataset in otherSequences + [training] {
-      guard let dataset = dataset else { continue }
-      for sentence in dataset {
-        for character in sentence {
-          if !character.isWhitespace { letters.insert(character) }
-        }
+    for phrase in phrases {
+      for character in phrase {
+        if !character.isWhitespace { letters.insert(character) }
       }
     }
 
@@ -160,22 +156,17 @@ public struct WordSegDataset {
     let trainingData = try Data(
       contentsOf: URL(fileURLWithPath: trainingFile),
       options: .alwaysMapped)
-    let training = Self.load(data: trainingData)
 
     let validationData = try Data(
       contentsOf: URL(fileURLWithPath: validationFile ?? "/dev/null"),
       options: .alwaysMapped)
-    let validation = Self.load(data: validationData)
 
     let testingData = try Data(
       contentsOf: URL(fileURLWithPath: testingFile ?? "/dev/null"),
       options: .alwaysMapped)
-    let testing = Self.load(data: testingData)
 
-    self.alphabet = Self.makeAlphabet(datasets: training, validation, testing)
-    self.trainingPhrases = Self.convertDataset(training, alphabet: self.alphabet)
-    self.validationPhrases = Self.convertDataset(validation, alphabet: self.alphabet)
-    self.testingPhrases = Self.convertDataset(testing, alphabet: self.alphabet)
+    self.init(
+      training: trainingData, validation: validationData, testing: testingData)
   }
 
   /// Creates an instance containing phrases from `trainingData`, and
@@ -184,20 +175,10 @@ public struct WordSegDataset {
     training trainingData: Data, validation validationData: Data?, testing testingData: Data?
   ) {
     let training = Self.load(data: trainingData)
-    let validation: [String]
-    let testing: [String]
-    if let validationData = validationData {
-      validation = Self.load(data: validationData)
-    } else {
-      validation = [String]()
-    }
-    if let testingData = testingData {
-      testing = Self.load(data: testingData)
-    } else {
-      testing = [String]()
-    }
+    let validation = Self.load(data: validationData ?? Data())
+    let testing = Self.load(data: testingData ?? Data())
 
-    self.alphabet = Self.makeAlphabet(datasets: training, validation, testing)
+    self.alphabet = Self.makeAlphabet(phrases: training + validation + testing)
     self.trainingPhrases = Self.convertDataset(training, alphabet: self.alphabet)
     self.validationPhrases = Self.convertDataset(validation, alphabet: self.alphabet)
     self.testingPhrases = Self.convertDataset(testing, alphabet: self.alphabet)
