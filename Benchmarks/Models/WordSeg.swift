@@ -78,9 +78,9 @@ let maximumSequenceLength = 18
 struct WordSegBenchmark: Benchmark {
     let batchSize: Int
     let duration: BenchmarkDuration
-    let operation: (SNLM, CharacterSequence) -> ()
+    let operation: (SNLM, CharacterSequence, Device) -> ()
 
-    init(settings: BenchmarkSettings, operation: @escaping (SNLM, CharacterSequence) -> ()) {
+    init(settings: BenchmarkSettings, operation: @escaping (SNLM, CharacterSequence, Device) -> ()) {
         self.duration = settings.duration
         self.batchSize = settings.batchSize
         self.operation = operation
@@ -129,7 +129,7 @@ struct WordSegBenchmark: Benchmark {
             }
             
             for _ in 0..<iterations {
-                operation(model, sentence)
+                operation(model, sentence, device)
                 LazyTensorBarrier()
                 
                 batchTimings.append(durationInMilliseconds(since: beforeBatch))
@@ -152,26 +152,26 @@ extension WordSegBenchmark {
         return try CharacterSequence(alphabet: alphabet, appendingEoSTo: truncatedSentence)
     }
 
-    static func score(model: SNLM, sentence: CharacterSequence) {
-        let lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength)
+    static func score(model: SNLM, sentence: CharacterSequence, device: Device) {
+        let lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
         let score = lattice[sentence.count].semiringScore
         let _ = score.logr + score.logp
     }
 
-    static func scoreAndGradient(model: SNLM, sentence: CharacterSequence) {
+    static func scoreAndGradient(model: SNLM, sentence: CharacterSequence, device: Device) {
         let lambd: Float = 0.00075
 
-        let _ = valueWithGradient(at: model) { model -> Float in
-          let lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength)
+        let _ = valueWithGradient(at: model) { model -> Tensor<Float> in
+          let lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
           let score = lattice[sentence.count].semiringScore
           let expectedLength = exp(score.logr - score.logp)
           let loss = -1 * score.logp + lambd * expectedLength
-          return loss
+          return Tensor(loss, on: device)
         }
     }
 
-    static func viterbi(model: SNLM, sentence: CharacterSequence) {
-        var lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength)
+    static func viterbi(model: SNLM, sentence: CharacterSequence, device: Device) {
+        var lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
         let _ = lattice.viterbi(sentence: sentence)
     }
 }

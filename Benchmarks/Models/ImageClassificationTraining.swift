@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Batcher
 import Datasets
 import TensorFlow
 
-// TODO: Ease the tight restriction on Batcher data sources to allow for lazy datasets.
 struct ImageClassificationTraining<Model, ClassificationDataset>: Benchmark
 where
     Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == Float,

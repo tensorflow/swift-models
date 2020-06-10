@@ -19,7 +19,6 @@
 
 import Foundation
 import TensorFlow
-import Batcher
 
 public struct FashionMNIST<Entropy: RandomNumberGenerator> {
   /// Type of the collection of non-collated batches.

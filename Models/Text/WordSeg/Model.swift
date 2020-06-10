@@ -148,9 +148,10 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 
   // MARK: - Encode
 
-  /// Returns the hidden states of the encoder LSTM applied to `x`.
-  public func encode(_ x: CharacterSequence) -> [Tensor<Float>] {
-    var embedded = encoderEmbedding(x.tensor)
+  /// Returns the hidden states of the encoder LSTM applied to `x`, using
+  /// `device`.
+  public func encode(_ x: CharacterSequence, device: Device) -> [Tensor<Float>] {
+    var embedded = encoderEmbedding(x.tensor(device: device))
     embedded = dropout(embedded)
     let encoderStates = encoderLSTM(embedded.unstacked().differentiableMap { $0.rankLifted() })
     var encoderResult = Tensor(
@@ -162,8 +163,10 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   // MARK: - Decode
 
   /// Returns the log probabilities for each sequence in `candidates`, given
-  /// hidden `state` from the encoder LSTM.
-  public func decode(_ candidates: [CharacterSequence], _ state: Tensor<Float>) -> Tensor<Float> {
+  /// hidden `state` from the encoder LSTM, using `device`.
+  public func decode(_ candidates: [CharacterSequence], _ state: Tensor<Float>, device: Device)
+    -> Tensor<Float>
+  {
     // TODO(TF-433): Remove closure workaround when autodiff supports non-active rethrowing
     // functions (`Array.map`).
     let maxLen = { candidates.map { $0.count }.max()! + 1 }()
@@ -185,21 +188,25 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 
     // Shapes are [time x batch] so that we can unstack the time dimension into the array that
     // the LSTM wants as input.
-    let x: Tensor<Int32> = Tensor(shape: [candidates.count, maxLen], scalars: xBatch).transposed()
-    let y: Tensor<Int32> = Tensor(shape: [candidates.count, maxLen], scalars: yBatch).transposed()
+    let x: Tensor<Int32> = Tensor(
+      shape: [candidates.count, maxLen], scalars: xBatch, on: device
+    ).transposed()
+    let y: Tensor<Int32> = Tensor(
+      shape: [candidates.count, maxLen], scalars: yBatch, on: device
+    ).transposed()
 
     // [time x batch x hiddenSize]
     var embeddedX = decoderEmbedding(x)
     embeddedX = dropout(embeddedX)
 
     // [batch x hiddenSize]
-    let stateBatch = state.rankLifted().tiled(multiples: Tensor([Int32(candidates.count), 1]))
+    let stateBatch = state.rankLifted().tiled(multiples: [candidates.count, 1])
 
     // [time] array of LSTM states whose `hidden` and `cell` fields have shape [batch x hiddenSize]
     let decoderStates = decoderLSTM(
       embeddedX.unstacked(),
       initialState: LSTMCell.State(
-        cell: Tensor(zeros: stateBatch.shape),
+        cell: Tensor(zeros: stateBatch.shape, on: device),
         hidden: stateBatch))
 
     // [time x batch x hiddenSize]
@@ -220,7 +227,11 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
       ).reshaped(to: y.shape)
 
     // [time x batch]
-    let logpExcludingPad = logp * Tensor<Float>(y .!= parameters.alphabet.pad)
+    let padScalars = [Int32](repeating: parameters.alphabet.pad, count: candidates.count * maxLen)
+    let noPad = Tensor<Int32>(
+      y .!= Tensor(shape: y.shape, scalars: padScalars, on: device))
+    let noPadFloat = Tensor<Float>(noPad)
+    let logpExcludingPad = logp * noPadFloat
 
     // [batch]
     let candidateLogP = logpExcludingPad.transposed().sum(squeezingAxes: 1)
@@ -241,9 +252,9 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
 
   /// Returns a lattice for `sentence` with `maxLen` maximum sequence length.
   @differentiable
-  public func buildLattice(_ sentence: CharacterSequence, maxLen: Int) -> Lattice {
+  public func buildLattice(_ sentence: CharacterSequence, maxLen: Int, device: Device) -> Lattice {
     var lattice = Lattice(count: sentence.count)
-    let states = encode(sentence)
+    let states = encode(sentence, device: device)
     let logg_batch = mlpInterpolation(Tensor(stacking: states))
     let logp_lex_batch = mlpMemory(Tensor(stacking: states))
     for pos in 0..<sentence.count {
@@ -266,9 +277,10 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
       }
 
       let current_state = states[pos]
-      let logg = logg_batch[pos].scalarsADHack  // [2]
-      let logp_lex = logp_lex_batch[pos].scalarsADHack  // [strVocab.chr.count]
-      let logp_chr = decode(candidates, current_state).scalarsADHack  // [candidates.count]
+      let logg = logg_batch[pos].scalarsADHack(device: device)  // [2]
+      let logp_lex = logp_lex_batch[pos].scalarsADHack(device: device)  // [strVocab.chr.count]
+      let logp_chr = decode(candidates, current_state, device: device)
+        .scalarsADHack(device: device)  // [candidates.count]
       if pos != 0 {
         // Cleanup: lattice[pos].recomputeSemiringScore()
         var updatedNode = lattice[pos]
@@ -372,24 +384,23 @@ extension Tensor {
   // (`Differentiable.zeroTangentVectorInitializer`) instead of static zeros
   // (`AdditiveArithmetic.zero`).
   @differentiable(where Scalar: TensorFlowFloatingPoint)
-  var scalarsADHack: [Scalar] {
+  func scalarsADHack(device: Device) -> [Scalar] {
     scalars
   }
 
   /// Returns the value and pullback of `self.scalarsADHack`.
   @derivative(of: scalarsADHack)
-  func vjpScalarsADHack() -> (
+  func vjpScalarsADHack(device: Device) -> (
     value: [Scalar], pullback: (Array<Scalar>.TangentVector) -> Tensor
   ) where Scalar: TensorFlowFloatingPoint {
     // In the pullback: capture only `self.shape`, not all of `self`.
     let shape = self.shape
     func pullback(_ tv: Array<Scalar>.TangentVector) -> Tensor {
       if tv.count == 0 {
-        return Tensor(zeros: shape)
+        return Tensor(zeros: shape, on: device)
       }
-      return Tensor(shape: shape, scalars: tv.base)
+      return Tensor(shape: shape, scalars: tv.base, on: device)
     }
     return (scalars, pullback)
   }
 }
- 

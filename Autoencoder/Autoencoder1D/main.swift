@@ -16,7 +16,6 @@ import Datasets
 import Foundation
 import ModelSupport
 import TensorFlow
-import Batcher
 
 let epochCount = 10
 let batchSize = 100

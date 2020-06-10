@@ -83,10 +83,10 @@ public struct CharacterSequence: Hashable {
   /// - Note: This is usually the end marker.
   public var last: Int32? { return characters.last }
 
-  /// Representation for character generation, with the end marker moved to
-  /// the beginning.
-  public var tensor: Tensor<Int32> {
-    Tensor<Int32>([self.eos] + characters[0..<characters.count - 1])
+  /// Representation for character generation on `device`, with the end marker
+  /// moved to the beginning.
+  public func tensor(device: Device) -> Tensor<Int32> {
+    Tensor<Int32>([self.eos] + characters[0..<characters.count - 1], on: device)
   }
 }
 

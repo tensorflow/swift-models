@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Batcher
 import Datasets
 import ImageClassificationModels
 import TensorFlow
@@ -23,7 +22,6 @@ protocol ImageClassificationModel: Layer where Input == Tensor<Float>, Output ==
     static var outputLabels: Int { get }
 }
 
-// TODO: Ease the tight restriction on Batcher data sources to allow for lazy datasets.
 class ImageClassificationInference<Model, ClassificationDataset>: Benchmark
 where
     Model: ImageClassificationModel,

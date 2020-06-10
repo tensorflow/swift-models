@@ -27,6 +27,9 @@ public func defaultCollate<S: _Collatable>(_ batch: [S]) -> S {
 }
 
 // Main struct to collate the samples from a dataset into a batch
+@available(*, deprecated, message: """
+  Batcher will be removed in S4TF v0.11. Please use the new Epochs API instead.
+""")
 public struct Batcher<C: Collection> where C.Index == Int {
     // Dataset to get the batches from
     public var dataset: C
@@ -78,6 +81,9 @@ public struct Batcher<C: Collection> where C.Index == Int {
 }
 
 // Iterator through a Batcher
+@available(*, deprecated, message: """
+  Batcher will be removed in S4TF v0.11. Please use the new Epochs API instead.
+""")
 public struct BatchIterator<C: Collection>: IteratorProtocol, Sequence where C.Index == Int{
     // Batcher to iterate through
     var b: Batcher<C>

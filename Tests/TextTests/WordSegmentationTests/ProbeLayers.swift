@@ -155,10 +155,11 @@ class WordSegProbeLayerTests: XCTestCase {
         order: 5))
 
     model.setParameters(Example1.parameters)
+    let device = Device.default
 
     print("Encoding")
     let encoderStates = model.encode(
-      CharacterSequence(alphabet: alphabet, characters: [0, 1, 0, 1]))  // "abab"
+      CharacterSequence(alphabet: alphabet, characters: [0, 1, 0, 1]), device: device)  // "abab"
     let encoderStatesTensor = Tensor(stacking: encoderStates)
     print("Expected: \(Example1.expectedEncoding)")
     print("Actual: \(encoderStatesTensor)")
@@ -187,7 +188,8 @@ class WordSegProbeLayerTests: XCTestCase {
         CharacterSequence(alphabet: alphabet, characters: [0, 0, 0]),  // "aaa"
         CharacterSequence(alphabet: alphabet, characters: [0, 1]),  // "ab"
       ],
-      encoderStates[0]
+      encoderStates[0],
+      device: device
     )
     print("Expected: \(Example1.expectedDecoded)")
     print("Actual: \(decoded)")
@@ -196,12 +198,12 @@ class WordSegProbeLayerTests: XCTestCase {
 
     print("Build Lattice")
     let abab = CharacterSequence(alphabet: alphabet, characters: [0, 1, 0, 1])
-    let lattice = model.buildLattice(abab, maxLen: 5)
+    let lattice = model.buildLattice(abab, maxLen: 5, device: device)
     XCTAssert(lattice.isAlmostEqual(to: Example1.lattice, tolerance: 1e-5))
 
     print("Gradient")
     func f(_ x: SNLM) -> Float {
-      x.buildLattice(abab, maxLen: 5)[4].semiringScore.logr
+      x.buildLattice(abab, maxLen: 5, device: device)[4].semiringScore.logr
     }
     let (_, grad) = valueWithGradient(at: model, in: f)
     let expectedGrad = tangentVector(from: Example1.gradWrtLogR, model: model)
