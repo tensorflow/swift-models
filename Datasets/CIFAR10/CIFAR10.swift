@@ -20,7 +20,6 @@
 import Foundation
 import ModelSupport
 import TensorFlow
-import Batcher
 
 public struct CIFAR10<Entropy: RandomNumberGenerator> {
   /// Type of the collection of non-collated batches.
