@@ -34,8 +34,9 @@ The relevant parameters are:
 
 - `iterations`: The number of iterations of the Z * Z + X calculation to perform. 
 - `tolerance`: The threshold for which divergence of the calculation is determined. 
-- `region`: A comma-separated list corresponding to the region `real_minimum`, `real_maximum`, `imaginary_minimum`, `imaginary_maximum`.
- - Note: if the region starts with a negative number, an equals sign is needed between the argument name and the region value. 
+- `region`: A comma-separated list corresponding to the region `real_minimum`,
+  `real_maximum`, `imaginary_minimum`, `imaginary_maximum`. Note: if the region starts
+  with a negative number, an equals sign is needed between the argument name and the region value. 
 - `image-size`: The size of the resulting image, specified as the comma-separated pair `width`, `height`.
 - `x10` or `eager`: Whether to use the eager-mode backend (default) or the X10 backend for the calculations.
 - `output-file`: The base name of the image file to write out.
@@ -65,8 +66,9 @@ The relevant parameters are:
 - `constant`: The constant C, specified as a comma-separated pair of `real`, `imaginary`. 
 - `iterations`: The number of iterations of the Z * Z + C calculation to perform. 
 - `tolerance`: The threshold for which divergence of the calculation is determined. 
-- `region`: A comma-separated list corresponding to the region `real_minimum`, `real_maximum`, `imaginary_minimum`, `imaginary_maximum`.
- - Note: if the region starts with a negative number, an equals sign is needed between the argument name and the region value. 
+- `region`: A comma-separated list corresponding to the region `real_minimum`,
+   `real_maximum`, `imaginary_minimum`, `imaginary_maximum`. Note: if the region starts
+   with a negative number, an equals sign is needed between the argument name and the region value. 
 - `image-size`: The size of the resulting image, specified as the comma-separated pair `width`, `height`.
 - `x10` or `eager`: Whether to use the eager-mode backend (default) or the X10 backend for the calculations.
 - `output-file`: The base name of the image file to write out.
