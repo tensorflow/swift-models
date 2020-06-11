@@ -16,8 +16,11 @@ import Datasets
 import ImageClassificationModels
 import TensorFlow
 
-let imagenette = Imagenette(
-    batchSize: 64,
+let epochCount = 10
+let batchSize = 64
+
+let dataset = Imagenette(
+    batchSize: batchSize,
     inputSize: .resized320,
     outputSize: 224
 )
@@ -28,12 +31,12 @@ let optimizer = SGD(for: model, learningRate: 0.02, momentum: 0.9)
 
 print("Starting training...")
 
-for epoch in 1...10 {
+for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
     Context.local.learningPhase = .training
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
-    for batch in imagenette.training.sequenced() {
-        let (images, labels) = (batch.first, batch.second)
+    for batch in epochBatches {
+        let (images, labels) = (batch.data, batch.label)
         let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
             let logits = model(images)
             return softmaxCrossEntropy(logits: logits, labels: labels)
@@ -48,8 +51,8 @@ for epoch in 1...10 {
     var testBatchCount = 0
     var correctGuessCount = 0
     var totalGuessCount = 0
-    for batch in imagenette.test.sequenced() {
-        let (images, labels) = (batch.first, batch.second)
+    for batch in dataset.validation {
+        let (images, labels) = (batch.data, batch.label)
         let logits = model(images)
         testLossSum += softmaxCrossEntropy(logits: logits, labels: labels).scalarized()
         testBatchCount += 1
@@ -58,7 +61,7 @@ for epoch in 1...10 {
         correctGuessCount = correctGuessCount
             + Int(
                 Tensor<Int32>(correctPredictions).sum().scalarized())
-        totalGuessCount = totalGuessCount + batch.first.shape[0]
+        totalGuessCount = totalGuessCount + batch.data.shape[0]
     }
 
     let accuracy = Float(correctGuessCount) / Float(totalGuessCount)

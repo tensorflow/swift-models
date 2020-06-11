@@ -22,6 +22,8 @@ import Foundation
 import ModelSupport
 import TensorFlow
 
+public typealias LazyDataSet = LazyMapSequence<[URL], TensorPair<Float, Int32>>
+
 public struct OxfordIIITPets: ImageSegmentationDataset {
   public typealias SourceDataSet = LazyDataSet
   public let training: Batcher<SourceDataSet>
