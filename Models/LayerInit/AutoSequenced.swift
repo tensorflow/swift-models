@@ -1,6 +1,6 @@
 import TensorFlow
 
-public struct AutoSequencedDefinition<Layer1: AutoLayer, Layer2: AutoLayer>: AutoLayer
+public struct AutoSequenced<Layer1: AutoLayer, Layer2: AutoLayer>: AutoLayer
 where
   Layer1.OutputShape == Layer2.InputShape,
   Layer1.InstanceType.Output == Layer2.InstanceType.Input,
@@ -23,8 +23,8 @@ where
 }
 
 extension AutoLayer {
-    public func then<T: AutoLayer>(_ other: T) -> AutoSequencedDefinition<Self, T> {
-        return AutoSequencedDefinition<Self, T>(first: self, second: other)
+    public func then<T: AutoLayer>(_ other: T) -> AutoSequenced<Self, T> {
+        return AutoSequenced<Self, T>(first: self, second: other)
     }
 }
 
