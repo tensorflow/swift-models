@@ -32,7 +32,7 @@ public struct WordSegDataset {
   /// The validation data.
   public private(set) var validationPhrases: [Phrase]
 
-  /// The union of all characters in the included dataset.
+  /// A mapping between characters used in the dataset and densly-packed integers
   public let alphabet: Alphabet
 
   /// A pointer to source data.
