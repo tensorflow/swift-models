@@ -3,6 +3,7 @@ add_library(LayerInit
   AutoConv.swift
   AutoDense.swift
   AutoFlatten.swift
+  AutoFunction.swift
   AutoLayer.swift
   AutoPool.swift
   AutoSequenced.swift
