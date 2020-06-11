@@ -14,44 +14,148 @@
 
 import Foundation
 import ModelSupport
+import Datasets
 import TensorFlow
-import Batcher
 
-public class PairedImages {
-    public struct ImagePair: _Collatable {
-        public init(oldCollating: [PairedImages.ImagePair]) {
-            self.source = .init(stacking: oldCollating.map(\.source))
-            self.target = .init(stacking: oldCollating.map(\.target))
-        }
-        
-        public init(source: Tensor<Float>, target: Tensor<Float>) {
-            self.source = source
-            self.target = target
-        }
-        
-        var source: Tensor<Float>
-        var target: Tensor<Float>
-    }
-    var batcher: Batcher<[ImagePair]>
-    
-    public init(folderAURL: URL, folderBURL: URL) throws {
-        let folderAContents = try FileManager.default
-                                             .contentsOfDirectory(at: folderAURL,
-                                                                  includingPropertiesForKeys: [.isDirectoryKey],
-                                                                  options: [.skipsHiddenFiles])
-                                             .filter { $0.pathExtension == "jpg" }
+public enum Pix2PixDatasetVariant: String {
+    case facades
 
-        let imageTensors = folderAContents.map { (url: URL) -> ImagePair in
-            let tensorA = Image(jpeg: url).tensor / 127.5 - 1.0
-            
-            let tensorBImageURL = folderBURL.appendingPathComponent(url.lastPathComponent.replacingOccurrences(of: "_A.jpg", with: "_B.jpg"))
-            let tensorB = Image(jpeg: tensorBImageURL).tensor / 127.5 - 1.0
-            
-            return ImagePair(source: tensorA, target: tensorB)
+    public var url: URL {
+        switch self {
+        case .facades:
+            return URL(string: 
+                "https://people.eecs.berkeley.edu/~taesung_park/CycleGAN/datasets/facades.zip")!
         }
-        
-        self.batcher = Batcher(on: imageTensors,
-                               batchSize: 1,
-                               shuffle: true)
     }
+}
+
+public struct Pix2PixDataset<Entropy: RandomNumberGenerator> {
+    public typealias Samples = [(source: Tensor<Float>, target: Tensor<Float>)]
+    public typealias Batches = Slices<Sampling<Samples, ArraySlice<Int>>>
+    public typealias PairedImageBatch = (source: Tensor<Float>, target: Tensor<Float>)
+    public typealias Training = LazyMapSequence<
+        TrainingEpochs<Samples, Entropy>, 
+        LazyMapSequence<Batches, PairedImageBatch>
+      >
+    public typealias Testing = LazyMapSequence<
+        Slices<Samples>, 
+        PairedImageBatch
+    >
+
+    public let trainSamples: Samples
+    public let testSamples: Samples
+    public let training: Training
+    public let testing: Testing
+
+    public init(
+        from rootDirPath: String? = nil,
+        variant: Pix2PixDatasetVariant? = nil, 
+        trainBatchSize: Int = 1,
+        testBatchSize: Int = 1,
+        entropy: Entropy) throws {
+        
+        let rootDirPath = rootDirPath ?? Pix2PixDataset.downloadIfNotPresent(
+            variant: variant ?? .facades,
+            to: DatasetUtilities.defaultDirectory.appendingPathComponent("pix2pix", isDirectory: true))
+        let rootDirURL = URL(fileURLWithPath: rootDirPath, isDirectory: true)
+        
+        trainSamples = Array(zip(
+            try Pix2PixDataset.loadSortedSamples(
+                  from: rootDirURL.appendingPathComponent("trainA"),
+                  fileIndexRetriever: "_"
+                ), 
+            try Pix2PixDataset.loadSortedSamples(
+                  from: rootDirURL.appendingPathComponent("trainB"),
+                  fileIndexRetriever: "_"
+                )
+        ))
+        
+        testSamples = Array(zip(
+            try Pix2PixDataset.loadSortedSamples(
+                  from: rootDirURL.appendingPathComponent("testA"),
+                  fileIndexRetriever: "."
+                ), 
+            try Pix2PixDataset.loadSortedSamples(
+                  from: rootDirURL.appendingPathComponent("testB"),
+                  fileIndexRetriever: "."
+                )
+        ))
+
+        training = TrainingEpochs(
+            samples: trainSamples, 
+            batchSize: trainBatchSize, 
+            entropy: entropy
+        ).lazy.map { (batches: Batches) -> LazyMapSequence<Batches, PairedImageBatch> in
+            batches.lazy.map {
+                (
+                    source: Tensor<Float>($0.map(\.source)),
+                    target: Tensor<Float>($0.map(\.target))
+                )
+            }
+        }
+
+        testing = testSamples.inBatches(of: testBatchSize)
+            .lazy.map {
+                (
+                    source: Tensor<Float>($0.map(\.source)),
+                    target: Tensor<Float>($0.map(\.target))
+                )
+            }
+    }
+
+    private static func downloadIfNotPresent(
+            variant: Pix2PixDatasetVariant,
+            to directory: URL) -> String {
+        let rootDirPath = directory.appendingPathComponent(variant.rawValue).path
+
+        let directoryExists = FileManager.default.fileExists(atPath: rootDirPath)
+        let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: rootDirPath)
+        let directoryEmpty = (contentsOfDir == nil) || (contentsOfDir!.isEmpty)
+        guard !directoryExists || directoryEmpty else { return rootDirPath }
+
+        let _ = DatasetUtilities.downloadResource(
+            filename: variant.rawValue, 
+            fileExtension: "zip",
+            remoteRoot: variant.url.deletingLastPathComponent(), 
+            localStorageDirectory: directory)
+        print("\(rootDirPath) downloaded.")
+
+        return rootDirPath
+    }
+
+    private static func loadSortedSamples(
+        from directory: URL, 
+        fileIndexRetriever: String
+    ) throws -> [Tensor<Float>] {
+        return try FileManager.default
+            .contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.isDirectoryKey],
+                options: [.skipsHiddenFiles])
+            .filter { $0.pathExtension == "jpg" }
+            .sorted {
+                Int($0.lastPathComponent.components(separatedBy: fileIndexRetriever)[0])! <
+                Int($1.lastPathComponent.components(separatedBy: fileIndexRetriever)[0])!
+            }
+            .map {
+                Image(jpeg: $0).tensor / 127.5 - 1.0
+            }
+    }
+}
+
+extension Pix2PixDataset where Entropy == SystemRandomNumberGenerator {
+    public init(
+        from rootDirPath: String? = nil,
+        variant: Pix2PixDatasetVariant? = nil, 
+        trainBatchSize: Int = 1,
+        testBatchSize: Int = 1
+    ) throws {
+        try self.init(
+            from: rootDirPath,
+            variant: variant,
+            trainBatchSize: trainBatchSize,
+            testBatchSize: testBatchSize,
+            entropy: SystemRandomNumberGenerator()
+        )
+  }
 }

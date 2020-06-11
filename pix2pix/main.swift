@@ -19,41 +19,13 @@ import ModelSupport
 
 let options = Options.parseOrExit()
 
-let datasetFolder: URL
-let trainFolderA: URL
-let trainFolderB: URL
-let testFolderA: URL
-let testFolderB: URL
+let dataset = try! Pix2PixDataset(
+    from: options.datasetPath,
+    trainBatchSize: 1,
+    testBatchSize: 1)
 
-if let datasetPath = options.datasetPath {
-    datasetFolder = URL(fileURLWithPath: datasetPath, isDirectory: true)
-    trainFolderA = datasetFolder.appendingPathComponent("trainA")
-    testFolderA = datasetFolder.appendingPathComponent("testA")
-    trainFolderB = datasetFolder.appendingPathComponent("trainB")
-    testFolderB = datasetFolder.appendingPathComponent("testB")
-} else {
-    func downloadFacadesDataSetIfNotPresent(to directory: URL) {
-        let downloadPath = directory.appendingPathComponent("facades").path
-        let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
-        let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: downloadPath)
-        let directoryEmpty = (contentsOfDir == nil) || (contentsOfDir!.isEmpty)
-
-        guard !directoryExists || directoryEmpty else { return }
-
-        let location = URL(
-            string: "https://people.eecs.berkeley.edu/~taesung_park/CycleGAN/datasets/facades.zip")!
-        let _ = DatasetUtilities.downloadResource(
-            filename: "facades", fileExtension: "zip",
-            remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
-    }
-
-    datasetFolder = DatasetUtilities.defaultDirectory.appendingPathComponent("pix2pix", isDirectory: true)
-    downloadFacadesDataSetIfNotPresent(to: datasetFolder)
-    trainFolderA = datasetFolder.appendingPathComponent("facades/trainA", isDirectory: true)
-    testFolderA = datasetFolder.appendingPathComponent("facades/testA", isDirectory: true)
-    trainFolderB = datasetFolder.appendingPathComponent("facades/trainB", isDirectory: true)
-    testFolderB = datasetFolder.appendingPathComponent("facades/testB", isDirectory: true)
-}
+var validationImage = dataset.testSamples[0].source.expandingShape(at: 0)
+let validationImageURL = URL(string: FileManager.default.currentDirectoryPath)!.appendingPathComponent("sample.jpg")
 
 var generator = NetG(inputChannels: 3, outputChannels: 3, ngf: 64, useDropout: false)
 var discriminator = NetD(inChannels: 6, lastConvFilters: 64)
@@ -61,25 +33,18 @@ var discriminator = NetD(inChannels: 6, lastConvFilters: 64)
 let optimizerG = Adam(for: generator, learningRate: 0.0002, beta1: 0.5)
 let optimizerD = Adam(for: discriminator, learningRate: 0.0002, beta1: 0.5)
 
-let batchSize = 1
+let epochCount = options.epochs
+var step = 0
 let lambdaL1 = Tensor<Float>(100)
 
-let trainDataset = try PairedImages(folderAURL: trainFolderA, folderBURL: trainFolderB)
-let testDataset = try PairedImages(folderAURL: testFolderA, folderBURL: testFolderB)
-
-var sampleImage = testDataset.batcher.dataset[0].source.expandingShape(at: 0)
-let sampleImageURL = URL(string: FileManager.default.currentDirectoryPath)!.appendingPathComponent("sample.jpg")
-
-var step = 0
-
-for epoch in 0..<options.epochs {
+for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
     print("Epoch \(epoch) started at: \(Date())")
     
     var discriminatorTotalLoss = Tensor<Float>(0)
     var generatorTotalLoss = Tensor<Float>(0)
     var discriminatorCount = 0
     
-    for batch in trainDataset.batcher.sequenced() {
+    for batch in epochBatches {
         defer { step += 1 }
 
         Context.local.learningPhase = .training
@@ -137,10 +102,10 @@ for epoch in 0..<options.epochs {
         if step % options.sampleLogPeriod == 0 {
             Context.local.learningPhase = .inference
             
-            let fakeSample = generator(sampleImage) * 0.5 + 0.5
+            let fakeSample = generator(validationImage) * 0.5 + 0.5
 
             let fakeSampleImage = Image(tensor: fakeSample[0] * 255)
-            fakeSampleImage.save(to: sampleImageURL, format: .rgb)
+            fakeSampleImage.save(to: validationImageURL, format: .rgb)
         }
         
         discriminatorCount += 1
@@ -158,7 +123,7 @@ var totalLoss = Tensor<Float>(0)
 var count = 0
 
 let resultsFolder = try createDirectoryIfNeeded(path: FileManager.default.currentDirectoryPath + "/results")
-for batch in testDataset.batcher.sequenced() {
+for batch in dataset.testing {
     let fakeImages = generator(batch.source)
 
     let tensorImage = batch.source
