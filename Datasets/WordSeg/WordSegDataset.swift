@@ -53,10 +53,10 @@ public struct WordSegDataset {
   }
 
   /// Returns phrases parsed from `data` in UTF8, separated by newlines.
-  private static func load(data: Data) -> [String] {
+  private static func load(data: Data) -> [Substring] {
     let contents = String(decoding: data, as: Unicode.UTF8.self)
     let splitContents = contents.split(separator: "\n", omittingEmptySubsequences: true)
-    return splitContents.map { String($0) }
+    return splitContents
   }
 
   /// Returns the union of all characters in `phrases`.
@@ -65,22 +65,15 @@ public struct WordSegDataset {
   /// - Parameter eow:the end of word marker.
   /// - Parameter pad: the padding marker.
   private static func makeAlphabet(
-    phrases: [String],
+    phrases: [Substring],
     eos: String = "</s>",
     eow: String = "</w>",
     pad: String = "</pad>"
   ) -> Alphabet {
-    var letters: Set<Character> = []
-
-    for phrase in phrases {
-      for character in phrase {
-        if !character.isWhitespace { letters.insert(character) }
-      }
-    }
+    let letters = Set(phrases.joined().lazy.filter { !$0.isWhitespace })
 
     // Sort the letters to make it easier to interpret ints vs letters.
-    var sorted = Array(letters)
-    sorted.sort()
+    let sorted = Array(letters).sorted()
 
     return Alphabet(sorted, eos: eos, eow: eow, pad: pad)
   }
@@ -89,7 +82,7 @@ public struct WordSegDataset {
   /// WordSeg model.
   ///
   /// - Note: Omits any phrase that cannot be converted to `CharacterSequence`.
-  private static func numericalizeDataset(_ dataset: [String], alphabet: Alphabet)
+  private static func numericalizeDataset(_ dataset: [Substring], alphabet: Alphabet)
     -> [Phrase]
   {
     var phrases = [Phrase]()
@@ -101,7 +94,7 @@ public struct WordSegDataset {
           alphabet: alphabet, appendingEoSTo: trimmed)
       else { continue }
       let phrase = Phrase(
-        plainText: data,
+        plainText: String(data),
         numericalizedText: numericalizedText)
       phrases.append(phrase)
     }
@@ -114,28 +107,26 @@ public struct WordSegDataset {
   /// - Throws: an error in the Cocoa domain, if the default training file
   ///   cannot be read.
   public init() throws {
-    let downloadableArchive = DownloadableArchive()
+    let source = DownloadableArchive()
     let localStorageDirectory: URL = DatasetUtilities.defaultDirectory
       .appendingPathComponent("WordSeg", isDirectory: true)
 
     WordSegDataset.downloadIfNotPresent(
-      to: localStorageDirectory, downloadableArchive: downloadableArchive)
+      to: localStorageDirectory, source: source)
 
-    let archiveFileName =
-      downloadableArchive
-      .location.deletingPathExtension().lastPathComponent
+    let archiveFileName = source.location.deletingPathExtension().lastPathComponent
     let archiveDirectory =
       localStorageDirectory
       .appendingPathComponent(archiveFileName)
     let trainingFilePath =
       archiveDirectory
-      .appendingPathComponent(downloadableArchive.trainingFilePath).path
+      .appendingPathComponent(source.trainingFilePath).path
     let validationFilePath =
       archiveDirectory
-      .appendingPathComponent(downloadableArchive.validationFilePath).path
+      .appendingPathComponent(source.validationFilePath).path
     let testingFilePath =
       archiveDirectory
-      .appendingPathComponent(downloadableArchive.testingFilePath).path
+      .appendingPathComponent(source.testingFilePath).path
 
     try self.init(
       training: trainingFilePath, validation: validationFilePath,
@@ -183,10 +174,10 @@ public struct WordSegDataset {
     self.testingPhrases = Self.numericalizeDataset(testing, alphabet: self.alphabet)
   }
 
-  /// Downloads and unpacks `downloadableArchive` to `directory` if it does not
+  /// Downloads and unpacks `source` to `directory` if it does not
   /// exist locally.
   private static func downloadIfNotPresent(
-    to directory: URL, downloadableArchive: DownloadableArchive
+    to directory: URL, source: DownloadableArchive
   ) {
     let downloadPath = directory.path
     let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
@@ -195,9 +186,9 @@ public struct WordSegDataset {
 
     guard !directoryExists || directoryEmpty else { return }
 
-    let remoteRoot = downloadableArchive.location.deletingLastPathComponent()
-    let filename = downloadableArchive.location.deletingPathExtension().lastPathComponent
-    let fileExtension = downloadableArchive.location.pathExtension
+    let remoteRoot = source.location.deletingLastPathComponent()
+    let filename = source.location.deletingPathExtension().lastPathComponent
+    let fileExtension = source.location.pathExtension
 
     // Downloads and extracts dataset files.
     let _ = DatasetUtilities.downloadResource(
