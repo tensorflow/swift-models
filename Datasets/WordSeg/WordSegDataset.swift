@@ -85,12 +85,11 @@ public struct WordSegDataset {
     return Alphabet(sorted, eos: eos, eow: eow, pad: pad)
   }
 
-  /// Returns phrases from `dataset`, using `alphabet`, to be used with the
+  /// Numericalizes `dataset` with the mapping in `alphabet`, to be used with the
   /// WordSeg model.
   ///
-  /// - Note: Omits any part of the dataset that cannot be converted to
-  ///   `CharacterSequence`.
-  private static func convertDataset(_ dataset: [String], alphabet: Alphabet)
+  /// - Note: Omits any phrase that cannot be converted to `CharacterSequence`.
+  private static func numericalizeDataset(_ dataset: [String], alphabet: Alphabet)
     -> [Phrase]
   {
     var phrases = [Phrase]()
@@ -179,9 +178,9 @@ public struct WordSegDataset {
     let testing = Self.load(data: testingData ?? Data())
 
     self.alphabet = Self.makeAlphabet(phrases: training + validation + testing)
-    self.trainingPhrases = Self.convertDataset(training, alphabet: self.alphabet)
-    self.validationPhrases = Self.convertDataset(validation, alphabet: self.alphabet)
-    self.testingPhrases = Self.convertDataset(testing, alphabet: self.alphabet)
+    self.trainingPhrases = Self.numericalizeDataset(training, alphabet: self.alphabet)
+    self.validationPhrases = Self.numericalizeDataset(validation, alphabet: self.alphabet)
+    self.testingPhrases = Self.numericalizeDataset(testing, alphabet: self.alphabet)
   }
 
   /// Downloads and unpacks `downloadableArchive` to `directory` if it does not
