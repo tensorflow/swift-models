@@ -15,110 +15,129 @@
 import Foundation
 import ModelSupport
 
+/// A dataset targeted at the problem of word segmentation.
+///
+/// The reference archive was published in the paper "Learning to Discover,
+/// Ground, and Use Words with Segmental Neural Language Models" by Kazuya
+/// Kawakami, Chris Dyer, and Phil Blunsom:
+/// https://www.aclweb.org/anthology/P19-1645.pdf.
 public struct WordSegDataset {
-  public let training: [WordSegRecord]
-  public private(set) var testing: [WordSegRecord]?
-  public private(set) var validation: [WordSegRecord]?
+
+  /// The training data.
+  public let trainingPhrases: [Phrase]
+
+  /// The test data.
+  public private(set) var testingPhrases: [Phrase]
+
+  /// The validation data.
+  public private(set) var validationPhrases: [Phrase]
+
+  /// A mapping between characters used in the dataset and densely-packed integers
   public let alphabet: Alphabet
 
-  private struct DownloadDetails {
-    var archiveLocation = URL(string: "https://s3.eu-west-2.amazonaws.com/k-kawakami")!
-    var archiveFileName = "seg"
-    var archiveExtension = "zip"
-    var testingFilePath = "br/br-text/te.txt"
-    var trainingFilePath = "br/br-text/tr.txt"
-    var validationFilePath = "br/br-text/va.txt"
+  /// A pointer to source data.
+  private struct DownloadableArchive {
+
+    /// A [web resource](https://en.wikipedia.org/wiki/Web_resource) that can be unpacked
+    /// into data files described by other properties of `self`. 
+    let location = URL(string: "https://s3.eu-west-2.amazonaws.com/k-kawakami/seg.zip")!
+
+    /// The path to the test data within the unpacked archive.
+    let testingFilePath = "br/br-text/te.txt"
+
+    /// The path to the training data within the unpacked archive.
+    let trainingFilePath = "br/br-text/tr.txt"
+
+    /// The path to the validation data within the unpacked archive.
+    let validationFilePath = "br/br-text/va.txt"
   }
 
-  private static func load(data: Data) throws -> [String] {
-    guard let contents: String = String(data: data, encoding: .utf8) else {
-      throw CharacterErrors.nonUtf8Data
-    }
-    return load(contents: contents)
+  /// Returns phrases parsed from `data` in UTF8, separated by newlines.
+  private static func load(data: Data) -> [Substring] {
+    let contents = String(decoding: data, as: Unicode.UTF8.self)
+    let splitContents = contents.split(separator: "\n", omittingEmptySubsequences: true)
+    return splitContents
   }
 
-  private static func load(contents: String) -> [String] {
-    var strings = [String]()
-
-    for line in contents.components(separatedBy: .newlines) {
-      let trimmed = line.trimmingCharacters(in: .whitespaces)
-      if trimmed.isEmpty { continue }
-      strings.append(trimmed)
-    }
-    return strings
-  }
-
+  /// Returns the union of all characters in `phrases`.
+  ///
+  /// - Parameter eos: the end of sequence marker.
+  /// - Parameter eow:the end of word marker.
+  /// - Parameter pad: the padding marker.
   private static func makeAlphabet(
-    datasets training: [String],
-    _ otherSequences: [String]?...,
+    phrases: [Substring],
     eos: String = "</s>",
     eow: String = "</w>",
     pad: String = "</pad>"
   ) -> Alphabet {
-    var letters: Set<Character> = []
-
-    for dataset in otherSequences + [training] {
-      guard let dataset = dataset else { continue }
-      for sentence in dataset {
-        for character in sentence {
-          if !character.isWhitespace { letters.insert(character) }
-        }
-      }
-    }
+    let letters = Set(phrases.joined().lazy.filter { !$0.isWhitespace })
 
     // Sort the letters to make it easier to interpret ints vs letters.
-    var sorted = Array(letters)
-    sorted.sort()
+    let sorted = Array(letters).sorted()
 
     return Alphabet(sorted, eos: eos, eow: eow, pad: pad)
   }
 
-  private static func convertDataset(_ dataset: [String], alphabet: Alphabet) throws
-    -> [WordSegRecord]
+  /// Numericalizes `dataset` with the mapping in `alphabet`, to be used with the
+  /// WordSeg model.
+  ///
+  /// - Note: Omits any phrase that cannot be converted to `CharacterSequence`.
+  private static func numericalizeDataset(_ dataset: [Substring], alphabet: Alphabet)
+    -> [Phrase]
   {
-    return try dataset.map {
-      let trimmed = $0.components(separatedBy: .whitespaces).joined()
-      return try WordSegRecord(
-        plainText: $0,
-        numericalizedText: CharacterSequence(
-          alphabet: alphabet, appendingEoSTo: trimmed))
+    var phrases = [Phrase]()
+
+    for data in dataset {
+      let trimmed = data.split(separator: " ", omittingEmptySubsequences: true).joined()
+      guard
+        let numericalizedText = try? CharacterSequence(
+          alphabet: alphabet, appendingEoSTo: trimmed)
+      else { continue }
+      let phrase = Phrase(
+        plainText: String(data),
+        numericalizedText: numericalizedText)
+      phrases.append(phrase)
     }
-  }
-  private static func convertDataset(_ dataset: [String]?, alphabet: Alphabet) throws
-    -> [WordSegRecord]?
-  {
-    if let ds = dataset {
-      let tmp: [WordSegRecord] = try convertDataset(ds, alphabet: alphabet)  // Use tmp to disambiguate function
-      return tmp
-    }
-    return nil
+
+    return phrases
   }
 
+  /// Creates an instance containing phrases from the reference archive.
+  ///
+  /// - Throws: an error in the Cocoa domain, if the default training file
+  ///   cannot be read.
   public init() throws {
-    let downloadDetails = DownloadDetails()
+    let source = DownloadableArchive()
     let localStorageDirectory: URL = DatasetUtilities.defaultDirectory
       .appendingPathComponent("WordSeg", isDirectory: true)
 
-    WordSegDataset.downloadIfNotPresent(to: localStorageDirectory, downloadDetails: downloadDetails)
+    Self.downloadIfNotPresent(
+      to: localStorageDirectory, source: source)
 
+    let archiveFileName = source.location.deletingPathExtension().lastPathComponent
     let archiveDirectory =
       localStorageDirectory
-      .appendingPathComponent(downloadDetails.archiveFileName)
+      .appendingPathComponent(archiveFileName)
     let trainingFilePath =
       archiveDirectory
-      .appendingPathComponent(downloadDetails.trainingFilePath).path
+      .appendingPathComponent(source.trainingFilePath).path
     let validationFilePath =
       archiveDirectory
-      .appendingPathComponent(downloadDetails.validationFilePath).path
+      .appendingPathComponent(source.validationFilePath).path
     let testingFilePath =
       archiveDirectory
-      .appendingPathComponent(downloadDetails.testingFilePath).path
+      .appendingPathComponent(source.testingFilePath).path
 
     try self.init(
       training: trainingFilePath, validation: validationFilePath,
       testing: testingFilePath)
   }
 
+  /// Creates an instance containing phrases from `trainingFile`, and
+  /// optionally `validationFile` and `testingFile`.
+  ///
+  /// - Throws: an error in the Cocoa domain, if `trainingFile` cannot be
+  ///   read.
   public init(
     training trainingFile: String,
     validation validationFile: String? = nil,
@@ -127,53 +146,38 @@ public struct WordSegDataset {
     let trainingData = try Data(
       contentsOf: URL(fileURLWithPath: trainingFile),
       options: .alwaysMapped)
-    let training = try Self.load(data: trainingData)
 
-    var validation: [String]? = nil
-    var testing: [String]? = nil
+    let validationData = try Data(
+      contentsOf: URL(fileURLWithPath: validationFile ?? "/dev/null"),
+      options: .alwaysMapped)
 
-    if let validationFile = validationFile {
-      let data = try Data(
-        contentsOf: URL(fileURLWithPath: validationFile),
-        options: .alwaysMapped)
-      validation = try Self.load(data: data)
-    }
+    let testingData = try Data(
+      contentsOf: URL(fileURLWithPath: testingFile ?? "/dev/null"),
+      options: .alwaysMapped)
 
-    if let testingFile = testingFile {
-      let data: Data = try Data(
-        contentsOf: URL(fileURLWithPath: testingFile),
-        options: .alwaysMapped)
-      testing = try Self.load(data: data)
-    }
-    self.alphabet = Self.makeAlphabet(datasets: training, validation, testing)
-    self.training = try Self.convertDataset(training, alphabet: self.alphabet)
-    self.validation = try Self.convertDataset(validation, alphabet: self.alphabet)
-    self.testing = try Self.convertDataset(testing, alphabet: self.alphabet)
+    self.init(
+      training: trainingData, validation: validationData, testing: testingData)
   }
 
+  /// Creates an instance containing phrases from `trainingData`, and
+  /// optionally `validationData` and `testingData`.
   public init(
     training trainingData: Data, validation validationData: Data?, testing testingData: Data?
-  )
-    throws
-  {
-    let training = try Self.load(data: trainingData)
-    var validation: [String]? = nil
-    var testing: [String]? = nil
-    if let validationData = validationData {
-      validation = try Self.load(data: validationData)
-    }
-    if let testingData = testingData {
-      testing = try Self.load(data: testingData)
-    }
+  ) {
+    let training = Self.load(data: trainingData)
+    let validation = Self.load(data: validationData ?? Data())
+    let testing = Self.load(data: testingData ?? Data())
 
-    self.alphabet = Self.makeAlphabet(datasets: training, validation, testing)
-    self.training = try Self.convertDataset(training, alphabet: self.alphabet)
-    self.validation = try Self.convertDataset(validation, alphabet: self.alphabet)
-    self.testing = try Self.convertDataset(testing, alphabet: self.alphabet)
+    self.alphabet = Self.makeAlphabet(phrases: training + validation + testing)
+    self.trainingPhrases = Self.numericalizeDataset(training, alphabet: self.alphabet)
+    self.validationPhrases = Self.numericalizeDataset(validation, alphabet: self.alphabet)
+    self.testingPhrases = Self.numericalizeDataset(testing, alphabet: self.alphabet)
   }
 
+  /// Downloads and unpacks `source` to `directory` if it does not
+  /// exist locally.
   private static func downloadIfNotPresent(
-    to directory: URL, downloadDetails: DownloadDetails
+    to directory: URL, source: DownloadableArchive
   ) {
     let downloadPath = directory.path
     let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
@@ -182,11 +186,15 @@ public struct WordSegDataset {
 
     guard !directoryExists || directoryEmpty else { return }
 
+    let remoteRoot = source.location.deletingLastPathComponent()
+    let filename = source.location.deletingPathExtension().lastPathComponent
+    let fileExtension = source.location.pathExtension
+
     // Downloads and extracts dataset files.
     let _ = DatasetUtilities.downloadResource(
-      filename: downloadDetails.archiveFileName,
-      fileExtension: downloadDetails.archiveExtension,
-      remoteRoot: downloadDetails.archiveLocation,
+      filename: filename,
+      fileExtension: fileExtension,
+      remoteRoot: remoteRoot,
       localStorageDirectory: directory, extract: true)
   }
 }

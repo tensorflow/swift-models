@@ -18,9 +18,9 @@ import TensorFlow
 import TextModels
 
 // Model flags
-let ndim = 512  // Hidden unit size.
+let hiddenSize = 512  // Hidden unit size.
 // Training flags
-let dropoutProb = 0.5  // Dropout rate.
+let dropoutProbability = 0.5  // Dropout rate.
 let order = 5  // Power of length penalty.
 let maxEpochs = 1000  // Maximum number of training epochs.
 var trainingLossHistory = [Float]()  // Keep track of loss.
@@ -30,7 +30,7 @@ let learningRate: Float = 1e-3  // Initial learning rate.
 let lambd: Float = 0.00075  // Weight of length penalty.
 // Lexicon flags.
 let maxLength = 10  // Maximum length of a string.
-let minFreq = 10  // Minimum frequency of a string.
+let minFrequency = 10  // Minimum frequency of a string.
 
 // Load user-provided data files.
 let dataset: WordSegDataset
@@ -50,19 +50,19 @@ default:
   usage()
 }
 
-let sequences = dataset.training.map { $0.numericalizedText }
+let sequences = dataset.trainingPhrases.map { $0.numericalizedText }
 let lexicon = Lexicon(
   from: sequences,
   alphabet: dataset.alphabet,
   maxLength: maxLength,
-  minFreq: minFreq
+  minFrequency: minFrequency
 )
 
 let modelParameters = SNLM.Parameters(
-  ndim: ndim,
-  dropoutProb: dropoutProb,
-  chrVocab: dataset.alphabet,
-  strVocab: lexicon,
+  hiddenSize: hiddenSize,
+  dropoutProbability: dropoutProbability,
+  alphabet: dataset.alphabet,
+  lexicon: lexicon,
   order: order
 )
 
@@ -80,8 +80,8 @@ for epoch in 1...maxEpochs {
   Context.local.learningPhase = .training
   var trainingLossSum: Float = 0
   var trainingBatchCount = 0
-  for record in dataset.training {
-    let sentence = record.numericalizedText
+  for phrase in dataset.trainingPhrases {
+    let sentence = phrase.numericalizedText
     let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
       let lattice = model.buildLattice(sentence, maxLen: maxLength, device: device)
       let score = lattice[sentence.count].semiringScore
@@ -107,11 +107,11 @@ for epoch in 1...maxEpochs {
   trainingLossHistory.append(trainingLoss)
   reduceLROnPlateau(lossHistory: trainingLossHistory, optimizer: optimizer)
 
-  guard let validationDataset = dataset.validation else {
+  if dataset.validationPhrases.count < 1 {
     print(
       """
       [Epoch \(epoch)] \
-      Training loss: \(trainingLoss))
+      Training loss: \(trainingLoss)
       """
     )
 
@@ -131,8 +131,8 @@ for epoch in 1...maxEpochs {
   var validationBatchCount = 0
   var validationCharacterCount = 0
   var validationPlainText: String = ""
-  for record in validationDataset {
-    let sentence = record.numericalizedText
+  for phrase in dataset.validationPhrases {
+    let sentence = phrase.numericalizedText
     var lattice = model.buildLattice(sentence, maxLen: maxLength, device: device)
     let score = lattice[sentence.count].semiringScore
 
@@ -141,8 +141,8 @@ for epoch in 1...maxEpochs {
     validationCharacterCount += sentence.count
 
     // View a sample segmentation once per epoch.
-    if validationBatchCount == validationDataset.count {
-      let bestPath = lattice.viterbi(sentence: record.numericalizedText)
+    if validationBatchCount == dataset.validationPhrases.count {
+      let bestPath = lattice.viterbi(sentence: phrase.numericalizedText)
       validationPlainText = Lattice.pathToPlainText(path: bestPath, alphabet: dataset.alphabet)
     }
   }
