@@ -111,7 +111,7 @@ public struct WordSegDataset {
     let localStorageDirectory: URL = DatasetUtilities.defaultDirectory
       .appendingPathComponent("WordSeg", isDirectory: true)
 
-    WordSegDataset.downloadIfNotPresent(
+    Self.downloadIfNotPresent(
       to: localStorageDirectory, source: source)
 
     let archiveFileName = source.location.deletingPathExtension().lastPathComponent
