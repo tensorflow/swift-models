@@ -34,19 +34,28 @@ extension Sequence where Iterator.Element: Hashable {
     }
 }
 
-public struct MovieLens {
+public struct MovieLens<Entropy: RandomNumberGenerator> {
     public let trainUsers: [Float]
     public let testUsers: [Float]
     public let testData: [[Float]]
     public let items: [Float]
     public let numUsers: Int
-    public let numItems: Int
-    public let trainMatrix: [TensorPair<Int32, Float>]
+    public let numItems: Int  
     public let user2id: [Float: Int]
     public let id2user: [Int: Float]
     public let item2id: [Float: Int]
     public let id2item: [Int: Float]
     public let trainNegSampling: Tensor<Float>
+
+    public typealias Samples = [TensorPair<Int32, Float>]
+    public typealias Batches = Slices<Sampling<Samples, ArraySlice<Int>>>
+    public typealias BatchedTensorPair = TensorPair<Int32, Float>
+    public typealias Training = LazyMapSequence<
+        TrainingEpochs<Samples, Entropy>, 
+        LazyMapSequence<Batches, BatchedTensorPair>
+      >
+    public let trainMatrix: Samples
+    public let training: Training
 
     static func downloadMovieLensDatasetIfNotPresent() -> URL {
         let localURL = DatasetUtilities.defaultDirectory.appendingPathComponent(
@@ -60,7 +69,9 @@ public struct MovieLens {
         return dataFolder
     }
 
-    public init() {
+    public init(
+            trainBatchSize: Int = 1024, 
+            entropy: Entropy) {
         let trainFiles = try! String(
             contentsOf: MovieLens.downloadMovieLensDatasetIfNotPresent().appendingPathComponent(
                 "u1.base"), encoding: .utf8)
@@ -127,7 +138,28 @@ public struct MovieLens {
         self.id2user = id2user
         self.item2id = item2id
         self.id2item = id2item
-        self.trainMatrix = dataset
         self.trainNegSampling = trainNegSampling
+
+        self.trainMatrix = dataset
+        self.training = TrainingEpochs(
+            samples: trainMatrix, 
+            batchSize: trainBatchSize, 
+            entropy: entropy
+        ).lazy.map { (batches: Batches) -> LazyMapSequence<Batches, BatchedTensorPair> in
+            batches.lazy.map {
+                TensorPair<Int32, Float> (
+                    first: Tensor<Int32>($0.map(\.first)),
+                    second: Tensor<Float>($0.map(\.second))
+                )
+            }
+        }
+    }
+}
+
+extension MovieLens where Entropy == SystemRandomNumberGenerator {
+    public init(trainBatchSize: Int = 1024) {
+        self.init(
+            trainBatchSize: trainBatchSize, 
+            entropy: SystemRandomNumberGenerator())
     }
 }
