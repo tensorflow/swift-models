@@ -63,9 +63,7 @@ public protocol TrainingLoopProtocol {
   /// The validation batches.
   var validation: Validation { get }
 
-  // Model, optimizer and loss function
-  /// The model.
-  var model: Model { get set }
+  // Optimizer and loss function
   /// The optimizer.
   var optimizer: Opt { get set }
   /// The loss function.
@@ -164,9 +162,7 @@ where
   /// The validation batches.
   public let validation: Validation
 
-  // Model, optimizer and loss function
-  /// The model.
-  public var model: Model
+  // Optimizer and loss function
   /// The optimizer.
   public var optimizer: Opt
   /// The loss function
@@ -201,12 +197,11 @@ where
   ///
   /// Parameter callbacks: Callbacks that the `TrainingLoop` will use in every call to fit.
   public init(
-    training: Training, validation: Validation, model: Model, optimizer: Opt,
+    training: Training, validation: Validation, optimizer: Opt,
     lossFunction: @escaping LossFunction.F, callbacks: [TrainingLoopCallback<Self>] = []
   ) {
     self.training = training
     self.validation = validation
-    self.model = model
     self.optimizer = optimizer
     self.lossFunction = LossFunction(lossFunction)
     self.callbacks = callbacks
@@ -215,7 +210,7 @@ where
 
 extension TrainingLoop {
   /// The default differentiable step.
-  public mutating func differentiableStep() throws {
+  public mutating func differentiableStep(model: Model) throws {
     guard let data = lastInput else { return }
     guard let target = lastTarget else { return }
     (lastLoss, lastGradient) = valueWithGradient(at: model) { (model: Model) -> Tensor<Float> in
@@ -226,7 +221,7 @@ extension TrainingLoop {
   }
 
   /// The step used for inference.
-  public mutating func inferenceStep() throws {
+  public mutating func inferenceStep(model: Model) throws {
     guard let data = lastInput else { return }
     lastOutput = model(data)
     guard let target = lastTarget else { return }
@@ -235,8 +230,10 @@ extension TrainingLoop {
   }
 
   /// The step used for training.
-  public mutating func trainingStep(differentiableStep: (inout Self) throws -> Void) throws {
-    try differentiableStep(&self)
+  public mutating func trainingStep(
+    model: inout Model, differentiableStep: (Model, inout Self) throws -> Void
+  ) throws {
+    try differentiableStep(model, &self)
     try handleEvent(.updateStart)
     optimizer.update(&model, along: lastGradient!)
   }
@@ -295,8 +292,8 @@ extension TrainingLoop {
   ///   - trainingStep: The step used during the training phase of each epoch. The default value
   ///     uses the `trainingStep` method of `TrainingLoop`.
   public mutating func fit(
-    epochs: Int, callbacks: [TrainingLoopCallback<Self>] = [],
-    differentiableStep: (inout Self) throws -> Void = { try $0.differentiableStep() }
+    _ model: inout Model, epochs: Int, callbacks: [TrainingLoopCallback<Self>] = [],
+    differentiableStep: (Model, inout Self) throws -> Void = { try $1.differentiableStep(model: $0) }
   ) throws {
     let callbacksCount = self.callbacks.count
     self.callbacks += callbacks
@@ -319,7 +316,7 @@ extension TrainingLoop {
             try multipleSteps(
               on: batches,
               step: {
-                try $0.trainingStep(differentiableStep: differentiableStep)
+                try $0.trainingStep(model: &model, differentiableStep: differentiableStep)
               })
           } catch TrainingLoopAction.cancelTraining {}
           try handleEvent(.trainingEnd)
@@ -328,7 +325,7 @@ extension TrainingLoop {
           do {
             Context.local.learningPhase = .inference
             try handleEvent(.validationStart)
-            try multipleSteps(on: validation, step: { try $0.inferenceStep() })
+            try multipleSteps(on: validation, step: { try $0.inferenceStep(model: model) })
           } catch TrainingLoopAction.cancelValidation {}
           try handleEvent(.validationEnd)
         } catch TrainingLoopAction.cancelEpoch {}

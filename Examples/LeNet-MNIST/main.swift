@@ -50,9 +50,8 @@ let trainingProgress = TrainingProgress()
 var trainingLoop = TrainingLoop(
   training: dataset.training,
   validation: dataset.validation,
-  model: classifier,
   optimizer: optimizer,
   lossFunction: softmaxCrossEntropy,
   callbacks: [trainingProgress.update])
 
-try! trainingLoop.fit(epochs: epochCount)
+try! trainingLoop.fit(&classifier, epochs: epochCount)
