@@ -19,7 +19,7 @@ public struct AutoAvgPool2D<Scalar>: AutoLayer where Scalar: TensorFlowFloatingP
         self.padding = padding
     }
 
-    public func buildModelWithOutputShape(inputShape: (Int, Int, Int)) -> (InstanceType, (Int, Int, Int)) {
+    public func buildModelWithOutputShape<Prefix>(inputShape: (Int, Int, Int), keyPathSoFar: KeyPath<Prefix, InstanceType>, keyDict: inout [AnyAutoLayerKey: Any]) -> (InstanceType, (Int, Int, Int)) {
         let outputShape: (Int, Int, Int)
         if (padding == .valid) {
             outputShape = (
@@ -51,7 +51,7 @@ public struct AutoGlobalAvgPool2D<Scalar>: AutoLayer where Scalar: TensorFlowFlo
     public init() {
     }
 
-    public func buildModelWithOutputShape(inputShape: (Int, Int, Int)) -> (InstanceType, Int) {
+    public func buildModelWithOutputShape<Prefix>(inputShape: (Int, Int, Int), keyPathSoFar: KeyPath<Prefix, InstanceType>, keyDict: inout [AnyAutoLayerKey: Any]) -> (InstanceType, Int) {
         return (GlobalAvgPool2D<Scalar>(), inputShape.2)
     }
 }
@@ -75,7 +75,7 @@ public struct AutoMaxPool2D<Scalar>: AutoLayer where Scalar: TensorFlowFloatingP
         self.padding = padding
     }
 
-    public func buildModelWithOutputShape(inputShape: (Int, Int, Int)) -> (InstanceType, (Int, Int, Int)) {
+    public func buildModelWithOutputShape<Prefix>(inputShape: (Int, Int, Int), keyPathSoFar: KeyPath<Prefix, InstanceType>, keyDict: inout [AnyAutoLayerKey: Any]) -> (InstanceType, (Int, Int, Int)) {
         let outputShape: (Int, Int, Int)
         if (padding == .valid) {
             outputShape = (

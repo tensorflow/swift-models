@@ -5,11 +5,19 @@ public protocol AutoLayer {
     associatedtype InputShape
     associatedtype OutputShape
 
-    func buildModelWithOutputShape(inputShape: InputShape) -> (InstanceType, OutputShape)
+    func buildModelWithOutputShape<Prefix>(inputShape: InputShape, keyPathSoFar: KeyPath<Prefix, InstanceType>, keyDict: inout [AnyAutoLayerKey: Any]) -> (InstanceType, OutputShape)
 }
 
 extension AutoLayer {
     public func buildModel(inputShape: InputShape) -> InstanceType {
-        return self.buildModelWithOutputShape(inputShape: inputShape).0
+        var keyDict: [AnyAutoLayerKey: Any] = [:]
+        let (layerInstance, _) = self.buildModelWithOutputShape(inputShape: inputShape, keyPathSoFar: \InstanceType.self, keyDict: &keyDict)
+        return layerInstance
+    }
+
+    public func buildModelWithKeys(inputShape: InputShape) -> (InstanceType, [AnyAutoLayerKey: Any]) {
+        var keyDict: [AnyAutoLayerKey: Any] = [:]
+        let (layerInstance, _) = self.buildModelWithOutputShape(inputShape: inputShape, keyPathSoFar: \InstanceType.self, keyDict: &keyDict)
+        return (layerInstance, keyDict)
     }
 }

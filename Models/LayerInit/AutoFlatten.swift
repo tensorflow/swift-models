@@ -7,7 +7,7 @@ public struct AutoFlatten<Scalar>: AutoLayer where Scalar: TensorFlowFloatingPoi
 
     public init() {}
 
-    public func buildModelWithOutputShape(inputShape: (Int, Int, Int)) -> (InstanceType, Int) {
+    public func buildModelWithOutputShape<Prefix>(inputShape: (Int, Int, Int), keyPathSoFar: KeyPath<Prefix, InstanceType>, keyDict: inout [AnyAutoLayerKey: Any]) -> (InstanceType, Int) {
         return (Flatten<Scalar>(), inputShape.0 * inputShape.1 * inputShape.2)
     }
 }

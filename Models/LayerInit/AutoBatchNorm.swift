@@ -19,7 +19,7 @@ public struct AutoBatchNorm<Shape, Scalar>: AutoLayer where Scalar: TensorFlowFl
         self.epsilon = epsilon
     }
 
-    public func buildModelWithOutputShape(inputShape: Shape) -> (InstanceType, Shape) {
+    public func buildModelWithOutputShape<Prefix>(inputShape: Shape, keyPathSoFar: KeyPath<Prefix, InstanceType>, keyDict: inout [AnyAutoLayerKey: Any]) -> (InstanceType, Shape) {
         let inputShapeArray: [Int]
         if let inputShapeTuple = inputShape as? (Int, Int, Int) {
             inputShapeArray = [inputShapeTuple.0, inputShapeTuple.1, inputShapeTuple.2]

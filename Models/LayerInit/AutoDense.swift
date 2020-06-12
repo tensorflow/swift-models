@@ -13,7 +13,7 @@ public struct AutoDense<Scalar>: AutoLayer where Scalar: TensorFlowFloatingPoint
         self.activation = activation
     }
 
-    public func buildModelWithOutputShape(inputShape: Int) -> (InstanceType, Int) {
+    public func buildModelWithOutputShape<Prefix>(inputShape: Int, keyPathSoFar: KeyPath<Prefix, InstanceType>, keyDict: inout [AnyAutoLayerKey: Any]) -> (InstanceType, Int) {
         return (Dense<Scalar>(inputSize: inputShape, outputSize: self.outputSize, activation: self.activation), self.outputSize)
     }
 }

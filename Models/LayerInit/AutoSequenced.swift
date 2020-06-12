@@ -9,15 +9,17 @@ where
     let second: Layer2
 
     public typealias InstanceType = Sequential<Layer1.InstanceType, Layer2.InstanceType>
+    public typealias InputShape = Layer1.InputShape
+    public typealias OutputShape = Layer2.OutputShape
 
     public init(first: Layer1, second: Layer2) {
         self.first = first
         self.second = second
     }
 
-    public func buildModelWithOutputShape(inputShape: Layer1.InputShape) -> (InstanceType, Layer2.OutputShape) {
-        let (firstInstance, firstOutputShape) = first.buildModelWithOutputShape(inputShape: inputShape)
-        let (secondInstance, secondOutputShape) = second.buildModelWithOutputShape(inputShape: firstOutputShape)
+    public func buildModelWithOutputShape<Prefix>(inputShape: Layer1.InputShape, keyPathSoFar: KeyPath<Prefix, InstanceType>, keyDict: inout [AnyAutoLayerKey: Any]) -> (InstanceType, Layer2.OutputShape) {
+        let (firstInstance, firstOutputShape) = first.buildModelWithOutputShape(inputShape: inputShape, keyPathSoFar: keyPathSoFar.appending(path: \InstanceType.layer1), keyDict: &keyDict)
+        let (secondInstance, secondOutputShape) = second.buildModelWithOutputShape(inputShape: firstOutputShape, keyPathSoFar: keyPathSoFar.appending(path: \InstanceType.layer2), keyDict: &keyDict)
         return (Sequential(firstInstance, secondInstance), secondOutputShape)
     }
 }
@@ -30,7 +32,7 @@ extension AutoLayer {
 
 public struct AutoSequencedManyInstance<LayerType: Layer>: Layer
 where LayerType.Input == LayerType.Output {
-    var layers: [LayerType]
+    public var layers: [LayerType]
 
     @differentiable
     public func callAsFunction(_ input: LayerType.Input) -> LayerType.Output {
@@ -50,10 +52,10 @@ where
         self.layers = layers
     }
 
-    public func buildModelWithOutputShape(inputShape: LayerType.InputShape) -> (InstanceType, LayerType.OutputShape) {
+    public func buildModelWithOutputShape<Prefix>(inputShape: LayerType.InputShape, keyPathSoFar: KeyPath<Prefix, InstanceType>, keyDict: inout [AnyAutoLayerKey: Any]) -> (InstanceType, LayerType.OutputShape) {
         var lastOutputShape = inputShape
-        let builtInstances = self.layers.map({ autoLayer -> LayerType.InstanceType in
-            let (instance, outputShape) = autoLayer.buildModelWithOutputShape(inputShape: lastOutputShape)
+        let builtInstances = self.layers.enumerated().map({ (idx, autoLayer) -> LayerType.InstanceType in
+            let (instance, outputShape) = autoLayer.buildModelWithOutputShape(inputShape: lastOutputShape, keyPathSoFar: keyPathSoFar.appending(path: \InstanceType.layers[idx]), keyDict: &keyDict)
             lastOutputShape = outputShape
             return instance
         })

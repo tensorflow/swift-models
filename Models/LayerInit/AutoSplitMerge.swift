@@ -9,8 +9,8 @@ public final class SplitMergeFunctionWrapper<Output1: Differentiable, Output2: D
 
 public struct SplitMergeInstance<Layer1: Layer, Layer2: Layer, CommonOutput: Differentiable>: Layer
 where Layer1.Input == Layer2.Input, Layer1.TangentVector.VectorSpaceScalar == Layer2.TangentVector.VectorSpaceScalar {
-    var layer1: Layer1
-    var layer2: Layer2
+    public var layer1: Layer1
+    public var layer2: Layer2
     @noDerivative let mergeFn: SplitMergeFunctionWrapper<Layer1.Output, Layer2.Output, CommonOutput>
 
     public init(layer1: Layer1, layer2: Layer2, mergeFn: SplitMergeFunctionWrapper<Layer1.Output, Layer2.Output, CommonOutput>) {
@@ -46,9 +46,9 @@ where Layer1.InputShape == Layer2.InputShape, Layer1.InstanceType.Input == Layer
         self.mergeFn = mergeFn
     }
 
-    public func buildModelWithOutputShape(inputShape: Layer1.InputShape) -> (InstanceType, OutputShape) {
-        let (layer1Built, layer1OutputShape) = layer1.buildModelWithOutputShape(inputShape: inputShape)
-        let (layer2Built, layer2OutputShape) = layer2.buildModelWithOutputShape(inputShape: inputShape)
+    public func buildModelWithOutputShape<Prefix>(inputShape: Layer1.InputShape, keyPathSoFar: KeyPath<Prefix, InstanceType>, keyDict: inout [AnyAutoLayerKey: Any]) -> (InstanceType, OutputShape) {
+        let (layer1Built, layer1OutputShape) = layer1.buildModelWithOutputShape(inputShape: inputShape, keyPathSoFar: keyPathSoFar.appending(path: \InstanceType.layer1), keyDict: &keyDict)
+        let (layer2Built, layer2OutputShape) = layer2.buildModelWithOutputShape(inputShape: inputShape, keyPathSoFar: keyPathSoFar.appending(path: \InstanceType.layer2), keyDict: &keyDict)
         return (SplitMergeInstance(layer1: layer1Built, layer2: layer2Built, mergeFn: self.mergeFn), self.mergeOutputShape(layer1OutputShape, layer2OutputShape))
     }
 }

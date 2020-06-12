@@ -13,7 +13,7 @@ public struct AutoFunction<Input: Differentiable, Output: Differentiable, InputS
         self.fn = fn
     }
 
-    public func buildModelWithOutputShape(inputShape: InputShape) -> (InstanceType, OutputShape) {
+    public func buildModelWithOutputShape<Prefix>(inputShape: InputShape, keyPathSoFar: KeyPath<Prefix, InstanceType>, keyDict: inout [AnyAutoLayerKey: Any]) -> (InstanceType, OutputShape) {
         return (Function(fn), fnShape(inputShape))
     }
 }
