@@ -12,13 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Batcher
+import ModelSupport
 import TensorFlow
 
-public protocol ImageSegmentationDataset {
-    associatedtype SourceDataSet: Collection
-    where SourceDataSet.Element == TensorPair<Float, Int32>, SourceDataSet.Index == Int
-    init(batchSize: Int)
-    var training: Batcher<SourceDataSet> { get }
-    var test: Batcher<SourceDataSet> { get }
+/// An image with a label.
+public typealias SegmentedImage = LabeledData<Tensor<Float>, Tensor<Int32>>
+
+/// Types whose elements represent an image classification dataset (with both
+/// training and validation data).
+public protocol ImageSegmentationData {
+  /// The type of the training data, represented as a sequence of epochs, which
+  /// are collection of batches.
+  associatedtype Training: Sequence
+    where Training.Element: Collection, Training.Element.Element == SegmentedImage
+  /// The type of the validation data, represented as a collection of batches.
+  associatedtype Validation: Collection where Validation.Element == SegmentedImage
+  /// Creates an instance from a given `batchSize`.
+  init(batchSize: Int, on device: Device)
+  /// The `training` epochs.
+  var training: Training { get }
+  /// The `validation` batches.
+  var validation: Validation { get }
+    
+  // The following is probably going to be necessary since we can't extract that
+  // information from `Epochs` or `Batches`.
+  /// The number of samples in the `training` set.
+  //var trainingSampleCount: Int {get}
+  /// The number of samples in the `validation` set.
+  //var validationSampleCount: Int {get}
 }
