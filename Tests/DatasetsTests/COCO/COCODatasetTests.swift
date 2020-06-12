@@ -13,8 +13,8 @@ final class COCODatasetTests: XCTestCase {
             includeMasks: false, batchSize: 32)
       
         for epochBatches in dataset.training.prefix(1) {
-          let batch = epochBatches.first!
-          XCTAssertTrue(batch[0].image.width != 0)
+            let batch = epochBatches.first!
+            XCTAssertTrue(batch[0].image.width != 0)
         }
 
         let validationBatch = dataset.validation.first!
@@ -30,8 +30,8 @@ final class COCODatasetTests: XCTestCase {
             includeMasks: true, batchSize: 32)
 
         for epochBatches in dataset.training.prefix(1) {
-          let batch = epochBatches.first!
-          batch[0].image.width != 0
+            let batch = epochBatches.first!
+            XCTAssertTrue(batch[0].image.width != 0)
         }
 
         let validationBatch = dataset.validation.first!
