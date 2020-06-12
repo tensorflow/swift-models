@@ -23,17 +23,17 @@ import TensorFlow
 
 /// The three variants of Imagenette, determined by their source image size.
 public enum ImagenetteSize {
-    case full
-    case resized160
-    case resized320
+  case full
+  case resized160
+  case resized320
 
-    var suffix: String {
-        switch self {
-        case .full: return ""
-        case .resized160: return "-160"
-        case .resized320: return "-320"
-        }
+  var suffix: String {
+    switch self {
+    case .full: return ""
+    case .resized160: return "-160"
+    case .resized320: return "-320"
     }
+  }
 }
 
 public struct Imagenette<Entropy: RandomNumberGenerator> {
@@ -63,9 +63,11 @@ public struct Imagenette<Entropy: RandomNumberGenerator> {
   ///   - device: The Device on which resulting Tensors from this dataset will be placed, as well
   ///     as where the latter stages of any conversion calculations will be performed.
   public init(batchSize: Int, entropy: Entropy, device: Device) {
-    self.init(batchSize: batchSize, entropy: entropy, device: device, inputSize: ImagenetteSize.resized320, outputSize: 224)
+    self.init(
+      batchSize: batchSize, entropy: entropy, device: device, inputSize: ImagenetteSize.resized320,
+      outputSize: 224)
   }
-  
+
   /// Creates an instance with `batchSize` on `device` using `remoteBinaryArchiveLocation`.
   ///
   /// - Parameters:
@@ -79,10 +81,11 @@ public struct Imagenette<Entropy: RandomNumberGenerator> {
   ///   - inputSize: Which Imagenette image size variant to use.
   ///   - outputSize: The square width and height of the images returned from this dataset.
   ///   - localStorageDirectory: Where to place the downloaded and unarchived dataset.
-  public init(batchSize: Int, entropy: Entropy, device: Device, inputSize: ImagenetteSize,
-      outputSize: Int,
-      localStorageDirectory: URL = DatasetUtilities.defaultDirectory
-        .appendingPathComponent("Imagenette", isDirectory: true)
+  public init(
+    batchSize: Int, entropy: Entropy, device: Device, inputSize: ImagenetteSize,
+    outputSize: Int,
+    localStorageDirectory: URL = DatasetUtilities.defaultDirectory
+      .appendingPathComponent("Imagenette", isDirectory: true)
   ) {
     do {
       // Training data
@@ -91,20 +94,24 @@ public struct Imagenette<Entropy: RandomNumberGenerator> {
 
       let mean = Tensor<Float>([0.485, 0.456, 0.406], on: device)
       let standardDeviation = Tensor<Float>([0.229, 0.224, 0.225], on: device)
-      
+
       training = TrainingEpochs(samples: trainingSamples, batchSize: batchSize, entropy: entropy)
         .lazy.map { (batches: Batches) -> LazyMapSequence<Batches, LabeledImage> in
-        return batches.lazy.map{
-          makeImagenetteBatch(samples: $0, outputSize: outputSize, mean: mean, standardDeviation: standardDeviation, device: device)
+          return batches.lazy.map {
+            makeImagenetteBatch(
+              samples: $0, outputSize: outputSize, mean: mean, standardDeviation: standardDeviation,
+              device: device)
+          }
         }
-      }
 
       // Validation data
       let validationSamples = try loadImagenetteValidationDirectory(
         inputSize: inputSize, localStorageDirectory: localStorageDirectory, base: "imagenette")
 
       validation = validationSamples.inBatches(of: batchSize).lazy.map {
-        makeImagenetteBatch(samples: $0, outputSize: outputSize, mean: mean, standardDeviation: standardDeviation, device: device)
+        makeImagenetteBatch(
+          samples: $0, outputSize: outputSize, mean: mean, standardDeviation: standardDeviation,
+          device: device)
       }
     } catch {
       fatalError("Could not load Imagenette dataset: \(error)")
@@ -118,27 +125,33 @@ extension Imagenette: ImageClassificationData where Entropy == SystemRandomNumbe
     self.init(batchSize: batchSize, entropy: SystemRandomNumberGenerator(), device: device)
   }
 
-  public init(batchSize: Int, inputSize: ImagenetteSize, outputSize: Int, on device: Device = Device.default) {
-    self.init(batchSize: batchSize, entropy: SystemRandomNumberGenerator(), device: device, inputSize: inputSize, outputSize: outputSize)
+  public init(
+    batchSize: Int, inputSize: ImagenetteSize, outputSize: Int, on device: Device = Device.default
+  ) {
+    self.init(
+      batchSize: batchSize, entropy: SystemRandomNumberGenerator(), device: device,
+      inputSize: inputSize, outputSize: outputSize)
   }
 }
 
 func downloadImagenetteIfNotPresent(to directory: URL, size: ImagenetteSize, base: String) {
-    let downloadPath = directory.appendingPathComponent("\(base)\(size.suffix)").path
-    let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
-    let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: downloadPath)
-    let directoryEmpty = (contentsOfDir == nil) || (contentsOfDir!.isEmpty)
+  let downloadPath = directory.appendingPathComponent("\(base)\(size.suffix)").path
+  let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
+  let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: downloadPath)
+  let directoryEmpty = (contentsOfDir == nil) || (contentsOfDir!.isEmpty)
 
-    guard !directoryExists || directoryEmpty else { return }
+  guard !directoryExists || directoryEmpty else { return }
 
-    let location = URL(
-        string: "https://s3.amazonaws.com/fast-ai-imageclas/\(base)\(size.suffix).tgz")!
-    let _ = DatasetUtilities.downloadResource(
-        filename: "\(base)\(size.suffix)", fileExtension: "tgz",
-        remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
+  let location = URL(
+    string: "https://s3.amazonaws.com/fast-ai-imageclas/\(base)\(size.suffix).tgz")!
+  let _ = DatasetUtilities.downloadResource(
+    filename: "\(base)\(size.suffix)", fileExtension: "tgz",
+    remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
 }
 
-func exploreImagenetteDirectory(named name: String, in directory: URL, inputSize: ImagenetteSize, base: String) throws -> [URL] {
+func exploreImagenetteDirectory(
+  named name: String, in directory: URL, inputSize: ImagenetteSize, base: String
+) throws -> [URL] {
   downloadImagenetteIfNotPresent(to: directory, size: inputSize, base: base)
   let path = directory.appendingPathComponent("\(base)\(inputSize.suffix)/\(name)")
   let dirContents = try FileManager.default.contentsOfDirectory(
@@ -149,26 +162,27 @@ func exploreImagenetteDirectory(named name: String, in directory: URL, inputSize
     let subdirContents = try FileManager.default.contentsOfDirectory(
       at: directoryURL, includingPropertiesForKeys: [.isDirectoryKey],
       options: [.skipsHiddenFiles])
-      urls += subdirContents
+    urls += subdirContents
   }
   return urls
 }
 
 func parentLabel(url: URL) -> String {
-    return url.deletingLastPathComponent().lastPathComponent
+  return url.deletingLastPathComponent().lastPathComponent
 }
 
 func createLabelDict(urls: [URL]) -> [String: Int] {
-    let allLabels = urls.map(parentLabel)
-    let labels = Array(Set(allLabels)).sorted()
-    return Dictionary(uniqueKeysWithValues: labels.enumerated().map{ ($0.element, $0.offset) })
+  let allLabels = urls.map(parentLabel)
+  let labels = Array(Set(allLabels)).sorted()
+  return Dictionary(uniqueKeysWithValues: labels.enumerated().map { ($0.element, $0.offset) })
 }
 
 func loadImagenetteDirectory(
   named name: String, in directory: URL, inputSize: ImagenetteSize, base: String,
   labelDict: [String: Int]? = nil
 ) throws -> [(file: URL, label: Int32)] {
-  let urls = try exploreImagenetteDirectory(named: name, in: directory, inputSize: inputSize, base: base)
+  let urls = try exploreImagenetteDirectory(
+    named: name, in: directory, inputSize: inputSize, base: base)
   let unwrappedLabelDict = labelDict ?? createLabelDict(urls: urls)
   return urls.lazy.map { (url: URL) -> (file: URL, label: Int32) in
     (file: url, label: Int32(unwrappedLabelDict[parentLabel(url: url)]!))
@@ -176,16 +190,19 @@ func loadImagenetteDirectory(
 }
 
 func loadImagenetteTrainingDirectory(
-  inputSize: ImagenetteSize, localStorageDirectory: URL, base: String, labelDict: [String: Int]? = nil
+  inputSize: ImagenetteSize, localStorageDirectory: URL, base: String,
+  labelDict: [String: Int]? = nil
 ) throws
-    -> [(file: URL, label: Int32)]
+  -> [(file: URL, label: Int32)]
 {
   return try loadImagenetteDirectory(
-    named: "train", in: localStorageDirectory, inputSize: inputSize, base: base, labelDict: labelDict)
+    named: "train", in: localStorageDirectory, inputSize: inputSize, base: base,
+    labelDict: labelDict)
 }
 
 func loadImagenetteValidationDirectory(
-  inputSize: ImagenetteSize, localStorageDirectory: URL, base: String, labelDict: [String: Int]? = nil
+  inputSize: ImagenetteSize, localStorageDirectory: URL, base: String,
+  labelDict: [String: Int]? = nil
 ) throws
   -> [(file: URL, label: Int32)]
 {
@@ -193,19 +210,22 @@ func loadImagenetteValidationDirectory(
     named: "val", in: localStorageDirectory, inputSize: inputSize, base: base, labelDict: labelDict)
 }
 
-func makeImagenetteBatch<BatchSamples: Collection>(samples: BatchSamples, outputSize: Int, mean: Tensor<Float>?, standardDeviation: Tensor<Float>?, device: Device) -> LabeledImage where BatchSamples.Element == (file: URL, label: Int32) {
-  let images = samples.map(\.file).map{ url -> Tensor<Float> in
+func makeImagenetteBatch<BatchSamples: Collection>(
+  samples: BatchSamples, outputSize: Int, mean: Tensor<Float>?, standardDeviation: Tensor<Float>?,
+  device: Device
+) -> LabeledImage where BatchSamples.Element == (file: URL, label: Int32) {
+  let images = samples.map(\.file).map { url -> Tensor<Float> in
     Image(jpeg: url).resized(to: (outputSize, outputSize)).tensor
   }
-  
+
   var imageTensor = Tensor(stacking: images)
   imageTensor = Tensor(copying: imageTensor, to: device)
   imageTensor /= 255.0
-  
+
   if let mean = mean, let standardDeviation = standardDeviation {
     imageTensor = (imageTensor - mean) / standardDeviation
   }
-  
+
   let labels = Tensor<Int32>(samples.map(\.label), on: device)
   return LabeledImage(data: imageTensor, label: labels)
 }

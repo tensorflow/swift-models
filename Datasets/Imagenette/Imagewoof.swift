@@ -48,9 +48,11 @@ public struct Imagewoof<Entropy: RandomNumberGenerator> {
   ///   - device: The Device on which resulting Tensors from this dataset will be placed, as well
   ///     as where the latter stages of any conversion calculations will be performed.
   public init(batchSize: Int, entropy: Entropy, device: Device) {
-    self.init(batchSize: batchSize, entropy: entropy, device: device, inputSize: ImagenetteSize.resized320, outputSize: 224)
+    self.init(
+      batchSize: batchSize, entropy: entropy, device: device, inputSize: ImagenetteSize.resized320,
+      outputSize: 224)
   }
-  
+
   /// Creates an instance with `batchSize` on `device` using `remoteBinaryArchiveLocation`.
   ///
   /// - Parameters:
@@ -64,10 +66,11 @@ public struct Imagewoof<Entropy: RandomNumberGenerator> {
   ///   - inputSize: Which Imagenette image size variant to use.
   ///   - outputSize: The square width and height of the images returned from this dataset.
   ///   - localStorageDirectory: Where to place the downloaded and unarchived dataset.
-  public init(batchSize: Int, entropy: Entropy, device: Device, inputSize: ImagenetteSize,
-      outputSize: Int,
-      localStorageDirectory: URL = DatasetUtilities.defaultDirectory
-        .appendingPathComponent("Imagewoof", isDirectory: true)
+  public init(
+    batchSize: Int, entropy: Entropy, device: Device, inputSize: ImagenetteSize,
+    outputSize: Int,
+    localStorageDirectory: URL = DatasetUtilities.defaultDirectory
+      .appendingPathComponent("Imagewoof", isDirectory: true)
   ) {
     do {
       // Training data
@@ -76,20 +79,24 @@ public struct Imagewoof<Entropy: RandomNumberGenerator> {
 
       let mean = Tensor<Float>([0.485, 0.456, 0.406], on: device)
       let standardDeviation = Tensor<Float>([0.229, 0.224, 0.225], on: device)
-      
+
       training = TrainingEpochs(samples: trainingSamples, batchSize: batchSize, entropy: entropy)
         .lazy.map { (batches: Batches) -> LazyMapSequence<Batches, LabeledImage> in
-        return batches.lazy.map{
-          makeImagenetteBatch(samples: $0, outputSize: outputSize, mean: mean, standardDeviation: standardDeviation, device: device)
+          return batches.lazy.map {
+            makeImagenetteBatch(
+              samples: $0, outputSize: outputSize, mean: mean, standardDeviation: standardDeviation,
+              device: device)
+          }
         }
-      }
 
       // Validation data
       let validationSamples = try loadImagenetteValidationDirectory(
         inputSize: inputSize, localStorageDirectory: localStorageDirectory, base: "imagewoof")
 
       validation = validationSamples.inBatches(of: batchSize).lazy.map {
-        makeImagenetteBatch(samples: $0, outputSize: outputSize, mean: mean, standardDeviation: standardDeviation, device: device)
+        makeImagenetteBatch(
+          samples: $0, outputSize: outputSize, mean: mean, standardDeviation: standardDeviation,
+          device: device)
       }
     } catch {
       fatalError("Could not load Imagewoof dataset: \(error)")
@@ -103,7 +110,11 @@ extension Imagewoof: ImageClassificationData where Entropy == SystemRandomNumber
     self.init(batchSize: batchSize, entropy: SystemRandomNumberGenerator(), device: device)
   }
 
-  public init(batchSize: Int, inputSize: ImagenetteSize, outputSize: Int, on device: Device = Device.default) {
-    self.init(batchSize: batchSize, entropy: SystemRandomNumberGenerator(), device: device, inputSize: inputSize, outputSize: outputSize)
+  public init(
+    batchSize: Int, inputSize: ImagenetteSize, outputSize: Int, on device: Device = Device.default
+  ) {
+    self.init(
+      batchSize: batchSize, entropy: SystemRandomNumberGenerator(), device: device,
+      inputSize: inputSize, outputSize: outputSize)
   }
 }
