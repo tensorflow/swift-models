@@ -88,7 +88,6 @@ public struct Imagenette<Entropy: RandomNumberGenerator> {
       .appendingPathComponent("Imagenette", isDirectory: true)
   ) {
     do {
-      // Training data
       let trainingSamples = try loadImagenetteTrainingDirectory(
         inputSize: inputSize, localStorageDirectory: localStorageDirectory, base: "imagenette")
 
@@ -104,7 +103,6 @@ public struct Imagenette<Entropy: RandomNumberGenerator> {
           }
         }
 
-      // Validation data
       let validationSamples = try loadImagenetteValidationDirectory(
         inputSize: inputSize, localStorageDirectory: localStorageDirectory, base: "imagenette")
 
@@ -120,11 +118,13 @@ public struct Imagenette<Entropy: RandomNumberGenerator> {
 }
 
 extension Imagenette: ImageClassificationData where Entropy == SystemRandomNumberGenerator {
-  /// Creates an instance with `batchSize`.
+  /// Creates an instance with `batchSize`, using the SystemRandomNumberGenerator.
   public init(batchSize: Int, on device: Device = Device.default) {
     self.init(batchSize: batchSize, entropy: SystemRandomNumberGenerator(), device: device)
   }
 
+  /// Creates an instance with `batchSize`, `inputSize`, and `outputSize`, using the
+  /// SystemRandomNumberGenerator.
   public init(
     batchSize: Int, inputSize: ImagenetteSize, outputSize: Int, on device: Device = Device.default
   ) {

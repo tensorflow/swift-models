@@ -105,11 +105,13 @@ public struct Imagewoof<Entropy: RandomNumberGenerator> {
 }
 
 extension Imagewoof: ImageClassificationData where Entropy == SystemRandomNumberGenerator {
-  /// Creates an instance with `batchSize`.
+  /// Creates an instance with `batchSize`, using the SystemRandomNumberGenerator.
   public init(batchSize: Int, on device: Device = Device.default) {
     self.init(batchSize: batchSize, entropy: SystemRandomNumberGenerator(), device: device)
   }
 
+  /// Creates an instance with `batchSize`, `inputSize`, and `outputSize`, using the
+  /// SystemRandomNumberGenerator.
   public init(
     batchSize: Int, inputSize: ImagenetteSize, outputSize: Int, on device: Device = Device.default
   ) {
