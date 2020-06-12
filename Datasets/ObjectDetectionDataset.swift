@@ -81,11 +81,12 @@ public protocol ObjectDetectionData {
   /// The type of the training data, represented as a sequence of epochs, which
   /// are collection of batches.
   associatedtype Training: Sequence
-  where Training.Element: Collection, Training.Element.Element == ObjectDetectionExample
+  where Training.Element: Collection, Training.Element.Element == [ObjectDetectionExample]
   /// The type of the validation data, represented as a collection of batches.
-  associatedtype Validation: Collection where Validation.Element == ObjectDetectionExample
+  associatedtype Validation: Collection where Validation.Element == [ObjectDetectionExample]
   /// Creates an instance from a given `batchSize`.
-  init(batchSize: Int, on device: Device)
+  init(
+    training: COCO, validation: COCO, includeMasks: Bool, batchSize: Int, on device: Device)
   /// The `training` epochs.
   var training: Training { get }
   /// The `validation` batches.

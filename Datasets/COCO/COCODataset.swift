@@ -71,6 +71,19 @@ public struct COCODataset<Entropy: RandomNumberGenerator> {
   }
 }
 
+extension COCODataset: ObjectDetectionData where Entropy == SystemRandomNumberGenerator {
+  /// Creates an instance with `batchSize`, using the SystemRandomNumberGenerator.
+  public init(
+    training: COCO, validation: COCO, includeMasks: Bool, batchSize: Int,
+    on device: Device = Device.default
+  ) {
+    self.init(
+      training: training, validation: validation, includeMasks: includeMasks, batchSize: batchSize,
+      entropy: SystemRandomNumberGenerator(), device: device)
+  }
+}
+
+
 func loadCOCOExamples(from coco: COCO, includeMasks: Bool, batchSize: Int)
     -> [ObjectDetectionExample]
 {
