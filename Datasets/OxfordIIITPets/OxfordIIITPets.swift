@@ -94,6 +94,21 @@ public struct OxfordIIITPets<Entropy: RandomNumberGenerator> {
   }
 }
 
+extension OxfordIIITPets: ImageSegmentationData where Entropy == SystemRandomNumberGenerator {
+  /// Creates an instance with `batchSize`, using the SystemRandomNumberGenerator.
+  public init(batchSize: Int, on device: Device = Device.default) {
+    self.init(batchSize: batchSize, entropy: SystemRandomNumberGenerator(), device: device)
+  }
+
+  /// Creates an instance with `batchSize`, `inputSize`, and `outputSize`, using the
+  /// SystemRandomNumberGenerator.
+  public init(batchSize: Int, imageSize: Int, on device: Device = Device.default) {
+    self.init(
+      batchSize: batchSize, entropy: SystemRandomNumberGenerator(), device: device,
+      imageSize: imageSize)
+  }
+}
+
 func downloadOxfordIIITPetsIfNotPresent(to directory: URL) {
   let downloadPath = directory.appendingPathComponent("images", isDirectory: true).path
   let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
