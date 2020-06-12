@@ -16,7 +16,7 @@ final class ImagenetteTests: XCTestCase {
                 XCTAssertEqual(batch.data.shape, [expectedBS, 224, 224, 3])
             }
         }
-        XCTAssertEqual(batchCount, 64)
+        XCTAssertEqual(batchCount, 201)
     }
 	
     func testCreateImagewoof() {
@@ -32,7 +32,7 @@ final class ImagenetteTests: XCTestCase {
                 XCTAssertEqual(batch.data.shape, [expectedBS, 224, 224, 3])
             }
         }
-        XCTAssertEqual(batchCount, 64)
+        XCTAssertEqual(batchCount, 194)
     }
 }
 
