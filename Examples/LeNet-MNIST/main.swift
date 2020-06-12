@@ -40,13 +40,10 @@ var classifier = Sequential {
     Dense<Float>(inputSize: 120, outputSize: 84, activation: relu)
     Dense<Float>(inputSize: 84, outputSize: 10)
 }
-classifier.move(to: device)
 
 var optimizer = SGD(for: classifier, learningRate: 0.1)
-optimizer = SGD(copying: optimizer, to: device)
 
 let trainingProgress = TrainingProgress()
-
 var trainingLoop = TrainingLoop(
   training: dataset.training,
   validation: dataset.validation,
@@ -54,4 +51,4 @@ var trainingLoop = TrainingLoop(
   lossFunction: softmaxCrossEntropy,
   callbacks: [trainingProgress.update])
 
-try! trainingLoop.fit(&classifier, epochs: epochCount)
+try! trainingLoop.fit(&classifier, epochs: epochCount, on: device)

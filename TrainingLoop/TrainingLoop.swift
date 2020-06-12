@@ -293,12 +293,16 @@ extension TrainingLoop {
   ///     uses the `trainingStep` method of `TrainingLoop`.
   public mutating func fit(
     _ model: inout Model, epochs: Int, callbacks: [TrainingLoopCallback<Self>] = [],
+    on device: Device = Device.default,
     differentiableStep: (Model, inout Self) throws -> Void = { try $1.differentiableStep(model: $0) }
   ) throws {
     let callbacksCount = self.callbacks.count
     self.callbacks += callbacks
     defer { self.callbacks = Array(self.callbacks.prefix(callbacksCount)) }
     epochCount = epochs
+
+    model.move(to: device)
+    optimizer = Opt(copying: optimizer, to: device)
 
     do {
       try handleEvent(.fitStart)

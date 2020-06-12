@@ -26,15 +26,10 @@ import TrainingLoop
 #endif
 
 let dataset = CIFAR10(batchSize: 10, on: device)
-
 var model = ResNet(classCount: 10, depth: .resNet56, downsamplingInFirstStage: false)
-model.move(to: device)
-
 var optimizer = SGD(for: model, learningRate: 0.001)
-optimizer = SGD(copying: optimizer, to: device)
 
 let trainingProgress = TrainingProgress()
-
 var trainingLoop = TrainingLoop(
   training: dataset.training,
   validation: dataset.validation,
@@ -42,4 +37,4 @@ var trainingLoop = TrainingLoop(
   lossFunction: softmaxCrossEntropy,
   callbacks: [trainingProgress.update])
 
-try! trainingLoop.fit(&model, epochs: 10)
+try! trainingLoop.fit(&model, epochs: 10, on: device)
