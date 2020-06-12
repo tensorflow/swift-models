@@ -18,7 +18,7 @@ import TensorFlow
 /// An image with a label.
 public typealias SegmentedImage = LabeledData<Tensor<Float>, Tensor<Int32>>
 
-/// Types whose elements represent an image classification dataset (with both
+/// Types whose elements represent an image segmentation dataset (with both
 /// training and validation data).
 public protocol ImageSegmentationData {
   /// The type of the training data, represented as a sequence of epochs, which
