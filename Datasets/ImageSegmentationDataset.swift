@@ -24,7 +24,7 @@ public protocol ImageSegmentationData {
   /// The type of the training data, represented as a sequence of epochs, which
   /// are collection of batches.
   associatedtype Training: Sequence
-    where Training.Element: Collection, Training.Element.Element == SegmentedImage
+  where Training.Element: Collection, Training.Element.Element == SegmentedImage
   /// The type of the validation data, represented as a collection of batches.
   associatedtype Validation: Collection where Validation.Element == SegmentedImage
   /// Creates an instance from a given `batchSize`.
@@ -33,7 +33,7 @@ public protocol ImageSegmentationData {
   var training: Training { get }
   /// The `validation` batches.
   var validation: Validation { get }
-    
+
   // The following is probably going to be necessary since we can't extract that
   // information from `Epochs` or `Batches`.
   /// The number of samples in the `training` set.

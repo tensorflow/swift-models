@@ -31,7 +31,9 @@ public struct OxfordIIITPets<Entropy: RandomNumberGenerator> {
     LazyMapSequence<Batches, SegmentedImage>
   >
   /// The type of the validation data, represented as a collection of batches.
-  public typealias Validation = LazyMapSequence<Slices<[(file: URL, annotation: URL)]>, LabeledImage>
+  public typealias Validation = LazyMapSequence<
+    Slices<[(file: URL, annotation: URL)]>, LabeledImage
+  >
   /// The training epochs.
   public let training: Training
   /// The validation batches.
@@ -51,7 +53,7 @@ public struct OxfordIIITPets<Entropy: RandomNumberGenerator> {
     self.init(
       batchSize: batchSize, entropy: entropy, device: device, imageSize: 224)
   }
-  
+
   /// Creates an instance with `batchSize` on `device` using `remoteBinaryArchiveLocation`.
   ///
   /// - Parameters:
@@ -113,7 +115,9 @@ func downloadOxfordIIITPetsIfNotPresent(to directory: URL) {
   )
 }
 
-func loadOxfordIIITPets(filename: String, in directory: URL) throws -> [(file: URL, annotation: URL)] {
+func loadOxfordIIITPets(filename: String, in directory: URL) throws -> [(
+  file: URL, annotation: URL
+)] {
   downloadOxfordIIITPetsIfNotPresent(to: directory)
   let imageURLs = getImageURLs(filename: filename, directory: directory)
   return imageURLs.lazy.map { (imageURL: URL) -> (file: URL, annotation: URL) in
@@ -137,12 +141,15 @@ func getImageURLs(filename: String, directory: URL) -> [URL] {
   }
 }
 
-func loadOxfordIITPetsTraining(localStorageDirectory: URL) throws -> [(file: URL, annotation: URL)] {
+func loadOxfordIITPetsTraining(localStorageDirectory: URL) throws -> [(file: URL, annotation: URL)]
+{
   return try loadOxfordIIITPets(
     filename: "trainval.txt", in: localStorageDirectory)
 }
 
-func loadOxfordIIITPetsValidation(localStorageDirectory: URL) throws -> [(file: URL, annotation: URL)] {
+func loadOxfordIIITPetsValidation(localStorageDirectory: URL) throws -> [(
+  file: URL, annotation: URL
+)] {
   return try loadOxfordIIITPets(
     filename: "test.txt", in: localStorageDirectory)
 }
@@ -159,7 +166,8 @@ fileprivate func makeBatch<BatchSamples: Collection>(
   imageTensor /= 255.0
 
   let annotations = samples.map(\.annotation).map { url -> Tensor<Int32> in
-    Tensor<Int32>(Image(jpeg: url).resized(to: (imageSize, imageSize)).tensor[0..., 0..., 0...0] - 1)
+    Tensor<Int32>(
+      Image(jpeg: url).resized(to: (imageSize, imageSize)).tensor[0..., 0..., 0...0] - 1)
   }
   var annotationTensor = Tensor(stacking: annotations)
   annotationTensor = Tensor(copying: annotationTensor, to: device)

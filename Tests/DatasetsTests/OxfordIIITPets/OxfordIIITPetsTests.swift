@@ -23,6 +23,6 @@ final class OxfordIIITPetsTests: XCTestCase {
 
 extension OxfordIIITPetsTests {
   static var allTests = [
-    ("testCreateOxfordIIITPets", testCreateOxfordIIITPets),
+    ("testCreateOxfordIIITPets", testCreateOxfordIIITPets)
   ]
 }
