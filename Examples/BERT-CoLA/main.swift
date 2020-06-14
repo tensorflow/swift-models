@@ -96,7 +96,7 @@ var scheduledLearningRate = LinearlyDecayedParameter(
 )
 
 print("Training \(bertPretrained.name) for the CoLA task!")
-for (epoch, epochBatches) in cola.trainingEpochs.prefix(3).enumerated() {
+for (epoch, epochBatches) in cola.trainingEpochs.prefix(epochCount).enumerated() {
     print("[Epoch \(epoch + 1)]")
     Context.local.learningPhase = .training
     var trainingLossSum: Float = 0
