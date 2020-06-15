@@ -122,7 +122,7 @@ let package = Package(
         ),
         .target(
             name: "WordSeg",
-            dependencies: ["ModelSupport", "TextModels", "Datasets"],
+            dependencies: ["ArgumentParser", "Datasets", "ModelSupport", "TextModels"],
             path: "Examples/WordSeg"
         ),
        .target(
