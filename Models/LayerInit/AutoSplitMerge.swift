@@ -39,11 +39,15 @@ where Layer1.InputShape == Layer2.InputShape, Layer1.InstanceType.Input == Layer
     public typealias InputShape = Layer1.InputShape
     public typealias OutputShape = OutputShape
 
-    public init(layer1: Layer1, layer2: Layer2, mergeOutputShape: @escaping (Layer1.OutputShape, Layer2.OutputShape) -> OutputShape, mergeFn: SplitMergeFunctionWrapper<Layer1.InstanceType.Output, Layer2.InstanceType.Output, CommonOutput>) {
+    public init(
+        layer1: Layer1, layer2: Layer2,
+        mergeOutputShape: @escaping (Layer1.OutputShape, Layer2.OutputShape) -> OutputShape,
+        mergeFn: @escaping @differentiable (Layer1.InstanceType.Output, Layer2.InstanceType.Output) -> CommonOutput
+    ) {
         self.layer1 = layer1
         self.layer2 = layer2
         self.mergeOutputShape = mergeOutputShape
-        self.mergeFn = mergeFn
+        self.mergeFn = SplitMergeFunctionWrapper(mergeFn)
     }
 
     public func buildModelWithOutputShape<Prefix>(inputShape: Layer1.InputShape, keyPathSoFar: KeyPath<Prefix, InstanceType>, keyDict: inout [AnyAutoLayerKey: Any]) -> (InstanceType, OutputShape) {
