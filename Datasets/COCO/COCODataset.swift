@@ -46,7 +46,8 @@ public struct COCODataset<Entropy: RandomNumberGenerator> {
   ///     as where the latter stages of any conversion calculations will be performed.
   public init(
     training: COCO, validation: COCO, includeMasks: Bool, batchSize: Int,
-    entropy: Entropy, device: Device
+    entropy: Entropy, device: Device,
+    transform: @escaping (ObjectDetectionExample) -> ObjectDetectionExample
   ) {
     let trainingSamples = loadCOCOExamples(
       from: training,
@@ -56,7 +57,7 @@ public struct COCODataset<Entropy: RandomNumberGenerator> {
     self.training = TrainingEpochs(samples: trainingSamples, batchSize: batchSize, entropy: entropy)
       .lazy.map { (batches: Batches) -> LazyMapSequence<Batches, [ObjectDetectionExample]> in
         return batches.lazy.map {
-          makeBatch(samples: $0, device: device)
+          makeBatch(samples: $0, device: device, transform: transform)
         }
       }
 
@@ -66,8 +67,12 @@ public struct COCODataset<Entropy: RandomNumberGenerator> {
       batchSize: batchSize)
 
     self.validation = validationSamples.inBatches(of: batchSize).lazy.map {
-      makeBatch(samples: $0, device: device)
+      makeBatch(samples: $0, device: device, transform: transform)
     }
+  }
+
+  public static func identity(_ example: ObjectDetectionExample) -> ObjectDetectionExample {
+    return example
   }
 }
 
@@ -75,11 +80,12 @@ extension COCODataset: ObjectDetectionData where Entropy == SystemRandomNumberGe
   /// Creates an instance with `batchSize`, using the SystemRandomNumberGenerator.
   public init(
     training: COCO, validation: COCO, includeMasks: Bool, batchSize: Int,
-    on device: Device = Device.default
+    on device: Device = Device.default,
+    transform: @escaping (ObjectDetectionExample) -> ObjectDetectionExample = COCODataset.identity
   ) {
     self.init(
       training: training, validation: validation, includeMasks: includeMasks, batchSize: batchSize,
-      entropy: SystemRandomNumberGenerator(), device: device)
+      entropy: SystemRandomNumberGenerator(), device: device, transform: transform)
   }
 }
 
@@ -164,7 +170,8 @@ func loadCOCOExample(coco: COCO, image: COCO.Image, includeMasks: Bool) -> Objec
 }
 
 fileprivate func makeBatch<BatchSamples: Collection>(
-  samples: BatchSamples, device: Device
+  samples: BatchSamples, device: Device,
+  transform: (ObjectDetectionExample) -> ObjectDetectionExample
 ) -> [ObjectDetectionExample] where BatchSamples.Element == ObjectDetectionExample {
-  return [ObjectDetectionExample](samples)
+  return samples.map(transform)
 }

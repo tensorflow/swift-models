@@ -86,7 +86,8 @@ public protocol ObjectDetectionData {
   associatedtype Validation: Collection where Validation.Element == [ObjectDetectionExample]
   /// Creates an instance from a given `batchSize`.
   init(
-    training: COCO, validation: COCO, includeMasks: Bool, batchSize: Int, on device: Device)
+    training: COCO, validation: COCO, includeMasks: Bool, batchSize: Int, on device: Device,
+    transform: @escaping (ObjectDetectionExample) -> ObjectDetectionExample)
   /// The `training` epochs.
   var training: Training { get }
   /// The `validation` batches.
