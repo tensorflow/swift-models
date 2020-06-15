@@ -14,12 +14,6 @@ public class AutoLayerKey<T: Layer>: AnyAutoLayerKey {
     public override init() {}
 }
 
-extension AutoLayerKey {
-    public func readFrom<Instance: Layer>(layerInstance: Instance, keyDict: [AnyAutoLayerKey: Any]) -> T {
-        return layerInstance[keyPath: keyDict[self] as! KeyPath<Instance, T>]
-    }
-}
-
 public struct KeyedAutoLayer<Underlying: AutoLayer>: AutoLayer {
     let underlying: Underlying
     let key: AutoLayerKey<InstanceType>

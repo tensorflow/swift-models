@@ -6,7 +6,7 @@ public protocol AutoModule: AutoLayer {
     var initializeLayer: LayerType { mutating get }
 }
 
-extension AutoModule  {
+extension AutoModule {
     public typealias InstanceType = LayerType.InstanceType
     public typealias InputShape = LayerType.InputShape
     public typealias OutputShape = LayerType.OutputShape
