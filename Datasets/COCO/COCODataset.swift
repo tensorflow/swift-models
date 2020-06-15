@@ -47,7 +47,7 @@ public struct COCODataset<Entropy: RandomNumberGenerator> {
   public init(
     training: COCO, validation: COCO, includeMasks: Bool, batchSize: Int,
     entropy: Entropy, device: Device,
-    transform: @escaping (ObjectDetectionExample) -> ObjectDetectionExample
+    transform: @escaping (ObjectDetectionExample) -> [ObjectDetectionExample]
   ) {
     let trainingSamples = loadCOCOExamples(
       from: training,
@@ -71,8 +71,8 @@ public struct COCODataset<Entropy: RandomNumberGenerator> {
     }
   }
 
-  public static func identity(_ example: ObjectDetectionExample) -> ObjectDetectionExample {
-    return example
+  public static func identity(_ example: ObjectDetectionExample) -> [ObjectDetectionExample] {
+    return [example]
   }
 }
 
@@ -81,7 +81,7 @@ extension COCODataset: ObjectDetectionData where Entropy == SystemRandomNumberGe
   public init(
     training: COCO, validation: COCO, includeMasks: Bool, batchSize: Int,
     on device: Device = Device.default,
-    transform: @escaping (ObjectDetectionExample) -> ObjectDetectionExample = COCODataset.identity
+    transform: @escaping (ObjectDetectionExample) -> [ObjectDetectionExample] = COCODataset.identity
   ) {
     self.init(
       training: training, validation: validation, includeMasks: includeMasks, batchSize: batchSize,
@@ -171,7 +171,9 @@ func loadCOCOExample(coco: COCO, image: COCO.Image, includeMasks: Bool) -> Objec
 
 fileprivate func makeBatch<BatchSamples: Collection>(
   samples: BatchSamples, device: Device,
-  transform: (ObjectDetectionExample) -> ObjectDetectionExample
+  transform: (ObjectDetectionExample) -> [ObjectDetectionExample]
 ) -> [ObjectDetectionExample] where BatchSamples.Element == ObjectDetectionExample {
-  return samples.map(transform)
+  return samples.reduce([]) {
+    $0 + transform($1)
+  }
 }

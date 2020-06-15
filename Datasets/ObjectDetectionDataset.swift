@@ -87,7 +87,7 @@ public protocol ObjectDetectionData {
   /// Creates an instance from a given `batchSize`.
   init(
     training: COCO, validation: COCO, includeMasks: Bool, batchSize: Int, on device: Device,
-    transform: @escaping (ObjectDetectionExample) -> ObjectDetectionExample)
+    transform: @escaping (ObjectDetectionExample) -> [ObjectDetectionExample])
   /// The `training` epochs.
   var training: Training { get }
   /// The `validation` batches.
