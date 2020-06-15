@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import TensorFlow
-import Batcher
 
 /// A generic tuple of two tensors `Tensor`.
 /// 
@@ -21,7 +20,7 @@ import Batcher
 /// `Collatable`. You can use it for most basic datasets with one tensor of inputs and one tensor of
 /// labels but you should write your own struct for more complex tasks (or if you want more descriptive
 /// names).
-public struct TensorPair<S1: TensorFlowScalar, S2: TensorFlowScalar>: _Collatable, KeyPathIterable {
+public struct TensorPair<S1: TensorFlowScalar, S2: TensorFlowScalar>: KeyPathIterable {
     public var first: Tensor<S1>
     public var second: Tensor<S2>
     

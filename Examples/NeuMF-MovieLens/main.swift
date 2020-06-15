@@ -12,17 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Batcher
 import Datasets
 import Foundation
 import RecommendationModels
 import TensorFlow
 
-let dataset = MovieLens()
+let dataset = MovieLens(trainBatchSize: 1024)
 let numUsers = dataset.numUsers
 let numItems = dataset.numItems
-
-let batcher = Batcher(on: dataset.trainMatrix, batchSize: 1024, shuffle: true)
 
 let size: [Int] = [16, 32, 16, 8]
 let regs: [Float] = [0.0, 0.0, 0.0, 0.0]
@@ -48,12 +45,13 @@ for element in dataset.testData {
 print("Dataset acquired.")
 
 print("Starting training...")
-for epoch in 1...20 {
+let epochCount = 20
+for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
     var avgLoss: Float = 0.0
     Context.local.learningPhase = .training
-    for data in batcher.sequenced() {
-        let userId = data.first
-        let rating = data.second
+    for batch in epochBatches {
+        let userId = batch.first
+        let rating = batch.second
         let (loss, grad) = valueWithGradient(at: model) { model -> Tensor<Float> in
             let logits = model(userId)
             return sigmoidCrossEntropy(logits: logits, labels: rating)

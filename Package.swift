@@ -26,7 +26,7 @@ let package = Package(
     ],
     targets: [
         .target(name: "Batcher", path: "Batcher"),
-        .target(name: "Datasets", dependencies: ["ModelSupport", "Batcher"], path: "Datasets"),
+        .target(name: "Datasets", dependencies: ["ModelSupport"], path: "Datasets"),
         .target(name: "STBImage", path: "Support/STBImage"),
         .target(
             name: "ModelSupport", dependencies: ["SwiftProtobuf", "STBImage"], path: "Support",
@@ -121,13 +121,18 @@ let package = Package(
         ),
         .target(
             name: "pix2pix",
-            dependencies: ["Batcher", "ArgumentParser", "ModelSupport", "Datasets"],
+            dependencies: ["ArgumentParser", "ModelSupport", "Datasets"],
             path: "pix2pix"
         ),
         .target(
             name: "WordSeg",
             dependencies: ["ModelSupport", "TextModels", "Datasets"],
             path: "Examples/WordSeg"
+        ),
+       .target(
+           name: "Fractals",
+           dependencies: ["ArgumentParser", "ModelSupport"],
+           path: "Examples/Fractals"
        )
     ]
 )

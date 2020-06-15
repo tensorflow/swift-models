@@ -17,29 +17,50 @@ import ModelSupport
 import XCTest
 
 class WordSegDatasetTests: XCTestCase {
-  func testCreateWordSegDataset() {
+  func testCreateWordSegDatasetReference() {
     do {
       let dataset = try WordSegDataset()
-      XCTAssertEqual(dataset.training.count, 7832)
-      XCTAssertEqual(dataset.validation!.count, 979)
-      XCTAssertEqual(dataset.testing!.count, 979)
+      XCTAssertEqual(dataset.trainingPhrases.count, 7832)
+      XCTAssertEqual(dataset.validationPhrases.count, 979)
+      XCTAssertEqual(dataset.testingPhrases.count, 979)
 
       // Check the first example in each set.
       let trainingExample: [Int32] = [
         26, 16, 22, 24, 2, 15, 21, 21, 16, 20, 6, 6, 21,
         9, 6, 3, 16, 16, 12, 28,
       ]
-      XCTAssertEqual(dataset.training[0].numericalizedText.characters, trainingExample)
+      XCTAssertEqual(dataset.trainingPhrases[0].numericalizedText.characters, trainingExample)
 
       let validationExample: [Int32] = [9, 6, 13, 13, 16, 14, 10, 14, 10, 28]
-      XCTAssertEqual(dataset.validation![0].numericalizedText.characters, validationExample)
+      XCTAssertEqual(dataset.validationPhrases[0].numericalizedText.characters, validationExample)
 
       let testingExample: [Int32] = [
         13, 6, 21, 14, 6, 20, 6, 6, 10, 7, 10, 4,
         2, 15, 20, 6, 6, 2, 15, 26, 3, 16, 5, 26, 10, 15, 21, 9, 2, 21, 14, 10,
         19, 19, 16, 19, 28,
       ]
-      XCTAssertEqual(dataset.testing![0].numericalizedText.characters, testingExample)
+      XCTAssertEqual(dataset.testingPhrases[0].numericalizedText.characters, testingExample)
+    } catch {
+      XCTFail(error.localizedDescription)
+    }
+  }
+
+  func testCreateWordSegDatasetTrainingOnly() {
+    do {
+      let localStorageDirectory: URL = DatasetUtilities.defaultDirectory
+        .appendingPathComponent("WordSeg", isDirectory: true)
+      let trainingFile = localStorageDirectory.appendingPathComponent("/seg/br/br-text/tr.txt")
+      let dataset = try WordSegDataset(training: trainingFile.path)
+      XCTAssertEqual(dataset.trainingPhrases.count, 7832)
+      XCTAssertEqual(dataset.validationPhrases.count, 0)
+      XCTAssertEqual(dataset.testingPhrases.count, 0)
+
+      // Check the first example in each set.
+      let trainingExample: [Int32] = [
+        26, 16, 22, 24, 2, 15, 21, 21, 16, 20, 6, 6, 21,
+        9, 6, 3, 16, 16, 12, 28,
+      ]
+      XCTAssertEqual(dataset.trainingPhrases[0].numericalizedText.characters, trainingExample)
     } catch {
       XCTFail(error.localizedDescription)
     }
@@ -57,16 +78,17 @@ class WordSegDatasetTests: XCTestCase {
         Data(
           bytesNoCopy: UnsafeMutableRawPointer(mutating: address),
           count: pointer.count, deallocator: .none)
-      dataset = try? WordSegDataset(training: training, validation: nil, testing: nil)
+      dataset = WordSegDataset(training: training, validation: nil, testing: nil)
     }
 
     // 'a', 'h', 'l', 'p', '</s>', '</w>', '<pad>'
     XCTAssertEqual(dataset?.alphabet.count, 7)
-    XCTAssertEqual(dataset?.training.count, 1)
+    XCTAssertEqual(dataset?.trainingPhrases.count, 1)
   }
 
   static var allTests = [
-    ("testCreateWordSegDataset", testCreateWordSegDataset),
+    ("testCreateWordSegDatasetReference", testCreateWordSegDatasetReference),
+    ("testCreateWordSegDatasetTrainingOnly", testCreateWordSegDatasetTrainingOnly),
     ("testWordSegDatasetLoad", testWordSegDatasetLoad),
   ]
 }
