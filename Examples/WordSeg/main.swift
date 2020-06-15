@@ -28,8 +28,8 @@ internal func runTraining(settings: WordSegSettings) throws {
     dataset = try WordSegDataset()
   } else {
     dataset = try WordSegDataset(
-    training: settings.trainingPath!, validation: settings.validationPath,
-    testing: settings.testPath)
+      training: settings.trainingPath!, validation: settings.validationPath,
+      testing: settings.testPath)
   }
 
   let sequences = dataset.trainingPhrases.map { $0.numericalizedText }
@@ -50,10 +50,10 @@ internal func runTraining(settings: WordSegSettings) throws {
 
   let device: Device
   switch settings.backend {
-    case .eager:
-      device = Device.defaultTFEager
-    case .x10:
-      device = Device.defaultXLA
+  case .eager:
+    device = Device.defaultTFEager
+  case .x10:
+    device = Device.defaultXLA
   }
 
   var model = SNLM(parameters: modelParameters)
