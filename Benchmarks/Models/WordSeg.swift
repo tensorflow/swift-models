@@ -139,6 +139,11 @@ struct WordSegBenchmark: Benchmark {
             fatalError("Error during WordSeg benchmark: \(error)")
         }
         
+        if backend == .x10 {
+            // A synchronous barrier is needed for X10 to ensure all execution completes
+            // before tearing down the model.
+            LazyTensorBarrier(wait: true)
+        }
         return batchTimings
     }
 }

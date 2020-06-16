@@ -59,6 +59,11 @@ where
         Context.local.learningPhase = .training
         for (epoch, epochBatches) in dataset.training.enumerated() {
             if case let .epochs(epochs) = duration, epoch >= epochs {
+                if backend == .x10 {
+                    // A synchronous barrier is needed for X10 to ensure all execution completes
+                    // before tearing down the model.
+                    LazyTensorBarrier(wait: true)
+                }
                 return batchTimings
             }
 
@@ -74,10 +79,20 @@ where
                 batchTimings.append(durationInMilliseconds(since: beforeBatch))
                 currentBatch += 1
                 if case let .batches(batches) = duration, currentBatch >= batches {
+                    if backend == .x10 {
+                        // A synchronous barrier is needed for X10 to ensure all execution completes
+                        // before tearing down the model.
+                        LazyTensorBarrier(wait: true)
+                    }
                     return batchTimings
                 }
                 beforeBatch = timestampInMilliseconds()
             }
+        }
+        if backend == .x10 {
+            // A synchronous barrier is needed for X10 to ensure all execution completes
+            // before tearing down the model.
+            LazyTensorBarrier(wait: true)
         }
         return batchTimings
     }
