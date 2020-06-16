@@ -306,6 +306,8 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
         updatedNode.edges.append(edge)
         lattice.positions.update(at: next_pos, to: updatedNode)
       }
+
+      LazyTensorBarrier()
     }
 
     // Cleanup: lattice[sentence.count].recomputeSemiringScore()
