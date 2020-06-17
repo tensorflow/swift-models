@@ -20,12 +20,7 @@ public struct AutoBatchNorm<Shape, Scalar>: AutoLayer where Scalar: TensorFlowFl
     }
 
     public func buildModelWithOutputShape<Prefix>(inputShape: Shape, keyPathSoFar: KeyPath<Prefix, InstanceType>, keyDict: inout [AnyAutoLayerKey: Any]) -> (InstanceType, Shape) {
-        let inputShapeArray: [Int]
-        if let inputShapeTuple = inputShape as? (Int, Int, Int) {
-            inputShapeArray = [inputShapeTuple.0, inputShapeTuple.1, inputShapeTuple.2]
-        } else {
-            fatalError("Could not extract out elements of shape")
-        }
+        let inputShapeArray: [Int] = intTupleToArray(tuple: inputShape)
 
         let featureCount = inputShapeArray[(inputShapeArray.count + axis) % inputShapeArray.count]
         return (BatchNorm<Scalar>(featureCount: featureCount, axis: axis, momentum: momentum, epsilon: epsilon), inputShape)

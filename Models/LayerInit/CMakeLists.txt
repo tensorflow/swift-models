@@ -9,7 +9,8 @@ add_library(LayerInit
   AutoPool.swift
   AutoReuseLayer.swift
   AutoSequenced.swift
-  AutoSplitMerge.swift)
+  AutoSplitMerge.swift
+  TupleToArray.swift)
 set_target_properties(LayerInit PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
 target_compile_options(LayerInit PRIVATE

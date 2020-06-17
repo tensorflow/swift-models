@@ -1,0 +1,10 @@
+% counts = range(2, 21)
+public func intTupleToArray(tuple: Any) -> [Int] {
+    % for count in counts:
+    if let tuple = tuple as? (${', '.join(['Int' for i in range(1, count + 1)])}) {
+        return [${', '.join(['tuple.%d' % i for i in range(0, count)])}]
+    }
+    % end
+    
+    fatalError("Could not extract out elements of shape")
+}
