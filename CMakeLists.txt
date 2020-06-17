@@ -131,6 +131,7 @@ add_subdirectory(GAN)
 add_subdirectory(DCGAN)
 add_subdirectory(FastStyleTransfer)
 add_subdirectory(Examples)
+add_subdirectory(TrainingLoop)
 
 if(BUILD_TESTING)
   add_subdirectory(Tests)
