@@ -5,7 +5,9 @@ add_library(LayerInit
   AutoFlatten.swift
   AutoFunction.swift
   AutoLayer.swift
+  AutoLayerKey.swift
   AutoPool.swift
+  AutoReuseLayer.swift
   AutoSequenced.swift
   AutoSplitMerge.swift)
 set_target_properties(LayerInit PROPERTIES
