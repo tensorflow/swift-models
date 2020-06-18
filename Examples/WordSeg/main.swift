@@ -68,6 +68,7 @@ internal func runTraining(settings: WordSegSettings) throws {
     Context.local.learningPhase = .training
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
+    let trainingBatchCountTotal = dataset.trainingPhrases.count
     for phrase in dataset.trainingPhrases {
       let sentence = phrase.numericalizedText
       let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
@@ -78,8 +79,19 @@ internal func runTraining(settings: WordSegSettings) throws {
         return Tensor(loss, on: device)
       }
 
-      trainingLossSum += loss.scalarized()
+      let lossScalarized = loss.scalarized()
+      if trainingBatchCount % 10 == 0 {
+        let bpc = getBpc(loss: lossScalarized, characterCount: sentence.count)
+        print(
+          """
+          [Epoch \(epoch)] (\(trainingBatchCount)/\(trainingBatchCountTotal)) | Bits per character: \(bpc)
+          """
+        )
+      }
+
+      trainingLossSum += lossScalarized
       trainingBatchCount += 1
+
       optimizer.update(&model, along: gradients)
       LazyTensorBarrier()
       if hasNaN(gradients) {
@@ -135,7 +147,7 @@ internal func runTraining(settings: WordSegSettings) throws {
       }
     }
 
-    let bpc = validationLossSum / Float(validationCharacterCount) / log(2)
+    let bpc = getBpc(loss: validationLossSum, characterCount: validationCharacterCount)
     let validationLoss = validationLossSum / Float(validationBatchCount)
 
     print(
@@ -152,6 +164,10 @@ internal func runTraining(settings: WordSegSettings) throws {
       break
     }
   }
+}
+
+fileprivate func getBpc(loss: Float, characterCount: Int) -> Float {
+  return loss / Float(characterCount) / log(2)
 }
 
 fileprivate func hasNaN<T: KeyPathIterable>(_ t: T) -> Bool {
