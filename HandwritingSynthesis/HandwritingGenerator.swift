@@ -1,7 +1,10 @@
 import TensorFlow
 
 struct HandwritingGenerator {
-    static let charDict = Dictionary<Character, Int>(uniqueKeysWithValues: " !\"#%&'()+,-./0123456789:;?ABCDEFGHIJKLMNOPQRSTUVWXYZ[]abcdefghijklmnopqrstuvwxyz".enumerated().map { ($0.element, $0.offset) })
+    static let charDict = Dictionary<Character, Int>(
+        uniqueKeysWithValues: " !\"#%&'()+,-./0123456789:;?ABCDEFGHIJKLMNOPQRSTUVWXYZ[]abcdefghijklmnopqrstuvwxyz"
+            .enumerated().map { ($0.element, $0.offset) })
+
     var attention: Attention
     var rnnCell: PyTorchLSTMCell
     var mixture: MixtureGaussians2DAndPen
