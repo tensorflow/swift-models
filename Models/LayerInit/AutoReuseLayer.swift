@@ -36,9 +36,8 @@ where
 
         var tempDictionary: [AnyAutoLayerKey: Any] = [:]
 
-        // TODO(shadaj): tuples are not equatable
-        // let shapeMismatchError: String = "Cannot reuse outer layer because original input size \(inputShape) does not match output size of middle layer \(middleOutputShape)"
-        // precondition(inputShape == middleOutputShape, shapeMismatchError)
+        let shapeMismatchError: String = "Cannot reuse outer layer because original input size \(inputShape) does not match output size of middle layer \(middleOutputShape)"
+        precondition(intTupleToArray(tuple: inputShape) == intTupleToArray(tuple: middleOutputShape), shapeMismatchError)
         let (_, finalOutputShape) = outer.buildModelWithOutputShape(inputShape: middleOutputShape, keyPathSoFar: keyPathSoFar.appending(path: \InstanceType.outerLayer), keyDict: &tempDictionary)
 
         return (AutoReuseLayerInstance(outerLayer: outerLayer, middleLayer: middleLayer), finalOutputShape)
