@@ -10,10 +10,12 @@ public class AnyAutoLayerKey: Hashable {
     }
 }
 
+/// A key that can be associated with an `AutoLayer` to access it after it has been built as part of a larger model.
 public class AutoLayerKey<T: Layer>: AnyAutoLayerKey {
     public override init() {}
 }
 
+/// A layer blueprint that associates an underlying blueprint with an `AutoLayerKey` so that the underlying instance can be accessed from the built model.
 public struct KeyedAutoLayer<Underlying: AutoLayer>: AutoLayer {
     let underlying: Underlying
     let key: AutoLayerKey<InstanceType>

@@ -13,6 +13,8 @@ where
     }
 }
 
+/// A layer blueprint for models that need to reuse the same layer in different places.
+/// Sequences a layer, then another layer, and then the first layer again.
 public struct AutoReuseLayer<OuterLayer: AutoLayer, MiddleLayer: AutoLayer>: AutoLayer
 where
   OuterLayer.OutputShape == MiddleLayer.InputShape,
@@ -25,6 +27,13 @@ where
 
     public typealias InstanceType = AutoReuseLayerInstance<OuterLayer.InstanceType, MiddleLayer.InstanceType>
 
+    /**
+     Constructs the layer reuse blueprint.
+
+     Parameters:
+        - outer: the layer to be reused, once at the beginning and once at the end
+        - middle: the layer to be used once, in between the two outer layers
+     */
     public init(outer: OuterLayer, middle: MiddleLayer) {
         self.outer = outer
         self.middle = middle

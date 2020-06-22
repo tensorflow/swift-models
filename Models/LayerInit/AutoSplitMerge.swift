@@ -27,6 +27,7 @@ where Layer1.Input == Layer2.Input, Layer1.TangentVector.VectorSpaceScalar == La
     }
 }
 
+/// A layer blueprint where the same input is passed to two layers, whose outputs are then merged by a user-defined function.
 public struct AutoSplitMerge<Layer1: AutoLayer, Layer2: AutoLayer, CommonOutput: Differentiable, OutputShape>: AutoLayer
 where Layer1.InputShape == Layer2.InputShape, Layer1.InstanceType.Input == Layer2.InstanceType.Input, Layer1.InstanceType.TangentVector.VectorSpaceScalar == Layer2.InstanceType.TangentVector.VectorSpaceScalar {
     let layer1: Layer1
@@ -39,6 +40,14 @@ where Layer1.InputShape == Layer2.InputShape, Layer1.InstanceType.Input == Layer
     public typealias InputShape = Layer1.InputShape
     public typealias OutputShape = OutputShape
 
+    /**
+     Initializes a split-merge layer blueprint
+
+     Paremeters:
+        - layer1, layer2: the layers to run on the input data
+        - mergeOutputShape: a function describing how the output data merging function transforms the shapes of its inputs
+        - mergeFn: a function that merges the outputs of the two layers
+     */
     public init(
         layer1: Layer1, layer2: Layer2,
         mergeOutputShape: @escaping (Layer1.OutputShape, Layer2.OutputShape) -> OutputShape,

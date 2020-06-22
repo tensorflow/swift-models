@@ -25,6 +25,7 @@ where
 }
 
 extension AutoLayer {
+    /// Composes layers by sequencing the current layer to be followed by the passed layer
     public func then<T: AutoLayer>(_ other: T) -> AutoSequenced<Self, T> {
         return AutoSequenced<Self, T>(first: self, second: other)
     }
@@ -40,6 +41,8 @@ where LayerType.Input == LayerType.Output {
     }
 }
 
+/// A layer blueprint consisting of many instances of the same type of layer sequenced together
+/// The sequenced layer type must have the same input shape and output shape dimensions, since otherwise there is a shape mismatch.
 public struct AutoSequencedMany<LayerType: AutoLayer>: AutoLayer
 where
   LayerType.OutputShape == LayerType.InputShape,
