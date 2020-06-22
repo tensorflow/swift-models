@@ -27,13 +27,10 @@ where
 
     public typealias InstanceType = AutoReuseLayerInstance<OuterLayer.InstanceType, MiddleLayer.InstanceType>
 
-    /**
-     Constructs the layer reuse blueprint.
-
-     Parameters:
-        - outer: the layer to be reused, once at the beginning and once at the end
-        - middle: the layer to be used once, in between the two outer layers
-     */
+    /// Constructs the layer reuse blueprint.
+    /// Parameters:
+    ///   - outer: the layer to be reused, once at the beginning and once at the end
+    ///   - middle: the layer to be used once, in between the two outer layers
     public init(outer: OuterLayer, middle: MiddleLayer) {
         self.outer = outer
         self.middle = middle

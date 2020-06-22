@@ -35,3 +35,10 @@ public struct KeyedAutoLayer<Underlying: AutoLayer>: AutoLayer {
         return (layer, outputShape)
     }
 }
+
+extension AutoLayer {
+    /// Attaches a key to an existing layer blueprint
+    public func withKey(_ key: AutoLayerKey<InstanceType>) -> KeyedAutoLayer<Self> {
+        return KeyedAutoLayer(self, key: key)
+    }
+}

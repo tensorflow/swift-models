@@ -40,14 +40,11 @@ where Layer1.InputShape == Layer2.InputShape, Layer1.InstanceType.Input == Layer
     public typealias InputShape = Layer1.InputShape
     public typealias OutputShape = OutputShape
 
-    /**
-     Initializes a split-merge layer blueprint
-
-     Paremeters:
-        - layer1, layer2: the layers to run on the input data
-        - mergeOutputShape: a function describing how the output data merging function transforms the shapes of its inputs
-        - mergeFn: a function that merges the outputs of the two layers
-     */
+    /// Initializes a split-merge layer blueprint
+    /// Parameters:
+    ///     - layer1, layer2: the layers to run on the input data
+    ///     - mergeOutputShape: a function describing how the output data merging function transforms the shapes of its inputs
+    ///     - mergeFn: a function that merges the outputs of the two layers
     public init(
         layer1: Layer1, layer2: Layer2,
         mergeOutputShape: @escaping (Layer1.OutputShape, Layer2.OutputShape) -> OutputShape,

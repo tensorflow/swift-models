@@ -11,18 +11,14 @@ public protocol AutoLayer {
     /// The specific tuple of `Int`s that define the output shape of the layer
     associatedtype OutputShape
 
-    /**
-     Initializes a new instance of the layer defined by this blueprint.
-
-     - Paremeters:
-        - inputShape: the shape of a single input instance (no batch) to this layer
-        - keyPathSoFar: a `KeyPath` that tracks the path from the root layer to the current layer instance
-        - keyDict: a dictionary tracking the mapping from `AutoLayerKey`s to the key path to the layer instance
-    
-    - Returns:
-        - $0: the instance of the layer with the given input shape
-        - $1: the output shape of the layer instance computed based on the input shape
-    */
+    /// Initializes a new instance of the layer defined by this blueprint.
+    /// Parameters:
+    ///     - inputShape: the shape of a single input instance (no batch) to this layer
+    ///     - keyPathSoFar: a `KeyPath` that tracks the path from the root layer to the current layer instance
+    ///     - keyDict: a dictionary tracking the mapping from `AutoLayerKey`s to the key path to the layer instance
+    /// Returns:
+    ///     - $0: the instance of the layer with the given input shape
+    ///     - $1: the output shape of the layer instance computed based on the input shape
     func buildModelWithOutputShape<Prefix>(inputShape: InputShape, keyPathSoFar: KeyPath<Prefix, InstanceType>, keyDict: inout [AnyAutoLayerKey: Any]) -> (InstanceType, OutputShape)
 }
 
