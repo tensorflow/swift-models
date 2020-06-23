@@ -23,8 +23,11 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.9.0"),
         .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.0.1")),
+        .package(url: "https://github.com/google/swift-structural.git", .branch("master")),
+        .package(url: "https://github.com/saeta/penguin.git", .branch("master")),
     ],
     targets: [
+        .target(name: "StructuralModelBuilding", dependencies: ["StructuralCore", "PenguinStructures"], path: "StructuralModelBuilding"),
         .target(name: "Batcher", path: "Batcher"),
         .target(name: "Datasets", dependencies: ["ModelSupport"], path: "Datasets"),
         .target(name: "STBImage", path: "Support/STBImage"),
