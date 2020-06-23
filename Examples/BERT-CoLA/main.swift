@@ -17,15 +17,26 @@ import Foundation
 import ModelSupport
 import TensorFlow
 import TextModels
+import x10_optimizers_optimizer
 
-let bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
-let workspaceURL = URL(
-    fileURLWithPath: "bert_models", isDirectory: true,
-    relativeTo: URL(
-        fileURLWithPath: NSTemporaryDirectory(),
-        isDirectory: true))
-let bert = try BERT.PreTrainedModel.load(bertPretrained)(from: workspaceURL)
+let device = Device.defaultXLA
+
+var bertPretrained: BERT.PreTrainedModel
+if CommandLine.arguments.count >= 2 {
+    if CommandLine.arguments[1].lowercased() == "albert" {
+        bertPretrained = BERT.PreTrainedModel.albertBase
+    } else if CommandLine.arguments[1].lowercased() == "roberta" {
+        bertPretrained = BERT.PreTrainedModel.robertaBase
+    } else {
+        bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
+    }
+} else {
+    bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
+}
+
+let bert = try bertPretrained.load()
 var bertClassifier = BERTClassifier(bert: bert, classCount: 1)
+bertClassifier.move(to: device)
 
 // Regarding the batch size, note that the way batching is performed currently is that we bucket
 // input sequences based on their length (e.g., first bucket contains sequences of length 1 to 10,
@@ -40,6 +51,12 @@ var bertClassifier = BERTClassifier(bert: bert, classCount: 1)
 // Google and so the batch size setting here is expected to differ from that one.
 let maxSequenceLength = 128
 let batchSize = 1024
+let epochCount = 3
+let stepsPerEpoch = 1068 // function of training set size and batching configuration
+let peakLearningRate: Float = 2e-5
+
+let workspaceURL = URL(fileURLWithPath: "bert_models", isDirectory: true,
+    relativeTo: URL(fileURLWithPath: NSTemporaryDirectory(),isDirectory: true))
 
 var cola = try CoLA(
   taskDirectoryURL: workspaceURL,
@@ -55,28 +72,45 @@ var cola = try CoLA(
 
 print("Dataset acquired.")
 
-var optimizer = WeightDecayedAdam(
-    for: bertClassifier,
-    scheduledLearningRate: LinearlyDecayedParameter(
-        baseParameter: LinearlyWarmedUpParameter(
-            baseParameter: FixedParameter<Float>(2e-5),
-            warmUpStepCount: 10,
-            warmUpOffset: 0),
-        slope: -5e-7,  // The LR decays linearly to zero in 100 steps.
-        startStep: 10),
-    weightDecayRate: 0.01,
-    maxGradientGlobalNorm: 1)
+let beta1: Float = 0.9
+let beta2: Float = 0.999
+let useBiasCorrection = true
 
-print("Training BERT for the CoLA task!")
-for (epoch, epochBatches) in cola.trainingEpochs.prefix(3).enumerated() {
+var optimizer = x10_optimizers_optimizer.GeneralOptimizer(
+    for: bertClassifier,
+    TensorVisitorPlan(bertClassifier.differentiableVectorView),
+    defaultOptimizer: makeWeightDecayedAdam(
+      learningRate: peakLearningRate,
+      beta1: beta1,
+      beta2: beta2
+    )
+)
+
+var scheduledLearningRate = LinearlyDecayedParameter(
+  baseParameter: LinearlyWarmedUpParameter(
+      baseParameter: FixedParameter<Float>(peakLearningRate),
+      warmUpStepCount: 10,
+      warmUpOffset: 0),
+  slope: -(peakLearningRate / Float(stepsPerEpoch * epochCount)),  // The LR decays linearly to zero.
+  startStep: 10
+)
+
+print("Training \(bertPretrained.name) for the CoLA task!")
+for (epoch, epochBatches) in cola.trainingEpochs.prefix(epochCount).enumerated() {
     print("[Epoch \(epoch + 1)]")
     Context.local.learningPhase = .training
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
 
     for batch in epochBatches {
-        let (documents, labels) = (batch.data, Tensor<Float>(batch.label))
-        let (loss, gradients) = valueWithGradient(at: bertClassifier) { model -> Tensor<Float> in
+        let (eagerDocuments, eagerLabels) = (batch.data, Tensor<Float>(batch.label))
+        let documents = TextBatch(
+          tokenIds: Tensor(copying: eagerDocuments.tokenIds, to: device),
+          tokenTypeIds: Tensor(copying: eagerDocuments.tokenTypeIds, to: device),
+          mask: Tensor(copying: eagerDocuments.mask, to: device)
+        )
+        let labels = Tensor(copying: eagerLabels, to: device)
+        var (loss, gradients) = valueWithGradient(at: bertClassifier) { model -> Tensor<Float> in
             let logits = model(documents)
             return sigmoidCrossEntropy(
                 logits: logits.squeezingShape(at: -1),
@@ -86,7 +120,17 @@ for (epoch, epochBatches) in cola.trainingEpochs.prefix(3).enumerated() {
 
         trainingLossSum += loss.scalarized()
         trainingBatchCount += 1
+        gradients.clipByGlobalNorm(clipNorm: 1)
+
+        let step = optimizer.step + 1 // for scheduled rates and bias correction, steps start at 1
+        optimizer.learningRate = scheduledLearningRate(forStep: UInt64(step))
+        if useBiasCorrection {
+          let step = Float(step)
+          optimizer.learningRate *= sqrtf(1 - powf(beta2, step)) / (1 - powf(beta1, step))
+        }
+
         optimizer.update(&bertClassifier, along: gradients)
+        LazyTensorBarrier()
 
         print(
             """
@@ -101,11 +145,17 @@ for (epoch, epochBatches) in cola.trainingEpochs.prefix(3).enumerated() {
     var devPredictedLabels = [Bool]()
     var devGroundTruth = [Bool]()
     for batch in cola.validationBatches {
-        let (documents, labels) = (batch.data, Tensor<Float>(batch.label))
+        let (eagerDocuments, eagerLabels) = (batch.data, Tensor<Float>(batch.label))
+        let documents = TextBatch(
+          tokenIds: Tensor(copying: eagerDocuments.tokenIds, to: device),
+          tokenTypeIds: Tensor(copying: eagerDocuments.tokenTypeIds, to: device),
+          mask: Tensor(copying: eagerDocuments.mask, to: device)
+        )
+        let labels = Tensor(copying: eagerLabels, to: device)
         let logits = bertClassifier(documents)
         let loss = sigmoidCrossEntropy(
             logits: logits.squeezingShape(at: -1),
-            labels: Tensor<Float>(labels),
+            labels: labels,
             reduction: { $0.mean() }
         )
         devLossSum += loss.scalarized()

@@ -13,109 +13,43 @@
 // limitations under the License.
 
 import TensorFlow
+import x10_optimizers_optimizer
 
 /// Adam optimizer with weight decay.
 ///
 /// Reference: ["Adam - A Method for Stochastic Optimization"](
 /// https://arxiv.org/abs/1412.6980v8)
-public struct WeightDecayedAdam<Model: Regularizable, LearningRate: ScheduledParameter>: Optimizer
-where
-    Model.TangentVector: VectorProtocol & PointwiseMultiplicative & ElementaryFunctions
-        & KeyPathIterable,
-    Model.TangentVector.VectorSpaceScalar == Float,
-    LearningRate.Scalar == Float
-{
-    /// The learning rate to use when updating models.
-    public var scheduledLearningRate: LearningRate
+public func makeWeightDecayedAdam(
+  learningRate: Float = 0.01,
+  beta1: Float = 0.9,
+  beta2: Float = 0.999,
+  weightDecayRate: Float = 0.01,
+  epsilon: Float = 1e-6
+) -> ParameterGroupOptimizer {
+  var b = ParameterGroupOptimizerBuilder()
+  let lr = b.makeParameter("learningRate", learningRate)
+  let beta1 = b.makeParameter("beta1", beta1)
+  let beta2 = b.makeParameter("beta2", beta2)
+  let wd = b.makeParameter("weightDecay", weightDecayRate)
 
-    public var learningRate: Float
+  let firstMoment = b[state: "firstMoment"]
+  let secondMoment = b[state: "secondMoment"]
 
-    /// The weight decay rate.
-    public var weightDecayRate: Float
+  b.appendCallback { (state: inout OptimizerWeightStepState, optState: inout OptimizerState) in
+    optState[state, firstMoment] =
+      state[beta1] * optState[state, firstMoment] + state.grad * (1 - state[beta1])
+  }
 
-    /// An indicator for whether or not to use bias correction.
-    public var useBiasCorrection: Bool
+  b.appendCallback { (state: inout OptimizerWeightStepState, optState: inout OptimizerState) in
+    optState[state, secondMoment] =
+      state[beta2] * optState[state, secondMoment] + state.grad .* state.grad * (1 - state[beta2])
+  }
 
-    /// A coefficient used to calculate the first and second moments of the gradients.
-    public var beta1: Float
+  b.appendCallback { (state: inout OptimizerWeightStepState, optState: inout OptimizerState) in
+    let denominator = sqrt(optState[state, secondMoment]).adding(epsilon)
+    let update = optState[state, firstMoment] ./ denominator + state.weight * state[wd]
+    state.step = -state[lr] * update
+  }
 
-    /// A coefficient used to calculate the first and second moments of the gradients.
-    public var beta2: Float
-
-    /// A small scalar added to the denominator to improve numerical stability.
-    public var epsilon: Float
-
-    /// The maximum allowed gradient global norm. If the gradients global norm is larger than this
-    /// value, then the gradients will be clipped to satisfy this constraint.
-    public var maxGradientGlobalNorm: Float?
-
-    /// The current step.
-    public var step: UInt64 = 0 {
-        didSet {
-            if useBiasCorrection {
-                let step = Float(self.step)
-                learningRate *= sqrtf(1 - powf(beta2, step)) / (1 - powf(beta1, step))
-            } else {
-                learningRate = scheduledLearningRate(forStep: step)
-            }
-        }
-    }
-
-    /// The first moments of the weights.
-    public var firstMoments: Model.TangentVector = .zero
-
-    /// The second moments of the weights.
-    public var secondMoments: Model.TangentVector = .zero
-
-    public init(
-        for model: __shared Model,
-        scheduledLearningRate: LearningRate,
-        weightDecayRate: Float = 0.01,
-        useBiasCorrection: Bool = true,
-        beta1: Float = 0.9,
-        beta2: Float = 0.999,
-        epsilon: Float = 1e-6,
-        maxGradientGlobalNorm: Float? = nil
-    ) {
-        precondition(0 <= beta1 && beta1 <= 1, "Beta parameter must be between 0 and 1")
-        precondition(0 <= beta2 && beta2 <= 1, "Beta parameter must be between 0 and 1")
-
-        self.scheduledLearningRate = scheduledLearningRate
-        self.learningRate = self.scheduledLearningRate(forStep: step)
-        self.weightDecayRate = weightDecayRate
-        self.useBiasCorrection = useBiasCorrection
-        self.beta1 = beta1
-        self.beta2 = beta2
-        self.epsilon = epsilon
-        self.maxGradientGlobalNorm = maxGradientGlobalNorm
-    }
-
-    public init(copying other: WeightDecayedAdam, to device: Device) {
-        self.scheduledLearningRate = other.scheduledLearningRate
-        self.learningRate = other.learningRate
-        self.weightDecayRate = other.weightDecayRate
-        self.useBiasCorrection = other.useBiasCorrection
-        self.beta1 = other.beta1
-        self.beta2 = other.beta2
-        self.epsilon = other.epsilon
-        self.maxGradientGlobalNorm = other.maxGradientGlobalNorm
-        self.firstMoments = .init(copying: other.firstMoments, to: device)
-        self.secondMoments = .init(copying: other.secondMoments, to: device)
-    }
-
-    public mutating func update(_ model: inout Model, along direction: Model.TangentVector) {
-        var direction = direction
-        if let globalNorm = maxGradientGlobalNorm {
-            direction.clipByGlobalNorm(clipNorm: globalNorm)
-        }
-        step += 1
-        firstMoments = firstMoments.scaled(by: beta1)
-        firstMoments += direction.scaled(by: 1 - beta1)
-        secondMoments = secondMoments.scaled(by: beta2)
-        secondMoments += direction .* direction.scaled(by: 1 - beta2)
-        let denominator = Model.TangentVector.sqrt(secondMoments).adding(epsilon)
-        let weightDecay = model.regularizationValue.scaled(by: weightDecayRate)
-        let update = firstMoments ./ denominator + weightDecay
-        model.move(along: update.scaled(by: -learningRate))
-    }
+  return b.makeOptimizer()
 }

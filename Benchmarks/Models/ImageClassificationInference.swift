@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Batcher
 import Datasets
 import ImageClassificationModels
 import TensorFlow
@@ -23,7 +22,6 @@ protocol ImageClassificationModel: Layer where Input == Tensor<Float>, Output ==
     static var outputLabels: Int { get }
 }
 
-// TODO: Ease the tight restriction on Batcher data sources to allow for lazy datasets.
 class ImageClassificationInference<Model, ClassificationDataset>: Benchmark
 where
     Model: ImageClassificationModel,
@@ -54,6 +52,11 @@ where
 
         for (epoch, epochBatches) in dataset.training.enumerated() {
             if case let .epochs(epochs) = duration, epoch >= epochs {
+                if backend == .x10 {
+                    // A synchronous barrier is needed for X10 to ensure all execution completes
+                    // before tearing down the model.
+                    LazyTensorBarrier(wait: true)
+                }
                 return batchTimings
             }
 
@@ -67,9 +70,19 @@ where
                 batchTimings.append(batchTime)
                 currentBatch += 1
                 if case let .batches(batches) = duration, currentBatch >= batches {
+                    if backend == .x10 {
+                        // A synchronous barrier is needed for X10 to ensure all execution completes
+                        // before tearing down the model.
+                        LazyTensorBarrier(wait: true)
+                    }
                     return batchTimings
                 }
             }
+        }
+        if backend == .x10 {
+            // A synchronous barrier is needed for X10 to ensure all execution completes
+            // before tearing down the model.
+            LazyTensorBarrier(wait: true)
         }
         return batchTimings
     }

@@ -12,11 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Batcher
 import Datasets
 import TensorFlow
 
-// TODO: Ease the tight restriction on Batcher data sources to allow for lazy datasets.
 struct ImageClassificationTraining<Model, ClassificationDataset>: Benchmark
 where
     Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == Float,
@@ -61,6 +59,11 @@ where
         Context.local.learningPhase = .training
         for (epoch, epochBatches) in dataset.training.enumerated() {
             if case let .epochs(epochs) = duration, epoch >= epochs {
+                if backend == .x10 {
+                    // A synchronous barrier is needed for X10 to ensure all execution completes
+                    // before tearing down the model.
+                    LazyTensorBarrier(wait: true)
+                }
                 return batchTimings
             }
 
@@ -76,10 +79,20 @@ where
                 batchTimings.append(durationInMilliseconds(since: beforeBatch))
                 currentBatch += 1
                 if case let .batches(batches) = duration, currentBatch >= batches {
+                    if backend == .x10 {
+                        // A synchronous barrier is needed for X10 to ensure all execution completes
+                        // before tearing down the model.
+                        LazyTensorBarrier(wait: true)
+                    }
                     return batchTimings
                 }
                 beforeBatch = timestampInMilliseconds()
             }
+        }
+        if backend == .x10 {
+            // A synchronous barrier is needed for X10 to ensure all execution completes
+            // before tearing down the model.
+            LazyTensorBarrier(wait: true)
         }
         return batchTimings
     }

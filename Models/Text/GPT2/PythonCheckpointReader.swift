@@ -34,8 +34,7 @@ public struct TransformerLMConfig: Codable {
 
 extension CheckpointReader {
     func readTensor<Scalar: TensorFlowScalar>(
-        name: String,
-        scalarType: Scalar.Type
+        name: String
     ) -> Tensor<Scalar> {
         return Tensor<Scalar>(loadTensor(named: name))
     }
@@ -47,14 +46,14 @@ protocol InitializableFromPythonCheckpoint {
 
 extension Dense: InitializableFromPythonCheckpoint {
     init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
-        var kernel = reader.readTensor(name: scope + "/w", scalarType: Scalar.self)
+        var kernel: Tensor<Scalar> = reader.readTensor(name: scope + "/w")
         if kernel.shape.dimensions.count > 2 {
             // The OpenAI checkpoints have a batch dimension, and our checkpoints do not.
             kernel = kernel.squeezingShape(at: 0)
         }
         self.init(
             weight: kernel,
-            bias: reader.readTensor(name: scope + "/b", scalarType: Scalar.self),
+            bias: reader.readTensor(name: scope + "/b"),
             activation: identity)
     }
 
@@ -64,14 +63,14 @@ extension Dense: InitializableFromPythonCheckpoint {
         scope: String,
         activation: String
     ) {
-        var kernel = reader.readTensor(name: scope + "/w", scalarType: Scalar.self)
+        var kernel: Tensor<Scalar> = reader.readTensor(name: scope + "/w")
         if kernel.shape.dimensions.count > 2 {
             // The OpenAI checkpoints have a batch dimension, and our checkpoints do not.
             kernel = kernel.squeezingShape(at: 0)
         }
         self.init(
             weight: kernel,
-            bias: reader.readTensor(name: scope + "/b", scalarType: Scalar.self),
+            bias: reader.readTensor(name: scope + "/b"),
             activation: gelu)
     }
 }
@@ -79,8 +78,8 @@ extension Dense: InitializableFromPythonCheckpoint {
 extension LayerNorm: InitializableFromPythonCheckpoint {
     init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
         self.init(
-            offset: reader.readTensor(name: scope + "/b", scalarType: Scalar.self),
-            scale: reader.readTensor(name: scope + "/g", scalarType: Scalar.self),
+            offset: reader.readTensor(name: scope + "/b"),
+            scale: reader.readTensor(name: scope + "/g"),
             axis: -1,
             epsilon: 1e-5)
     }
@@ -124,11 +123,8 @@ extension EncoderLayer: InitializableFromPythonCheckpoint {
 
 extension TransformerLM: InitializableFromPythonCheckpoint {
     public init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
-        embedding = Embedding(
-            embeddings: reader.readTensor(name: scope + "/wte", scalarType: Float.self))
-        positionalEmbeddings = reader.readTensor(
-            name: scope + "/wpe",
-            scalarType: Float.self)
+        embedding = Embedding(embeddings: reader.readTensor(name: scope + "/wte"))
+        positionalEmbeddings = reader.readTensor(name: scope + "/wpe")
         embeddingDropout = Dropout(probability: 0.1)
         layers = (0..<config.layerCount).map { i in
             EncoderLayer(reader: reader, config: config, scope: scope + "/h\(i)")
