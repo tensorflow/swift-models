@@ -106,3 +106,19 @@ public struct Empty2: Differentiable, EuclideanDifferentiable, KeyPathIterable, 
     public func subtracting(_ x: Self.VectorSpaceScalar) -> Self { Self() }
     public func scaled(by scalar: Self.VectorSpaceScalar) -> Self { Self() }
 }
+
+// TODO: Make merge function configurable?
+@propertyWrapper
+public struct ResidualConnection<Underlying: Layer>: Layer where Underlying.Input == Underlying.Output, Underlying.Input == Tensor<Float> {  // TODO: generalize beyond Tensor<Float>!
+    public var wrappedValue: Underlying
+
+    public init(wrappedValue: Underlying) {
+        self.wrappedValue = wrappedValue
+    }
+
+    @differentiable
+    public func callAsFunction(_ input: Underlying.Input) -> Underlying.Output {
+        let tmp = wrappedValue(input)
+        return input + tmp
+    }
+}
