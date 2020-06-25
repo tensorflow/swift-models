@@ -23,17 +23,9 @@ let WordSegScore = BenchmarkSuite(
   settings: WarmupIterations(10)
 ) { suite in
 
-  suite.benchmark("sentence_4", settings: [Length(4)]) { state in
-    try runWordSegBenchmark(state: &state, operation: score)
-  }
-
-  suite.benchmark("sentence_8", settings: [Length(8)]) { state in
-    try runWordSegBenchmark(state: &state, operation: score)
-  }
-
-  suite.benchmark("sentence_14", settings: [Length(14)]) { state in
-    try runWordSegBenchmark(state: &state, operation: score)
-  }
+  suite.benchmark("sentence_4", settings: Length(4), function: wordSegBenchmark(score))
+  suite.benchmark("sentence_8", settings: Length(8), function: wordSegBenchmark(score))
+  suite.benchmark("sentence_14", settings: Length(14), function: wordSegBenchmark(score))
 }
 
 let WordSegScoreAndGradient = BenchmarkSuite(
@@ -41,17 +33,9 @@ let WordSegScoreAndGradient = BenchmarkSuite(
   settings: WarmupIterations(10)
 ) { suite in
 
-  suite.benchmark("sentence_4", settings: [Length(4)]) { state in
-    try runWordSegBenchmark(state: &state, operation: scoreAndGradient)
-  }
-
-  suite.benchmark("sentence_8", settings: [Length(8)]) { state in
-    try runWordSegBenchmark(state: &state, operation: scoreAndGradient)
-  }
-
-  suite.benchmark("sentence_14", settings: [Length(14)]) { state in
-    try runWordSegBenchmark(state: &state, operation: scoreAndGradient)
-  }
+  suite.benchmark("sentence_4", settings: Length(4), function: wordSegBenchmark(scoreAndGradient))
+  suite.benchmark("sentence_8", settings: Length(8), function: wordSegBenchmark(scoreAndGradient))
+  suite.benchmark("sentence_14", settings: Length(14), function: wordSegBenchmark(scoreAndGradient))
 }
 
 let WordSegViterbi = BenchmarkSuite(
@@ -59,17 +43,9 @@ let WordSegViterbi = BenchmarkSuite(
   settings: WarmupIterations(10)
 ) { suite in
 
-  suite.benchmark("sentence_4", settings: [Length(4)]) { state in
-    try runWordSegBenchmark(state: &state, operation: viterbi)
-  }
-
-  suite.benchmark("sentence_8", settings: [Length(8)]) { state in
-    try runWordSegBenchmark(state: &state, operation: viterbi)
-  }
-
-  suite.benchmark("sentence_14", settings: [Length(14)]) { state in
-    try runWordSegBenchmark(state: &state, operation: viterbi)
-  }
+  suite.benchmark("sentence_4", settings: Length(4), function: wordSegBenchmark(viterbi))
+  suite.benchmark("sentence_8", settings: Length(8), function: wordSegBenchmark(viterbi))
+  suite.benchmark("sentence_14", settings: Length(14), function: wordSegBenchmark(viterbi))
 }
 
 let maximumSequenceLength = 18
@@ -97,54 +73,56 @@ func viterbi(model: SNLM, sentence: CharacterSequence, device: Device) {
   let _ = lattice.viterbi(sentence: sentence)
 }
 
-func runWordSegBenchmark(
-  state: inout BenchmarkState, operation: (SNLM, CharacterSequence, Device) -> Void
-) throws {
-  let settings = state.settings
-  let device = settings.device
-  let length = settings.length!
+func wordSegBenchmark(_ operation: @escaping (SNLM, CharacterSequence, Device) -> Void) -> (
+  (inout BenchmarkState) throws -> Void
+) {
+  return { state in
+    let settings = state.settings
+    let device = settings.device
+    let length = settings.length!
 
-  state.start()
-
-  let dataset = try WordSegDataset()
-  let sentence = try testSentence(
-    length: length,
-    alphabet: dataset.alphabet)
-
-  // Model settings are drawn from known benchmarks.
-  let lexicon = Lexicon(
-    from: [sentence],
-    alphabet: dataset.alphabet,
-    maxLength: maximumSequenceLength,
-    minFrequency: 10
-  )
-
-  let modelParameters = SNLM.Parameters(
-    hiddenSize: 512,
-    dropoutProbability: 0.5,
-    alphabet: dataset.alphabet,
-    lexicon: lexicon,
-    order: 5
-  )
-
-  var model = SNLM(parameters: modelParameters)
-  model.move(to: device)
-
-  while true {
-    operation(model, sentence, device)
-    LazyTensorBarrier()
-
-    do {
-      try state.end()
-    } catch {
-      if settings.backend == .x10 {
-        // A synchronous barrier is needed for X10 to ensure all execution completes
-        // before tearing down the model.
-        LazyTensorBarrier(wait: true)
-      }
-      throw error
-    }
     state.start()
+
+    let dataset = try WordSegDataset()
+    let sentence = try testSentence(
+      length: length,
+      alphabet: dataset.alphabet)
+
+    // Model settings are drawn from known benchmarks.
+    let lexicon = Lexicon(
+      from: [sentence],
+      alphabet: dataset.alphabet,
+      maxLength: maximumSequenceLength,
+      minFrequency: 10
+    )
+
+    let modelParameters = SNLM.Parameters(
+      hiddenSize: 512,
+      dropoutProbability: 0.5,
+      alphabet: dataset.alphabet,
+      lexicon: lexicon,
+      order: 5
+    )
+
+    var model = SNLM(parameters: modelParameters)
+    model.move(to: device)
+
+    while true {
+      operation(model, sentence, device)
+      LazyTensorBarrier()
+
+      do {
+        try state.end()
+      } catch {
+        if settings.backend == .x10 {
+          // A synchronous barrier is needed for X10 to ensure all execution completes
+          // before tearing down the model.
+          LazyTensorBarrier(wait: true)
+        }
+        throw error
+      }
+      state.start()
+    }
   }
 }
 
