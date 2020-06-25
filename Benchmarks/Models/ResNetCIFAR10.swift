@@ -12,70 +12,61 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Benchmark
 import Datasets
 import ImageClassificationModels
 import TensorFlow
 
-enum ResNetCIFAR10: BenchmarkModel {
-    static var name: String { "ResNetCIFAR10" }
+let ResNetCIFAR10 = BenchmarkSuite(name: "ResNetCIFAR10") { suite in
+  suite.benchmark("inference", settings: BatchSize(128), WarmupIterations(1)) {
+    state in
+    if state.settings.synthetic! {
+      try runImageClassificationInference(
+        model: ResNet56.self, dataset: SyntheticCIFAR10.self, state: &state)
+    } else {
+      try runImageClassificationInference(
+        model: ResNet56.self, dataset: CIFAR10<SystemRandomNumberGenerator>.self, state: &state)
+    }
+  }
 
-    static func defaults(for variety: BenchmarkVariety) -> BenchmarkSettings {
-        switch variety {
-        case .inferenceThroughput:
-            return BenchmarkSettings(
-                duration: .batches(1000), batchSize: 128, iterations: 10,
-                warmupBatches: 1, synthetic: false, backend: .eager)
-        case .trainingThroughput:
-            return BenchmarkSettings(
-                duration: .batches(110), batchSize: 128, iterations: 1, warmupBatches: 1,
-                synthetic: false, backend: .eager)
-        }
+  suite.benchmark("training", settings: BatchSize(128), WarmupIterations(1)) {
+    state in
+    if state.settings.synthetic! {
+      try runImageClassificationTraining(
+        model: ResNet56.self, dataset: SyntheticCIFAR10.self, state: &state)
+    } else {
+      try runImageClassificationTraining(
+        model: ResNet56.self, dataset: CIFAR10<SystemRandomNumberGenerator>.self, state: &state)
     }
 
-    static func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        if settings.synthetic {
-            return ImageClassificationInference<ResNet56, SyntheticCIFAR10>(settings: settings)
-        } else {
-            return ImageClassificationInference<ResNet56, CIFAR10<SystemRandomNumberGenerator>>(
-                settings: settings)
-        }
-    }
-
-    static func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        if settings.synthetic {
-            return ImageClassificationTraining<ResNet56, SyntheticCIFAR10>(settings: settings)
-        } else {
-            return ImageClassificationTraining<ResNet56, CIFAR10<SystemRandomNumberGenerator>>(
-                settings: settings)
-        }
-    }
+  }
 }
 
 struct ResNet56: Layer {
-    var model: ResNet
+  var model: ResNet
 
-    init() {
-        model = ResNet(classCount: 10, depth: .resNet56, downsamplingInFirstStage: false)
-    }
+  init() {
+    model = ResNet(classCount: 10, depth: .resNet56, downsamplingInFirstStage: false)
+  }
 
-    @differentiable
-    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        return model(input)
-    }
+  @differentiable
+  public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
+    return model(input)
+  }
 }
 
 extension ResNet56: ImageClassificationModel {
-    static var preferredInputDimensions: [Int] { [32, 32, 3] }
-    static var outputLabels: Int { 10 }
+  static var preferredInputDimensions: [Int] { [32, 32, 3] }
+  static var outputLabels: Int { 10 }
 }
 
 final class SyntheticCIFAR10: SyntheticImageDataset<SystemRandomNumberGenerator>,
-    ImageClassificationData
+  ImageClassificationData
 {
-    public init(batchSize: Int, on device: Device = Device.default) {
-        super.init(
-            batchSize: batchSize, labels: ResNet56.outputLabels,
-            dimensions: ResNet56.preferredInputDimensions, entropy: SystemRandomNumberGenerator(),
-            device: device)
-    }
+  public init(batchSize: Int, on device: Device = Device.default) {
+    super.init(
+      batchSize: batchSize, labels: ResNet56.outputLabels,
+      dimensions: ResNet56.preferredInputDimensions, entropy: SystemRandomNumberGenerator(),
+      device: device)
+  }
 }

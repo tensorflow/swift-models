@@ -12,50 +12,88 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-struct BenchmarkSettings: Codable {
-    let duration: BenchmarkDuration
-    let batchSize: Int
-    let iterations: Int
-    let warmupBatches: Int
-    let synthetic: Bool
-    let backend: Backend
+import Benchmark
+import TensorFlow
+
+struct BatchSize: BenchmarkSetting {
+  var value: Int
+  init(_ value: Int) {
+    self.value = value
+  }
 }
 
-enum Backend: String, Codable {
-    case eager = "eager"
-    case x10 = "x10"
+struct Length: BenchmarkSetting {
+  var value: Int
+  init(_ value: Int) {
+    self.value = value
+  }
 }
 
-enum BenchmarkDuration {
-    case batches(_ value: Int)
-    case epochs(_ value: Int)
+struct Synthetic: BenchmarkSetting {
+  var value: Bool
+  init(_ value: Bool) {
+    self.value = value
+  }
 }
 
-extension BenchmarkDuration: Codable {
-    enum CodingKeys: String, CodingKey {
-        case epochs, batches
-    }
-    
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        if let value = try container.decodeIfPresent(Int.self, forKey: .batches) {
-            self = .batches(value)
-        } else if let value = try container.decodeIfPresent(Int.self, forKey: .epochs) {
-            self = .epochs(value)
-        } else {
-            throw DecodingError.dataCorrupted(
-                DecodingError.Context(codingPath: decoder.codingPath,
-                    debugDescription: "Could not decode the duration."))
-        }
-    }
-    
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        switch self {
-        case .batches(let value):
-            try container.encode(value, forKey: .batches)
-        case .epochs(let value):
-            try container.encode(value, forKey: .epochs)
-        }
-    }
+struct Backend: BenchmarkSetting {
+  var value: Value
+  init(_ value: Value) {
+    self.value = value
+  }
+  enum Value {
+    case x10
+    case eager
+  }
 }
+
+extension BenchmarkSettings {
+  var batchSize: Int? {
+    return self[BatchSize.self]?.value
+  }
+
+  var length: Int? {
+    return self[Length.self]?.value
+  }
+
+  var synthetic: Bool? {
+    if let value = self[Synthetic.self]?.value {
+      return value
+    } else {
+      fatalError("Synthetic setting must have a default.")
+    }
+  }
+
+  var backend: Backend.Value {
+    if let value = self[Backend.self]?.value {
+      return value
+    } else {
+      fatalError("Backend setting must have a default.")
+    }
+  }
+
+  var device: Device {
+    switch backend {
+    case .eager: return Device.defaultTFEager
+    case .x10: return Device.defaultXLA
+    }
+  }
+}
+
+let defaultSettings: [BenchmarkSetting] = [
+  TimeUnit(.s),
+  InverseTimeUnit(.s),
+  Backend(.eager),
+  Synthetic(false),
+  Columns([
+    "name",
+    "avg_exp_per_second",
+    "exp_per_second",
+    "startup_time",
+    "step_time_median",
+    "step_time_min",
+    "step_time_max",
+    "wall_time",
+    "iterations",
+  ]),
+]

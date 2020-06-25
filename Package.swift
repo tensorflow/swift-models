@@ -111,16 +111,9 @@ let package = Package(
             name: "Benchmarks",
             dependencies: [
                 "Datasets", "ModelSupport", "ImageClassificationModels", "ArgumentParser",
-                "TextModels"
-            ],
-            path: "Benchmarks"),
-        .target(
-            name: "NewBenchmarks",
-            dependencies: [
-                "Datasets", "ModelSupport", "ImageClassificationModels", "ArgumentParser",
                 "TextModels", "Benchmark"
             ],
-            path: "NewBenchmarks"),
+            path: "Benchmarks"),
         .testTarget(name: "CheckpointTests", dependencies: ["ModelSupport"]),
         .target(
             name: "BERT-CoLA", dependencies: ["TextModels", "Datasets"], path: "Examples/BERT-CoLA"),

@@ -18,18 +18,17 @@ installed. Make sure you've added the correct version of `swift` to your path.
 To run all benchmarks, type the following while in the swift-models directory:
 
 ```sh
-swift run -c release Benchmarks measure-all
+swift run -c release Benchmarks
 ```
 
-To run an an individual benchmark, use `measure`:
+To run an an individual benchmark, use `--filter`:
 
 ```sh
-swift run -c release Benchmarks measure --benchmark <name> --training
-swift run -c release Benchmarks measure --benchmark <name> --inference
+swift run -c release Benchmarks --filter <name>
 ```
 
-To list all benchmarks and their default settings use `list-defaults`:
+To list all benchmarks and their default settings run benchmarks with 0 iterations: 
 
 ```sh
-swift run -c release Benchmarks list-defaults
+swift run -c release Benchmarks --iterations 0 --warmup-iterations 0 --columns name 
 ```
