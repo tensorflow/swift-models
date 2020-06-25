@@ -18,47 +18,81 @@ import ModelSupport
 import TensorFlow
 import TextModels
 
-let WordSeg = BenchmarkSuite(name: "WordSeg") { suite in
-  // Typical sizes for sequence length parameter in the WordSeg benchmarks: 4, 8, and 14.
-  let settings: [BenchmarkSetting] = [Length(4), WarmupIterations(10)]
-
-  suite.benchmark("score", settings: settings) { state in
-    let device = state.settings.device
-    try runWordSegBenchmark(state: &state) { model, sentence in
-      let lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
-      let score = lattice[sentence.count].semiringScore
-      let _ = score.logr + score.logp
-    }
+let WordSegScore = BenchmarkSuite(
+  name: "WordSegScore", settings: WarmupIterations(10)
+) { suite in
+  suite.benchmark("sentence_4", settings: [Length(4)]) { state in
+    try runWordSegBenchmark(state: &state, operation: score)
   }
 
-  suite.benchmark("score_and_gradient", settings: settings) { state in
-    let device = state.settings.device
-    try runWordSegBenchmark(state: &state) { model, sentence in
-      let lambd: Float = 0.00075
-
-      let _ = valueWithGradient(at: model) { model -> Tensor<Float> in
-        let lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
-        let score = lattice[sentence.count].semiringScore
-        let expectedLength = exp(score.logr - score.logp)
-        let loss = -1 * score.logp + lambd * expectedLength
-        return Tensor(loss, on: device)
-      }
-    }
+  suite.benchmark("sentence_8", settings: [Length(8)]) { state in
+    try runWordSegBenchmark(state: &state, operation: score)
   }
 
-  suite.benchmark("viterbi", settings: settings) { state in
-    let device = state.settings.device
-    try runWordSegBenchmark(state: &state) { model, sentence in
-      var lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
-      let _ = lattice.viterbi(sentence: sentence)
-    }
+  suite.benchmark("sentence_14", settings: [Length(14)]) { state in
+    try runWordSegBenchmark(state: &state, operation: score)
+  }
+}
+
+let WordSegScoreAndGradient = BenchmarkSuite(
+  name: "WordSegScoreAndGradient", settings: WarmupIterations(10)
+) { suite in
+  suite.benchmark("sentence_4", settings: [Length(4)]) { state in
+    try runWordSegBenchmark(state: &state, operation: scoreAndGradient)
+  }
+
+  suite.benchmark("sentence_8", settings: [Length(8)]) { state in
+    try runWordSegBenchmark(state: &state, operation: scoreAndGradient)
+  }
+
+  suite.benchmark("sentence_14", settings: [Length(14)]) { state in
+    try runWordSegBenchmark(state: &state, operation: scoreAndGradient)
+  }
+}
+
+let WordSegViterbi = BenchmarkSuite(
+  name: "WordSegScoreAndGradient", settings: WarmupIterations(10)
+) { suite in
+  suite.benchmark("sentence_4", settings: [Length(4)]) { state in
+    try runWordSegBenchmark(state: &state, operation: viterbi)
+  }
+
+  suite.benchmark("sentence_8", settings: [Length(8)]) { state in
+    try runWordSegBenchmark(state: &state, operation: viterbi)
+  }
+
+  suite.benchmark("sentence_14", settings: [Length(14)]) { state in
+    try runWordSegBenchmark(state: &state, operation: viterbi)
   }
 }
 
 let maximumSequenceLength = 18
 
+func score(model: SNLM, sentence: CharacterSequence, device: Device) {
+  let lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
+  let score = lattice[sentence.count].semiringScore
+  let _ = score.logr + score.logp
+}
+
+func scoreAndGradient(model: SNLM, sentence: CharacterSequence, device: Device) {
+  let lambd: Float = 0.00075
+
+  let _ = valueWithGradient(at: model) { model -> Tensor<Float> in
+    let lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
+    let score = lattice[sentence.count].semiringScore
+    let expectedLength = exp(score.logr - score.logp)
+    let loss = -1 * score.logp + lambd * expectedLength
+    return Tensor(loss, on: device)
+  }
+}
+
+func viterbi(model: SNLM, sentence: CharacterSequence, device: Device) {
+  var lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
+  let _ = lattice.viterbi(sentence: sentence)
+}
+
 func runWordSegBenchmark(
-  state: inout BenchmarkState, operation: (SNLM, CharacterSequence) -> Void
+  state: inout BenchmarkState, operation: (SNLM, CharacterSequence, Device) -> Void
 ) throws {
   let settings = state.settings
   let device = settings.device
@@ -91,7 +125,7 @@ func runWordSegBenchmark(
   model.move(to: device)
 
   while true {
-    operation(model, sentence)
+    operation(model, sentence, device)
     LazyTensorBarrier()
 
     do {

@@ -16,5 +16,7 @@ let suites = [
   LeNetMNIST,
   ResNetCIFAR10,
   ResNetImageNet,
-  WordSeg,
+  WordSegScore,
+  WordSegScoreAndGradient,
+  WordSegViterbi,
 ]
