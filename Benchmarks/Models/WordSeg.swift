@@ -23,9 +23,18 @@ let WordSegScore = BenchmarkSuite(
   settings: WarmupIterations(10)
 ) { suite in
 
-  suite.benchmark("sentence_4", settings: Length(4), function: wordSegBenchmark(score))
-  suite.benchmark("sentence_8", settings: Length(8), function: wordSegBenchmark(score))
-  suite.benchmark("sentence_14", settings: Length(14), function: wordSegBenchmark(score))
+  suite.benchmark(
+    "sentence_4", settings: Length(4), Backend(.eager), function: wordSegBenchmark(score))
+  suite.benchmark(
+    "sentence_4_x10", settings: Length(4), Backend(.x10), function: wordSegBenchmark(score))
+  suite.benchmark(
+    "sentence_8", settings: Length(8), Backend(.eager), function: wordSegBenchmark(score))
+  suite.benchmark(
+    "sentence_8_x10", settings: Length(8), Backend(.x10), function: wordSegBenchmark(score))
+  suite.benchmark(
+    "sentence_14", settings: Length(14), Backend(.eager), function: wordSegBenchmark(score))
+  suite.benchmark(
+    "sentence_14_x10", settings: Length(14), Backend(.x10), function: wordSegBenchmark(score))
 }
 
 let WordSegScoreAndGradient = BenchmarkSuite(
@@ -33,9 +42,24 @@ let WordSegScoreAndGradient = BenchmarkSuite(
   settings: WarmupIterations(10)
 ) { suite in
 
-  suite.benchmark("sentence_4", settings: Length(4), function: wordSegBenchmark(scoreAndGradient))
-  suite.benchmark("sentence_8", settings: Length(8), function: wordSegBenchmark(scoreAndGradient))
-  suite.benchmark("sentence_14", settings: Length(14), function: wordSegBenchmark(scoreAndGradient))
+  suite.benchmark(
+    "sentence_4", settings: Length(4), Backend(.eager),
+    function: wordSegBenchmark(scoreAndGradient))
+  suite.benchmark(
+    "sentence_4_x10", settings: Length(4), Backend(.x10),
+    function: wordSegBenchmark(scoreAndGradient))
+  suite.benchmark(
+    "sentence_8", settings: Length(8), Backend(.eager),
+    function: wordSegBenchmark(scoreAndGradient))
+  suite.benchmark(
+    "sentence_8_x10", settings: Length(8), Backend(.x10),
+    function: wordSegBenchmark(scoreAndGradient))
+  suite.benchmark(
+    "sentence_14", settings: Length(14), Backend(.eager),
+    function: wordSegBenchmark(scoreAndGradient))
+  suite.benchmark(
+    "sentence_14_x10", settings: Length(14), Backend(.x10),
+    function: wordSegBenchmark(scoreAndGradient))
 }
 
 let WordSegViterbi = BenchmarkSuite(
@@ -43,9 +67,18 @@ let WordSegViterbi = BenchmarkSuite(
   settings: WarmupIterations(10)
 ) { suite in
 
-  suite.benchmark("sentence_4", settings: Length(4), function: wordSegBenchmark(viterbi))
-  suite.benchmark("sentence_8", settings: Length(8), function: wordSegBenchmark(viterbi))
-  suite.benchmark("sentence_14", settings: Length(14), function: wordSegBenchmark(viterbi))
+  suite.benchmark(
+    "sentence_4", settings: Length(4), Backend(.eager), function: wordSegBenchmark(viterbi))
+  suite.benchmark(
+    "sentence_4_x10", settings: Length(4), Backend(.x10), function: wordSegBenchmark(viterbi))
+  suite.benchmark(
+    "sentence_8", settings: Length(8), Backend(.eager), function: wordSegBenchmark(viterbi))
+  suite.benchmark(
+    "sentence_8_x10", settings: Length(8), Backend(.x10), function: wordSegBenchmark(viterbi))
+  suite.benchmark(
+    "sentence_14", settings: Length(14), Backend(.eager), function: wordSegBenchmark(viterbi))
+  suite.benchmark(
+    "sentence_14_x10", settings: Length(14), Backend(.x10), function: wordSegBenchmark(viterbi))
 }
 
 let maximumSequenceLength = 18

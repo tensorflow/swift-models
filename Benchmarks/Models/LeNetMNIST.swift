@@ -23,7 +23,7 @@ let LeNetMNIST = BenchmarkSuite(
 ) { suite in
 
   func inference(state: inout BenchmarkState) throws {
-    if state.settings.synthetic! {
+    if state.settings.synthetic {
       try runImageClassificationInference(
         model: LeNet.self, dataset: SyntheticMNIST.self, state: &state)
     } else {
@@ -33,7 +33,7 @@ let LeNetMNIST = BenchmarkSuite(
   }
 
   func training(state: inout BenchmarkState) throws {
-    if state.settings.synthetic! {
+    if state.settings.synthetic {
       try runImageClassificationTraining(
         model: LeNet.self, dataset: SyntheticMNIST.self, state: &state)
     } else {

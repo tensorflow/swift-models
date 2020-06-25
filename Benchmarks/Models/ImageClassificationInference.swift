@@ -26,7 +26,7 @@ protocol ImageClassificationModel: Layer where Input == Tensor<Float>, Output ==
 // TODO: Ease the tight restriction on Batcher data sources to allow for lazy datasets.
 func runImageClassificationInference<Model, ClassificationDataset>(
   model modelType: Model.Type,
-  dataset datasetType: ClassificationDataset.Type,
+  dataset realDatasetType: ClassificationDataset.Type,
   state: inout BenchmarkState
 ) throws
 where

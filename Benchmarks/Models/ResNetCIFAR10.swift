@@ -19,11 +19,11 @@ import TensorFlow
 
 let ResNetCIFAR10 = BenchmarkSuite(
   name: "ResNetCIFAR10",
-  settings: BatchSize(128), WarmupIterations(1)
+  settings: BatchSize(128), WarmupIterations(1), Synthetic(true)
 ) { suite in
 
   func inference(state: inout BenchmarkState) throws {
-    if state.settings.synthetic! {
+    if state.settings.synthetic {
       try runImageClassificationInference(
         model: ResNet56.self, dataset: SyntheticCIFAR10.self, state: &state)
     } else {
@@ -33,7 +33,7 @@ let ResNetCIFAR10 = BenchmarkSuite(
   }
 
   func training(state: inout BenchmarkState) throws {
-    if state.settings.synthetic! {
+    if state.settings.synthetic {
       try runImageClassificationTraining(
         model: ResNet56.self, dataset: SyntheticCIFAR10.self, state: &state)
     } else {

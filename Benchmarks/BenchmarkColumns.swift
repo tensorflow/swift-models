@@ -14,36 +14,8 @@
 
 import Benchmark
 
-func median(_ arr: [Double]) -> Double {
-  if arr.count == 0 { return 0 }
-  if arr.count == 1 { return arr[0] }
-  if arr.count == 2 { return (arr[0] + arr[1]) / 2 }
-
-  // If we have odd number of elements, then
-  // center element is the median.
-  let s = arr.sorted()
-  let center = arr.count / 2
-  if arr.count % 2 == 1 {
-    return s[center]
-  }
-
-  // If have even number of elements we need
-  // to return an average between two middle elements.
-  let center2 = arr.count / 2 - 1
-  return (s[center] + s[center2]) / 2
-}
-
 func registerCustomColumns() {
-  let timeFormatter: BenchmarkColumn.Formatter = { (value, settings) in
-    "\(value) s"
-  }
-  let inverseTimeFormatter: BenchmarkColumn.Formatter = { (value, settings) in
-    "\(value) /s"
-  }
-  func seconds(_ value: Double) -> Double {
-    return value / 1000_000_000
-  }
-  BenchmarkColumn.registry["avg_exp_per_second"] =
+  BenchmarkColumn.register(
     BenchmarkColumn(
       name: "avg_exp_per_second",
       value: { result in
@@ -53,14 +25,13 @@ func registerCustomColumns() {
           let examples = batchSize * (count + warmupCount)
           let time = result.measurements.reduce(0, +)
           let warmupTime = result.warmupMeasurements.reduce(0, +)
-          return Double(examples) / seconds(time + warmupTime)
+          return Double(examples) / (time + warmupTime)
         } else {
           return 0
         }
       },
-      alignment: .right,
-      formatter: inverseTimeFormatter)
-  BenchmarkColumn.registry["exp_per_second"] =
+      unit: .inverseTime))
+  BenchmarkColumn.register(
     BenchmarkColumn(
       name: "exp_per_second",
       value: { result in
@@ -68,53 +39,23 @@ func registerCustomColumns() {
           let count = result.measurements.count
           let examples = batchSize * count
           let time = result.measurements.reduce(0, +)
-          return Double(examples) / seconds(time)
+          return Double(examples) / time
         } else {
           return 0
         }
       },
-      alignment: .right,
-      formatter: inverseTimeFormatter)
-  BenchmarkColumn.registry["startup_time"] =
-    BenchmarkColumn(
-      name: "startup_time",
-      value: { seconds($0.warmupMeasurements.reduce(0, +)) },
-      alignment: .right,
-      formatter: timeFormatter)
-  BenchmarkColumn.registry["step_time_median"] =
-    BenchmarkColumn(
-      name: "step_time_median",
-      value: { seconds(median($0.measurements)) },
-      alignment: .right,
-      formatter: timeFormatter)
-  BenchmarkColumn.registry["step_time_min"] =
-    BenchmarkColumn(
-      name: "step_time_min",
-      value: { result in
-        if let value = result.measurements.min() {
-          return seconds(value)
-        } else {
-          return 0
-        }
-      },
-      alignment: .right,
-      formatter: timeFormatter)
-  BenchmarkColumn.registry["step_time_max"] =
-    BenchmarkColumn(
-      name: "step_time_max",
-      value: { result in
-        if let value = result.measurements.max() {
-          return seconds(value)
-        } else {
-          return 0
-        }
-      },
-      alignment: .right,
-      formatter: timeFormatter)
-  BenchmarkColumn.registry["wall_time"] =
+      unit: .inverseTime))
+  BenchmarkColumn.register(
+    BenchmarkColumn.registry["warmup"]!.renamed("startup_time"))
+  BenchmarkColumn.register(
+    BenchmarkColumn.registry["median"]!.renamed("step_time_median"))
+  BenchmarkColumn.register(
+    BenchmarkColumn.registry["min"]!.renamed("step_time_min"))
+  BenchmarkColumn.register(
+    BenchmarkColumn.registry["max"]!.renamed("step_time_max"))
+  BenchmarkColumn.register(
     BenchmarkColumn(
       name: "wall_time",
-      value: { seconds($0.measurements.reduce(0, +) + $0.warmupMeasurements.reduce(0, +)) },
-      alignment: .right,
-      formatter: timeFormatter)
+      value: { $0.measurements.reduce(0, +) + $0.warmupMeasurements.reduce(0, +) },
+      unit: .time))
 }

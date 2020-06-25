@@ -16,7 +16,7 @@ import Benchmark
 
 registerCustomColumns()
 let command = BenchmarkCommand.parseOrExit()
-var settings: [BenchmarkSetting] = []
-settings.append(contentsOf: defaultSettings)
-settings.append(contentsOf: command.arguments.settings)
-Benchmark.main(suites, settings: settings)
+Benchmark.main(
+  suites,
+  settings: command.arguments.settings,
+  customDefaults: defaultSettings)

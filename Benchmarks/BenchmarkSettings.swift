@@ -56,7 +56,7 @@ extension BenchmarkSettings {
     return self[Length.self]?.value
   }
 
-  var synthetic: Bool? {
+  var synthetic: Bool {
     if let value = self[Synthetic.self]?.value {
       return value
     } else {
