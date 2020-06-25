@@ -17,9 +17,10 @@ import Datasets
 import ImageClassificationModels
 import TensorFlow
 
-let LeNetMNIST = BenchmarkSuite(name: "LeNetMNIST") { suite in
+let LeNetMNIST = BenchmarkSuite(name: "LeNetMNIST", settings: BatchSize(128), WarmupIterations(1)) {
+  suite in
 
-  suite.benchmark("inference", settings: BatchSize(128), WarmupIterations(1)) { state in
+  func inference(state: inout BenchmarkState) throws {
     if state.settings.synthetic! {
       try runImageClassificationInference(
         model: LeNet.self, dataset: SyntheticMNIST.self, state: &state)
@@ -29,7 +30,7 @@ let LeNetMNIST = BenchmarkSuite(name: "LeNetMNIST") { suite in
     }
   }
 
-  suite.benchmark("training", settings: BatchSize(128), WarmupIterations(1)) { state in
+  func training(state: inout BenchmarkState) throws {
     if state.settings.synthetic! {
       try runImageClassificationTraining(
         model: LeNet.self, dataset: SyntheticMNIST.self, state: &state)
@@ -38,6 +39,11 @@ let LeNetMNIST = BenchmarkSuite(name: "LeNetMNIST") { suite in
         model: LeNet.self, dataset: MNIST<SystemRandomNumberGenerator>.self, state: &state)
     }
   }
+
+  suite.benchmark("inference", settings: Backend(.eager), function: inference)
+  suite.benchmark("inference_x10", settings: Backend(.x10), function: inference)
+  suite.benchmark("training", settings: Backend(.eager), function: training)
+  suite.benchmark("training_x10", settings: Backend(.x10), function: training)
 }
 
 extension LeNet: ImageClassificationModel {
