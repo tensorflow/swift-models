@@ -63,7 +63,7 @@ var cola = try CoLA(
   maxSequenceLength: maxSequenceLength,
   batchSize: batchSize,
   entropy: SystemRandomNumberGenerator()
-) { (example: CoLAExample) -> LabeledTextBatch in
+) { (example: CoLAExample) -> CoLA.LabeledTextBatch in
   let textBatch = bertClassifier.bert.preprocess(
     sequences: [example.sentence],
     maxSequenceLength: maxSequenceLength)
