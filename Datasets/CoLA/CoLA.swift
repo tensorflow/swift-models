@@ -19,8 +19,6 @@ import Foundation
 import ModelSupport
 import TensorFlow
 
-/// A `TextBatch` with the corresponding labels.
-public typealias LabeledTextBatch = (data: TextBatch, label: Tensor<Int32>)
 
 /// CoLA example.
 public struct CoLAExample {
@@ -42,6 +40,9 @@ public struct CoLAExample {
 public struct CoLA<Entropy: RandomNumberGenerator> {
   /// The directory where the dataset will be downloaded
   public let directoryURL: URL
+
+  /// A `TextBatch` with the corresponding labels.
+  public typealias LabeledTextBatch = (data: TextBatch, label: Tensor<Int32>)
   /// The type of the labeled samples.
   public typealias Samples = LazyMapSequence<[CoLAExample], LabeledTextBatch>
   /// The training texts.
