@@ -17,9 +17,11 @@ import Datasets
 import ImageClassificationModels
 import TensorFlow
 
-let ResNetImageNet = BenchmarkSuite(name: "ResNetImageNet") { suite in
-  suite.benchmark("inference", settings: BatchSize(128), WarmupIterations(1), Synthetic(true)) {
-    state in
+let ResNetImageNet = BenchmarkSuite(
+  name: "ResNetImageNet", settings: BatchSize(128), WarmupIterations(1), Synthetic(true)
+) { suite in
+
+  func inference(state: inout BenchmarkState) throws {
     if state.settings.synthetic! {
       try runImageClassificationInference(
         model: ResNet50.self, dataset: SyntheticImageNet.self, state: &state)
@@ -28,8 +30,7 @@ let ResNetImageNet = BenchmarkSuite(name: "ResNetImageNet") { suite in
     }
   }
 
-  suite.benchmark("training", settings: BatchSize(128), WarmupIterations(1), Synthetic(true)) {
-    state in
+  func training(state: inout BenchmarkState) throws {
     if state.settings.synthetic! {
       try runImageClassificationTraining(
         model: ResNet50.self, dataset: SyntheticImageNet.self, state: &state)
@@ -37,6 +38,11 @@ let ResNetImageNet = BenchmarkSuite(name: "ResNetImageNet") { suite in
       fatalError("Only synthetic ImageNet benchmarks are supported at the moment.")
     }
   }
+
+  suite.benchmark("inference", settings: Backend(.eager), function: inference)
+  suite.benchmark("inference_x10", settings: Backend(.x10), function: inference)
+  suite.benchmark("training", settings: Backend(.eager), function: training)
+  suite.benchmark("training_x10", settings: Backend(.eager), function: training)
 }
 
 struct ResNet50: Layer {

@@ -17,9 +17,11 @@ import Datasets
 import ImageClassificationModels
 import TensorFlow
 
-let ResNetCIFAR10 = BenchmarkSuite(name: "ResNetCIFAR10") { suite in
-  suite.benchmark("inference", settings: BatchSize(128), WarmupIterations(1)) {
-    state in
+let ResNetCIFAR10 = BenchmarkSuite(
+  name: "ResNetCIFAR10", settings: BatchSize(128), WarmupIterations(1)
+) { suite in
+
+  func inference(state: inout BenchmarkState) throws {
     if state.settings.synthetic! {
       try runImageClassificationInference(
         model: ResNet56.self, dataset: SyntheticCIFAR10.self, state: &state)
@@ -29,8 +31,7 @@ let ResNetCIFAR10 = BenchmarkSuite(name: "ResNetCIFAR10") { suite in
     }
   }
 
-  suite.benchmark("training", settings: BatchSize(128), WarmupIterations(1)) {
-    state in
+  func training(state: inout BenchmarkState) throws {
     if state.settings.synthetic! {
       try runImageClassificationTraining(
         model: ResNet56.self, dataset: SyntheticCIFAR10.self, state: &state)
@@ -38,8 +39,12 @@ let ResNetCIFAR10 = BenchmarkSuite(name: "ResNetCIFAR10") { suite in
       try runImageClassificationTraining(
         model: ResNet56.self, dataset: CIFAR10<SystemRandomNumberGenerator>.self, state: &state)
     }
-
   }
+
+  suite.benchmark("inference", settings: Backend(.eager), function: inference)
+  suite.benchmark("inference_x10", settings: Backend(.x10), function: inference)
+  suite.benchmark("training", settings: Backend(.eager), function: training)
+  suite.benchmark("training_x10", settings: Backend(.x10), function: training)
 }
 
 struct ResNet56: Layer {
