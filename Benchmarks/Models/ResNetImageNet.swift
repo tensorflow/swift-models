@@ -18,7 +18,8 @@ import ImageClassificationModels
 import TensorFlow
 
 let ResNetImageNet = BenchmarkSuite(
-  name: "ResNetImageNet", settings: BatchSize(128), WarmupIterations(1), Synthetic(true)
+  name: "ResNetImageNet",
+  settings: BatchSize(128), WarmupIterations(1), Synthetic(true)
 ) { suite in
 
   func inference(state: inout BenchmarkState) throws {

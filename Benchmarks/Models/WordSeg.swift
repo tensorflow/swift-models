@@ -19,8 +19,10 @@ import TensorFlow
 import TextModels
 
 let WordSegScore = BenchmarkSuite(
-  name: "WordSegScore", settings: WarmupIterations(10)
+  name: "WordSegScore",
+  settings: WarmupIterations(10)
 ) { suite in
+
   suite.benchmark("sentence_4", settings: [Length(4)]) { state in
     try runWordSegBenchmark(state: &state, operation: score)
   }
@@ -35,8 +37,10 @@ let WordSegScore = BenchmarkSuite(
 }
 
 let WordSegScoreAndGradient = BenchmarkSuite(
-  name: "WordSegScoreAndGradient", settings: WarmupIterations(10)
+  name: "WordSegScoreAndGradient",
+  settings: WarmupIterations(10)
 ) { suite in
+
   suite.benchmark("sentence_4", settings: [Length(4)]) { state in
     try runWordSegBenchmark(state: &state, operation: scoreAndGradient)
   }
@@ -51,8 +55,10 @@ let WordSegScoreAndGradient = BenchmarkSuite(
 }
 
 let WordSegViterbi = BenchmarkSuite(
-  name: "WordSegScoreAndGradient", settings: WarmupIterations(10)
+  name: "WordSegViterbi",
+  settings: WarmupIterations(10)
 ) { suite in
+
   suite.benchmark("sentence_4", settings: [Length(4)]) { state in
     try runWordSegBenchmark(state: &state, operation: viterbi)
   }

@@ -17,8 +17,10 @@ import Datasets
 import ImageClassificationModels
 import TensorFlow
 
-let LeNetMNIST = BenchmarkSuite(name: "LeNetMNIST", settings: BatchSize(128), WarmupIterations(1)) {
-  suite in
+let LeNetMNIST = BenchmarkSuite(
+  name: "LeNetMNIST",
+  settings: BatchSize(128), WarmupIterations(1)
+) { suite in
 
   func inference(state: inout BenchmarkState) throws {
     if state.settings.synthetic! {

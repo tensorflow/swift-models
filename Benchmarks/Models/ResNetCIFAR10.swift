@@ -18,7 +18,8 @@ import ImageClassificationModels
 import TensorFlow
 
 let ResNetCIFAR10 = BenchmarkSuite(
-  name: "ResNetCIFAR10", settings: BatchSize(128), WarmupIterations(1)
+  name: "ResNetCIFAR10",
+  settings: BatchSize(128), WarmupIterations(1)
 ) { suite in
 
   func inference(state: inout BenchmarkState) throws {
