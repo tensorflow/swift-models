@@ -31,4 +31,5 @@ To build and run the models, run:
 swift run Gym-CartPole
 swift run Gym-FrozenLake
 swift run Gym-Blackjack
+swift run Gym-DQN
 ```
