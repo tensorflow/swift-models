@@ -19,7 +19,13 @@ import TensorFlow
 import TextModels
 import x10_optimizers_optimizer
 
-let device = Device.defaultXLA
+// Until https://github.com/tensorflow/swift-apis/issues/993 is fixed, default to the eager-mode
+// device on macOS instead of X10.
+#if os(macOS)
+  let device = Device.defaultTFEager
+#else
+  let device = Device.defaultXLA
+#endif
 
 var bertPretrained: BERT.PreTrainedModel
 if CommandLine.arguments.count >= 2 {
@@ -62,8 +68,10 @@ var cola = try CoLA(
   taskDirectoryURL: workspaceURL,
   maxSequenceLength: maxSequenceLength,
   batchSize: batchSize,
-  entropy: SystemRandomNumberGenerator()
+  entropy: SystemRandomNumberGenerator(),
+  on: device
 ) { (example: CoLAExample) -> CoLA.LabeledTextBatch in
+  // must be eager, since the text has not been padded yet
   let textBatch = bertClassifier.bert.preprocess(
     sequences: [example.sentence],
     maxSequenceLength: maxSequenceLength)
@@ -103,13 +111,7 @@ for (epoch, epochBatches) in cola.trainingEpochs.prefix(epochCount).enumerated()
     var trainingBatchCount = 0
 
     for batch in epochBatches {
-        let (eagerDocuments, eagerLabels) = (batch.data, Tensor<Float>(batch.label))
-        let documents = TextBatch(
-          tokenIds: Tensor(copying: eagerDocuments.tokenIds, to: device),
-          tokenTypeIds: Tensor(copying: eagerDocuments.tokenTypeIds, to: device),
-          mask: Tensor(copying: eagerDocuments.mask, to: device)
-        )
-        let labels = Tensor(copying: eagerLabels, to: device)
+        let (documents, labels) = (batch.data, Tensor<Float>(batch.label))
         var (loss, gradients) = valueWithGradient(at: bertClassifier) { model -> Tensor<Float> in
             let logits = model(documents)
             return sigmoidCrossEntropy(
@@ -145,13 +147,7 @@ for (epoch, epochBatches) in cola.trainingEpochs.prefix(epochCount).enumerated()
     var devPredictedLabels = [Bool]()
     var devGroundTruth = [Bool]()
     for batch in cola.validationBatches {
-        let (eagerDocuments, eagerLabels) = (batch.data, Tensor<Float>(batch.label))
-        let documents = TextBatch(
-          tokenIds: Tensor(copying: eagerDocuments.tokenIds, to: device),
-          tokenTypeIds: Tensor(copying: eagerDocuments.tokenTypeIds, to: device),
-          mask: Tensor(copying: eagerDocuments.mask, to: device)
-        )
-        let labels = Tensor(copying: eagerLabels, to: device)
+        let (documents, labels) = (batch.data, Tensor<Float>(batch.label))
         let logits = bertClassifier(documents)
         let loss = sigmoidCrossEntropy(
             logits: logits.squeezingShape(at: -1),
