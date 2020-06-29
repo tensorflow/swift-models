@@ -12,14 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import ModelSupport
+import TensorFlow
 
-public struct WordSegRecord {
-  public let plainText: String
-  public let numericalizedText: CharacterSequence
-
-  public init(plainText: String, numericalizedText: CharacterSequence) {
-    self.plainText = plainText
-    self.numericalizedText = numericalizedText
-  }
+// This is a convenience function to provide a two-argument version of softmaxCrossEntropy()
+// for common image-based training loops.
+@differentiable
+public func softmaxCrossEntropy<Scalar>(logits: Tensor<Scalar>, labels: Tensor<Int32>) -> Tensor<
+  Scalar
+> where Scalar: TensorFlowFloatingPoint {
+  return softmaxCrossEntropy(logits: logits, labels: labels, reduction: _mean)
 }

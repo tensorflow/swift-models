@@ -1,4 +1,17 @@
-import Batcher
+// Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 import Foundation
 import ModelSupport
 import TensorFlow
@@ -52,7 +65,7 @@ public struct LabeledObject {
     }
 }
 
-public struct ObjectDetectionExample: _Collatable, KeyPathIterable {
+public struct ObjectDetectionExample: KeyPathIterable {
     public let image: LazyImage
     public let objects: [LabeledObject]
 
@@ -62,10 +75,28 @@ public struct ObjectDetectionExample: _Collatable, KeyPathIterable {
     }
 }
 
-public protocol ObjectDetectionDataset {
-    associatedtype SourceDataSet: Collection
-    where SourceDataSet.Element == ObjectDetectionExample, SourceDataSet.Index == Int
+/// Types whose elements represent an object detection dataset (with both
+/// training and validation data).
+public protocol ObjectDetectionData {
+  /// The type of the training data, represented as a sequence of epochs, which
+  /// are collection of batches.
+  associatedtype Training: Sequence
+  where Training.Element: Collection, Training.Element.Element == [ObjectDetectionExample]
+  /// The type of the validation data, represented as a collection of batches.
+  associatedtype Validation: Collection where Validation.Element == [ObjectDetectionExample]
+  /// Creates an instance from a given `batchSize`.
+  init(
+    training: COCO, validation: COCO, includeMasks: Bool, batchSize: Int, on device: Device,
+    transform: @escaping (ObjectDetectionExample) -> [ObjectDetectionExample])
+  /// The `training` epochs.
+  var training: Training { get }
+  /// The `validation` batches.
+  var validation: Validation { get }
 
-    var training: Batcher<SourceDataSet> { get }
-    var test: Batcher<SourceDataSet> { get }
+  // The following is probably going to be necessary since we can't extract that
+  // information from `Epochs` or `Batches`.
+  /// The number of samples in the `training` set.
+  //var trainingSampleCount: Int {get}
+  /// The number of samples in the `validation` set.
+  //var validationSampleCount: Int {get}
 }

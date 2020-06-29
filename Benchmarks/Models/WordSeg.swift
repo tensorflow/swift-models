@@ -106,14 +106,14 @@ struct WordSegBenchmark: Benchmark {
               from: [sentence],
               alphabet: dataset.alphabet,
               maxLength: maximumSequenceLength,
-              minFreq: 10
+              minFrequency: 10
             )
             
             let modelParameters = SNLM.Parameters(
-              ndim: 512,
-              dropoutProb: 0.5,
-              chrVocab: dataset.alphabet,
-              strVocab: lexicon,
+              hiddenSize: 512,
+              dropoutProbability: 0.5,
+              alphabet: dataset.alphabet,
+              lexicon: lexicon,
               order: 5
             )
             
@@ -139,6 +139,11 @@ struct WordSegBenchmark: Benchmark {
             fatalError("Error during WordSeg benchmark: \(error)")
         }
         
+        if backend == .x10 {
+            // A synchronous barrier is needed for X10 to ensure all execution completes
+            // before tearing down the model.
+            LazyTensorBarrier(wait: true)
+        }
         return batchTimings
     }
 }

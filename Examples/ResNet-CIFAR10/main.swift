@@ -15,59 +15,26 @@
 import Datasets
 import ImageClassificationModels
 import TensorFlow
+import TrainingLoop
 
-let batchSize = 10
+// Until https://github.com/tensorflow/swift-apis/issues/993 is fixed, default to the eager-mode
+// device on macOS instead of X10.
+#if os(macOS)
+  let device = Device.defaultTFEager
+#else
+  let device = Device.defaultXLA
+#endif
 
-let dataset = CIFAR10(batchSize: batchSize)
-
-// Use the network sized for CIFAR-10
+let dataset = CIFAR10(batchSize: 10, on: device)
 var model = ResNet(classCount: 10, depth: .resNet56, downsamplingInFirstStage: false)
+var optimizer = SGD(for: model, learningRate: 0.001)
 
-// the classic ImageNet optimizer setting diverges on CIFAR-10
-// let optimizer = SGD(for: model, learningRate: 0.1, momentum: 0.9)
-let optimizer = SGD(for: model, learningRate: 0.001)
+let trainingProgress = TrainingProgress()
+var trainingLoop = TrainingLoop(
+  training: dataset.training,
+  validation: dataset.validation,
+  optimizer: optimizer,
+  lossFunction: softmaxCrossEntropy,
+  callbacks: [trainingProgress.update])
 
-print("Starting training...")
-
-for (epoch, epochBatches) in dataset.training.prefix(10).enumerated() {
-    Context.local.learningPhase = .training
-    var trainingLossSum: Float = 0
-    var trainingBatchCount = 0
-    for batch in epochBatches {
-        let (images, labels) = (batch.data, batch.label)
-        let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
-            let logits = model(images)
-            return softmaxCrossEntropy(logits: logits, labels: labels)
-        }
-        trainingLossSum += loss.scalarized()
-        trainingBatchCount += 1
-        optimizer.update(&model, along: gradients)
-    }
-
-    Context.local.learningPhase = .inference
-    var testLossSum: Float = 0
-    var testBatchCount = 0
-    var correctGuessCount = 0
-    var totalGuessCount = 0
-    for batch in dataset.validation {
-        let (images, labels) = (batch.data, batch.label)
-        let logits = model(images)
-        testLossSum += softmaxCrossEntropy(logits: logits, labels: labels).scalarized()
-        testBatchCount += 1
-
-        let correctPredictions = logits.argmax(squeezingAxis: 1) .== labels
-        correctGuessCount = correctGuessCount
-            + Int(
-                Tensor<Int32>(correctPredictions).sum().scalarized())
-        totalGuessCount = totalGuessCount + batchSize
-    }
-
-    let accuracy = Float(correctGuessCount) / Float(totalGuessCount)
-    print(
-        """
-        [Epoch \(epoch)] \
-        Accuracy: \(correctGuessCount)/\(totalGuessCount) (\(accuracy)) \
-        Loss: \(testLossSum / Float(testBatchCount))
-        """
-    )
-}
+try! trainingLoop.fit(&model, epochs: 10, on: device)

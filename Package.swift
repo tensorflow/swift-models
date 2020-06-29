@@ -18,6 +18,7 @@ let package = Package(
         .library(name: "TextModels", targets: ["TextModels"]),
         .library(name: "FastStyleTransfer", targets: ["FastStyleTransfer"]),
         .library(name: "MiniGo", targets: ["MiniGo"]),
+        .library(name: "TrainingLoop", targets: ["TrainingLoop"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.9.0"),
@@ -25,7 +26,7 @@ let package = Package(
     ],
     targets: [
         .target(name: "Batcher", path: "Batcher"),
-        .target(name: "Datasets", dependencies: ["ModelSupport", "Batcher"], path: "Datasets"),
+        .target(name: "Datasets", dependencies: ["ModelSupport"], path: "Datasets"),
         .target(name: "STBImage", path: "Support/STBImage"),
         .target(
             name: "ModelSupport", dependencies: ["SwiftProtobuf", "STBImage"], path: "Support",
@@ -34,6 +35,7 @@ let package = Package(
         .target(name: "VideoClassificationModels", path: "Models/Spatiotemporal"),
         .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),
         .target(name: "RecommendationModels", path: "Models/Recommendation"),
+        .target(name: "TrainingLoop", dependencies: ["ModelSupport"], path: "TrainingLoop"),
         .target(
             name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport"],
             path: "Autoencoder/Autoencoder1D"),
@@ -49,7 +51,8 @@ let package = Package(
         .target(name: "Gym-Blackjack", path: "Gym/Blackjack"),
         .target(name: "Gym-DQN", path: "Gym/DQN"),
         .target(
-            name: "VGG-Imagewoof", dependencies: ["ImageClassificationModels", "Datasets"],
+            name: "VGG-Imagewoof",
+            dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
             path: "Examples/VGG-Imagewoof"),
         .target(
             name: "Regression-BostonHousing", dependencies: ["Datasets"],
@@ -58,16 +61,20 @@ let package = Package(
             name: "Custom-CIFAR10", dependencies: ["Datasets"],
             path: "Examples/Custom-CIFAR10"),
         .target(
-            name: "ResNet-CIFAR10", dependencies: ["ImageClassificationModels", "Datasets"],
+            name: "ResNet-CIFAR10",
+            dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
             path: "Examples/ResNet-CIFAR10"),
         .target(
-            name: "LeNet-MNIST", dependencies: ["ImageClassificationModels", "Datasets"],
+            name: "LeNet-MNIST",
+            dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
             path: "Examples/LeNet-MNIST"),
         .target(
-            name: "MobileNetV1-Imagenette", dependencies: ["ImageClassificationModels", "Datasets"],
+            name: "MobileNetV1-Imagenette",
+            dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
             path: "Examples/MobileNetV1-Imagenette"),
         .target(
-            name: "MobileNetV2-Imagenette", dependencies: ["ImageClassificationModels", "Datasets"],
+            name: "MobileNetV2-Imagenette",
+            dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
             path: "Examples/MobileNetV2-Imagenette"),
         .target(
             name: "MiniGo", dependencies: ["ModelSupport"], path: "MiniGo", exclude: ["main.swift"]),
@@ -118,13 +125,18 @@ let package = Package(
         ),
         .target(
             name: "pix2pix",
-            dependencies: ["Batcher", "ArgumentParser", "ModelSupport", "Datasets"],
+            dependencies: ["ArgumentParser", "ModelSupport", "Datasets"],
             path: "pix2pix"
         ),
         .target(
             name: "WordSeg",
-            dependencies: ["ModelSupport", "TextModels", "Datasets"],
+            dependencies: ["ArgumentParser", "Datasets", "ModelSupport", "TextModels"],
             path: "Examples/WordSeg"
+        ),
+       .target(
+           name: "Fractals",
+           dependencies: ["ArgumentParser", "ModelSupport"],
+           path: "Examples/Fractals"
        )
     ]
 )
