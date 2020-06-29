@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Foundation
-import TensorFlow
+import Checkpoints
 import Datasets
+import Foundation
 import ModelSupport
+import TensorFlow
 
 /// Represents a type that can contribute to the regularization term when training models.
 public protocol Regularizable: Differentiable {
