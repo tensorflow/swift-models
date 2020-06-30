@@ -44,6 +44,7 @@ class ReplayBuffer {
     var actions: Tensor<Int32>
     var rewards: Tensor<Float>
     var nextStates: Tensor<Float>
+    var isDones: Tensor<Bool>
     let capacity: Int
     var count: Int = 0
     var index: Int = 0
@@ -55,9 +56,10 @@ class ReplayBuffer {
         actions = Tensor<Int32>(numpy: np.zeros([capacity, 1], dtype: np.int32))!
         rewards = Tensor<Float>(numpy: np.zeros([capacity, 1], dtype: np.float32))!
         nextStates = Tensor<Float>(numpy: np.zeros([capacity, 4], dtype: np.float32))!
+        isDones = Tensor<Bool>(numpy: np.zeros([capacity], dtype: np.bool))!
     }
 
-    func append(state: Tensor<Float>, action: Tensor<Int32>, reward: Tensor<Float>, nextState: Tensor<Float>) {
+    func append(state: Tensor<Float>, action: Tensor<Int32>, reward: Tensor<Float>, nextState: Tensor<Float>, isDone: Tensor<Bool>) {
         if count < capacity {
             count += 1
         }
@@ -66,18 +68,20 @@ class ReplayBuffer {
         actions[index] = Tensor<Int32>(numpy: np.expand_dims(action.makeNumpyArray(), axis: 0))!
         rewards[index] = Tensor<Float>(numpy: np.expand_dims(reward.makeNumpyArray(), axis: 0))!
         nextStates[index] = nextState
+        isDones[index] = isDone
         index = (index + 1) % capacity
     }
 
-    func sample(batchSize: Int) -> (stateBatch: Tensor<Float>, actionBatch: Tensor<Int32>, rewardBatch: Tensor<Float>, nextStateBatch: Tensor<Float>) {
+    func sample(batchSize: Int) -> (stateBatch: Tensor<Float>, actionBatch: Tensor<Int32>, rewardBatch: Tensor<Float>, nextStateBatch: Tensor<Float>, isDoneBatch: Tensor<Bool>) {
         let randomIndices = Tensor<Int32>(numpy: np.random.randint(count, size: batchSize, dtype: np.int32))!
 
         let stateBatch = _Raw.gather(params: states, indices: randomIndices)
         let actionBatch = _Raw.gather(params: actions, indices: randomIndices)
         let rewardBatch = _Raw.gather(params: rewards, indices: randomIndices)
         let nextStateBatch = _Raw.gather(params: nextStates, indices: randomIndices)
+        let isDoneBatch = _Raw.gather(params: isDones, indices: randomIndices)
 
-        return (stateBatch, actionBatch, rewardBatch, nextStateBatch)
+        return (stateBatch, actionBatch, rewardBatch, nextStateBatch, isDoneBatch)
     }
 }
 
@@ -140,7 +144,7 @@ class Agent {
         // Don't train if replay buffer is too small
         if replayBuffer.count >= batchSize {
             // print("train | Start training")
-            let (tfStateBatch, tfActionBatch, tfRewardBatch, tfNextStateBatch) = replayBuffer.sample(batchSize: batchSize)
+            let (tfStateBatch, tfActionBatch, tfRewardBatch, tfNextStateBatch, tfIsDoneBatch) = replayBuffer.sample(batchSize: batchSize)
 
             // TODO: Find equivalent function of tf.gather_nd in S4TF to parallelize Q-value computation (_Raw.gather_nd does not exist)
             // Gradient are accumulated since we calculate every element in the batch individually
@@ -158,7 +162,7 @@ class Agent {
                     let leftQValue = Float(nextStateQValueBatch[i][0].scalarized())
                     let rightQValue = Float(nextStateQValueBatch[i][1].scalarized())
                     let maxNextStateQValue = leftQValue > rightQValue ? leftQValue : rightQValue
-                    let target: Tensor<Float> = tfReward + self.discount * maxNextStateQValue
+                    let target: Tensor<Float> = tfReward + Tensor<Float>(tfIsDoneBatch[i]) * self.discount * maxNextStateQValue
 
                     return squaredDifference(prediction, withoutDerivative(at: target))
                 }
@@ -246,7 +250,7 @@ while episodeIndex < maxEpisode {
     // print("episodeReturn: \(episodeReturn)")
 
     // Save interaction to replay buffer
-    replayBuffer.append(state: state, action: action, reward: reward, nextState: nextState)
+    replayBuffer.append(state: state, action: action, reward: reward, nextState: nextState, isDone: isDone)
     // print("Append successful")
 
     // Train agent
