@@ -23,7 +23,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.9.0"),
         .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.0.1")),
-        .package(url: "https://github.com/google/swift-benchmark", .branch("master")),
+        .package(url: "https://github.com/shabalind/swift-benchmark", .branch("topic/mixed-columns")),
     ],
     targets: [
         .target(name: "Batcher", path: "Batcher"),

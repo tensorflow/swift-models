@@ -12,10 +12,10 @@
       },
       {
         "package": "Benchmark",
-        "repositoryURL": "https://github.com/google/swift-benchmark",
+        "repositoryURL": "https://github.com/shabalind/swift-benchmark",
         "state": {
-          "branch": "master",
-          "revision": "13312ec6e1d13bd7f24112147b5323a976c2f9cb",
+          "branch": "topic/mixed-columns",
+          "revision": "7a71ce9ecb67f1d765dd0b0e4c4c631f074b2862",
           "version": null
         }
       },

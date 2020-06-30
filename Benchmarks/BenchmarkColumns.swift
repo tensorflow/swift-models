@@ -50,9 +50,15 @@ func registerCustomColumns() {
   BenchmarkColumn.register(
     BenchmarkColumn.registry["median"]!.renamed("step_time_median"))
   BenchmarkColumn.register(
+    BenchmarkColumn.registry["median"]!.renamed("time_median"))
+  BenchmarkColumn.register(
     BenchmarkColumn.registry["min"]!.renamed("step_time_min"))
   BenchmarkColumn.register(
+    BenchmarkColumn.registry["min"]!.renamed("time_min"))
+  BenchmarkColumn.register(
     BenchmarkColumn.registry["max"]!.renamed("step_time_max"))
+  BenchmarkColumn.register(
+    BenchmarkColumn.registry["max"]!.renamed("time_max"))
   BenchmarkColumn.register(
     BenchmarkColumn(
       name: "wall_time",

@@ -87,13 +87,13 @@ let defaultSettings: [BenchmarkSetting] = [
   Synthetic(false),
   Columns([
     "name",
+    "wall_time",
+    "startup_time",
+    "iterations",
     "avg_exp_per_second",
     "exp_per_second",
-    "startup_time",
     "step_time_median",
     "step_time_min",
     "step_time_max",
-    "wall_time",
-    "iterations",
   ]),
 ]

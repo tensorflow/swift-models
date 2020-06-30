@@ -18,92 +18,47 @@ import ModelSupport
 import TensorFlow
 import TextModels
 
-let WordSegScore = BenchmarkSuite(
+let WordSegScore = wordSegSuite(
   name: "WordSegScore",
-  settings: WarmupIterations(10)
-) { suite in
+  operation: score)
 
-  suite.benchmark(
-    "sentence_4", settings: Length(4), Backend(.eager), function: wordSegBenchmark(score))
-  suite.benchmark(
-    "sentence_4_x10", settings: Length(4), Backend(.x10), function: wordSegBenchmark(score))
-  suite.benchmark(
-    "sentence_8", settings: Length(8), Backend(.eager), function: wordSegBenchmark(score))
-  suite.benchmark(
-    "sentence_8_x10", settings: Length(8), Backend(.x10), function: wordSegBenchmark(score))
-  suite.benchmark(
-    "sentence_14", settings: Length(14), Backend(.eager), function: wordSegBenchmark(score))
-  suite.benchmark(
-    "sentence_14_x10", settings: Length(14), Backend(.x10), function: wordSegBenchmark(score))
-}
-
-let WordSegScoreAndGradient = BenchmarkSuite(
+let WordSegScoreAndGradient = wordSegSuite(
   name: "WordSegScoreAndGradient",
-  settings: WarmupIterations(10)
-) { suite in
+  operation: scoreAndGradient)
 
-  suite.benchmark(
-    "sentence_4", settings: Length(4), Backend(.eager),
-    function: wordSegBenchmark(scoreAndGradient))
-  suite.benchmark(
-    "sentence_4_x10", settings: Length(4), Backend(.x10),
-    function: wordSegBenchmark(scoreAndGradient))
-  suite.benchmark(
-    "sentence_8", settings: Length(8), Backend(.eager),
-    function: wordSegBenchmark(scoreAndGradient))
-  suite.benchmark(
-    "sentence_8_x10", settings: Length(8), Backend(.x10),
-    function: wordSegBenchmark(scoreAndGradient))
-  suite.benchmark(
-    "sentence_14", settings: Length(14), Backend(.eager),
-    function: wordSegBenchmark(scoreAndGradient))
-  suite.benchmark(
-    "sentence_14_x10", settings: Length(14), Backend(.x10),
-    function: wordSegBenchmark(scoreAndGradient))
-}
-
-let WordSegViterbi = BenchmarkSuite(
+let WordSegViterbi = wordSegSuite(
   name: "WordSegViterbi",
-  settings: WarmupIterations(10)
-) { suite in
-
-  suite.benchmark(
-    "sentence_4", settings: Length(4), Backend(.eager), function: wordSegBenchmark(viterbi))
-  suite.benchmark(
-    "sentence_4_x10", settings: Length(4), Backend(.x10), function: wordSegBenchmark(viterbi))
-  suite.benchmark(
-    "sentence_8", settings: Length(8), Backend(.eager), function: wordSegBenchmark(viterbi))
-  suite.benchmark(
-    "sentence_8_x10", settings: Length(8), Backend(.x10), function: wordSegBenchmark(viterbi))
-  suite.benchmark(
-    "sentence_14", settings: Length(14), Backend(.eager), function: wordSegBenchmark(viterbi))
-  suite.benchmark(
-    "sentence_14_x10", settings: Length(14), Backend(.x10), function: wordSegBenchmark(viterbi))
-}
+  operation: viterbi)
 
 let maximumSequenceLength = 18
 
-func score(model: SNLM, sentence: CharacterSequence, device: Device) {
-  let lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
-  let score = lattice[sentence.count].semiringScore
-  let _ = score.logr + score.logp
-}
-
-func scoreAndGradient(model: SNLM, sentence: CharacterSequence, device: Device) {
-  let lambd: Float = 0.00075
-
-  let _ = valueWithGradient(at: model) { model -> Tensor<Float> in
-    let lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
-    let score = lattice[sentence.count].semiringScore
-    let expectedLength = exp(score.logr - score.logp)
-    let loss = -1 * score.logp + lambd * expectedLength
-    return Tensor(loss, on: device)
+func wordSegSuite(name: String, operation: @escaping (SNLM, CharacterSequence, Device) -> Void)
+  -> BenchmarkSuite
+{
+  let function = wordSegBenchmark(operation)
+  let columns = Columns([
+    "name",
+    "wall_time",
+    "startup_time",
+    "iterations",
+    "time_median",
+    "time_min",
+    "time_max",
+  ])
+  return BenchmarkSuite(name: name, settings: WarmupIterations(10), columns) { suite in
+    suite.benchmark(
+      "sentence_4", settings: Length(4), Backend(.eager), function: function)
+    suite.benchmark(
+      "sentence_4_x10", settings: Length(4), Backend(.x10), function: function)
+    suite.benchmark(
+      "sentence_8", settings: Length(8), Backend(.eager), function: function)
+    suite.benchmark(
+      "sentence_8_x10", settings: Length(8), Backend(.x10), function: function)
+    suite.benchmark(
+      "sentence_14", settings: Length(14), Backend(.eager), function: function)
+    suite.benchmark(
+      "sentence_14_x10", settings: Length(14), Backend(.x10), function: function)
   }
-}
-
-func viterbi(model: SNLM, sentence: CharacterSequence, device: Device) {
-  var lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
-  let _ = lattice.viterbi(sentence: sentence)
 }
 
 func wordSegBenchmark(_ operation: @escaping (SNLM, CharacterSequence, Device) -> Void) -> (
@@ -167,4 +122,27 @@ func testSentence(length: Int, alphabet: Alphabet) throws -> CharacterSequence {
 
   let truncatedSentence = sourceSentence.prefix(length).reduce("", +)  // + ["</s"]
   return try CharacterSequence(alphabet: alphabet, appendingEoSTo: truncatedSentence)
+}
+
+func score(model: SNLM, sentence: CharacterSequence, device: Device) {
+  let lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
+  let score = lattice[sentence.count].semiringScore
+  let _ = score.logr + score.logp
+}
+
+func scoreAndGradient(model: SNLM, sentence: CharacterSequence, device: Device) {
+  let lambd: Float = 0.00075
+
+  let _ = valueWithGradient(at: model) { model -> Tensor<Float> in
+    let lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
+    let score = lattice[sentence.count].semiringScore
+    let expectedLength = exp(score.logr - score.logp)
+    let loss = -1 * score.logp + lambd * expectedLength
+    return Tensor(loss, on: device)
+  }
+}
+
+func viterbi(model: SNLM, sentence: CharacterSequence, device: Device) {
+  var lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
+  let _ = lattice.viterbi(sentence: sentence)
 }
