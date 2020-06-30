@@ -45,8 +45,8 @@ class ReplayBuffer {
     var rewards: Tensor<Float>
     var nextStates: Tensor<Float>
     let capacity: Int
-    var count: Int
-    var index: Int
+    var count: Int = 0
+    var index: Int = 0
 
     init(capacity: Int) {
         self.capacity = capacity
@@ -55,8 +55,6 @@ class ReplayBuffer {
         actions = Tensor<Int32>(numpy: np.zeros([capacity, 1], dtype: np.int32))!
         rewards = Tensor<Float>(numpy: np.zeros([capacity, 1], dtype: np.float32))!
         nextStates = Tensor<Float>(numpy: np.zeros([capacity, 4], dtype: np.float32))!
-        count = 0
-        index = 0
     }
 
     func append(state: Tensor<Float>, action: Tensor<Int32>, reward: Tensor<Float>, nextState: Tensor<Float>) {
@@ -194,7 +192,7 @@ class TensorFlowEnvironmentWrapper {
       return Tensor<Float>(numpy: np.array(state, dtype: np.float32))!
     }
 
-    func step(_ action: Tensor<Int32>) -> (Tensor<Float>, Tensor<Float>, PythonObject, PythonObject) {
+    func step(_ action: Tensor<Int32>) -> (state: Tensor<Float>, reward: Tensor<Float>, isDone: PythonObject, info: PythonObject) {
       let npAction = action.makeNumpyArray().item()
       let (state, reward, isDone, info) = originalEnv.step(npAction).tuple4
       let tfState = Tensor<Float>(numpy: np.array(state, dtype: np.float32))!
