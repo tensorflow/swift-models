@@ -152,13 +152,13 @@ class Agent {
 
                     let stateQValueBatch = qNet(tfStateBatch)
                     let tfAction: Tensor<Int32> = tfActionBatch[i][0]
-                    let action = Int(tfAction.makeNumpyArray()).unwrapped()
+                    let action = Int(tfAction.scalarized())
                     let prediction: Tensor<Float> = stateQValueBatch[i][action]
 
                     let nextStateQValueBatch = self.targetQNet(tfNextStateBatch)
                     let tfReward: Tensor<Float> = tfRewardBatch[i][0]
-                    let leftQValue = Float(nextStateQValueBatch[i][0].makeNumpyArray()).unwrapped()
-                    let rightQValue = Float(nextStateQValueBatch[i][1].makeNumpyArray()).unwrapped()
+                    let leftQValue = Float(nextStateQValueBatch[i][0].scalarized())
+                    let rightQValue = Float(nextStateQValueBatch[i][1].scalarized())
                     let maxNextStateQValue = leftQValue > rightQValue ? leftQValue : rightQValue
                     let target: Tensor<Float> = tfReward + self.discount * maxNextStateQValue
 
@@ -208,7 +208,7 @@ let discount: Float = 0.99
 let learningRate: Float = 0.01
 let hiddenSize: Int = 64
 let startEpsilon: Float = 0.5
-let maxEpisode: Int = 500
+let maxEpisode: Int = 100
 let replayBufferCapacity: Int = 1000
 let batchSize: Int = 32
 let targetNetUpdateRate: Int = 1
@@ -243,7 +243,7 @@ while episodeIndex < maxEpisode {
     // print("nextState: \(nextState)")
     // print("reward: \(reward)")
     // print("isDone: \(isDone)")
-    episodeReturn += Int(reward.makeNumpyArray().item()).unwrapped()
+    episodeReturn += Int(reward.scalarized())
     // print("episodeReturn: \(episodeReturn)")
 
     // Save interaction to replay buffer
