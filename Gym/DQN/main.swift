@@ -188,16 +188,17 @@ class TensorFlowEnvironmentWrapper {
     }
 
     func reset() -> Tensor<Float> {
-      let state = self.originalEnv.reset()
-      return Tensor<Float>(numpy: np.array(state, dtype: np.float32))!
+        let state = self.originalEnv.reset()
+        return Tensor<Float>(numpy: np.array(state, dtype: np.float32))!
     }
 
-    func step(_ action: Tensor<Int32>) -> (state: Tensor<Float>, reward: Tensor<Float>, isDone: PythonObject, info: PythonObject) {
-      let npAction = action.makeNumpyArray().item()
-      let (state, reward, isDone, info) = originalEnv.step(npAction).tuple4
-      let tfState = Tensor<Float>(numpy: np.array(state, dtype: np.float32))!
-      let tfReward = Tensor<Float>(numpy: np.array(reward, dtype: np.float32))!
-      return (tfState, tfReward, isDone, info)
+    func step(_ action: Tensor<Int32>) -> (state: Tensor<Float>, reward: Tensor<Float>, isDone: Tensor<Bool>, info: PythonObject) {
+        let npAction = action.makeNumpyArray().item()
+        let (state, reward, isDone, info) = originalEnv.step(npAction).tuple4
+        let tfState = Tensor<Float>(numpy: np.array(state, dtype: np.float32))!
+        let tfReward = Tensor<Float>(numpy: np.array(reward, dtype: np.float32))!
+        let tfIsDone = Tensor<Bool>(numpy: np.array(isDone, dtype: np.bool))!
+        return (tfState, tfReward, tfIsDone, info)
     }
 }
 
@@ -259,7 +260,7 @@ while episodeIndex < maxEpisode {
     // print("Target net update successful")
 
     // End-of-episode
-    if isDone == true {
+    if isDone.scalarized() == true {
         state = env.reset()
         episodeIndex += 1
         print("Episode \(episodeIndex) Return \(episodeReturn)")
