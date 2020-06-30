@@ -146,7 +146,6 @@ class Agent {
             // print("train | Start training")
             let (tfStateBatch, tfActionBatch, tfRewardBatch, tfNextStateBatch, tfIsDoneBatch) = replayBuffer.sample(batchSize: batchSize)
 
-            // TODO: Find equivalent function of tf.gather_nd in S4TF to parallelize Q-value computation (_Raw.gather_nd does not exist)
             // Gradient are accumulated since we calculate every element in the batch individually
             var totalGrad = qNet.zeroTangentVector
             for i in 0..<batchSize {
@@ -169,6 +168,26 @@ class Agent {
                 totalGrad += 𝛁qNet
             }
             optimizer.update(&qNet, along: totalGrad)
+
+            // TODO: Use parallelized methods commented out below
+            // TODO: _Raw.gatherNd() is not differentiable?
+            // let 𝛁qNet = gradient(at: qNet) { qNet -> Tensor<Float> in
+            //     // Compute prediction batch
+            //     let npActionBatch = tfActionBatch.makeNumpyArray()
+            //     print("A: \(np.arange(batchSize, dtype: np.int32)))")
+            //     print("B: \(npActionBatch.flatten())")
+            //     let npFullIndices = np.stack([np.arange(batchSize, dtype: np.int32), npActionBatch.flatten()], axis: 1)
+            //     let tfFullIndices = Tensor<Int32>(numpy: npFullIndices)!
+            //     let stateQValueBatch = qNet(tfStateBatch)
+            //     let predictionBatch = _Raw.gatherNd(params: stateQValueBatch, indices: tfFullIndices)
+
+            //     // TODO: Just save rewards as 1D to avoid this extra squeeze operation
+            //     // Compute target batch
+            //     let targetBatch: Tensor<Float> = _Raw.squeeze(tfRewardBatch, squeezeDims: [1]) + self.discount * _Raw.max(self.targetQNet(tfNextStateBatch), reductionIndices: Tensor<Int32>(1))
+
+            //     return squaredDifference(predictionBatch, withoutDerivative(at: targetBatch))
+            // }
+            // optimizer.update(&qNet, along: 𝛁qNet)
         }
     }
 }
