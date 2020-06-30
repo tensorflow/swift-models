@@ -34,6 +34,7 @@ fileprivate extension Optional {
 
 let np = Python.import("numpy")
 let gym = Python.import("gym")
+let plt = Python.import("matplotlib.pyplot")
 
 typealias State = Tensor<Float>
 typealias Action = Tensor<Int32>
@@ -298,3 +299,13 @@ while episodeIndex < maxEpisode {
     // End-of-step
     nextState = state
 }
+
+// Save smoothed learning curve
+let runningMeanWindow: Int = 2
+let smoothedEpisodeReturns = np.convolve(episodeReturns, np.ones((runningMeanWindow)) / np.array(runningMeanWindow, dtype: np.int32), mode: "same")
+
+plt.plot(smoothedEpisodeReturns)
+plt.title("Deep Q-Network on CartPole-v0")
+plt.xlabel("Episode")
+plt.ylabel("Smoothed Episode Return")
+plt.savefig("dqnSmoothedEpisodeReturns.png")
