@@ -165,13 +165,12 @@ class Agent {
         }
     }
 
-    func train(batchSize: Int) {
+    func train(batchSize: Int) -> Float {
         // Don't train if replay buffer is too small
         if replayBuffer.count >= minBufferSize {
             let (tfStateBatch, tfActionBatch, tfRewardBatch, tfNextStateBatch, tfIsDoneBatch) = replayBuffer.sample(batchSize: batchSize)
 
-            // TODO: Check gradient values
-            let 𝛁qNet = gradient(at: qNet) { qNet -> Tensor<Float> in
+            let (loss, gradients) = valueWithGradient(at: qNet) { qNet -> Tensor<Float> in
                 // Compute prediction batch
                 let npActionBatch = tfActionBatch.makeNumpyArray()
                 let npFullIndices = np.stack([np.arange(batchSize, dtype: np.int32), npActionBatch], axis: 1)
@@ -184,8 +183,11 @@ class Agent {
 
                 return meanSquaredError(predicted: predictionBatch, expected: withoutDerivative(at: targetBatch))
             }
-            optimizer.update(&qNet, along: 𝛁qNet)
+            optimizer.update(&qNet, along: gradients)
+
+            return loss.scalarized()
         }
+        return 0
     }
 }
 
@@ -244,6 +246,7 @@ var stepIndex = 0
 var episodeIndex = 0
 var episodeReturn: Float = 0
 var episodeReturns: Array<Float> = []
+var losses: Array<Float> = []
 var state = env.reset()
 while episodeIndex < maxEpisode {
     stepIndex += 1
@@ -258,7 +261,7 @@ while episodeIndex < maxEpisode {
     replayBuffer.append(state: state, action: action, reward: reward, nextState: nextState, isDone: isDone)
 
     // Train agent
-    agent.train(batchSize: batchSize)
+    losses.append(agent.train(batchSize: batchSize))
 
     // Periodically update Target Net
     if stepIndex % targetNetUpdateRate == 0 {
@@ -291,3 +294,12 @@ plt.title("Deep Q-Network on CartPole-v0")
 plt.xlabel("Episode")
 plt.ylabel("Smoothed Episode Return")
 plt.savefig("dqnSmoothedEpisodeReturns.png")
+plt.clf()
+
+// Save TD loss curve
+plt.plot(losses)
+plt.title("Deep Q-Network on CartPole-v0")
+plt.xlabel("Step")
+plt.ylabel("TD Loss")
+plt.savefig("dqnTDLoss.png")
+plt.clf()
