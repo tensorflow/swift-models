@@ -30,6 +30,32 @@ fileprivate extension Optional {
     }
 }
 
+extension _Raw {
+    /// Derivative of `_Raw.gatherNd`.
+    ///
+    /// Ported from TensorFlow Python reference implementation:
+    /// https://github.com/tensorflow/tensorflow/blob/r2.2/tensorflow/python/ops/array_grad.py#L691-L701
+    @inlinable
+    @derivative(of: gatherNd)
+    public static func vjpGatherNd<
+        Scalar: TensorFlowFloatingPoint,
+        Index: TensorFlowIndex
+    >(
+        params: Tensor<Scalar>,
+        indices: Tensor<Index>
+    ) -> (
+        value: Tensor<Scalar>,
+        pullback: (Tensor<Scalar>) -> Tensor<Scalar>
+    ) {
+        let shapeTensor = Tensor<Index>(params.shapeTensor)
+        let value = gatherNd(params: params, indices: indices)
+        return (value, { v in
+            let dparams = scatterNd(indices: indices, updates: v, shape: shapeTensor)
+            return dparams
+        })
+    }
+}
+
 // Initialize Python. This comment is a hook for internal use, do not remove.
 
 let np = Python.import("numpy")
@@ -148,47 +174,47 @@ class Agent {
             let (tfStateBatch, tfActionBatch, tfRewardBatch, tfNextStateBatch, tfIsDoneBatch) = replayBuffer.sample(batchSize: batchSize)
 
             // Gradient are accumulated since we calculate every element in the batch individually
-            var totalGrad = qNet.zeroTangentVector
-            for i in 0..<batchSize {
-                let 𝛁qNet = gradient(at: qNet) { qNet -> Tensor<Float> in
+            // var totalGrad = qNet.zeroTangentVector
+            // for i in 0..<batchSize {
+            //     let 𝛁qNet = gradient(at: qNet) { qNet -> Tensor<Float> in
 
-                    let stateQValueBatch = qNet(tfStateBatch)
-                    let tfAction: Tensor<Int32> = tfActionBatch[i][0]
-                    let action = Int(tfAction.scalarized())
-                    let prediction: Tensor<Float> = stateQValueBatch[i][action]
+            //         let stateQValueBatch = qNet(tfStateBatch)
+            //         let tfAction: Tensor<Int32> = tfActionBatch[i][0]
+            //         let action = Int(tfAction.scalarized())
+            //         let prediction: Tensor<Float> = stateQValueBatch[i][action]
 
-                    let nextStateQValueBatch = self.targetQNet(tfNextStateBatch)
-                    let tfReward: Tensor<Float> = tfRewardBatch[i][0]
-                    let leftQValue = Float(nextStateQValueBatch[i][0].scalarized())
-                    let rightQValue = Float(nextStateQValueBatch[i][1].scalarized())
-                    let maxNextStateQValue = leftQValue > rightQValue ? leftQValue : rightQValue
-                    let target: Tensor<Float> = tfReward + Tensor<Float>(tfIsDoneBatch[i]) * self.discount * maxNextStateQValue
+            //         let nextStateQValueBatch = self.targetQNet(tfNextStateBatch)
+            //         let tfReward: Tensor<Float> = tfRewardBatch[i][0]
+            //         let leftQValue = Float(nextStateQValueBatch[i][0].scalarized())
+            //         let rightQValue = Float(nextStateQValueBatch[i][1].scalarized())
+            //         let maxNextStateQValue = leftQValue > rightQValue ? leftQValue : rightQValue
+            //         let target: Tensor<Float> = tfReward + Tensor<Float>(tfIsDoneBatch[i]) * self.discount * maxNextStateQValue
 
-                    return squaredDifference(prediction, withoutDerivative(at: target))
-                }
-                totalGrad += 𝛁qNet
-            }
-            optimizer.update(&qNet, along: totalGrad)
+            //         return squaredDifference(prediction, withoutDerivative(at: target))
+            //     }
+            //     totalGrad += 𝛁qNet
+            // }
+            // optimizer.update(&qNet, along: totalGrad)
 
             // TODO: Use parallelized methods commented out below
             // TODO: _Raw.gatherNd() is not differentiable?
-            // let 𝛁qNet = gradient(at: qNet) { qNet -> Tensor<Float> in
-            //     // Compute prediction batch
-            //     let npActionBatch = tfActionBatch.makeNumpyArray()
-            //     print("A: \(np.arange(batchSize, dtype: np.int32)))")
-            //     print("B: \(npActionBatch.flatten())")
-            //     let npFullIndices = np.stack([np.arange(batchSize, dtype: np.int32), npActionBatch.flatten()], axis: 1)
-            //     let tfFullIndices = Tensor<Int32>(numpy: npFullIndices)!
-            //     let stateQValueBatch = qNet(tfStateBatch)
-            //     let predictionBatch = _Raw.gatherNd(params: stateQValueBatch, indices: tfFullIndices)
+            let 𝛁qNet = gradient(at: qNet) { qNet -> Tensor<Float> in
+                // Compute prediction batch
+                let npActionBatch = tfActionBatch.makeNumpyArray()
+                // print("A: \(np.arange(batchSize, dtype: np.int32)))")
+                // print("B: \(npActionBatch.flatten())")
+                let npFullIndices = np.stack([np.arange(batchSize, dtype: np.int32), npActionBatch.flatten()], axis: 1)
+                let tfFullIndices = Tensor<Int32>(numpy: npFullIndices)!
+                let stateQValueBatch = qNet(tfStateBatch)
+                let predictionBatch = _Raw.gatherNd(params: stateQValueBatch, indices: tfFullIndices)
 
-            //     // TODO: Just save rewards as 1D to avoid this extra squeeze operation
-            //     // Compute target batch
-            //     let targetBatch: Tensor<Float> = _Raw.squeeze(tfRewardBatch, squeezeDims: [1]) + self.discount * _Raw.max(self.targetQNet(tfNextStateBatch), reductionIndices: Tensor<Int32>(1))
+                // TODO: Just save rewards as 1D to avoid this extra squeeze operation
+                // Compute target batch
+                let targetBatch: Tensor<Float> = _Raw.squeeze(tfRewardBatch, squeezeDims: [1]) + Tensor<Float>(tfIsDoneBatch) * self.discount * _Raw.max(self.targetQNet(tfNextStateBatch), reductionIndices: Tensor<Int32>(1))
 
-            //     return squaredDifference(predictionBatch, withoutDerivative(at: targetBatch))
-            // }
-            // optimizer.update(&qNet, along: 𝛁qNet)
+                return meanSquaredError(predicted: predictionBatch, expected: withoutDerivative(at: targetBatch))
+            }
+            optimizer.update(&qNet, along: 𝛁qNet)
         }
     }
 }
