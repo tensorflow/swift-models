@@ -14,10 +14,6 @@
 
 import Foundation
 
-public extension FileSystem {
-  static var defaultFileSystem: FileSystem { FoundationFileSystem() }
-}
-
 public struct FoundationFileSystem: FileSystem {
   public init() {}
   

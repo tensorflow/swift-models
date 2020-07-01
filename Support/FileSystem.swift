@@ -26,8 +26,6 @@ public protocol FileSystem {
   /// - Parameters:
   ///   - path: The path of the file to be opened.
   func open(_ path: String) -> File
-  
-  static var defaultFileSystem: FileSystem { get }
 }
 
 public protocol File {
