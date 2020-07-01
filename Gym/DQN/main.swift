@@ -169,7 +169,7 @@ class Agent {
 
     func train(batchSize: Int) {
         // Don't train if replay buffer is too small
-        if replayBuffer.count >= batchSize {
+        if replayBuffer.count >= minBufferSize {
             // print("train | Start training")
             let (tfStateBatch, tfActionBatch, tfRewardBatch, tfNextStateBatch, tfIsDoneBatch) = replayBuffer.sample(batchSize: batchSize)
 
@@ -257,10 +257,11 @@ let discount: Float = 0.99
 let learningRate: Float = 0.01
 let hiddenSize: Int = 64
 let startEpsilon: Float = 0.5
-let maxEpisode: Int = 100
-let replayBufferCapacity: Int = 1000
-let batchSize: Int = 32
-let targetNetUpdateRate: Int = 1
+let maxEpisode: Int = 1000
+let replayBufferCapacity: Int = 5000
+let minBufferSize: Int = 1000
+let batchSize: Int = 64
+let targetNetUpdateRate: Int = 32
 
 // Initialize environment
 let env = TensorFlowEnvironmentWrapper(gym.make("CartPole-v0"))
