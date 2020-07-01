@@ -269,7 +269,7 @@ while episodeIndex < maxEpisode {
     // Interact with environment
     let epsilon = startEpsilon * Float(maxEpisode - episodeIndex) / Float(maxEpisode)
     let action = agent.getAction(state: state, epsilon: epsilon)
-    var (nextState, reward, isDone, _) = env.step(action)
+    let (nextState, reward, isDone, _) = env.step(action)
     episodeReturn += Int(reward.scalarized())
 
     // Save interaction to replay buffer
@@ -297,7 +297,7 @@ while episodeIndex < maxEpisode {
     }
 
     // End-of-step
-    nextState = state
+    state = nextState
 }
 
 // Save smoothed learning curve
