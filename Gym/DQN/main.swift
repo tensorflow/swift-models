@@ -86,7 +86,13 @@ class ReplayBuffer {
         isDones = Tensor<Bool>(numpy: np.zeros([capacity], dtype: np.bool))!
     }
 
-    func append(state: Tensor<Float>, action: Tensor<Int32>, reward: Tensor<Float>, nextState: Tensor<Float>, isDone: Tensor<Bool>) {
+    func append(
+        state: Tensor<Float>,
+        action: Tensor<Int32>,
+        reward: Tensor<Float>,
+        nextState: Tensor<Float>,
+        isDone: Tensor<Bool>
+    ) {
         if count < capacity {
             count += 1
         }
@@ -99,7 +105,13 @@ class ReplayBuffer {
         index = (index + 1) % capacity
     }
 
-    func sample(batchSize: Int) -> (stateBatch: Tensor<Float>, actionBatch: Tensor<Int32>, rewardBatch: Tensor<Float>, nextStateBatch: Tensor<Float>, isDoneBatch: Tensor<Bool>) {
+    func sample(batchSize: Int) -> (
+        stateBatch: Tensor<Float>,
+        actionBatch: Tensor<Int32>,
+        rewardBatch: Tensor<Float>,
+        nextStateBatch: Tensor<Float>,
+        isDoneBatch: Tensor<Bool>
+    ) {
         let randomIndices = Tensor<Int32>(numpy: np.random.randint(count, size: batchSize, dtype: np.int32))!
 
         let stateBatch = _Raw.gather(params: states, indices: randomIndices)
@@ -151,10 +163,7 @@ class Agent {
 
     func getAction(state: Tensor<Float>, epsilon: Float) -> Tensor<Int32> {
         if Float(np.random.uniform()).unwrapped() < epsilon {
-            // print("getAction | state: \(state)")
-            // print("getAction | epsilon: \(epsilon)")
             let npState = np.random.randint(0, 2, dtype: np.int32)
-            // print("getAction | npState: \(npState)")
             return Tensor<Int32>(numpy: np.array(npState, dtype: np.int32))!
         }
         else {
@@ -170,39 +179,12 @@ class Agent {
     func train(batchSize: Int) {
         // Don't train if replay buffer is too small
         if replayBuffer.count >= minBufferSize {
-            // print("train | Start training")
             let (tfStateBatch, tfActionBatch, tfRewardBatch, tfNextStateBatch, tfIsDoneBatch) = replayBuffer.sample(batchSize: batchSize)
 
-            // Gradient are accumulated since we calculate every element in the batch individually
-            // var totalGrad = qNet.zeroTangentVector
-            // for i in 0..<batchSize {
-            //     let 𝛁qNet = gradient(at: qNet) { qNet -> Tensor<Float> in
-
-            //         let stateQValueBatch = qNet(tfStateBatch)
-            //         let tfAction: Tensor<Int32> = tfActionBatch[i][0]
-            //         let action = Int(tfAction.scalarized())
-            //         let prediction: Tensor<Float> = stateQValueBatch[i][action]
-
-            //         let nextStateQValueBatch = self.targetQNet(tfNextStateBatch)
-            //         let tfReward: Tensor<Float> = tfRewardBatch[i][0]
-            //         let leftQValue = Float(nextStateQValueBatch[i][0].scalarized())
-            //         let rightQValue = Float(nextStateQValueBatch[i][1].scalarized())
-            //         let maxNextStateQValue = leftQValue > rightQValue ? leftQValue : rightQValue
-            //         let target: Tensor<Float> = tfReward + Tensor<Float>(tfIsDoneBatch[i]) * self.discount * maxNextStateQValue
-
-            //         return squaredDifference(prediction, withoutDerivative(at: target))
-            //     }
-            //     totalGrad += 𝛁qNet
-            // }
-            // optimizer.update(&qNet, along: totalGrad)
-
-            // TODO: Use parallelized methods commented out below
-            // TODO: _Raw.gatherNd() is not differentiable?
+            // TODO: Check gradient values
             let 𝛁qNet = gradient(at: qNet) { qNet -> Tensor<Float> in
                 // Compute prediction batch
                 let npActionBatch = tfActionBatch.makeNumpyArray()
-                // print("A: \(np.arange(batchSize, dtype: np.int32)))")
-                // print("B: \(npActionBatch.flatten())")
                 let npFullIndices = np.stack([np.arange(batchSize, dtype: np.int32), npActionBatch.flatten()], axis: 1)
                 let tfFullIndices = Tensor<Int32>(numpy: npFullIndices)!
                 let stateQValueBatch = qNet(tfStateBatch)
@@ -283,38 +265,29 @@ var episodeReturns: Array<Int> = []
 var state = env.reset()
 while episodeIndex < maxEpisode {
     stepIndex += 1
-    // print("Step \(stepIndex)")
 
     // Interact with environment
-    let action = agent.getAction(state: state, epsilon: startEpsilon * Float(maxEpisode - episodeIndex))
-    // print("action: \(action)")
+    let epsilon = startEpsilon * Float(maxEpisode - episodeIndex) / Float(maxEpisode)
+    let action = agent.getAction(state: state, epsilon: epsilon)
     var (nextState, reward, isDone, _) = env.step(action)
-    // print("state: \(state)")
-    // print("nextState: \(nextState)")
-    // print("reward: \(reward)")
-    // print("isDone: \(isDone)")
     episodeReturn += Int(reward.scalarized())
-    // print("episodeReturn: \(episodeReturn)")
 
     // Save interaction to replay buffer
     replayBuffer.append(state: state, action: action, reward: reward, nextState: nextState, isDone: isDone)
-    // print("Append successful")
 
     // Train agent
     agent.train(batchSize: batchSize)
-    // print("Train successful")
 
     // Periodically update Target Net
     if stepIndex % targetNetUpdateRate == 0 {
         updateTargetQNet(source: qNet, target: &targetQNet)
     }
-    // print("Target net update successful")
 
     // End-of-episode
     if isDone.scalarized() == true {
         state = env.reset()
         episodeIndex += 1
-        print("Episode \(episodeIndex) Return \(episodeReturn)")
+        print(String(format: "Episode: %4d | Epsilon: %.03f | Return: %3d", episodeIndex, epsilon, episodeReturn))
         if episodeReturn > 199 {
             print("Solved in \(episodeIndex) episodes with \(stepIndex) steps!")
             break
