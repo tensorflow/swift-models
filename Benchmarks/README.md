@@ -27,7 +27,7 @@ To run an an individual benchmark, use `--filter`:
 swift run -c release Benchmarks --filter <name>
 ```
 
-To list all benchmarks and their default settings run benchmarks with 0 iterations: 
+To list all benchmarks run benchmarks with 0 iterations: 
 
 ```sh
 swift run -c release Benchmarks --iterations 0 --warmup-iterations 0 --columns name 
