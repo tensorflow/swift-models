@@ -55,7 +55,7 @@ def run_swift_benchmark(name):
   print('running swift benchmark {}'.format(name))
   # TODO: Remove the need for 2 warmup batches when we have better-shaped zero tangent vectors.
   output = subp.check_output([
-      'swift', 'run', '-c', 'release', 'NewBenchmarks', 
+      'swift', 'run', '-c', 'release', 'Benchmarks', 
       '--filter', name, '--warmup-iterations', '2', '--format', 'json'
   ], cwd=cwd)
   result = json.loads(output)
@@ -129,7 +129,7 @@ def discover_swift_benchmarks():
   """
 
   output = subp.check_output([
-      'swift', 'run', '-c', 'release', 'NewBenchmarks', 
+      'swift', 'run', '-c', 'release', 'Benchmarks', 
       '--iterations', '0', '--warmup-iterations', '0',
       '--columns', 'name', '--format', 'json'
   ], cwd=cwd)
