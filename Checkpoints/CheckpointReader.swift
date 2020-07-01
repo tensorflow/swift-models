@@ -30,6 +30,7 @@ open class CheckpointReader {
     let header: Tensorflow_BundleHeaderProto
     let metadata: [String: Tensorflow_BundleEntryProto]
     var shardCache: [URL: Data] = [:]
+    let fileSystem: FileSystem
 
     /// The local checkpoint location.
     public let localCheckpointLocation: URL
@@ -52,7 +53,11 @@ open class CheckpointReader {
     ///     base of the checkpoint files, or a URL to an archive containing the checkpoint files.
     ///   - modelName: A distinct name for the model, to ensure that checkpoints with the same base 
     ///     name but for different models don't collide when downloaded.
-    public init(checkpointLocation: URL, modelName: String, additionalFiles: [String] = []) throws {
+    public init(
+      checkpointLocation: URL, modelName: String, additionalFiles: [String] = [],
+      fileSystem: FileSystem = FoundationFileSystem()
+    ) throws {
+        self.fileSystem = fileSystem
         let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
             modelName, isDirectory: true)
 
@@ -73,20 +78,23 @@ open class CheckpointReader {
         if finalCheckpointLocation.isFileURL {
             self.localCheckpointLocation = finalCheckpointLocation
             indexReader = try CheckpointIndexReader(
-                file: finalCheckpointLocation.appendingPathExtension("index"))
+               file: finalCheckpointLocation.appendingPathExtension("index"),
+               fileSystem: fileSystem)
             self.header = try indexReader.readHeader()
         } else {
             let temporaryCheckpointBase = temporaryDirectory.appendingPathComponent(checkpointBase)
             self.localCheckpointLocation = temporaryCheckpointBase
             let localIndexFileLocation = temporaryCheckpointBase.appendingPathExtension("index")
             if FileManager.default.fileExists(atPath: localIndexFileLocation.path) {
-                indexReader = try CheckpointIndexReader(file: localIndexFileLocation)
+                indexReader = try CheckpointIndexReader(file: localIndexFileLocation,
+                    fileSystem: fileSystem)
                 self.header = try indexReader.readHeader()
             } else {
                 // The index file contains the number of shards, so obtain that first.
                 try CheckpointReader.downloadIndexFile(
                     from: finalCheckpointLocation, to: temporaryDirectory)
-                indexReader = try CheckpointIndexReader(file: localIndexFileLocation)
+                indexReader = try CheckpointIndexReader(file: localIndexFileLocation,
+                    fileSystem: fileSystem)
                 self.header = try indexReader.readHeader()
 
                 try CheckpointReader.downloadCheckpointFiles(
@@ -270,10 +278,9 @@ open class CheckpointReader {
         } else {
             do {
                 // It is far too slow to read the shards in each time a tensor is accessed, so we
-                // read the entire shard into an in-memory cache on first access. A better approach
-                // to mapping these files may be needed, because .alwaysMapped doesn't seem to help
-                // as much as it should.
-                let shardBytes = try Data(contentsOf: file, options: .alwaysMapped)
+                // read the entire shard into an in-memory cache on first access.
+                let shardFile = fileSystem.open(file.path)
+                let shardBytes = try shardFile.read()
                 shardCache[file] = shardBytes
                 return shardBytes
             } catch {

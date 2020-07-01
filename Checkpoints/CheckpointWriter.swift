@@ -21,14 +21,19 @@ import TensorFlow
 open class CheckpointWriter {
     // TODO: Extend handling to different tensor types.
     let tensors: [String: Tensor<Float>]
+    let fileSystem: FileSystem
 
     /// Initializes the checkpoint reader from a dictionary of tensors, keyed on their string names.
     ///
     /// - Parameters:
     ///   - tensors: A dictionary containing the tensors to be written, with the keys being the
     ///     names of those tensors to write in the checkpoint.
-    public init(tensors: [String: Tensor<Float>]) {
+    ///   - fileSystem: The file system used for writing the checkpoint.
+    public init(
+      tensors: [String: Tensor<Float>], fileSystem: FileSystem = FoundationFileSystem()
+    ) {
         self.tensors = tensors
+        self.fileSystem = fileSystem
     }
 
     /// Writes the checkpoint to disk, in a specified directory. A TensorFlow v2 checkpoint consists
@@ -41,11 +46,12 @@ open class CheckpointWriter {
     ///   - name: The base name of the checkpoint, which is what will have the .index and
     ///     .data-0000X-of-0000Y extensions appended to it for files in the checkpoint directory.
     public func write(to directory: URL, name: String) throws {
-        try createDirectoryIfMissing(at: directory.path)
+        try fileSystem.createDirectoryIfMissing(at: directory.path)
         let indexWriter = CheckpointIndexWriter(tensors: tensors)
         let indexHeader = indexWriter.serializedHeader()
         let headerLocation = directory.appendingPathComponent("\(name).index")
-        try indexHeader.write(to: headerLocation)
+        let headerFile = fileSystem.open(headerLocation.path)
+        try headerFile.write(indexHeader)
 
         // TODO: Handle splitting into multiple shards.
         try writeShard(
@@ -73,6 +79,7 @@ open class CheckpointWriter {
             }
         }
 
-        try outputBuffer.write(to: shardFile)
+        let outputFile = fileSystem.open(shardFile.path)
+        try outputFile.write(outputBuffer)
     }
 }
