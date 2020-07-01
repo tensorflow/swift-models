@@ -27,6 +27,12 @@ To run an an individual benchmark, use `--filter`:
 swift run -c release Benchmarks --filter <name>
 ```
 
+To show more compact output, you can explicitly specify a subset of columns to show:
+
+```sh
+swift run -c release Benchmarks --columns name,median,std
+```
+
 To list all benchmarks run benchmarks with 0 iterations: 
 
 ```sh
