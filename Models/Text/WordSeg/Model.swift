@@ -151,12 +151,10 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   /// Returns the hidden states of the encoder LSTM applied to `x`, using
   /// `device`.
   public func encode(_ x: CharacterSequence, device: Device) -> [Tensor<Float>] {
-    var embedded = encoderEmbedding(x.tensor(device: device))
-    embedded = dropout(embedded)
+    let embedded = dropout(encoderEmbedding(x.tensor(device: device)))
     let encoderStates = encoderLSTM(embedded.unstacked().differentiableMap { $0.rankLifted() })
-    var encoderResult = Tensor(
-      stacking: encoderStates.differentiableMap { $0.hidden.squeezingShape(at: 0) })
-    encoderResult = dropout(encoderResult)
+    let encoderResult = dropout(Tensor(
+      stacking: encoderStates.differentiableMap { $0.hidden.squeezingShape(at: 0) }))
     return encoderResult.unstacked()
   }
 
@@ -196,8 +194,7 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
     ).transposed()
 
     // [time x batch x hiddenSize]
-    var embeddedX = decoderEmbedding(x)
-    embeddedX = dropout(embeddedX)
+    let embeddedX = dropout(decoderEmbedding(x))
 
     // [batch x hiddenSize]
     let stateBatch = state.rankLifted().tiled(multiples: [candidates.count, 1])
@@ -210,9 +207,8 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
         hidden: stateBatch))
 
     // [time x batch x hiddenSize]
-    var decoderResult = Tensor(
-      stacking: decoderStates.differentiableMap { $0.hidden })
-    decoderResult = dropout(decoderResult)
+    let decoderResult = dropout(Tensor(
+      stacking: decoderStates.differentiableMap { $0.hidden }))
 
     // [time x batch x alphabet.count]
     let logits = decoderDense(decoderResult)
