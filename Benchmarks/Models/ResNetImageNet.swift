@@ -23,7 +23,6 @@ let ResNetImageNet = BenchmarkSuite(
 ) { suite in
 
   func inference(state: inout BenchmarkState) throws {
-    print(String(reflecting: state.settings))
     if state.settings.synthetic {
       try runImageClassificationInference(
         model: ResNet50.self, dataset: SyntheticImageNet.self, state: &state)
@@ -33,7 +32,6 @@ let ResNetImageNet = BenchmarkSuite(
   }
 
   func training(state: inout BenchmarkState) throws {
-    print(String(reflecting: state.settings))
     if state.settings.synthetic {
       try runImageClassificationTraining(
         model: ResNet50.self, dataset: SyntheticImageNet.self, state: &state)
