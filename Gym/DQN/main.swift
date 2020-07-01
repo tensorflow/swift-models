@@ -62,10 +62,6 @@ let np = Python.import("numpy")
 let gym = Python.import("gym")
 let plt = Python.import("matplotlib.pyplot")
 
-typealias State = Tensor<Float>
-typealias Action = Tensor<Int32>
-typealias Reward = Tensor<Float>
-
 class ReplayBuffer {
     var states: Tensor<Float>
     var actions: Tensor<Int32>
@@ -80,8 +76,8 @@ class ReplayBuffer {
         self.capacity = capacity
 
         states = Tensor<Float>(numpy: np.zeros([capacity, 4], dtype: np.float32))!
-        actions = Tensor<Int32>(numpy: np.zeros([capacity, 1], dtype: np.int32))!
-        rewards = Tensor<Float>(numpy: np.zeros([capacity, 1], dtype: np.float32))!
+        actions = Tensor<Int32>(numpy: np.zeros([capacity], dtype: np.int32))!
+        rewards = Tensor<Float>(numpy: np.zeros([capacity], dtype: np.float32))!
         nextStates = Tensor<Float>(numpy: np.zeros([capacity, 4], dtype: np.float32))!
         isDones = Tensor<Bool>(numpy: np.zeros([capacity], dtype: np.bool))!
     }
@@ -98,8 +94,8 @@ class ReplayBuffer {
         }
         // Erase oldest SARS if the replay buffer is full
         states[index] = state
-        actions[index] = Tensor<Int32>(numpy: np.expand_dims(action.makeNumpyArray(), axis: 0))!
-        rewards[index] = Tensor<Float>(numpy: np.expand_dims(reward.makeNumpyArray(), axis: 0))!
+        actions[index] = action
+        rewards[index] = reward
         nextStates[index] = nextState
         isDones[index] = isDone
         index = (index + 1) % capacity
@@ -132,7 +128,7 @@ struct Net: Layer {
 
     init(observationSize: Int, hiddenSize: Int, actionCount: Int) {
         l1 = Dense<Float>(inputSize: observationSize, outputSize: hiddenSize, activation: relu, weightInitializer: heNormal())
-        l2 = Dense<Float>(inputSize: hiddenSize, outputSize: actionCount, weightInitializer: heNormal())
+        l2 = Dense<Float>(inputSize: hiddenSize, outputSize: actionCount, activation: identity, weightInitializer: heNormal())
     }
 
     @differentiable
@@ -142,15 +138,10 @@ struct Net: Layer {
 }
 
 class Agent {
-    // Q-network
     var qNet: Net
-    // Target Q-network
     var targetQNet: Net
-    // Optimizer
     let optimizer: Adam<Net>
-    // Replay Buffer
     let replayBuffer: ReplayBuffer
-    // Discount Factor
     let discount: Float
 
     init(qNet: Net, targetQNet: Net, optimizer: Adam<Net>, replayBuffer: ReplayBuffer, discount: Float) {
@@ -169,10 +160,8 @@ class Agent {
         else {
             // Neural network input needs to be 2D
             let tfState = Tensor<Float>(numpy: np.expand_dims(state.makeNumpyArray(), axis: 0))!
-            let qValues = qNet(tfState)
-            let leftQValue = Float(qValues[0][0]).unwrapped()
-            let rightQValue = Float(qValues[0][1]).unwrapped()
-            return leftQValue < rightQValue ? Tensor<Int32>(numpy: np.array(1, dtype: np.int32))! : Tensor<Int32>(numpy: np.array(0, dtype: np.int32))!
+            let qValues = qNet(tfState)[0]
+            return qValues[1].scalarized() > qValues[0].scalarized() ? Tensor<Int32>(1) : Tensor<Int32>(0)
         }
     }
 
@@ -185,14 +174,13 @@ class Agent {
             let 𝛁qNet = gradient(at: qNet) { qNet -> Tensor<Float> in
                 // Compute prediction batch
                 let npActionBatch = tfActionBatch.makeNumpyArray()
-                let npFullIndices = np.stack([np.arange(batchSize, dtype: np.int32), npActionBatch.flatten()], axis: 1)
+                let npFullIndices = np.stack([np.arange(batchSize, dtype: np.int32), npActionBatch], axis: 1)
                 let tfFullIndices = Tensor<Int32>(numpy: npFullIndices)!
                 let stateQValueBatch = qNet(tfStateBatch)
                 let predictionBatch = _Raw.gatherNd(params: stateQValueBatch, indices: tfFullIndices)
 
-                // TODO: Just save rewards as 1D to avoid this extra squeeze operation
                 // Compute target batch
-                let targetBatch: Tensor<Float> = _Raw.squeeze(tfRewardBatch, squeezeDims: [1]) + Tensor<Float>(tfIsDoneBatch) * self.discount * _Raw.max(self.targetQNet(tfNextStateBatch), reductionIndices: Tensor<Int32>(1))
+                let targetBatch: Tensor<Float> = tfRewardBatch + Tensor<Float>(tfIsDoneBatch) * self.discount * _Raw.max(self.targetQNet(tfNextStateBatch), reductionIndices: Tensor<Int32>(1))
 
                 return meanSquaredError(predicted: predictionBatch, expected: withoutDerivative(at: targetBatch))
             }
@@ -210,13 +198,9 @@ func updateTargetQNet(source: Net, target: inout Net) {
 
 class TensorFlowEnvironmentWrapper {
     let originalEnv: PythonObject
-    let action_space: PythonObject
-    let observation_space: PythonObject
 
     init(_ env: PythonObject) {
         self.originalEnv = env
-        self.action_space = env.action_space
-        self.observation_space = env.observation_space
     }
 
     func reset() -> Tensor<Float> {
@@ -225,8 +209,7 @@ class TensorFlowEnvironmentWrapper {
     }
 
     func step(_ action: Tensor<Int32>) -> (state: Tensor<Float>, reward: Tensor<Float>, isDone: Tensor<Bool>, info: PythonObject) {
-        let npAction = action.makeNumpyArray().item()
-        let (state, reward, isDone, info) = originalEnv.step(npAction).tuple4
+        let (state, reward, isDone, info) = originalEnv.step(action.scalarized()).tuple4
         let tfState = Tensor<Float>(numpy: np.array(state, dtype: np.float32))!
         let tfReward = Tensor<Float>(numpy: np.array(reward, dtype: np.float32))!
         let tfIsDone = Tensor<Bool>(numpy: np.array(isDone, dtype: np.bool))!
@@ -249,9 +232,8 @@ let targetNetUpdateRate: Int = 32
 let env = TensorFlowEnvironmentWrapper(gym.make("CartPole-v0"))
 
 // Initialize agent
-let actionCount = Int(env.action_space.n).unwrapped()
-var qNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: actionCount)
-var targetQNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: actionCount)
+var qNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
+var targetQNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
 updateTargetQNet(source: qNet, target: &targetQNet)
 let optimizer = Adam(for: qNet, learningRate: learningRate)
 var replayBuffer: ReplayBuffer = ReplayBuffer(capacity: replayBufferCapacity)
@@ -260,8 +242,8 @@ var agent = Agent(qNet: qNet, targetQNet: targetQNet, optimizer: optimizer, repl
 // RL Loop
 var stepIndex = 0
 var episodeIndex = 0
-var episodeReturn: Int = 0
-var episodeReturns: Array<Int> = []
+var episodeReturn: Float = 0
+var episodeReturns: Array<Float> = []
 var state = env.reset()
 while episodeIndex < maxEpisode {
     stepIndex += 1
@@ -270,7 +252,7 @@ while episodeIndex < maxEpisode {
     let epsilon = startEpsilon * Float(maxEpisode - episodeIndex) / Float(maxEpisode)
     let action = agent.getAction(state: state, epsilon: epsilon)
     let (nextState, reward, isDone, _) = env.step(action)
-    episodeReturn += Int(reward.scalarized())
+    episodeReturn += reward.scalarized()
 
     // Save interaction to replay buffer
     replayBuffer.append(state: state, action: action, reward: reward, nextState: nextState, isDone: isDone)
@@ -287,7 +269,7 @@ while episodeIndex < maxEpisode {
     if isDone.scalarized() == true {
         state = env.reset()
         episodeIndex += 1
-        print(String(format: "Episode: %4d | Epsilon: %.03f | Return: %3d", episodeIndex, epsilon, episodeReturn))
+        print(String(format: "Episode: %4d | Epsilon: %.03f | Return: %3d", episodeIndex, epsilon, Int(episodeReturn)))
         if episodeReturn > 199 {
             print("Solved in \(episodeIndex) episodes with \(stepIndex) steps!")
             break
