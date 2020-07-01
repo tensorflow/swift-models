@@ -54,8 +54,8 @@ open class CheckpointReader {
     ///   - modelName: A distinct name for the model, to ensure that checkpoints with the same base 
     ///     name but for different models don't collide when downloaded.
     public init(
-      checkpointLocation: URL, modelName: String, additionalFiles: [String] = [],
-      fileSystem: FileSystem = FoundationFileSystem()
+        checkpointLocation: URL, modelName: String, additionalFiles: [String] = [],
+        fileSystem: FileSystem = FoundationFileSystem()
     ) throws {
         self.fileSystem = fileSystem
         let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
@@ -78,8 +78,8 @@ open class CheckpointReader {
         if finalCheckpointLocation.isFileURL {
             self.localCheckpointLocation = finalCheckpointLocation
             indexReader = try CheckpointIndexReader(
-               file: finalCheckpointLocation.appendingPathExtension("index"),
-               fileSystem: fileSystem)
+                file: finalCheckpointLocation.appendingPathExtension("index"),
+                fileSystem: fileSystem)
             self.header = try indexReader.readHeader()
         } else {
             let temporaryCheckpointBase = temporaryDirectory.appendingPathComponent(checkpointBase)

@@ -44,7 +44,7 @@ class CheckpointIndexReader {
 
     var atEndOfFile: Bool { return index >= (binaryData.count - footerSize - 1) }
 
-  init(file: URL, fileSystem: FileSystem = FoundationFileSystem()) throws {
+    init(file: URL, fileSystem: FileSystem = FoundationFileSystem()) throws {
         let indexFile = fileSystem.open(file.path)
         let fileData = try indexFile.read()
         if fileData[0] == 0 {

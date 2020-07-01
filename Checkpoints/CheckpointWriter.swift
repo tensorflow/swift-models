@@ -28,7 +28,7 @@ open class CheckpointWriter {
     /// - Parameters:
     ///   - tensors: A dictionary containing the tensors to be written, with the keys being the
     ///     names of those tensors to write in the checkpoint.
-    ///   - fileSystem: The file system used for writing the checkpoint.
+    ///   - fileSystem: The filesystem used for writing the checkpoint.
     public init(
       tensors: [String: Tensor<Float>], fileSystem: FileSystem = FoundationFileSystem()
     ) {
