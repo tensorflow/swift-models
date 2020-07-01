@@ -30,13 +30,6 @@ where
   // Also include time for following workaround to allocate memory for eager runtime.
   state.start()
 
-  // Note: The this initial eager-mode tensor computation is needed, or all GPU memory
-  // will be exhausted on initial allocation of the model.
-  // TODO: Remove the following tensor workaround when above is fixed.
-  let testTensor = Tensor<Float>([1.0, 2.0, 3.0])
-  let testTensor2 = Tensor<Float>([1.0, 2.0, 3.0])
-  let _ = testTensor + testTensor2
-
   let settings = state.settings
   let device = settings.device
   let batchSize = settings.batchSize!

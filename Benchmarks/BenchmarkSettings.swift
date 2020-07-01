@@ -73,6 +73,11 @@ extension BenchmarkSettings {
   }
 
   var device: Device {
+    // Note: The line is needed, or all GPU memory
+    // will be exhausted on initial allocation of the model.
+    // TODO: Remove the following tensor workaround when above is fixed.
+    let _ = _ExecutionContext.global
+
     switch backend {
     case .eager: return Device.defaultTFEager
     case .x10: return Device.defaultXLA
