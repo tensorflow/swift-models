@@ -15,7 +15,7 @@
         "repositoryURL": "https://github.com/google/swift-benchmark",
         "state": {
           "branch": "master",
-          "revision": "6837afa6e9a88b49fafc3ce6468eae77cc41186b",
+          "revision": "9d4782b2f616d2b97bf302ba6aa8aff4f8283983",
           "version": null
         }
       },
@@ -24,8 +24,8 @@
         "repositoryURL": "https://github.com/apple/swift-protobuf.git",
         "state": {
           "branch": null,
-          "revision": "7f36441e3372665b1b414f8ac93b5905cc42a405",
-          "version": "1.9.0"
+          "revision": "05cb9347bb095d9a28234a593d45cb9fcdc9d196",
+          "version": "1.10.0"
         }
       }
     ]
