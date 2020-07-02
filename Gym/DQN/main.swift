@@ -180,7 +180,11 @@ class Agent {
 
                 // Compute target batch
                 let targetBatch: Tensor<Float> = tfRewardBatch + Tensor<Float>(tfIsDoneBatch) * self.discount * self.targetQNet(tfNextStateBatch).max(squeezingAxes: Tensor<Int32>(1))
-                return meanSquaredError(predicted: predictionBatch, expected: withoutDerivative(at: targetBatch))
+                return huberLoss(
+                    predicted: predictionBatch,
+                    expected: withoutDerivative(at: targetBatch),
+                    delta: 1
+                )
             }
             optimizer.update(&qNet, along: gradients)
 
