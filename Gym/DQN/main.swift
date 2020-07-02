@@ -75,11 +75,11 @@ class ReplayBuffer {
     init(capacity: Int) {
         self.capacity = capacity
 
-        states = Tensor<Float>(numpy: np.zeros([capacity, 4], dtype: np.float32))!
-        actions = Tensor<Int32>(numpy: np.zeros([capacity], dtype: np.int32))!
-        rewards = Tensor<Float>(numpy: np.zeros([capacity], dtype: np.float32))!
-        nextStates = Tensor<Float>(numpy: np.zeros([capacity, 4], dtype: np.float32))!
-        isDones = Tensor<Bool>(numpy: np.zeros([capacity], dtype: np.bool))!
+        states = Tensor<Float>(zeros: [capacity, 4])
+        actions = Tensor<Int32>(zeros: [capacity])
+        rewards = Tensor<Float>(zeros: [capacity])
+        nextStates = Tensor<Float>(zeros: [capacity, 4])
+        isDones = Tensor<Bool>(repeating: false, shape: [capacity])
     }
 
     func append(
@@ -154,8 +154,7 @@ class Agent {
 
     func getAction(state: Tensor<Float>, epsilon: Float) -> Tensor<Int32> {
         if Float(np.random.uniform()).unwrapped() < epsilon {
-            let npState = np.random.randint(0, 2, dtype: np.int32)
-            return Tensor<Int32>(numpy: np.array(npState, dtype: np.int32))!
+            return Tensor<Int32>(numpy: np.array(np.random.randint(0, 2), dtype: np.int32))!
         }
         else {
             // Neural network input needs to be 2D
