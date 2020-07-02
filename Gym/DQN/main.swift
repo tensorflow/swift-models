@@ -63,23 +63,26 @@ let gym = Python.import("gym")
 let plt = Python.import("matplotlib.pyplot")
 
 class ReplayBuffer {
+    let capacity: Int
+    let device: Device
+
     var states: Tensor<Float>
     var actions: Tensor<Int32>
     var rewards: Tensor<Float>
     var nextStates: Tensor<Float>
     var isDones: Tensor<Bool>
-    let capacity: Int
     var count: Int = 0
     var index: Int = 0
 
-    init(capacity: Int) {
+    init(capacity: Int, device: Device) {
         self.capacity = capacity
+        self.device = device
 
-        states = Tensor<Float>(zeros: [capacity, 4])
-        actions = Tensor<Int32>(zeros: [capacity])
-        rewards = Tensor<Float>(zeros: [capacity])
-        nextStates = Tensor<Float>(zeros: [capacity, 4])
-        isDones = Tensor<Bool>(repeating: false, shape: [capacity])
+        states = Tensor<Float>(zeros: [capacity, 4], on: device)
+        actions = Tensor<Int32>(zeros: [capacity], on: device)
+        rewards = Tensor<Float>(zeros: [capacity], on: device)
+        nextStates = Tensor<Float>(zeros: [capacity, 4], on: device)
+        isDones = Tensor<Bool>(repeating: false, shape: [capacity], on: device)
     }
 
     func append(
@@ -143,13 +146,15 @@ class Agent {
     let optimizer: Adam<Net>
     let replayBuffer: ReplayBuffer
     let discount: Float
+    let device: Device
 
-    init(qNet: Net, targetQNet: Net, optimizer: Adam<Net>, replayBuffer: ReplayBuffer, discount: Float) {
+    init(qNet: Net, targetQNet: Net, optimizer: Adam<Net>, replayBuffer: ReplayBuffer, discount: Float, device: Device) {
         self.qNet = qNet
         self.targetQNet = targetQNet
         self.optimizer = optimizer
         self.replayBuffer = replayBuffer
         self.discount = discount
+        self.device = device
     }
 
     func getAction(state: Tensor<Float>, epsilon: Float) -> Tensor<Int32> {
@@ -160,7 +165,7 @@ class Agent {
             // Neural network input needs to be 2D
             let tfState = Tensor<Float>(numpy: np.expand_dims(state.makeNumpyArray(), axis: 0))!
             let qValues = qNet(tfState)[0]
-            return qValues[1].scalarized() > qValues[0].scalarized() ? Tensor<Int32>(1) : Tensor<Int32>(0)
+            return Tensor<Int32>(qValues[1].scalarized() > qValues[0].scalarized() ? 1 : 0, on: device)
         }
     }
 
@@ -231,6 +236,7 @@ let replayBufferCapacity: Int = 5000
 let minBufferSize: Int = 1000
 let batchSize: Int = 64
 let targetNetUpdateRate: Int = 32
+let device: Device = Device.default
 
 // Initialize environment
 let env = TensorFlowEnvironmentWrapper(gym.make("CartPole-v0"))
@@ -240,8 +246,8 @@ var qNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
 var targetQNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
 updateTargetQNet(source: qNet, target: &targetQNet)
 let optimizer = Adam(for: qNet, learningRate: learningRate)
-var replayBuffer: ReplayBuffer = ReplayBuffer(capacity: replayBufferCapacity)
-var agent = Agent(qNet: qNet, targetQNet: targetQNet, optimizer: optimizer, replayBuffer: replayBuffer, discount: discount)
+var replayBuffer: ReplayBuffer = ReplayBuffer(capacity: replayBufferCapacity, device: device)
+var agent = Agent(qNet: qNet, targetQNet: targetQNet, optimizer: optimizer, replayBuffer: replayBuffer, discount: discount, device: device)
 
 // RL Loop
 var stepIndex = 0
