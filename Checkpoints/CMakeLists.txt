@@ -6,7 +6,10 @@ add_library(Checkpoints
   SnappyDecompression.swift)
 set_target_properties(Checkpoints PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
-
+target_compile_options(Checkpoints PRIVATE
+  $<$<BOOL:${BUILD_TESTING}>:-enable-testing>)
+target_link_libraries(Checkpoints PUBLIC
+  ModelSupport)
 
 install(TARGETS Checkpoints
   ARCHIVE DESTINATION lib/swift/$<LOWER_CASE:${CMAKE_SYSTEM_NAME}>
