@@ -30,6 +30,7 @@
 // locations determined by this metadata.
 
 import Foundation
+import ModelSupport
 
 // The block footer size is constant, and is obtained from the following:
 // https://github.com/tensorflow/tensorflow/blob/master/tensorflow/core/lib/io/format.h
@@ -43,8 +44,9 @@ class CheckpointIndexReader {
 
     var atEndOfFile: Bool { return index >= (binaryData.count - footerSize - 1) }
 
-    init(file: URL) throws {
-        let fileData = try Data(contentsOf: file)
+    init(file: URL, fileSystem: FileSystem = FoundationFileSystem()) throws {
+        let indexFile = fileSystem.open(file.path)
+        let fileData = try indexFile.read()
         if fileData[0] == 0 {
             binaryData = fileData
         } else {

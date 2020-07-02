@@ -10,6 +10,7 @@ let package = Package(
     ],
     products: [
         .library(name: "Batcher", targets: ["Batcher"]),
+        .library(name: "Checkpoints", targets: ["Checkpoints"]),
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
@@ -26,6 +27,9 @@ let package = Package(
     ],
     targets: [
         .target(name: "Batcher", path: "Batcher"),
+        .target(
+            name: "Checkpoints", dependencies: ["SwiftProtobuf", "ModelSupport"],
+            path: "Checkpoints"),
         .target(name: "Datasets", dependencies: ["ModelSupport"], path: "Datasets"),
         .target(name: "STBImage", path: "Support/STBImage"),
         .target(
@@ -33,7 +37,7 @@ let package = Package(
             exclude: ["STBImage"]),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "VideoClassificationModels", path: "Models/Spatiotemporal"),
-        .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),
+        .target(name: "TextModels", dependencies: ["Checkpoints", "Datasets"], path: "Models/Text"),
         .target(name: "RecommendationModels", path: "Models/Recommendation"),
         .target(name: "TrainingLoop", dependencies: ["ModelSupport"], path: "TrainingLoop"),
         .target(
@@ -76,7 +80,7 @@ let package = Package(
             dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
             path: "Examples/MobileNetV2-Imagenette"),
         .target(
-            name: "MiniGo", dependencies: ["ModelSupport"], path: "MiniGo", exclude: ["main.swift"]),
+            name: "MiniGo", dependencies: ["Checkpoints"], path: "MiniGo", exclude: ["main.swift"]),
         .target(
             name: "MiniGoDemo", dependencies: ["MiniGo"], path: "MiniGo", sources: ["main.swift"]),
         .target(
@@ -100,7 +104,7 @@ let package = Package(
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
         .target(name: "DCGAN", dependencies: ["Datasets", "ModelSupport"], path: "DCGAN"),
         .target(
-            name: "FastStyleTransfer", dependencies: ["ModelSupport"], path: "FastStyleTransfer",
+            name: "FastStyleTransfer", dependencies: ["Checkpoints"], path: "FastStyleTransfer",
             exclude: ["Demo"]),
         .target(
             name: "FastStyleTransferDemo", dependencies: ["FastStyleTransfer"],
@@ -113,7 +117,7 @@ let package = Package(
                 "TextModels"
             ],
             path: "Benchmarks"),
-        .testTarget(name: "CheckpointTests", dependencies: ["ModelSupport"]),
+        .testTarget(name: "CheckpointTests", dependencies: ["Checkpoints"]),
         .target(
             name: "BERT-CoLA", dependencies: ["TextModels", "Datasets"], path: "Examples/BERT-CoLA"),
         .testTarget(name: "SupportTests", dependencies: ["ModelSupport"]),

@@ -23,6 +23,7 @@ import Foundation
 public enum SnappyDecompressionError: Error {
     case illegalLiteralLength(upperBits: UInt8)
     case impossibleTagType(tagType: UInt8)
+    case uncompressedDataLengthMismatch(target: Int, actual: Int)
 }
 
 // The following extension to Data provides methods that read variable-length byte sequences
@@ -150,9 +151,8 @@ public extension Data {
             }
         }
         if uncompressedData.count != uncompressedLength {
-            // TODO: Determine if this should be elevated to a thrown error.
-            printError(
-                "Warning: uncompressed data length of \(uncompressedData.count) did not match desired length of \(uncompressedLength).")
+            throw SnappyDecompressionError.uncompressedDataLengthMismatch(
+                target: uncompressedLength, actual: uncompressedData.count)
         }
         
         return uncompressedData
