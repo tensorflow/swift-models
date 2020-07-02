@@ -110,11 +110,11 @@ class ReplayBuffer {
     ) {
         let randomIndices = Tensor<Int32>(numpy: np.random.randint(count, size: batchSize, dtype: np.int32))!
 
-        let stateBatch = _Raw.gather(params: states, indices: randomIndices)
-        let actionBatch = _Raw.gather(params: actions, indices: randomIndices)
-        let rewardBatch = _Raw.gather(params: rewards, indices: randomIndices)
-        let nextStateBatch = _Raw.gather(params: nextStates, indices: randomIndices)
-        let isDoneBatch = _Raw.gather(params: isDones, indices: randomIndices)
+        let stateBatch = states.gathering(atIndices: randomIndices, alongAxis: 0)
+        let actionBatch = actions.gathering(atIndices: randomIndices, alongAxis: 0)
+        let rewardBatch = rewards.gathering(atIndices: randomIndices, alongAxis: 0)
+        let nextStateBatch = nextStates.gathering(atIndices: randomIndices, alongAxis: 0)
+        let isDoneBatch = isDones.gathering(atIndices: randomIndices, alongAxis: 0)
 
         return (stateBatch, actionBatch, rewardBatch, nextStateBatch, isDoneBatch)
     }
@@ -179,8 +179,7 @@ class Agent {
                 let predictionBatch = _Raw.gatherNd(params: stateQValueBatch, indices: tfFullIndices)
 
                 // Compute target batch
-                let targetBatch: Tensor<Float> = tfRewardBatch + Tensor<Float>(tfIsDoneBatch) * self.discount * _Raw.max(self.targetQNet(tfNextStateBatch), reductionIndices: Tensor<Int32>(1))
-
+                let targetBatch: Tensor<Float> = tfRewardBatch + Tensor<Float>(tfIsDoneBatch) * self.discount * self.targetQNet(tfNextStateBatch).max(squeezingAxes: Tensor<Int32>(1))
                 return meanSquaredError(predicted: predictionBatch, expected: withoutDerivative(at: targetBatch))
             }
             optimizer.update(&qNet, along: gradients)
