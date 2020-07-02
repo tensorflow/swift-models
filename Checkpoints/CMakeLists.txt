@@ -3,6 +3,11 @@ add_library(Checkpoints
   CheckpointIndexWriter.swift
   CheckpointReader.swift
   CheckpointWriter.swift
+  Protobufs/tensor_bundle.pb.swift
+  Protobufs/tensor_shape.pb.swift
+  Protobufs/tensor_slice.pb.swift
+  Protobufs/types.pb.swift
+  Protobufs/versions.pb.swift
   SnappyDecompression.swift)
 set_target_properties(Checkpoints PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
