@@ -17,8 +17,8 @@ import ImageClassificationModels
 let LeNetSuites = [
   makeLayerSuite(
     name: "LeNet",
-    inputDimensions: cifarInput,
-    outputDimensions: cifarOutput
+    inputDimensions: mnistInput, 
+    outputDimensions: mnistOutput
   ) {
     LeNet()
   }

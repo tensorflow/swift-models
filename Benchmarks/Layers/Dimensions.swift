@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+let mnistInput = [28, 28, 1]
+let mnistOutput = [10]
+
 let cifarInput = [32, 32, 3]
 let cifarOutput = [10]
 
