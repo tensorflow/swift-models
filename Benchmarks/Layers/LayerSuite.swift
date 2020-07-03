@@ -75,8 +75,7 @@ where
     }
 
     // Control-flow never gets here, but this removes the warning 
-    // about shape being never used.
-    // being never used.
+    // about the sink being never used.
     fatalError("unrechable \(sink)")
   }
 }
@@ -133,8 +132,7 @@ where
     }
 
     // Control-flow never gets here, but this removes the warning 
-    // about shape being never used.
-    // being never used.
+    // about the sink being never used.
     fatalError("unrechable \(sink)")
   }
 }
