@@ -24,4 +24,5 @@ let layerSuites = Array(
     ResNetV2Suites,
     ShuffleNetV2Suites,
     SqueezeNetSuites,
+    WideResNetSuites,
   ].joined())
