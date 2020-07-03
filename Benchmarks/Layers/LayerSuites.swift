@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let suites = Array([
-    layerSuites,
-    modelSuites,
-].joined())
+let layerSuites = [
+  LeNetSuite,
+  ResNet50Suite,
+  ResNet56Suite,
+]

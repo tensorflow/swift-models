@@ -12,7 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let suites = Array([
-    layerSuites,
-    modelSuites,
-].joined())
+// import Benchmark
+// import Datasets
+import ImageClassificationModels
+
+// import TensorFlow
+
+extension LeNet: DefaultInit {}
+
+let LeNetSuite = makeLayerSuite(
+  layer: LeNet.self,
+  inputDimensions: LeNet.preferredInputDimensions,
+  outputDimensions: [LeNet.outputLabels])

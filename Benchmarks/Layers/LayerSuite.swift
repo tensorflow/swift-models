@@ -17,50 +17,50 @@ import Datasets
 import ImageClassificationModels
 import TensorFlow
 
-func makeSyntheticBatch<Model>(
-  model: Model.Type,
+func makeRandomTensor(
   batchSize: Int,
+  dimensions: [Int],
   device: Device
-) -> (Tensor<Float>, Tensor<Int32>)
-where
-  Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == Float
-{
-  let dataset = SyntheticImageDataset<SystemRandomNumberGenerator>(
-    batchSize: batchSize,
-    labels: model.outputLabels,
-    dimensions: model.preferredInputDimensions,
-    entropy: SystemRandomNumberGenerator(),
-    device: device)
-
-  for epochBatches in dataset.training {
-    for batch in epochBatches {
-      return (batch.data, batch.label)
-    }
-  }
-
-  fatalError("unreachable")
+) -> Tensor<Float> {
+  var allDimensions = [batchSize]
+  allDimensions.append(contentsOf: dimensions)
+  let tensor = Tensor<Float>(
+    randomNormal: TensorShape(allDimensions), mean: Tensor<Float>(0.5, on: device),
+    standardDeviation: Tensor<Float>(0.1, on: device), seed: (0xffeffe, 0xfffe),
+    on: device)
+  return tensor
 }
 
-func forwardBenchmark<Model>(
-  model modelType: Model.Type
+func makeForwardBenchmark<CustomLayer>(
+  layer: CustomLayer.Type,
+  inputDimensions: [Int],
+  outputDimensions: [Int]
 ) -> ((inout BenchmarkState) throws -> Void)
 where
-  Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == Float
+  CustomLayer: Layer,
+  CustomLayer: DefaultInit,
+  CustomLayer.Input == Tensor<Float>,
+  CustomLayer.Output == Tensor<Float>,
+  CustomLayer.TangentVector.VectorSpaceScalar == Float
 {
   return { state in
     let settings = state.settings
     let device = settings.device
     let batchSize = settings.batchSize!
-    var model = Model()
-    model.move(to: device)
-    let (images, _) = makeSyntheticBatch(model: modelType, batchSize: batchSize, device: device)
+    var layer = CustomLayer()
+    layer.move(to: device)
 
-    var sink = TensorShape([])
+    let input = makeRandomTensor(
+      batchSize: batchSize,
+      dimensions: inputDimensions,
+      device: device)
+
+    var sink: TensorShape = TensorShape([])
 
     while true {
       do {
         try state.measure {
-          let result = model(images)
+          let result = layer(input)
           // Force materialization of the lazy results.
           sink = result.shape
           LazyTensorBarrier()
@@ -82,29 +82,43 @@ where
   }
 }
 
-func gradientBenchmark<Model>(
-  model modelType: Model.Type
+func makeGradientBenchmark<CustomLayer>(
+  layer: CustomLayer.Type,
+  inputDimensions: [Int],
+  outputDimensions: [Int]
 ) -> ((inout BenchmarkState) throws -> Void)
 where
-  Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == Float
+  CustomLayer: Layer,
+  CustomLayer: DefaultInit,
+  CustomLayer.Input == Tensor<Float>,
+  CustomLayer.Output == Tensor<Float>,
+  CustomLayer.TangentVector.VectorSpaceScalar == Float
 {
   return { state in
     let settings = state.settings
     let device = settings.device
     let batchSize = settings.batchSize!
-    var model = Model()
-    model.move(to: device)
-    let (images, labels) = makeSyntheticBatch(model: modelType, batchSize: batchSize, device: device)
+    var layer = CustomLayer()
+    layer.move(to: device)
 
-    var sink: Model.TangentVector = Model.TangentVector.zero
+    let input = makeRandomTensor(
+      batchSize: batchSize,
+      dimensions: inputDimensions,
+      device: device)
+    let output = makeRandomTensor(
+      batchSize: batchSize,
+      dimensions: outputDimensions,
+      device: device)
+
+    var sink: CustomLayer.TangentVector = CustomLayer.TangentVector.zero
     sink.move(to: device)
 
     while true {
       do {
         try state.measure {
-          let result = TensorFlow.gradient(at: model) { model -> Tensor<Float> in
-            let logits = model(images)
-            return softmaxCrossEntropy(logits: logits, labels: labels)
+          let result = TensorFlow.gradient(at: layer) { layer -> Tensor<Float> in
+            let predicted = layer(input)
+            return meanAbsoluteError(predicted: predicted, expected: output)
           }
           // Force materialization of the lazy results.
           sink += result
@@ -127,51 +141,19 @@ where
   }
 }
 
-func updateBenchmark<Model>(
-  model modelType: Model.Type
-) -> ((inout BenchmarkState) throws -> Void)
-where
-  Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == Float
-{
-  return { state in
-    let settings = state.settings
-    let device = settings.device
-    let batchSize = settings.batchSize!
-    var model = Model()
-    model.move(to: device)
-    var optimizer = SGD(for: model, learningRate: 0.1)
-    optimizer = SGD(copying: optimizer, to: device)
-    let (images, labels) = makeSyntheticBatch(model: modelType, batchSize: batchSize, device: device)
-
-    while true {
-      do {
-        try state.measure {
-          let 𝛁model = TensorFlow.gradient(at: model) { model -> Tensor<Float> in
-            let logits = model(images)
-            return softmaxCrossEntropy(logits: logits, labels: labels)
-          }
-          optimizer.update(&model, along: 𝛁model)
-          LazyTensorBarrier()
-        }
-      } catch {
-        if settings.backend == .x10 {
-          // A synchronous barrier is needed for X10 to ensure all execution completes
-          // before tearing down the model.
-          LazyTensorBarrier(wait: true)
-        }
-        throw error
-      }
-    }
-  }
-}
-
-func LayerSuite<Model>(
-  model modelType: Model.Type
+func makeLayerSuite<CustomLayer>(
+  layer: CustomLayer.Type,
+  inputDimensions inp: [Int],
+  outputDimensions outp: [Int]
 ) -> BenchmarkSuite
 where
-  Model: ImageClassificationModel, Model.TangentVector.VectorSpaceScalar == Float
+  CustomLayer: Layer,
+  CustomLayer: DefaultInit,
+  CustomLayer.Input == Tensor<Float>,
+  CustomLayer.Output == Tensor<Float>,
+  CustomLayer.TangentVector.VectorSpaceScalar == Float
 {
-  let name: String = String(String(reflecting: modelType).split(separator: ".").last!)
+  let name: String = String(String(reflecting: layer).split(separator: ".").last!)
 
   return BenchmarkSuite(
     name: name,
@@ -182,22 +164,15 @@ where
         suite.benchmark(
           "forward_b\(batchSize)_\(backend.value)",
           settings: backend, BatchSize(batchSize),
-          function: forwardBenchmark(model: modelType))
+          function: makeForwardBenchmark(layer: layer, inputDimensions: inp, outputDimensions: outp)
+        )
 
         suite.benchmark(
-          "gradient_b\(batchSize)_\(backend.value)",
+          "forward_and_gradient_b\(batchSize)_\(backend.value)",
           settings: backend, BatchSize(batchSize),
-          function: gradientBenchmark(model: modelType))
-
-        suite.benchmark(
-          "update_b\(batchSize)_\(backend.value)",
-          settings: backend, BatchSize(batchSize),
-          function: updateBenchmark(model: modelType))
+          function: makeGradientBenchmark(
+            layer: layer, inputDimensions: inp, outputDimensions: outp))
       }
     }
   }
 }
-
-let LeNetSuite = LayerSuite(model: LeNet.self)
-let ResNet50Suite = LayerSuite(model: ResNet50.self)
-let ResNet56Suite = LayerSuite(model: ResNet56.self)

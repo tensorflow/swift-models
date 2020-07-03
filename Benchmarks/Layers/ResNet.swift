@@ -12,7 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let suites = Array([
-    layerSuites,
-    modelSuites,
-].joined())
+import ImageClassificationModels
+
+extension ResNet50: DefaultInit {}
+
+extension ResNet56: DefaultInit {}
+
+let ResNet50Suite = makeLayerSuite(
+  layer: ResNet50.self,
+  inputDimensions: ResNet50.preferredInputDimensions,
+  outputDimensions: [ResNet50.outputLabels])
+
+let ResNet56Suite = makeLayerSuite(
+  layer: ResNet56.self,
+  inputDimensions: ResNet56.preferredInputDimensions,
+  outputDimensions: [ResNet56.outputLabels])
