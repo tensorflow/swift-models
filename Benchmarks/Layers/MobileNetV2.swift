@@ -12,13 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let layerSuites = Array(
-  [
-    DenseNetSuites,
-    EfficientNetSuites,
-    LeNetSuites,
-    MobileNetV1Suites,
-    MobileNetV2Suites,
-    ResNetSuites,
-    ResNetV2Suites,
-  ].joined())
+import ImageClassificationModels
+
+let MobileNetV2Suites = [
+  makeLayerSuite(
+    name: "MobileNetV2",
+    inputDimensions: cifarInput,
+    outputDimensions: cifarOutput
+  ) {
+    MobileNetV2(classCount: 10)
+  },
+  makeLayerSuite(
+    name: "MobileNetV2",
+    inputDimensions: imageNetInput,
+    outputDimensions: imageNetOutput
+  ) {
+    MobileNetV2(classCount: 1000)
+  }
+]
