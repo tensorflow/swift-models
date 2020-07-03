@@ -153,13 +153,15 @@ where
   CustomLayer.Output == Tensor<Float>,
   CustomLayer.TangentVector.VectorSpaceScalar == Float
 {
-  let name: String = String(String(reflecting: layer).split(separator: ".").last!)
+  let name = String(String(reflecting: layer).split(separator: ".").last!)
+  let inputString = inp.map { String($0) }.joined(separator: "x")
+  let outputString = outp.map { String($0) }.joined(separator: "x")
 
   return BenchmarkSuite(
-    name: name,
+    name: "\(name)_\(inputString)_\(outputString)",
     settings: WarmupIterations(10)
   ) { suite in
-    for batchSize in [32, 64, 128, 256, 512, 1024] {
+    for batchSize in [128] {
       for backend in [Backend(.x10), Backend(.eager)] {
         suite.benchmark(
           "forward_b\(batchSize)_\(backend.value)",

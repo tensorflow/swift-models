@@ -18,12 +18,17 @@ extension ResNet50: DefaultInit {}
 
 extension ResNet56: DefaultInit {}
 
-let ResNet50Suite = makeLayerSuite(
+let ResNet50_224x224x3_1000 = makeLayerSuite(
   layer: ResNet50.self,
-  inputDimensions: ResNet50.preferredInputDimensions,
-  outputDimensions: [ResNet50.outputLabels])
+  inputDimensions: [224, 224, 3],
+  outputDimensions: [1000])
 
-let ResNet56Suite = makeLayerSuite(
+let ResNet56_32x32x3_10 = makeLayerSuite(
   layer: ResNet56.self,
-  inputDimensions: ResNet56.preferredInputDimensions,
-  outputDimensions: [ResNet56.outputLabels])
+  inputDimensions: [32, 32, 3],
+  outputDimensions: [10])
+
+let ResNetSuites = [
+  ResNet50_224x224x3_1000,
+  ResNet56_32x32x3_10,
+]

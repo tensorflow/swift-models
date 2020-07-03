@@ -12,15 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// import Benchmark
-// import Datasets
 import ImageClassificationModels
-
-// import TensorFlow
 
 extension LeNet: DefaultInit {}
 
-let LeNetSuite = makeLayerSuite(
+let LeNet_28x28x1_10 = makeLayerSuite(
   layer: LeNet.self,
-  inputDimensions: LeNet.preferredInputDimensions,
-  outputDimensions: [LeNet.outputLabels])
+  inputDimensions: [28, 28, 1],
+  outputDimensions: [10])
+
+let LeNetSuites = [
+  LeNet_28x28x1_10
+]

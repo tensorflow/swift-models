@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let suites = Array([
+let suites = Array(
+  [
     layerSuites,
     modelSuites,
-].joined())
+  ].joined())
