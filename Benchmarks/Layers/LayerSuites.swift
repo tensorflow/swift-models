@@ -15,6 +15,7 @@
 let layerSuites = Array(
   [
     DenseNetSuites,
+    EfficientNetSuites,
     LeNetSuites,
     ResNetSuites,
     ResNetV2Suites,
