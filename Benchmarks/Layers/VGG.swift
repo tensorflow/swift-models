@@ -12,18 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let layerSuites = Array(
-  [
-    DenseNetSuites,
-    EfficientNetSuites,
-    LeNetSuites,
-    MobileNetV1Suites,
-    MobileNetV2Suites,
-    MobileNetV3Suites,
-    ResNetSuites,
-    ResNetV2Suites,
-    ShuffleNetV2Suites,
-    SqueezeNetSuites,
-    VGGSuites,
-    WideResNetSuites,
-  ].joined())
+import ImageClassificationModels
+
+let VGGSuites = [
+  makeLayerSuite(
+    name: "VGG16",
+    inputDimensions: imageNetInput,
+    outputDimensions: imageNetOutput
+  ) {
+    VGG16(classCount: 1000)
+  },
+  makeLayerSuite(
+    name: "VGG19",
+    inputDimensions: imageNetInput,
+    outputDimensions: imageNetOutput
+  ) {
+    VGG19(classCount: 1000)
+  },
+]
