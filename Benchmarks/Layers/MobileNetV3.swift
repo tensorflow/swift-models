@@ -18,28 +18,32 @@ let MobileNetV3Suites = [
   makeLayerSuite(
     name: "MobileNetV3Small",
     inputDimensions: cifarInput,
-    outputDimensions: cifarOutput
+    outputDimensions: cifarOutput,
+    backends: [.eager] // Crashes on x10.
   ) {
     MobileNetV3Small(classCount: 10)
   },
   makeLayerSuite(
     name: "MobileNetV3Small",
     inputDimensions: imageNetInput,
-    outputDimensions: imageNetOutput
+    outputDimensions: imageNetOutput,
+    backends: [.eager] // Crashes on x10.
   ) {
     MobileNetV3Small(classCount: 1000)
   },
   makeLayerSuite(
     name: "MobileNetV3Large",
     inputDimensions: cifarInput,
-    outputDimensions: cifarOutput
+    outputDimensions: cifarOutput,
+    backends: [.eager] // Crashes on x10.
   ) {
     MobileNetV3Large(classCount: 10)
   },
   makeLayerSuite(
     name: "MobileNetV3Large",
     inputDimensions: imageNetInput,
-    outputDimensions: imageNetOutput
+    outputDimensions: imageNetOutput,
+    backends: [.eager] // Crashes on x10.
   ) {
     MobileNetV3Large(classCount: 1000)
   },

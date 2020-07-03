@@ -142,6 +142,7 @@ func makeLayerSuite<CustomLayer>(
   inputDimensions inp: [Int],
   outputDimensions outp: [Int],
   batchSizes: [Int] = [4],
+  backends: [Backend.Value] = [.eager, .x10],
   layer: @escaping () -> CustomLayer
 ) -> BenchmarkSuite
 where
@@ -158,16 +159,16 @@ where
     settings: WarmupIterations(10)
   ) { suite in
     for batchSize in batchSizes {
-      for backend in [Backend(.x10), Backend(.eager)] {
+      for backend in backends {
         suite.benchmark(
-          "forward_b\(batchSize)_\(backend.value)",
-          settings: backend, BatchSize(batchSize),
+          "forward_b\(batchSize)_\(backend)",
+          settings: Backend(backend), BatchSize(batchSize),
           function: makeForwardBenchmark(layer: layer, inputDimensions: inp, outputDimensions: outp)
         )
 
         suite.benchmark(
-          "forward_and_gradient_b\(batchSize)_\(backend.value)",
-          settings: backend, BatchSize(batchSize),
+          "forward_and_gradient_b\(batchSize)_\(backend)",
+          settings: Backend(backend), BatchSize(batchSize),
           function: makeGradientBenchmark(
             layer: layer, inputDimensions: inp, outputDimensions: outp))
       }
