@@ -12,16 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let layerSuites = Array(
-  [
-    DenseNetSuites,
-    EfficientNetSuites,
-    LeNetSuites,
-    MobileNetV1Suites,
-    MobileNetV2Suites,
-    MobileNetV3Suites,
-    ResNetSuites,
-    ResNetV2Suites,
-    ShuffleNetV2Suites,
-    SqueezeNetSuites,
-  ].joined())
+import ImageClassificationModels
+
+let SqueezeNetSuites = [
+  makeLayerSuite(
+    name: "SqueezeNetV1_0",
+    inputDimensions: imageNetInput,
+    outputDimensions: imageNetOutput
+  ) {
+    SqueezeNetV1_0(classCount: 1000)
+  },
+  makeLayerSuite(
+    name: "SqueezeNetV1_1",
+    inputDimensions: imageNetInput,
+    outputDimensions: imageNetOutput
+  ) {
+    SqueezeNetV1_1(classCount: 1000)
+  },
+]
