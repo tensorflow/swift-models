@@ -12,171 +12,137 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Benchmark
 import Datasets
 import ModelSupport
 import TensorFlow
 import TextModels
 
-// We're repurposing `batchSize` for the sequence length parameter in the WordSeg benchmarks.
-// Typical sizes are 4, 8, and 14.
-enum WordSegScore: BenchmarkModel {
-    static var name: String { "WordSegScore" }
+let WordSegScore = wordSegSuite(
+  name: "WordSegScore",
+  operation: score)
 
-    static func defaults(for variety: BenchmarkVariety) -> BenchmarkSettings {
-        return BenchmarkSettings(
-            duration: .batches(20), batchSize: 4, iterations: 1,
-            warmupBatches: 10, synthetic: false, backend: .eager)
-    }
+let WordSegScoreAndGradient = wordSegSuite(
+  name: "WordSegScoreAndGradient",
+  operation: scoreAndGradient)
 
-    static func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return WordSegBenchmark(settings: settings, operation: WordSegBenchmark.score)
-    }
-
-    static func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return WordSegBenchmark(settings: settings, operation: WordSegBenchmark.score)
-    }
-}
-
-enum WordSegScoreAndGradient: BenchmarkModel {
-    static var name: String { "WordSegScoreAndGradient" }
-
-    static func defaults(for variety: BenchmarkVariety) -> BenchmarkSettings {
-        return BenchmarkSettings(
-            duration: .batches(20), batchSize: 4, iterations: 1,
-            warmupBatches: 10, synthetic: false, backend: .eager)
-    }
-
-    static func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return WordSegBenchmark(settings: settings, operation: WordSegBenchmark.scoreAndGradient)
-    }
-
-    static func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return WordSegBenchmark(settings: settings, operation: WordSegBenchmark.scoreAndGradient)
-    }
-}
-
-enum WordSegViterbi: BenchmarkModel {
-    static var name: String { "WordSegViterbi" }
-
-    static func defaults(for variety: BenchmarkVariety) -> BenchmarkSettings {
-        return BenchmarkSettings(
-            duration: .batches(20), batchSize: 4, iterations: 1,
-            warmupBatches: 10, synthetic: false, backend: .eager)
-    }
-
-    static func makeInferenceBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return WordSegBenchmark(settings: settings, operation: WordSegBenchmark.viterbi)
-    }
-
-    static func makeTrainingBenchmark(settings: BenchmarkSettings) -> Benchmark {
-        return WordSegBenchmark(settings: settings, operation: WordSegBenchmark.viterbi)
-    }
-}
+let WordSegViterbi = wordSegSuite(
+  name: "WordSegViterbi",
+  operation: viterbi)
 
 let maximumSequenceLength = 18
 
-struct WordSegBenchmark: Benchmark {
-    let batchSize: Int
-    let duration: BenchmarkDuration
-    let operation: (SNLM, CharacterSequence, Device) -> ()
-
-    init(settings: BenchmarkSettings, operation: @escaping (SNLM, CharacterSequence, Device) -> ()) {
-        self.duration = settings.duration
-        self.batchSize = settings.batchSize
-        self.operation = operation
-    }
-
-    func run(backend: Backend) -> [Double] {
-        let device: Device
-        switch backend {
-        case .eager: device = Device.defaultTFEager
-        case .x10: device = Device.defaultXLA
-        }
-        
-        var batchTimings: [Double] = []
-        var beforeBatch = timestampInMilliseconds()
-
-        do {
-            let dataset = try WordSegDataset()
-            let sentence = try WordSegBenchmark.testSentence(length: batchSize,
-                alphabet: dataset.alphabet)
-
-            // Model settings are drawn from known benchmarks.
-            let lexicon = Lexicon(
-              from: [sentence],
-              alphabet: dataset.alphabet,
-              maxLength: maximumSequenceLength,
-              minFrequency: 10
-            )
-            
-            let modelParameters = SNLM.Parameters(
-              hiddenSize: 512,
-              dropoutProbability: 0.5,
-              alphabet: dataset.alphabet,
-              lexicon: lexicon,
-              order: 5
-            )
-            
-            var model = SNLM(parameters: modelParameters)
-            model.move(to: device)
-            
-            let iterations: Int
-            switch duration {
-            case let .batches(value):
-                iterations = value
-            case let .epochs(value):
-                iterations = value
-            }
-            
-            for _ in 0..<iterations {
-                operation(model, sentence, device)
-                LazyTensorBarrier()
-                
-                batchTimings.append(durationInMilliseconds(since: beforeBatch))
-                beforeBatch = timestampInMilliseconds()
-            }
-        } catch {
-            fatalError("Error during WordSeg benchmark: \(error)")
-        }
-        
-        if backend == .x10 {
-            // A synchronous barrier is needed for X10 to ensure all execution completes
-            // before tearing down the model.
-            LazyTensorBarrier(wait: true)
-        }
-        return batchTimings
-    }
+func wordSegSuite(name: String, operation: @escaping (SNLM, CharacterSequence, Device) -> Void)
+  -> BenchmarkSuite
+{
+  let function = wordSegBenchmark(operation)
+  let columns = Columns([
+    "name",
+    "wall_time",
+    "startup_time",
+    "iterations",
+    "time_median",
+    "time_min",
+    "time_max",
+  ])
+  return BenchmarkSuite(name: name, settings: WarmupIterations(10), columns) { suite in
+    suite.benchmark(
+      "sentence_4", settings: Length(4), Backend(.eager), function: function)
+    suite.benchmark(
+      "sentence_4_x10", settings: Length(4), Backend(.x10), function: function)
+    suite.benchmark(
+      "sentence_8", settings: Length(8), Backend(.eager), function: function)
+    suite.benchmark(
+      "sentence_8_x10", settings: Length(8), Backend(.x10), function: function)
+    suite.benchmark(
+      "sentence_14", settings: Length(14), Backend(.eager), function: function)
+    suite.benchmark(
+      "sentence_14_x10", settings: Length(14), Backend(.x10), function: function)
+  }
 }
 
-extension WordSegBenchmark {
-    static func testSentence(length: Int, alphabet: Alphabet) throws -> CharacterSequence {
-        let sourceSentence = ["you", "like", "daddy's", "whiskers", "just", "gonna", "eat", "the",
-            "comb", "and", "that's", "all"]
-        
-        let truncatedSentence = sourceSentence.prefix(length).reduce("", +) // + ["</s"]
-        return try CharacterSequence(alphabet: alphabet, appendingEoSTo: truncatedSentence)
-    }
+func wordSegBenchmark(_ operation: @escaping (SNLM, CharacterSequence, Device) -> Void) -> (
+  (inout BenchmarkState) throws -> Void
+) {
+  return { state in
+    let settings = state.settings
+    let device = settings.device
+    let length = settings.length!
 
-    static func score(model: SNLM, sentence: CharacterSequence, device: Device) {
-        let lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
-        let score = lattice[sentence.count].semiringScore
-        let _ = score.logr + score.logp
-    }
+    state.start()
 
-    static func scoreAndGradient(model: SNLM, sentence: CharacterSequence, device: Device) {
-        let lambd: Float = 0.00075
+    let dataset = try WordSegDataset()
+    let sentence = try testSentence(
+      length: length,
+      alphabet: dataset.alphabet)
 
-        let _ = valueWithGradient(at: model) { model -> Tensor<Float> in
-          let lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
-          let score = lattice[sentence.count].semiringScore
-          let expectedLength = exp(score.logr - score.logp)
-          let loss = -1 * score.logp + lambd * expectedLength
-          return Tensor(loss, on: device)
+    // Model settings are drawn from known benchmarks.
+    let lexicon = Lexicon(
+      from: [sentence],
+      alphabet: dataset.alphabet,
+      maxLength: maximumSequenceLength,
+      minFrequency: 10
+    )
+
+    let modelParameters = SNLM.Parameters(
+      hiddenSize: 512,
+      dropoutProbability: 0.5,
+      alphabet: dataset.alphabet,
+      lexicon: lexicon,
+      order: 5
+    )
+
+    var model = SNLM(parameters: modelParameters)
+    model.move(to: device)
+
+    while true {
+      operation(model, sentence, device)
+      LazyTensorBarrier()
+
+      do {
+        try state.end()
+      } catch {
+        if settings.backend == .x10 {
+          // A synchronous barrier is needed for X10 to ensure all execution completes
+          // before tearing down the model.
+          LazyTensorBarrier(wait: true)
         }
+        throw error
+      }
+      state.start()
     }
+  }
+}
 
-    static func viterbi(model: SNLM, sentence: CharacterSequence, device: Device) {
-        var lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
-        let _ = lattice.viterbi(sentence: sentence)
-    }
+func testSentence(length: Int, alphabet: Alphabet) throws -> CharacterSequence {
+  let sourceSentence = [
+    "you", "like", "daddy's", "whiskers", "just", "gonna", "eat", "the",
+    "comb", "and", "that's", "all",
+  ]
+
+  let truncatedSentence = sourceSentence.prefix(length).reduce("", +)  // + ["</s"]
+  return try CharacterSequence(alphabet: alphabet, appendingEoSTo: truncatedSentence)
+}
+
+func score(model: SNLM, sentence: CharacterSequence, device: Device) {
+  let lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
+  let score = lattice[sentence.count].semiringScore
+  let _ = score.logr + score.logp
+}
+
+func scoreAndGradient(model: SNLM, sentence: CharacterSequence, device: Device) {
+  let lambd: Float = 0.00075
+
+  let _ = valueWithGradient(at: model) { model -> Tensor<Float> in
+    let lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
+    let score = lattice[sentence.count].semiringScore
+    let expectedLength = exp(score.logr - score.logp)
+    let loss = -1 * score.logp + lambd * expectedLength
+    return Tensor(loss, on: device)
+  }
+}
+
+func viterbi(model: SNLM, sentence: CharacterSequence, device: Device) {
+  var lattice = model.buildLattice(sentence, maxLen: maximumSequenceLength, device: device)
+  let _ = lattice.viterbi(sentence: sentence)
 }

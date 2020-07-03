@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let benchmarkModelTypes: [BenchmarkModel.Type] = [
-    LeNetMNIST.self,
-    ResNetCIFAR10.self,
-    ResNetImageNet.self,
-    WordSegScore.self,
-    WordSegScoreAndGradient.self,
-    WordSegViterbi.self,
-]
-let benchmarkModels = Dictionary(uniqueKeysWithValues: benchmarkModelTypes.map { ($0.name, $0) })
+import ArgumentParser
+
+internal struct BenchmarkCommand: ParsableCommand {
+  @OptionGroup()
+  var arguments: BenchmarkArguments
+
+  mutating func validate() throws {
+    try arguments.validate()
+  }
+}

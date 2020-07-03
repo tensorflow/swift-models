@@ -24,6 +24,7 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.9.0"),
         .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.0.1")),
+        .package(url: "https://github.com/google/swift-benchmark", .branch("master")),
     ],
     targets: [
         .target(name: "Batcher", path: "Batcher"),
@@ -114,7 +115,7 @@ let package = Package(
             name: "Benchmarks",
             dependencies: [
                 "Datasets", "ModelSupport", "ImageClassificationModels", "ArgumentParser",
-                "TextModels"
+                "TextModels", "Benchmark"
             ],
             path: "Benchmarks"),
         .testTarget(name: "CheckpointTests", dependencies: ["Checkpoints"]),

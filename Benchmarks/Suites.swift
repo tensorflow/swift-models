@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-struct BenchmarkResults: Codable {
-    let configuration: BenchmarkConfiguration
-    let timings: [Double]
-    let warmupTime: Double
-    let totalTime: Double
-    let batchSize: Int
-}
+let suites = [
+  LeNetMNIST,
+  ResNetCIFAR10,
+  ResNetImageNet,
+  WordSegScore,
+  WordSegScoreAndGradient,
+  WordSegViterbi,
+]

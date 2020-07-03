@@ -1,4 +1,4 @@
-// Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+// Copyright 2019 The TensorFlow Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,60 +17,49 @@ import Datasets
 import ImageClassificationModels
 import TensorFlow
 
-let ResNetImageNet = BenchmarkSuite(
-  name: "ResNetImageNet",
-  settings: BatchSize(128), WarmupIterations(1), Synthetic(true)
+let LeNetMNIST = BenchmarkSuite(
+  name: "LeNetMNIST",
+  settings: BatchSize(128), WarmupIterations(1)
 ) { suite in
 
   func inference(state: inout BenchmarkState) throws {
     if state.settings.synthetic {
       try runImageClassificationInference(
-        model: ResNet50.self, dataset: SyntheticImageNet.self, state: &state)
+        model: LeNet.self, dataset: SyntheticMNIST.self, state: &state)
     } else {
-      fatalError("Only synthetic ImageNet benchmarks are supported at the moment.")
+      try runImageClassificationInference(
+        model: LeNet.self, dataset: MNIST<SystemRandomNumberGenerator>.self, state: &state)
     }
   }
 
   func training(state: inout BenchmarkState) throws {
     if state.settings.synthetic {
       try runImageClassificationTraining(
-        model: ResNet50.self, dataset: SyntheticImageNet.self, state: &state)
+        model: LeNet.self, dataset: SyntheticMNIST.self, state: &state)
     } else {
-      fatalError("Only synthetic ImageNet benchmarks are supported at the moment.")
+      try runImageClassificationTraining(
+        model: LeNet.self, dataset: MNIST<SystemRandomNumberGenerator>.self, state: &state)
     }
   }
 
   suite.benchmark("inference", settings: Backend(.eager), function: inference)
   suite.benchmark("inference_x10", settings: Backend(.x10), function: inference)
   suite.benchmark("training", settings: Backend(.eager), function: training)
-  suite.benchmark("training_x10", settings: Backend(.eager), function: training)
+  suite.benchmark("training_x10", settings: Backend(.x10), function: training)
 }
 
-struct ResNet50: Layer {
-  var model: ResNet
-
-  init() {
-    model = ResNet(classCount: 1000, depth: .resNet50, downsamplingInFirstStage: true)
-  }
-
-  @differentiable
-  public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-    return model(input)
-  }
+extension LeNet: ImageClassificationModel {
+  static var preferredInputDimensions: [Int] { [28, 28, 1] }
+  static var outputLabels: Int { 10 }
 }
 
-extension ResNet50: ImageClassificationModel {
-  static var preferredInputDimensions: [Int] { [224, 224, 3] }
-  static var outputLabels: Int { 1000 }
-}
-
-final class SyntheticImageNet: SyntheticImageDataset<SystemRandomNumberGenerator>,
+final class SyntheticMNIST: SyntheticImageDataset<SystemRandomNumberGenerator>,
   ImageClassificationData
 {
   public init(batchSize: Int, on device: Device = Device.default) {
     super.init(
-      batchSize: batchSize, labels: ResNet50.outputLabels,
-      dimensions: ResNet50.preferredInputDimensions, entropy: SystemRandomNumberGenerator(),
+      batchSize: batchSize, labels: LeNet.outputLabels,
+      dimensions: LeNet.preferredInputDimensions, entropy: SystemRandomNumberGenerator(),
       device: device)
   }
 }
