@@ -17,71 +17,71 @@ import ImageClassificationModels
 let WideResNetSuites = [
   makeLayerSuite(
     name: "WideResNet16",
-    inputDimensions: imageNetInput,
-    outputDimensions: imageNetOutput
+    inputDimensions: cifarInput,
+    outputDimensions: cifarOutput
   ) {
     WideResNet(kind: .wideResNet16)
   },
   makeLayerSuite(
     name: "WideResNet16k10",
-    inputDimensions: imageNetInput,
-    outputDimensions: imageNetOutput
+    inputDimensions: cifarInput,
+    outputDimensions: cifarOutput
   ) {
     WideResNet(kind: .wideResNet16k10)
   },
   makeLayerSuite(
     name: "WideResNet22",
-    inputDimensions: imageNetInput,
-    outputDimensions: imageNetOutput
+    inputDimensions: cifarInput,
+    outputDimensions: cifarOutput
   ) {
     WideResNet(kind: .wideResNet22)
   },
   makeLayerSuite(
     name: "WideResNet22k10",
-    inputDimensions: imageNetInput,
-    outputDimensions: imageNetOutput
+    inputDimensions: cifarInput,
+    outputDimensions: cifarOutput
   ) {
     WideResNet(kind: .wideResNet22k10)
   },
   makeLayerSuite(
     name: "WideResNet28",
-    inputDimensions: imageNetInput,
-    outputDimensions: imageNetOutput
+    inputDimensions: cifarInput,
+    outputDimensions: cifarOutput
   ) {
     WideResNet(kind: .wideResNet28)
   },
   makeLayerSuite(
     name: "WideResNet28k12",
-    inputDimensions: imageNetInput,
-    outputDimensions: imageNetOutput
+    inputDimensions: cifarInput,
+    outputDimensions: cifarOutput
   ) {
     WideResNet(kind: .wideResNet28k12)
   },
   makeLayerSuite(
     name: "WideResNet40k1",
-    inputDimensions: imageNetInput,
-    outputDimensions: imageNetOutput
+    inputDimensions: cifarInput,
+    outputDimensions: cifarOutput
   ) {
     WideResNet(kind: .wideResNet40k1)
   },
   makeLayerSuite(
     name: "WideResNet40k2",
-    inputDimensions: imageNetInput,
-    outputDimensions: imageNetOutput
+    inputDimensions: cifarInput,
+    outputDimensions: cifarOutput
   ) {
     WideResNet(kind: .wideResNet40k2)
   },
   makeLayerSuite(
     name: "WideResNet40k4",
-    inputDimensions: imageNetInput,
-    outputDimensions: imageNetOutput
+    inputDimensions: cifarInput,
+    outputDimensions: cifarOutput
   ) {
     WideResNet(kind: .wideResNet40k4)
   },
   makeLayerSuite(
     name: "WideResNet40k8",
-    inputDimensions: imageNetInput,
-    outputDimensions: imageNetOutput
+    inputDimensions: cifarInput,
+    outputDimensions: cifarOutput
   ) {
     WideResNet(kind: .wideResNet40k8)
   },
