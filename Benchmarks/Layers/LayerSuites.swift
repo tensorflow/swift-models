@@ -22,4 +22,5 @@ let layerSuites = Array(
     MobileNetV3Suites,
     ResNetSuites,
     ResNetV2Suites,
+    ShuffleNetV2Suites,
   ].joined())
