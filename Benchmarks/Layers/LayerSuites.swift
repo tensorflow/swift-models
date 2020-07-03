@@ -19,6 +19,7 @@ let layerSuites = Array(
     LeNetSuites,
     MobileNetV1Suites,
     MobileNetV2Suites,
+    MobileNetV3Suites,
     ResNetSuites,
     ResNetV2Suites,
   ].joined())

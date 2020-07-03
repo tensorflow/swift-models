@@ -14,19 +14,33 @@
 
 import ImageClassificationModels
 
-let MobileNetV2Suites = [
+let MobileNetV3Suites = [
   makeLayerSuite(
-    name: "MobileNetV2",
+    name: "MobileNetV3Small",
     inputDimensions: cifarInput,
     outputDimensions: cifarOutput
   ) {
-    MobileNetV2(classCount: 10)
+    MobileNetV3Small(classCount: 10)
   },
   makeLayerSuite(
-    name: "MobileNetV2",
+    name: "MobileNetV3Small",
     inputDimensions: imageNetInput,
     outputDimensions: imageNetOutput
   ) {
-    MobileNetV2(classCount: 1000)
+    MobileNetV3Small(classCount: 1000)
+  },
+  makeLayerSuite(
+    name: "MobileNetV3Large",
+    inputDimensions: cifarInput,
+    outputDimensions: cifarOutput
+  ) {
+    MobileNetV3Large(classCount: 10)
+  },
+  makeLayerSuite(
+    name: "MobileNetV3Large",
+    inputDimensions: imageNetInput,
+    outputDimensions: imageNetOutput
+  ) {
+    MobileNetV3Large(classCount: 1000)
   },
 ]

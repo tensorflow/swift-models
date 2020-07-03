@@ -28,5 +28,5 @@ let MobileNetV1Suites = [
     outputDimensions: imageNetOutput
   ) {
     MobileNetV1(classCount: 1000)
-  }
+  },
 ]
