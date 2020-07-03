@@ -12,10 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let layerSuites = Array(
-  [
-    DenseNetSuites,
-    LeNetSuites,
-    ResNetSuites,
-    ResNetV2Suites,
-  ].joined())
+import ImageClassificationModels
+
+let DenseNetSuites = [
+  makeLayerSuite(
+    name: "DenseNet121",
+    inputDimensions: imageNetInput,
+    outputDimensions: imageNetOutput
+  ) {
+    DenseNet121(classCount: 1000)
+  }
+]
