@@ -32,13 +32,12 @@ func makeRandomTensor(
 }
 
 func makeForwardBenchmark<CustomLayer>(
-  layer: CustomLayer.Type,
+  layer makeLayer: @escaping () -> CustomLayer,
   inputDimensions: [Int],
   outputDimensions: [Int]
 ) -> ((inout BenchmarkState) throws -> Void)
 where
   CustomLayer: Layer,
-  CustomLayer: DefaultInit,
   CustomLayer.Input == Tensor<Float>,
   CustomLayer.Output == Tensor<Float>,
   CustomLayer.TangentVector.VectorSpaceScalar == Float
@@ -47,7 +46,7 @@ where
     let settings = state.settings
     let device = settings.device
     let batchSize = settings.batchSize!
-    var layer = CustomLayer()
+    var layer = makeLayer()
     layer.move(to: device)
 
     let input = makeRandomTensor(
@@ -83,13 +82,12 @@ where
 }
 
 func makeGradientBenchmark<CustomLayer>(
-  layer: CustomLayer.Type,
+  layer makeLayer: @escaping () -> CustomLayer,
   inputDimensions: [Int],
   outputDimensions: [Int]
 ) -> ((inout BenchmarkState) throws -> Void)
 where
   CustomLayer: Layer,
-  CustomLayer: DefaultInit,
   CustomLayer.Input == Tensor<Float>,
   CustomLayer.Output == Tensor<Float>,
   CustomLayer.TangentVector.VectorSpaceScalar == Float
@@ -98,7 +96,7 @@ where
     let settings = state.settings
     let device = settings.device
     let batchSize = settings.batchSize!
-    var layer = CustomLayer()
+    var layer = makeLayer()
     layer.move(to: device)
 
     let input = makeRandomTensor(
@@ -142,18 +140,17 @@ where
 }
 
 func makeLayerSuite<CustomLayer>(
-  layer: CustomLayer.Type,
+  name: String,
   inputDimensions inp: [Int],
-  outputDimensions outp: [Int]
+  outputDimensions outp: [Int],
+  layer: @escaping () -> CustomLayer
 ) -> BenchmarkSuite
 where
   CustomLayer: Layer,
-  CustomLayer: DefaultInit,
   CustomLayer.Input == Tensor<Float>,
   CustomLayer.Output == Tensor<Float>,
   CustomLayer.TangentVector.VectorSpaceScalar == Float
 {
-  let name = String(String(reflecting: layer).split(separator: ".").last!)
   let inputString = inp.map { String($0) }.joined(separator: "x")
   let outputString = outp.map { String($0) }.joined(separator: "x")
 

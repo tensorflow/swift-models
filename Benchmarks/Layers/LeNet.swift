@@ -14,13 +14,12 @@
 
 import ImageClassificationModels
 
-extension LeNet: DefaultInit {}
-
-let LeNet_28x28x1_10 = makeLayerSuite(
-  layer: LeNet.self,
-  inputDimensions: [28, 28, 1],
-  outputDimensions: [10])
-
 let LeNetSuites = [
-  LeNet_28x28x1_10
+  makeLayerSuite(
+    name: "LeNet",
+    inputDimensions: cifarInput,
+    outputDimensions: cifarOutput
+  ) {
+    LeNet()
+  }
 ]
