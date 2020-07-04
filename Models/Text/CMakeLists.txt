@@ -2,7 +2,7 @@ add_library(TextModels
   Attention.swift
   BERT.swift
   BERTClassifier.swift
-  RegularizableEmbedding.swift
+  BERT/BERTCheckpointReader.swift
   Evaluation.swift
   GPT2/CheckpointWriter.swift
   GPT2/GPT2.swift
@@ -15,7 +15,6 @@ add_library(TextModels
   WeightDecayedAdam.swift
   WordSeg/Lattice.swift
   WordSeg/Model.swift
-  WordSeg/SE-0259.swift
   WordSeg/SemiRing.swift)
 set_target_properties(TextModels PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})

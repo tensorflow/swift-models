@@ -15,58 +15,26 @@
 import Datasets
 import ImageClassificationModels
 import TensorFlow
+import TrainingLoop
 
-let imagenette = Imagenette(
-    batchSize: 64,
-    inputSize: .resized320,
-    outputSize: 224
-)
+// Until https://github.com/tensorflow/swift-apis/issues/993 is fixed, default to the eager-mode
+// device on macOS instead of X10.
+#if os(macOS)
+  let device = Device.defaultTFEager
+#else
+  let device = Device.defaultXLA
+#endif
 
+let dataset = Imagenette(batchSize: 64, inputSize: .resized320, outputSize: 224, on: device)
 var model = MobileNetV1(classCount: 10)
-
 let optimizer = SGD(for: model, learningRate: 0.02, momentum: 0.9)
 
-print("Starting training...")
+let trainingProgress = TrainingProgress()
+var trainingLoop = TrainingLoop(
+  training: dataset.training,
+  validation: dataset.validation,
+  optimizer: optimizer,
+  lossFunction: softmaxCrossEntropy,
+  callbacks: [trainingProgress.update])
 
-for epoch in 1...10 {
-    Context.local.learningPhase = .training
-    var trainingLossSum: Float = 0
-    var trainingBatchCount = 0
-    for batch in imagenette.training.sequenced() {
-        let (images, labels) = (batch.first, batch.second)
-        let (loss, gradients) = valueWithGradient(at: model) { model -> Tensor<Float> in
-            let logits = model(images)
-            return softmaxCrossEntropy(logits: logits, labels: labels)
-        }
-        trainingLossSum += loss.scalarized()
-        trainingBatchCount += 1
-        optimizer.update(&model, along: gradients)
-    }
-
-    Context.local.learningPhase = .inference
-    var testLossSum: Float = 0
-    var testBatchCount = 0
-    var correctGuessCount = 0
-    var totalGuessCount = 0
-    for batch in imagenette.test.sequenced() {
-        let (images, labels) = (batch.first, batch.second)
-        let logits = model(images)
-        testLossSum += softmaxCrossEntropy(logits: logits, labels: labels).scalarized()
-        testBatchCount += 1
-
-        let correctPredictions = logits.argmax(squeezingAxis: 1) .== labels
-        correctGuessCount = correctGuessCount
-            + Int(
-                Tensor<Int32>(correctPredictions).sum().scalarized())
-        totalGuessCount = totalGuessCount + batch.first.shape[0]
-    }
-
-    let accuracy = Float(correctGuessCount) / Float(totalGuessCount)
-    print(
-        """
-        [Epoch \(epoch)] \
-        Accuracy: \(correctGuessCount)/\(totalGuessCount) (\(accuracy)) \
-        Loss: \(testLossSum / Float(testBatchCount))
-        """
-    )
-}
+try! trainingLoop.fit(&model, epochs: 10, on: device)

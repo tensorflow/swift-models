@@ -12,65 +12,51 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Batcher
+import Benchmark
 import Datasets
 import ImageClassificationModels
 import TensorFlow
 
 protocol ImageClassificationModel: Layer where Input == Tensor<Float>, Output == Tensor<Float> {
-    init()
-    static var preferredInputDimensions: [Int] { get }
-    static var outputLabels: Int { get }
+  init()
+  static var preferredInputDimensions: [Int] { get }
+  static var outputLabels: Int { get }
 }
 
 // TODO: Ease the tight restriction on Batcher data sources to allow for lazy datasets.
-class ImageClassificationInference<Model, ClassificationDataset>: Benchmark
+func runImageClassificationInference<Model, ClassificationDataset>(
+  model modelType: Model.Type,
+  dataset realDatasetType: ClassificationDataset.Type,
+  state: inout BenchmarkState
+) throws
 where
-    Model: ImageClassificationModel,
-    ClassificationDataset: ImageClassificationData
+  Model: ImageClassificationModel,
+  ClassificationDataset: ImageClassificationData
 {
-    var model: Model
-    let batches: Int
-    let batchSize: Int
+  let settings = state.settings
+  let device = settings.device
+  let batchSize = settings.batchSize!
+  let dataset = ClassificationDataset(batchSize: batchSize, on: device)
+  var model = Model()
+  model.move(to: device)
 
-    var exampleCount: Int {
-        return batches * batchSize
-    }
+  for epochBatches in dataset.training {
+    for batch in epochBatches {
+      let images = batch.data
 
-    init(settings: BenchmarkSettings) {
-        self.batches = settings.batches
-        self.batchSize = settings.batchSize
-        self.model = Model()
-    }
-
-    func run(backend: Backend) -> [Double] {
-        let device: Device
-        switch backend {
-        case .eager: device = Device.defaultTFEager
-        case .x10: device = Device.defaultXLA
+      do {
+        try state.measure {
+          let _ = model(images)
+          LazyTensorBarrier()
         }
-        let dataset = ClassificationDataset(batchSize: batchSize, on: device)
-
-        model.move(to: device)
-
-        var batchTimings: [Double] = []
-        var currentBatch = 0
-
-        for epochBatches in dataset.training {
-            for batch in epochBatches {
-                let images = batch.data
-
-                let batchTime = time {
-                    let _ = model(images)
-                    LazyTensorBarrier()
-                }
-                batchTimings.append(batchTime)
-                currentBatch += 1
-                if currentBatch >= self.batches {
-                    return batchTimings
-                }
-            }
+      } catch {
+        if settings.backend == .x10 {
+          // A synchronous barrier is needed for X10 to ensure all execution completes
+          // before tearing down the model.
+          LazyTensorBarrier(wait: true)
         }
-        return batchTimings
+        throw error
+      }
     }
+  }
 }

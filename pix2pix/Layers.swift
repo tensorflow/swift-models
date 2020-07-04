@@ -15,6 +15,8 @@ import TensorFlow
 import Foundation
 
 public struct Identity: ParameterlessLayer {
+    public typealias TangentVector = EmptyTangentVector
+
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         input

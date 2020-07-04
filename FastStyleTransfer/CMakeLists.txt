@@ -10,7 +10,7 @@ set_target_properties(FastStyleTransfer PROPERTIES
 target_compile_options(FastStyleTransfer PRIVATE
   $<$<BOOL:${BUILD_TESTING}>:-enable-testing>)
 target_link_libraries(FastStyleTransfer PUBLIC
-  ModelSupport)
+  Checkpoints)
 
 add_executable(FastStyleTransferDemo
   Demo/ColabDemo.ipynb

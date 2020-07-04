@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import ModelSupport
 import TextModels
 
 let gpt: GPT2 = try GPT2()
@@ -35,8 +36,10 @@ if CommandLine.arguments.count == 3 {
 for _ in 0..<100 {
     do {
         try print(gpt.generate(), terminator: "")
+    } catch GPT2.GPT2Error.invalidEncoding(let id) {
+        print("ERROR: Invalid encoding: \(id)")
     } catch {
-        continue
+        fatalError("ERROR: Unexpected error: \(error).")
     }
 }
 print()

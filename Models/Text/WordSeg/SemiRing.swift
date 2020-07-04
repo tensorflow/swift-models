@@ -20,9 +20,10 @@
   import Glibc
 #endif
 
-/// logSumExp(_:)
+/// Returns a single tensor containing the log of the sum of the exponentials
+/// in `x`.
 ///
-/// logSumExp (see https://en.wikipedia.org/wiki/LogSumExp)
+/// Used for numerical stability when dealing with very small values.
 @differentiable
 public func logSumExp(_ x: [Float]) -> Float {
   if x.count == 0 { return -Float.infinity}
@@ -46,31 +47,42 @@ public func vjpLogSumExp(_ x: [Float]) -> (
   return (logSumExp(x), pb)
 }
 
-/// logSumExp(_:_:)
+/// Returns a single tensor containing the log of the sum of the exponentials
+/// in `lhs` and `rhs`.
 ///
-/// Specialized logSumExp for 2 float.
+/// Used for numerical stability when dealing with very small values.
 @differentiable
 public func logSumExp(_ lhs: Float, _ rhs: Float) -> Float {
   return logSumExp([lhs, rhs])
 }
 
-/// SemiRing
-///
-/// Represents a SemiRing
+/// A storage mechanism for scoring inside a lattice.
 public struct SemiRing: Differentiable {
+
+  /// The log likelihood.
   public var logp: Float
+
+  /// The regularization factor.
   public var logr: Float
 
+  /// Creates an instance with log likelihood `logp` and regularization
+  /// factor `logr`.
   @differentiable
   public init(logp: Float, logr: Float) {
     self.logp = logp
     self.logr = logr
   }
 
+  /// The baseline score of zero.
   static var zero: SemiRing { SemiRing(logp: -Float.infinity, logr: -Float.infinity) }
+
+  /// The baseline score of one.
   static var one: SemiRing { SemiRing(logp: 0.0, logr: -Float.infinity) }
 }
 
+/// Multiplies `lhs` by `rhs`.
+///
+/// Since scores are on a logarithmic scale, products become sums.
 @differentiable
 func * (_ lhs: SemiRing, _ rhs: SemiRing) -> SemiRing {
   return SemiRing(
@@ -78,6 +90,7 @@ func * (_ lhs: SemiRing, _ rhs: SemiRing) -> SemiRing {
     logr: logSumExp(lhs.logp + rhs.logr, rhs.logp + lhs.logr))
 }
 
+/// Sums `lhs` by `rhs`.
 @differentiable
 func + (_ lhs: SemiRing, _ rhs: SemiRing) -> SemiRing {
   return SemiRing(
@@ -86,6 +99,8 @@ func + (_ lhs: SemiRing, _ rhs: SemiRing) -> SemiRing {
 }
 
 extension Array where Element == SemiRing {
+
+  /// Returns a sum of all scores in the collection.
   @differentiable
   func sum() -> SemiRing {
     return SemiRing(
@@ -95,17 +110,25 @@ extension Array where Element == SemiRing {
 }
 
 extension SemiRing {
+
+  /// The plain text description of this instance with score details.
   var shortDescription: String {
     "(\(logp), \(logr))"
   }
 }
 
-/// SE-0259-esque equality with tolerance
 extension SemiRing {
+
+  /// Returns true when `self` is within `tolerance` of `other`.
+  ///
+  /// - Note: This behavior is modeled after SE-0259.
   // TODO(abdulras) see if we can use ulp as a default tolerance
   @inlinable
   public func isAlmostEqual(to other: Self, tolerance: Float) -> Bool {
-    return self.logp.isAlmostEqual(to: other.logp, tolerance: tolerance)
-      && self.logr.isAlmostEqual(to: other.logr, tolerance: tolerance)
+    let diffP = abs(self.logp - other.logp)
+    let diffR = abs(self.logp - other.logp)
+
+    return (diffP <= tolerance || diffP.isNaN)
+      && (diffR <= tolerance || diffR.isNaN)
   }
 }

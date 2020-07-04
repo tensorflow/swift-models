@@ -44,26 +44,6 @@ class SwiftBenchmark(tf.test.Benchmark):
     """Nothing to do here, but we need this for perfzero compat reasons."""
     pass
 
-  def training(self):
-    """Runner-callable benchmark entry point for eager training benchmark."""
-    result = run_swift_benchmark(name=self.benchmark_name, variety='training', backend='eager')
-    self.report_benchmark(**result)
-
-  def inference(self):
-    """Runner-callable benchmark entry point for eager inference benchmark."""
-    result = run_swift_benchmark(name=self.benchmark_name, variety='inference', backend='eager')
-    self.report_benchmark(**result)
-
-  def training_x10(self):
-    """Runner-callable benchmark entry point for x10 training benchmark."""
-    result = run_swift_benchmark(name=self.benchmark_name, variety='training', backend='x10')
-    self.report_benchmark(**result)
-
-  def inference_x10(self):
-    """Runner-callable benchmark entry point for x10 inference benchmark."""
-    result = run_swift_benchmark(name=self.benchmark_name, variety='inference', backend='x10')
-    self.report_benchmark(**result)
-
 
 # This location assumes that are we are running within the S4TF's perfzero
 # docker image. Perfzero automatically clones the swift-models project into the
@@ -71,91 +51,76 @@ class SwiftBenchmark(tf.test.Benchmark):
 cwd = '/workspace/benchmarks/perfzero/workspace/site-packages/swift-models'
 
 
-def extract_extras(settings):
-  """Extract additional benchmark metadata.
-
-  Returns a json-style object or None for additional
-  benchmark metadata such as flags that can be useful for debugging.
-  """
-
-  return
-
-
-def extract_metrics(result, variety, backend):
-  """Extract PerfZero metrics based on the measurements.
-
-  Extracts metrics such as number of examples per second,
-  based on the the original raw timings.
-  """
-
-  timings = result['timings']
-  batch_size = result['batchSize']
-  warmup_time = result['warmupTime']
-  total_time = result['totalTime']
-  training_time = total_time - warmup_time
-  batch_count = len(timings)
-
-  timings_s = np.array(timings) / 1000
-  wall_time = total_time / 1000.0
-
-  # Average examples per second across the entire benchmark run,
-  # including warmup period. Assumes a single warmup batch.
-  total_time_s = total_time / 1000.0
-  total_num_examples = batch_size * (batch_count + 1)
-  average_examples_per_second = total_num_examples / total_time_s
-
-  # Examples per second, calculated after warmup period
-  # of the measurements.
-  warm_time_s = training_time / 1000.0
-  warm_num_examples = batch_size * batch_count
-  examples_per_second = warm_num_examples / warm_time_s
-
-  metrics = [{
-      'name': 'exp_per_second',
-      'value': examples_per_second
-  }, {
-      'name': 'avg_exp_per_second',
-      'value': average_examples_per_second
-  }, {
-      'name': 'startup_time',
-      'value': warmup_time / 1000.0
-  }, {
-      'name': 'step_time_median',
-      'value': np.median(timings_s)
-  }, {
-      'name': 'step_time_min',
-      'value': np.min(timings_s)
-  }, {
-      'name': 'step_time_max',
-      'value': np.max(timings_s)
-  }]
-
-  return (wall_time, metrics)
-
-
-def run_swift_benchmark(name, variety, backend):
-  print('running swift benchmark {} ({})'.format(name, variety))
+def run_swift_benchmark(name):
+  print('running swift benchmark {}'.format(name))
   # TODO: Remove the need for 2 warmup batches when we have better-shaped zero tangent vectors.
   output = subp.check_output([
-      'swift', 'run', '-c', 'release', 'Benchmarks', 'measure', '--benchmark',
-      name, '--' + variety, '--' + backend, '--warmupBatches', '2', '--json'
+      'swift', 'run', '-c', 'release', 'Benchmarks', 
+      '--filter', name, '--warmup-iterations', '2', '--format', 'json',
+      # Run each benchmark for up to 5 minutes.
+      '--min-time', '300',  
   ], cwd=cwd)
   result = json.loads(output)
   print('got json result back from swift: ')
   print(result)
-  settings = result['configuration']['settings']
-  wall_time, metrics = extract_metrics(result, variety, backend)
-  return {
-      'iters': settings['iterations'],
+
+  wall_time = 0
+  iterations = 0
+  metrics = [] 
+  for result in result["benchmarks"]:
+    if result['name'] == name:
+      for k, v in result.items():
+        if k == 'name':
+          pass
+        elif k == 'wall_time':
+          print("wall_time: {}".format(v))
+          wall_time = v
+        elif k == 'iterations':
+          print("iterations: {}".format(v))
+          iterations = int(v)
+        else:
+          print("metric: {}={}".format(k, v))
+          metrics.append({
+              'name': k,
+              'value': v
+          })
+
+  result = {
+      'iters': iterations,
       'wall_time': wall_time,
-      'extras': extract_extras(settings),
+      'extras': None,
       'metrics': metrics
   }
 
+  print("result: {}".format(result))
 
-def new_swift_benchmark(name):
-  """Create a new benchmark class with given name."""
-  return type(name, (SwiftBenchmark,), {'benchmark_name': name})
+  return result
+
+
+_benchmark_method_template = """
+def {}(self):
+  result = run_swift_benchmark(name="{}")
+  self.report_benchmark(**result)
+"""
+
+
+def new_swift_benchmark_suite(suite, benchmarks):
+  """Create a new benchmark suite with given name, and benchmarks."""
+
+  print("creating benchmark suite: {}, {}".format(suite, benchmarks))
+
+  def make_benchmark_method(suite, benchmark):
+    print("making benchmark: {}, {}".format(suite, benchmark))
+
+    exec(_benchmark_method_template.format(benchmark, "{}.{}".format(suite, benchmark)))
+
+    return locals()[benchmark]
+
+  methods = {}
+  for benchmark in benchmarks:
+    methods[benchmark] = make_benchmark_method(suite, benchmark)
+
+  return type(suite, (SwiftBenchmark,), methods)
 
 
 def discover_swift_benchmarks():
@@ -165,16 +130,24 @@ def discover_swift_benchmarks():
   and add them as new top-level types in the current module.
   """
 
-  g = globals()
-  defaults = subp.check_output([
-      'swift', 'run', '-c', 'release', 'Benchmarks', 'list-defaults', '--json'
+  output = subp.check_output([
+      'swift', 'run', '-c', 'release', 'Benchmarks', 
+      '--iterations', '0', '--warmup-iterations', '0',
+      '--columns', 'name', '--format', 'json'
   ], cwd=cwd)
-  for line in defaults.split(b'\n'):
-    if len(line) > 0:
-      name = json.loads(line)['name']
-      if name not in g:
-        g[name] = new_swift_benchmark(name)
-        print("discovered swift benchmark '{}'".format(name))
+
+  suites = {}
+  for benchmark in json.loads(output)['benchmarks']:
+    name = benchmark['name']
+    print("discovered swift benchmark '{}'".format(name))
+    suite, benchmark = name.split(".")
+    if suite not in suites:
+      suites[suite] = []
+    suites[suite].append(benchmark)
+
+  g = globals()
+  for suite, benchmarks in suites.items():
+    g[suite] = new_swift_benchmark_suite(suite, benchmarks)
 
 
 discover_swift_benchmarks()

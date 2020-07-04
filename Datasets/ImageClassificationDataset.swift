@@ -13,16 +13,7 @@
 // limitations under the License.
 
 import TensorFlow
-import Batcher
 import ModelSupport
-
-public protocol ImageClassificationDataset {
-  associatedtype SourceDataSet: Collection 
-  where SourceDataSet.Element == TensorPair<Float, Int32>, SourceDataSet.Index == Int
-  init(batchSize: Int)
-  var training: Batcher<SourceDataSet> { get }
-  var test: Batcher<SourceDataSet> { get }
-}
 
 /// An image with a label.
 public typealias LabeledImage = LabeledData<Tensor<Float>, Tensor<Int32>>

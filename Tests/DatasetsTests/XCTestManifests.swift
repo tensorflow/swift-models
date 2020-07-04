@@ -26,6 +26,7 @@ import XCTest
             testCase(TextUnsupervisedTests.allTests),
             testCase(MovieLensTests.allTests),
             testCase(WordSegDatasetTests.allTests),
+            testCase(OxfordIIITPetsTests.allTests),
         ]
     }
 #endif

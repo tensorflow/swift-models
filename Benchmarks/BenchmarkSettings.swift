@@ -12,16 +12,93 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-struct BenchmarkSettings: Codable {
-    let batches: Int
-    let batchSize: Int
-    let iterations: Int
-    let warmupBatches: Int
-    let synthetic: Bool
-    let backend: Backend
+import Benchmark
+import TensorFlow
+
+struct BatchSize: BenchmarkSetting {
+  var value: Int
+  init(_ value: Int) {
+    self.value = value
+  }
 }
 
-enum Backend: String, Codable {
-    case eager = "eager"
-    case x10 = "x10"
+struct Length: BenchmarkSetting {
+  var value: Int
+  init(_ value: Int) {
+    self.value = value
+  }
 }
+
+struct Synthetic: BenchmarkSetting {
+  var value: Bool
+  init(_ value: Bool) {
+    self.value = value
+  }
+}
+
+struct Backend: BenchmarkSetting {
+  var value: Value
+  init(_ value: Value) {
+    self.value = value
+  }
+  enum Value {
+    case x10
+    case eager
+  }
+}
+
+extension BenchmarkSettings {
+  var batchSize: Int? {
+    return self[BatchSize.self]?.value
+  }
+
+  var length: Int? {
+    return self[Length.self]?.value
+  }
+
+  var synthetic: Bool {
+    if let value = self[Synthetic.self]?.value {
+      return value
+    } else {
+      fatalError("Synthetic setting must have a default.")
+    }
+  }
+
+  var backend: Backend.Value {
+    if let value = self[Backend.self]?.value {
+      return value
+    } else {
+      fatalError("Backend setting must have a default.")
+    }
+  }
+
+  var device: Device {
+    // Note: The line is needed, or all GPU memory
+    // will be exhausted on initial allocation of the model.
+    // TODO: Remove the following tensor workaround when above is fixed.
+    let _ = _ExecutionContext.global
+
+    switch backend {
+    case .eager: return Device.defaultTFEager
+    case .x10: return Device.defaultXLA
+    }
+  }
+}
+
+let defaultSettings: [BenchmarkSetting] = [
+  TimeUnit(.s),
+  InverseTimeUnit(.s),
+  Backend(.eager),
+  Synthetic(false),
+  Columns([
+    "name",
+    "wall_time",
+    "startup_time",
+    "iterations",
+    "avg_exp_per_second",
+    "exp_per_second",
+    "step_time_median",
+    "step_time_min",
+    "step_time_max",
+  ]),
+]

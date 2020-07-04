@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Checkpoints
 import TensorFlow
-import ModelSupport
 
 public class MiniGoCheckpointReader: CheckpointReader {
     private var layerCounts: [String: Int] = [:]

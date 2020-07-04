@@ -14,27 +14,36 @@
 
 import TensorFlow
 
-/// A mapping from characters to logical words.
+/// Keeps track of logical words.
 ///
-/// In Python implementations, this is sometimes called the String Vocabulary (which is in
-/// contrast with the character vocabulary which maps the alphabet to Int32's).
+/// In Python implementations, this is sometimes called the string vocabulary
+/// (in contrast to the character vocabulary or `Alphabet`, which maps
+/// characters to integers).
 public struct Lexicon {
+
+  /// A type whose instances represent a sequence of characters.
   public typealias Element = CharacterSequence
 
+  /// A one-to-one mapping between logical words and unique integers.
   // TODO(marcrasi): if the value is not used to construct Tensor, switch to Int
   public var dictionary: BijectiveDictionary<CharacterSequence, Int32>
 
+  /// A count of unique logical words in the lexicon.
   public var count: Int { return dictionary.count }
 
+  /// Creates an instance containing `sequences`.
   public init<C: Collection>(_ sequences: C) where C.Element == Element {
     self.dictionary = .init(zip(sequences, 0...))
   }
 
+  /// Creates an instance containing `sequences` using `alphabet`, truncating
+  /// elements at `maxLength` and including only those appearing at least
+  /// `minFrequency` times.
   public init(
     from sequences: [CharacterSequence],
     alphabet: Alphabet,
     maxLength: Int,
-    minFreq: Int
+    minFrequency: Int
   ) {
     var histogram: [ArraySlice<Int32>: Int] = [:]
 
@@ -51,28 +60,11 @@ public struct Lexicon {
       }
     }
 
-    let frequentWordCandidates = histogram.filter { $0.1 >= minFreq }
+    let frequentWordCandidates = histogram.filter { $0.1 >= minFrequency }
     let vocab = frequentWordCandidates.map {
       CharacterSequence(alphabet: alphabet, characters: $0.0)
     }
 
     self.init(vocab)
-  }
-}
-
-public enum CharacterErrors: Error {
-  case unknownCharacter(character: Character, index: Int, sentence: String)
-  case nonUtf8Data
-}
-
-extension CharacterErrors: CustomStringConvertible {
-  public var description: String {
-    switch self {
-    case let .unknownCharacter(character, index, sentence):
-      return
-        "Unknown character '\(character)' encountered at index \(index) while converting sentence \"\(sentence)\" to a character sequence."
-    case .nonUtf8Data:
-      return "Non-UTF8 data encountered."
-    }
   }
 }

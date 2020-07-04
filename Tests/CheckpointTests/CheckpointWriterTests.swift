@@ -15,7 +15,7 @@
 import TensorFlow
 import XCTest
 
-@testable import ModelSupport
+@testable import Checkpoints
 
 final class CheckpointWriterTests: XCTestCase {
     let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(

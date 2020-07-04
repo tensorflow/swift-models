@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Checkpoints
 import Foundation
 import ModelSupport
 import TensorFlow
@@ -20,7 +21,7 @@ public class GPT2 {
     public static let remoteCheckpoint: URL =
         URL(string: "https://storage.googleapis.com/gpt-2/models/117M/model.ckpt")!
 
-    enum GPT2Error: Error {
+    public enum GPT2Error: Error {
         case invalidEncoding(id: Int32)
     }
 
@@ -49,16 +50,16 @@ public class GPT2 {
                 "model.ckpt.meta",
                 "vocab.bpe",
             ]
-            let FS: FileManager = FileManager.default
-            let storage: URL = FS.temporaryDirectory.appendingPathComponent("Transformer")
 
             let reader: CheckpointReader = try CheckpointReader(
                 checkpointLocation: checkpoint,
-                modelName: "Transformer",
+                modelName: "GPT2-\(checkpoint.pathComponents.dropLast().last ?? "")",
                 additionalFiles: auxiliary)
             // TODO(michellecasbon): expose this.
             reader.isCRCVerificationEnabled = false
 
+            let storage: URL = reader.localCheckpointLocation.deletingLastPathComponent()
+            
             // Load model configuration.
             let hparamsFile: URL = storage.appendingPathComponent("hparams.json")
             let configuration: (file: URL, data: Data) = try (
@@ -90,29 +91,9 @@ public class GPT2 {
 
             print("GPT-2 loaded from checkpoint successfully.")
         } catch {
-            // If checkpoint is invalid, load an untrained model.
-            print("Initializing empty GPT-2 from scratch.")
-
-            let embedding = EmbeddingGPT2(
-                vocabSize: parameters.vocabSize,
-                size: parameters.embeddingSize)
-            let positionalEmbeddings = Tensor<Float>(zeros: [
-                parameters.embeddingSize / parameters.headCount
-            ])
-            let layers = (0..<parameters.layerCount).map { _ in
-                EncoderLayer(
-                    size: parameters.embeddingSize,
-                    headCount: parameters.headCount, dropProbability: 0.1)
-            }
-            let layerNorm = LayerNorm<Float>(featureCount: parameters.embeddingSize, axis: -1)
-            model = TransformerLM(
-                embedding: embedding,
-                positionalEmbeddings: positionalEmbeddings, layers: layers, norm: layerNorm)
-
-            // Empty vocab and merges.
-            let vocabulary = Vocabulary(tokensToIds: [endOfText: endOfTextId])
-            let mergePairs = [BytePairEncoder.Pair: Int]()
-            bpe = BytePairEncoder(vocabulary: vocabulary, mergePairs: mergePairs)
+            // If checkpoint is invalid, throw the error and exit.
+            print("Fail to load GPT-2 from checkpoint. \(error)")
+            throw error
         }
 
         contextSize = parameters.contextSize

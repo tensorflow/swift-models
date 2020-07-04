@@ -109,14 +109,13 @@ func almostEqual(
       success = false
       continue
     }
-    for (elementIndex, (t1e, t2e)) in zip(t1.scalars, t2.scalars).enumerated() {
-      if !(t1e.isAlmostEqual(to: t2e, tolerance: relTol)
-        || (t1e.isAlmostZero(absoluteTolerance: zeroTol)
-          && t2e.isAlmostZero(absoluteTolerance: zeroTol)))
-      {
-        print("Mismatch on tensor \(kpIndex) element \(elementIndex): \(t1e) & \(t2e)")
-        success = false
-      }
+
+    if !(t1.isAlmostEqual(to: t2, tolerance: relTol)
+      || (t1.isAlmostEqual(to: Tensor(zeros: t1.shape), tolerance: zeroTol)
+        && t1.isAlmostEqual(to: Tensor(zeros: t1.shape), tolerance: zeroTol)))
+    {
+      print("Mismatch on tensor \(kpIndex)")
+      success = false
     }
   }
   return success
@@ -124,42 +123,43 @@ func almostEqual(
 
 class WordSegProbeLayerTests: XCTestCase {
   func testProbeEncoder() {
-    // chrVocab is:
+    // alphabet is:
     // 0 - a
     // 1 - b
     // 2 - </s>
     // 3 - </w>
     // 4 - <pad>
-    let chrVocab: Alphabet = Alphabet(
+    let alphabet: Alphabet = Alphabet(
       [
         "a",
         "b",
       ], eos: "</s>", eow: "</w>", pad: "<pad>")
 
-    // strVocab is:
+    // lexicon is:
     // 0 - aaaa
     // 1 - bbbb
     // 2 - abab
-    let strVocab: Lexicon = Lexicon([
-      CharacterSequence(alphabet: chrVocab, characters: [0, 0]),  // "aa"
-      CharacterSequence(alphabet: chrVocab, characters: [1, 1]),  // "bb"
-      CharacterSequence(alphabet: chrVocab, characters: [0, 1]),  // "ab"
-      CharacterSequence(alphabet: chrVocab, characters: [1, 0]),  // "ba"
+    let lexicon: Lexicon = Lexicon([
+      CharacterSequence(alphabet: alphabet, characters: [0, 0]),  // "aa"
+      CharacterSequence(alphabet: alphabet, characters: [1, 1]),  // "bb"
+      CharacterSequence(alphabet: alphabet, characters: [0, 1]),  // "ab"
+      CharacterSequence(alphabet: alphabet, characters: [1, 0]),  // "ba"
     ])
 
     var model = SNLM(
       parameters: SNLM.Parameters(
-        ndim: 2,
-        dropoutProb: 0,
-        chrVocab: chrVocab,
-        strVocab: strVocab,
+        hiddenSize: 2,
+        dropoutProbability: 0,
+        alphabet: alphabet,
+        lexicon: lexicon,
         order: 5))
 
     model.setParameters(Example1.parameters)
+    let device = Device.default
 
     print("Encoding")
     let encoderStates = model.encode(
-      CharacterSequence(alphabet: chrVocab, characters: [0, 1, 0, 1]))  // "abab"
+      CharacterSequence(alphabet: alphabet, characters: [0, 1, 0, 1]), device: device)  // "abab"
     let encoderStatesTensor = Tensor(stacking: encoderStates)
     print("Expected: \(Example1.expectedEncoding)")
     print("Actual: \(encoderStatesTensor)")
@@ -185,10 +185,11 @@ class WordSegProbeLayerTests: XCTestCase {
     print("Decode")
     let decoded = model.decode(
       [
-        CharacterSequence(alphabet: chrVocab, characters: [0, 0, 0]),  // "aaa"
-        CharacterSequence(alphabet: chrVocab, characters: [0, 1]),  // "ab"
+        CharacterSequence(alphabet: alphabet, characters: [0, 0, 0]),  // "aaa"
+        CharacterSequence(alphabet: alphabet, characters: [0, 1]),  // "ab"
       ],
-      encoderStates[0]
+      encoderStates[0],
+      device: device
     )
     print("Expected: \(Example1.expectedDecoded)")
     print("Actual: \(decoded)")
@@ -196,13 +197,13 @@ class WordSegProbeLayerTests: XCTestCase {
     print("OK!\n")
 
     print("Build Lattice")
-    let abab = CharacterSequence(alphabet: chrVocab, characters: [0, 1, 0, 1])
-    let lattice = model.buildLattice(abab, maxLen: 5)
+    let abab = CharacterSequence(alphabet: alphabet, characters: [0, 1, 0, 1])
+    let lattice = model.buildLattice(abab, maxLen: 5, device: device)
     XCTAssert(lattice.isAlmostEqual(to: Example1.lattice, tolerance: 1e-5))
 
     print("Gradient")
     func f(_ x: SNLM) -> Float {
-      x.buildLattice(abab, maxLen: 5)[4].semiringScore.logr
+      x.buildLattice(abab, maxLen: 5, device: device)[4].semiringScore.logr
     }
     let (_, grad) = valueWithGradient(at: model, in: f)
     let expectedGrad = tangentVector(from: Example1.gradWrtLogR, model: model)

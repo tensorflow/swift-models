@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Batcher
 import Datasets
 import TensorFlow
 import TextModels
@@ -27,10 +26,6 @@ let numWorkers = 1
 let dataset = TextUnsupervised(bpe: gpt.bpe, variant: .wikiText2,
     trainingBatchSize: trainingBatchSize, validationBatchSize: validationBatchSize,
     sequenceLength: sequenceLength)
-let trainingBatcher = Batcher(
-    on: dataset.trainingDataset, batchSize: trainingBatchSize, numWorkers: numWorkers, shuffle: true)
-let validationBatcher = Batcher(
-    on: dataset.validationDataset, batchSize: validationBatchSize, numWorkers: numWorkers)
 
 print("Dataset acquired.")
 
@@ -38,12 +33,13 @@ var optimizer = Adam(for: gpt.model, learningRate: 0.001)
 
 print("Starting training...")
 
-for epoch in 1...10 {
+let epochCount = 10
+for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
     Context.local.learningPhase = .training
     var trainingLossSum: Float = 0
     var trainingBatchCount = 0
-    for batch in trainingBatcher.sequenced() {
-        let (documents, labels) = (batch.first, batch.second)
+    for batch in epochBatches {
+        let (documents, labels) = (batch.data, batch.label)
         let (loss, gradients) = valueWithGradient(at: gpt.model) { model -> Tensor<Float> in
             let logits = model(documents)
             let shape = logits.shape
@@ -62,8 +58,8 @@ for epoch in 1...10 {
     var testBatchCount = 0
     var correctGuessCount = 0
     var totalGuessCount = 0
-    for batch in validationBatcher.sequenced() {
-        let (documents, labels) = (batch.first, batch.second)
+    for batch in dataset.validation {
+        let (documents, labels) = (batch.data, batch.label)
         let logits = gpt.model(documents)
         let shape = logits.shape
         testLossSum += softmaxCrossEntropy(

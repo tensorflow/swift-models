@@ -18,11 +18,13 @@ import ModelSupport
 import TensorFlow
 
 let batchSize = 512
-let mnist = OldMNIST(batchSize: batchSize, flattening: false, normalizing: true)
-
+let epochCount = 20
+let zDim = 100
 let outputFolder = "./output/"
 
-let zDim = 100
+let dataset = MNIST(batchSize: batchSize, device: Device.default, 
+    entropy: SystemRandomNumberGenerator(), flattening: false, normalizing: true)
+
 
 // MARK: - Models
 
@@ -117,11 +119,10 @@ let optD = Adam(for: discriminator, learningRate: 0.0001)
 let noise = Tensor<Float>(randomNormal: TensorShape(1, zDim))
 
 print("Begin training...")
-let epochs = 20
-for epoch in 0 ... epochs {
+for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
     Context.local.learningPhase = .training
-    for batch in mnist.training.sequenced() {
-        let realImages = batch.first
+    for batch in epochBatches {
+        let realImages = batch.data
 
         // Train generator.
         let noiseG = Tensor<Float>(randomNormal: TensorShape(batchSize, zDim))

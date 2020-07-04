@@ -12,13 +12,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import TensorFlow
 import Datasets
+import TensorFlow
+import TrainingLoop
 
 let epochCount = 12
 let batchSize = 128
 
-let dataset = MNIST(batchSize: batchSize)
+// Until https://github.com/tensorflow/swift-apis/issues/993 is fixed, default to the eager-mode
+// device on macOS instead of X10.
+#if os(macOS)
+  let device = Device.defaultTFEager
+#else
+  let device = Device.defaultXLA
+#endif
+
+let dataset = MNIST(batchSize: batchSize, on: device)
+
 // The LeNet-5 model, equivalent to `LeNet` in `ImageClassificationModels`.
 var classifier = Sequential {
     Conv2D<Float>(filterShape: (5, 5, 1, 6), padding: .same, activation: relu)
@@ -31,64 +41,14 @@ var classifier = Sequential {
     Dense<Float>(inputSize: 84, outputSize: 10)
 }
 
-let optimizer = SGD(for: classifier, learningRate: 0.1)
+var optimizer = SGD(for: classifier, learningRate: 0.1)
 
-print("Beginning training...")
+let trainingProgress = TrainingProgress()
+var trainingLoop = TrainingLoop(
+  training: dataset.training,
+  validation: dataset.validation,
+  optimizer: optimizer,
+  lossFunction: softmaxCrossEntropy,
+  callbacks: [trainingProgress.update])
 
-struct Statistics {
-    var correctGuessCount: Int = 0
-    var totalGuessCount: Int = 0
-    var totalLoss: Float = 0
-    var batches: Int = 0
-}
-
-// The training loop.
-for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
-    var trainStats = Statistics()
-    var testStats = Statistics()
-    
-    Context.local.learningPhase = .training
-    for batch in epochBatches {
-        let (images, labels) = (batch.data, batch.label)
-        // Compute the gradient with respect to the model.
-        let 𝛁model = TensorFlow.gradient(at: classifier) { classifier -> Tensor<Float> in
-            let ŷ = classifier(images)
-            let correctPredictions = ŷ.argmax(squeezingAxis: 1) .== labels
-            trainStats.correctGuessCount += Int(
-                Tensor<Int32>(correctPredictions).sum().scalarized())
-            trainStats.totalGuessCount += images.shape[0]
-            let loss = softmaxCrossEntropy(logits: ŷ, labels: labels)
-            trainStats.totalLoss += loss.scalarized()
-            trainStats.batches += 1
-            return loss
-        }
-        // Update the model's differentiable variables along the gradient vector.
-        optimizer.update(&classifier, along: 𝛁model)
-    }
-
-    Context.local.learningPhase = .inference
-    for batch in dataset.validation {
-        let (images, labels) = (batch.data, batch.label)
-        // Compute loss on test set
-        let ŷ = classifier(images)
-        let correctPredictions = ŷ.argmax(squeezingAxis: 1) .== labels
-        testStats.correctGuessCount += Int(Tensor<Int32>(correctPredictions).sum().scalarized())
-        testStats.totalGuessCount += images.shape[0]
-        let loss = softmaxCrossEntropy(logits: ŷ, labels: labels)
-        testStats.totalLoss += loss.scalarized()
-        testStats.batches += 1
-    }
-
-    let trainAccuracy = Float(trainStats.correctGuessCount) / Float(trainStats.totalGuessCount)
-    let testAccuracy = Float(testStats.correctGuessCount) / Float(testStats.totalGuessCount)
-    print(
-        """
-        [Epoch \(epoch + 1)] \
-        Training Loss: \(trainStats.totalLoss / Float(trainStats.batches)), \
-        Training Accuracy: \(trainStats.correctGuessCount)/\(trainStats.totalGuessCount) \
-        (\(trainAccuracy)), \
-        Test Loss: \(testStats.totalLoss / Float(testStats.batches)), \
-        Test Accuracy: \(testStats.correctGuessCount)/\(testStats.totalGuessCount) \
-        (\(testAccuracy))
-        """)
-}
+try! trainingLoop.fit(&classifier, epochs: epochCount, on: device)

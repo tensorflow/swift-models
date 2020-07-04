@@ -14,20 +14,32 @@
 
 import TensorFlow
 
-/// Alphabet maps from characters in a string to Int32 representations.
+/// A mapping between individual characters and their integer representation.
 ///
-/// Note: we map from String in order to support multi-character metadata sequences such as </s>.
+/// - Note: We map from String in order to support multi-character metadata
+///   sequences such as `</s>`.
 ///
-/// In Python implementations, this is sometimes called the character vocabulary.
+/// - Note: In Python implementations, this is sometimes called the character
+///   vocabulary.
 public struct Alphabet {
+
+  /// A type whose instances represent a character.
   public typealias Element = String
 
+  /// A one-to-one mapping between a set of characters and a unique integer.
   public var dictionary: BijectiveDictionary<String, Int32>
 
+  /// A marker denoting the end of a sequence.
   public let eos: Int32
+
+  /// A marker denoting the end of a word.
   public let eow: Int32
+
+  /// A marker used for padding inside a sequence.
   public let pad: Int32
 
+  /// Creates an instance containing a mapping from `letters` to unique
+  /// integers, including markers `eos`, `eow`, and `pad`.
   public init<C: Collection>(_ letters: C, eos: String, eow: String, pad: String)
   where C.Element == Character {
     self.dictionary = .init(zip(letters.lazy.map { String($0) }, 0...))
@@ -42,6 +54,8 @@ public struct Alphabet {
     self.dictionary[pad] = self.pad
   }
 
+  /// Creates an instance containing a mapping from `letters` to unique
+  /// integers, including markers `eos`, `eow`, and `pad`.
   public init<C: Collection>(_ letters: C, eos: String, eow: String, pad: String)
   where C.Element == Element {
     self.dictionary = .init(zip(letters.lazy.map { String($0) }, 0...))
@@ -56,8 +70,10 @@ public struct Alphabet {
     self.dictionary[pad] = self.pad
   }
 
+  /// A count of unique characters, including markers.
   public var count: Int { return dictionary.count }
 
+  /// Accesses the `key`th element, returning `nil` if it does not exist.
   public subscript(key: String) -> Int32? {
     return dictionary[key]
   }

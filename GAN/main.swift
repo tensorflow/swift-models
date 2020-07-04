@@ -105,7 +105,8 @@ func sampleVector(size: Int) -> Tensor<Float> {
     Tensor(randomNormal: [size, latentSize])
 }
 
-let dataset = OldMNIST(batchSize: batchSize, flattening: true, normalizing: true)
+let dataset = MNIST(batchSize: batchSize, device: Device.default, 
+    entropy: SystemRandomNumberGenerator(), flattening: true, normalizing: true)
 
 var generator = Generator()
 var discriminator = Discriminator()
@@ -143,10 +144,10 @@ func saveImageGrid(_ testImage: Tensor<Float>, name: String) throws {
 print("Start training...")
 
 // Start training loop.
-for epoch in 1...epochCount {
+for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
     // Start training phase.
     Context.local.learningPhase = .training
-    for batch in dataset.training.sequenced() {
+    for batch in epochBatches {
         // Perform alternative update.
         // Update generator.
         let vec1 = sampleVector(size: batchSize)
@@ -160,7 +161,7 @@ for epoch in 1...epochCount {
         optG.update(&generator, along: 𝛁generator)
 
         // Update discriminator.
-        let realImages = batch.first
+        let realImages = batch.data
         let vec2 = sampleVector(size: batchSize)
         let fakeImages = generator(vec2)
 

@@ -287,6 +287,10 @@ extension BytePairEncoder {
             buffer.append(BytePairEncoder.unicodeToBytes[scalar]!)
         }
 
-        return String(bytes: buffer, encoding: .utf8)!
+        guard let decodedToken = String(bytes: buffer, encoding: .utf8) else {
+            return String("\u{FFFD}")
+        }
+
+        return decodedToken
     }
 }
