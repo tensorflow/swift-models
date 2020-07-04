@@ -133,6 +133,11 @@ let package = Package(
             path: "pix2pix"
         ),
         .target(
+            name: "UNet",
+            dependencies: ["Datasets"],
+            path: "UNet"
+        ),
+        .target(
             name: "WordSeg",
             dependencies: ["ArgumentParser", "Datasets", "ModelSupport", "TextModels"],
             path: "Examples/WordSeg"
