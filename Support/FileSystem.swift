@@ -25,7 +25,8 @@ public protocol FileSystem {
   ///
   /// - Parameters:
   ///   - path: The path of the file to be opened.
-  func open(_ path: String) -> File
+  ///   - mode: Options for the mode of the file.
+  func open(_ path: String, mode: Set<FileMode>) -> File
 }
 
 public protocol File {
@@ -33,4 +34,10 @@ public protocol File {
   func read(position: Int, count: Int) throws -> Data
   func write(_ value: Data) throws
   func write(_ value: Data, position: Int) throws
+}
+
+public enum FileMode {
+  case read
+  case write
+  case append
 }

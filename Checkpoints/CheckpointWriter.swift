@@ -50,7 +50,7 @@ open class CheckpointWriter {
         let indexWriter = CheckpointIndexWriter(tensors: tensors)
         let indexHeader = indexWriter.serializedHeader()
         let headerLocation = directory.appendingPathComponent("\(name).index")
-        let headerFile = fileSystem.open(headerLocation.path)
+        let headerFile = fileSystem.open(headerLocation.path, mode: [.write])
         try headerFile.write(indexHeader)
 
         // TODO: Handle splitting into multiple shards.
@@ -79,7 +79,7 @@ open class CheckpointWriter {
             }
         }
 
-        let outputFile = fileSystem.open(shardFile.path)
+        let outputFile = fileSystem.open(shardFile.path, mode: [.write])
         try outputFile.write(outputBuffer)
     }
 }

@@ -279,7 +279,7 @@ open class CheckpointReader {
             do {
                 // It is far too slow to read the shards in each time a tensor is accessed, so we
                 // read the entire shard into an in-memory cache on first access.
-                let shardFile = fileSystem.open(file.path)
+                let shardFile = fileSystem.open(file.path, mode: [.read])
                 let shardBytes = try shardFile.read()
                 shardCache[file] = shardBytes
                 return shardBytes
