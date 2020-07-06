@@ -40,6 +40,13 @@ let ResNetSuites = [
     ResNet(classCount: 10, depth: .resNet50, downsamplingInFirstStage: true, useLaterStride: false)
   },
   makeLayerSuite(
+    name: "ResNet56",
+    inputDimensions: cifarInput,
+    outputDimensions: cifarOutput
+  ) {
+    ResNet(classCount: 10, depth: .resNet56, downsamplingInFirstStage: true, useLaterStride: false)
+  },
+  makeLayerSuite(
     name: "ResNet101",
     inputDimensions: cifarInput,
     outputDimensions: cifarOutput
@@ -76,6 +83,13 @@ let ResNetSuites = [
     outputDimensions: imageNetOutput
   ) {
     ResNet(classCount: 1000, depth: .resNet50, useLaterStride: false)
+  },
+  makeLayerSuite(
+    name: "ResNet56",
+    inputDimensions: imageNetInput,
+    outputDimensions: imageNetOutput
+  ) {
+    ResNet(classCount: 1000, depth: .resNet56)
   },
   makeLayerSuite(
     name: "ResNet101",
