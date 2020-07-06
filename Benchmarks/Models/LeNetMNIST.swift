@@ -19,7 +19,7 @@ import TensorFlow
 
 let LeNetMNIST = BenchmarkSuite(
   name: "LeNetMNIST",
-  settings: BatchSize(128), WarmupIterations(1)
+  settings: BatchSize(128), WarmupIterations(2)
 ) { suite in
 
   func inference(state: inout BenchmarkState) throws {
