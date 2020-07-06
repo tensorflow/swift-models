@@ -157,32 +157,19 @@ class WordSegProbeLayerTests: XCTestCase {
     model.setParameters(Example1.parameters)
     let device = Device.default
 
-    print("Encoding")
     let encoderStates = model.encode(
       CharacterSequence(alphabet: alphabet, characters: [0, 1, 0, 1]), device: device)  // "abab"
     let encoderStatesTensor = Tensor(stacking: encoderStates)
-    print("Expected: \(Example1.expectedEncoding)")
-    print("Actual: \(encoderStatesTensor)")
     XCTAssert(abs(encoderStatesTensor - Example1.expectedEncoding).max().scalarized() < 1e-6)
-    print("OK!\n")
 
-    print("MLP Interpolation")
     let mlpInterpolationOutput = model.mlpInterpolation(encoderStatesTensor)
-    print("Expected: \(Example1.expectedMLPInterpolationOutput)")
-    print("Actual: \(encoderStates)")
     XCTAssert(
       abs(mlpInterpolationOutput - Example1.expectedMLPInterpolationOutput).max().scalarized()
         < 1e-6)
-    print("OK!\n")
 
-    print("MLP Memory")
     let mlpMemoryOutput = model.mlpMemory(encoderStatesTensor)
-    print("Expected: \(Example1.expectedMLPMemoryOutput)")
-    print("Actual: \(encoderStates)")
     XCTAssert(abs(mlpMemoryOutput - Example1.expectedMLPMemoryOutput).max().scalarized() < 1e-6)
-    print("OK!\n")
 
-    print("Decode")
     let decoded = model.decode(
       [
         CharacterSequence(alphabet: alphabet, characters: [0, 0, 0]),  // "aaa"
@@ -191,17 +178,12 @@ class WordSegProbeLayerTests: XCTestCase {
       encoderStates[0],
       device: device
     )
-    print("Expected: \(Example1.expectedDecoded)")
-    print("Actual: \(decoded)")
     XCTAssert(abs(decoded - Example1.expectedDecoded).max().scalarized() < 1e-6)
-    print("OK!\n")
 
-    print("Build Lattice")
     let abab = CharacterSequence(alphabet: alphabet, characters: [0, 1, 0, 1])
     let lattice = model.buildLattice(abab, maxLen: 5, device: device)
     XCTAssert(lattice.isAlmostEqual(to: Example1.lattice, tolerance: 1e-5))
 
-    print("Gradient")
     func f(_ x: SNLM) -> Float {
       x.buildLattice(abab, maxLen: 5, device: device)[4].semiringScore.logr
     }
@@ -209,8 +191,6 @@ class WordSegProbeLayerTests: XCTestCase {
     let expectedGrad = tangentVector(from: Example1.gradWrtLogR, model: model)
 
     if !almostEqual(grad, expectedGrad, relTol: 1e-5, zeroTol: 1e-6) {
-      print("\nExpected grad:\n\(expectedGrad)\n\n")
-      print("Actual grad:\n\(grad)")
       XCTAssert(false, "Gradients wrong")
     }
   }
