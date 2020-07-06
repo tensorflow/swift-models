@@ -19,7 +19,7 @@ import TensorFlow
 
 let ResNetCIFAR10 = BenchmarkSuite(
   name: "ResNetCIFAR10",
-  settings: BatchSize(128), WarmupIterations(1), Synthetic(true)
+  settings: BatchSize(128), WarmupIterations(2), Synthetic(true)
 ) { suite in
 
   func inference(state: inout BenchmarkState) throws {
