@@ -54,14 +54,15 @@ where
       dimensions: inputDimensions,
       device: device)
 
-    var sink: TensorShape = TensorShape([])
+    var sink = makeRandomTensor(
+      batchSize: batchSize, dimensions: outputDimensions, device: device)
 
     while true {
       do {
         try state.measure {
           let result = layer(input)
           // Force materialization of the lazy results.
-          sink = result.shape
+          sink += result
           LazyTensorBarrier()
         }
       } catch {
@@ -76,7 +77,7 @@ where
 
     // Control-flow never gets here, but this removes the warning 
     // about the sink being never used.
-    fatalError("unrechable \(sink)")
+    fatalError("unreachable \(sink)")
   }
 }
 
@@ -163,8 +164,8 @@ where
         suite.benchmark(
           "forward_b\(batchSize)_\(backend)",
           settings: Backend(backend), BatchSize(batchSize),
-          function: makeForwardBenchmark(layer: layer, inputDimensions: inp, outputDimensions: outp)
-        )
+          function: makeForwardBenchmark(
+            layer: layer, inputDimensions: inp, outputDimensions: outp))
 
         suite.benchmark(
           "forward_and_gradient_b\(batchSize)_\(backend)",
