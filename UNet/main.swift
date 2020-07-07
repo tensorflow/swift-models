@@ -153,12 +153,6 @@ func unetWorkerLoss(model: UNet, input: Tensor<Float>, output: Tensor<Float>) ->
     tbSigmoidCrossEntropy(logits: model(input).reshaped(to: [-1, 256 * 256]), labels: output.reshaped(to: [-1, 256 * 256]))
 }
 
-func constantPtr<T>(_ value: T) -> UnsafeMutablePointer<T> {
-    let ptr = UnsafeMutablePointer<T>.allocate(capacity: 1)
-    ptr.pointee = value
-    return ptr
-}
-
 let gpus = 1
 let batchSize = 16
 let cpuDevice = Device(kind: .CPU, ordinal: 0, backend: .TF_EAGER)
