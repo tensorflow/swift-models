@@ -81,8 +81,7 @@ let EfficientNetSuites = [
   makeLayerSuite(
     name: "EfficientNetL2",
     inputDimensions: imageNetInput,
-    outputDimensions: imageNetOutput,
-    batchSizes: [2] // Default of 4 doesn't work with x10 on v100.
+    outputDimensions: imageNetOutput
   ) {
     EfficientNet(kind: .efficientnetL2, classCount: 1000)
   },
