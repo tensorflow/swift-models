@@ -148,12 +148,4 @@ public class GPT2 {
 
         throw GPT2Error.invalidEncoding(id: id)
     }
-
-    func writeCheckpoint(to location: URL, name: String) throws {
-        var tensors = [String: Tensor<Float>]()
-        recursivelyObtainTensors(model, scope: "model", tensors: &tensors, separator: "/")
-
-        let writer = CheckpointWriter(tensors: tensors)
-        try writer.write(to: location, name: name)
-    }
 }

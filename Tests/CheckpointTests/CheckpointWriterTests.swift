@@ -50,8 +50,8 @@ final class CheckpointWriterTests: XCTestCase {
         ]
 
         do {
-            let writer = CheckpointWriter(tensors: tensors)
-            try writer.write(to: temporaryDirectory, name: "testmodel.ckpt")
+            let writer = CheckpointWriter()
+            try writer.write(tensors: tensors, to: temporaryDirectory, name: "testmodel.ckpt")
             let reader = try CheckpointReader(
                 checkpointLocation: temporaryDirectory.appendingPathComponent("testmodel.ckpt"),
                 modelName: "TestCase", additionalFiles: [])
