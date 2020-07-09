@@ -118,7 +118,8 @@ let package = Package(
                 "TextModels", "Benchmark"
             ],
             path: "Benchmarks"),
-        .testTarget(name: "CheckpointTests", dependencies: ["Checkpoints"]),
+        .testTarget(
+            name: "CheckpointTests", dependencies: ["Checkpoints", "ImageClassificationModels"]),
         .target(
             name: "BERT-CoLA", dependencies: ["TextModels", "Datasets"], path: "Examples/BERT-CoLA"),
         .testTarget(name: "SupportTests", dependencies: ["ModelSupport"]),
