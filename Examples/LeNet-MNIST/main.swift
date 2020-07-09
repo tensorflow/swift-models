@@ -15,6 +15,7 @@
 import Datasets
 import TensorFlow
 import TrainingLoop
+import LayerInit
 
 let epochCount = 12
 let batchSize = 128
@@ -29,17 +30,17 @@ let batchSize = 128
 
 let dataset = MNIST(batchSize: batchSize, on: device)
 
-// The LeNet-5 model, equivalent to `LeNet` in `ImageClassificationModels`.
-var classifier = Sequential {
-    Conv2D<Float>(filterShape: (5, 5, 1, 6), padding: .same, activation: relu)
-    AvgPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
-    Conv2D<Float>(filterShape: (5, 5, 6, 16), activation: relu)
-    AvgPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
-    Flatten<Float>()
-    Dense<Float>(inputSize: 400, outputSize: 120, activation: relu)
-    Dense<Float>(inputSize: 120, outputSize: 84, activation: relu)
-    Dense<Float>(inputSize: 84, outputSize: 10)
-}
+var classifier =
+  input(shape: [28, 28, 1])
+    .conv2D(filterShape: (5, 5), outputChannels: 6, padding: .same, activation: relu)
+    .avgPool2D(poolSize: (2, 2), strides: (2, 2))
+    .conv2D(filterShape: (5, 5), outputChannels: 16, activation: relu)
+    .avgPool2D(poolSize: (2, 2), strides: (2, 2))
+    .flatten()
+    .dense(outputSize: 120, activation: relu)
+    .dense(outputSize: 84, activation: relu)
+    .dense(outputSize: 10)
+    .build()
 
 var optimizer = SGD(for: classifier, learningRate: 0.1)
 
