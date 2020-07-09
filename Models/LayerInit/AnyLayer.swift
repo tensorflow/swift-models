@@ -12,11 +12,13 @@ internal protocol _AnyDifferentiableBox {
   var _differentiableVectorView: AnyLayerTangentVector { get }
 
   /// Returns the underlying value unboxed to the given type, if possible.
-  func _unboxed<U: EuclideanDifferentiable>(to type: U.Type) -> U?
+  func _unboxed<U: EuclideanDifferentiable & KeyPathIterable>(to type: U.Type) -> U?
   where U.TangentVector : VectorProtocol, U.TangentVector.VectorSpaceScalar == Float
+
+  func copyToDevice(to device: Device) -> _AnyDifferentiableBox
 }
 
-internal struct _ConcreteDifferentiableBox<T: EuclideanDifferentiable>: _AnyDifferentiableBox
+internal struct _ConcreteDifferentiableBox<T: EuclideanDifferentiable & KeyPathIterable>: _AnyDifferentiableBox
 where T.TangentVector: VectorProtocol, T.TangentVector.VectorSpaceScalar == Float
 {
   /// The underlying base value.
@@ -35,9 +37,13 @@ where T.TangentVector: VectorProtocol, T.TangentVector.VectorSpaceScalar == Floa
     return AnyLayerTangentVector(_base.differentiableVectorView)
   }
 
-  func _unboxed<U: EuclideanDifferentiable>(to type: U.Type) -> U?
+  func _unboxed<U: EuclideanDifferentiable & KeyPathIterable>(to type: U.Type) -> U?
   where U.TangentVector : VectorProtocol, U.TangentVector.VectorSpaceScalar == Float {
     return (self as? _ConcreteDifferentiableBox<U>)?._base
+  }
+
+  func copyToDevice(to device: Device) -> _AnyDifferentiableBox {
+    return _ConcreteDifferentiableBox(T(copying: _base, to: device))
   }
 
   mutating func _move(along direction: AnyLayerTangentVector) {
@@ -53,7 +59,7 @@ where T.TangentVector: VectorProtocol, T.TangentVector.VectorSpaceScalar == Floa
   }
 }
 
-public struct AnyDifferentiable: EuclideanDifferentiable {
+public struct AnyDifferentiable: EuclideanDifferentiable, CopyableToDevice {
   internal var _box: _AnyDifferentiableBox
 
   internal init(_box: _AnyDifferentiableBox) {
@@ -67,13 +73,17 @@ public struct AnyDifferentiable: EuclideanDifferentiable {
 
   /// Creates a type-erased derivative from the given derivative.
   @differentiable
-  public init<T: EuclideanDifferentiable>(_ base: T) where T.TangentVector : VectorProtocol, T.TangentVector.VectorSpaceScalar == Float {
+  public init<T: EuclideanDifferentiable & KeyPathIterable>(_ base: T) where T.TangentVector : VectorProtocol, T.TangentVector.VectorSpaceScalar == Float {
     self._box = _ConcreteDifferentiableBox<T>(base)
+  }
+
+  public init(copying other: AnyDifferentiable, to device: Device) {
+    self._box = other._box.copyToDevice(to: device)
   }
 
   @inlinable
   @derivative(of: init)
-  internal static func _vjpInit<T: EuclideanDifferentiable>(
+  internal static func _vjpInit<T: EuclideanDifferentiable & KeyPathIterable>(
     _ base: T
   ) -> (value: AnyDifferentiable, pullback: (AnyLayerTangentVector) -> T.TangentVector)
   where T.TangentVector : VectorProtocol, T.TangentVector.VectorSpaceScalar == Float
@@ -83,7 +93,7 @@ public struct AnyDifferentiable: EuclideanDifferentiable {
 
   @inlinable
   @derivative(of: init)
-  internal static func _jvpInit<T: EuclideanDifferentiable>(
+  internal static func _jvpInit<T: EuclideanDifferentiable & KeyPathIterable>(
     _ base: T
   ) -> (
     value: AnyDifferentiable, differential: (T.TangentVector) -> AnyLayerTangentVector

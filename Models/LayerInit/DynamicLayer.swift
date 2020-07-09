@@ -1,7 +1,7 @@
 import TensorFlow
 import _Differentiation
 
-public struct DynamicLayerStore: EuclideanDifferentiable {
+public struct DynamicLayerStore: EuclideanDifferentiable, KeyPathIterable {
   @differentiable var underlying: AnyDifferentiable
 
   public init<T: Layer>(_ layer: T) where T.TangentVector.VectorSpaceScalar == Float {
