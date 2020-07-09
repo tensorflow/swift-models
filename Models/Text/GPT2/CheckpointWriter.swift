@@ -13,42 +13,52 @@
 // limitations under the License.
 
 import Checkpoints
+import Foundation
+import ModelSupport
 import TensorFlow
 
-extension GPT2: Checkpointable {
+extension GPT2 {
+  public func writeCheckpoint(
+    to location: URL, name: String, fileSystem: FileSystem = FoundationFileSystem()
+  ) throws {
+    try model.writeCheckpoint(to: location, name: name, fileSystem: fileSystem)
+  }
+}
+
+extension TransformerLM: Checkpointable {
   public var ignoredTensorPaths: Set<String> {
-    return ["GPT2.states", "Attention.scale"]
+    return ["Attention.scale"]
   }
   
   public var tensorNameMap: (String) -> String {
     return { name in
       let components = name.split(separator: "/")
-      guard components.count >= 2 else { return name }
+      guard components.count >= 1 else { return name }
       let normNames = ["offset": "b", "scale": "g"]
       let denseNames = ["weight": "w", "bias": "b"]
       let feedForwardNames = ["dense1": "c_fc", "dense2": "c_proj"]
       let selfAttentionNames = ["wqkv": "c_attn", "wo": "c_proj"]
 
-      switch components[1] {
+      switch components[0] {
       case "layers":
-        let layerIndex = Int(components[2].dropFirst().dropLast())!
+        let layerIndex = Int(components[1].dropFirst().dropLast())!
         let base = "model/h\(layerIndex)"
-        switch components[3] {
+        switch components[2] {
         case "feedForward":
           return
-            "\(base)/mlp/\(feedForwardNames[String(components[4])]!)/\(denseNames[String(components[6])]!)"
+            "\(base)/mlp/\(feedForwardNames[String(components[3])]!)/\(denseNames[String(components[5])]!)"
         case "feedForwardNorm":
-          return "\(base)/ln_2/\(normNames[String(components[4])]!)"
+          return "\(base)/ln_2/\(normNames[String(components[3])]!)"
         case "selfAttention":
           return
-            "\(base)/attn/\(selfAttentionNames[String(components[4])]!)/\(denseNames[String(components[6])]!)"
+            "\(base)/attn/\(selfAttentionNames[String(components[3])]!)/\(denseNames[String(components[5])]!)"
         case "selfAttentionNorm":
-          return "\(base)/ln_1/\(normNames[String(components[4])]!)"
+          return "\(base)/ln_1/\(normNames[String(components[3])]!)"
         default:
           return name
         }
       case "norm":
-        return "model/ln_f/\(normNames[String(components[2])]!)"
+        return "model/ln_f/\(normNames[String(components[1])]!)"
       case "positionalEmbeddings":
         return "model/wpe"
       case "embedding":

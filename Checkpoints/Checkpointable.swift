@@ -16,9 +16,19 @@ import ModelSupport
 import Foundation
 import TensorFlow
 
-public protocol Checkpointable {
+/// Models that comply to Checkpointable can have their Tensors be written to and read from disk
+/// using the `writeCheckpoint(to:...)` and `readCheckpoint(from:...)` interfaces.
+public protocol Checkpointable: KeyPathIterable {
+  /// Any Tensor that should be ignored for checkpoint reading or writing, specified in
+  /// `Type.property` syntax. For example, `["Attention.scale"]`.
   var ignoredTensorPaths: Set<String> { get }
+  
+  /// The string separator between descending levels of the model. For example, a separator of `"/"`
+  /// will yield tensor path names like `conv2/filter`.
   var checkpointSeparator: String { get }
+
+  /// A mapping function between the internally generated tensor path names and how those names
+  /// will or do appear in the on-disk checkpoint.
   var tensorNameMap: ((String) -> String) { get }
 }
 
@@ -35,6 +45,18 @@ public extension Checkpointable {
     return CheckpointWriter.identityMap
   }
 
+  /// Writes a checkpoint of this model's tensors to disk.
+  ///
+  /// - Parameters:
+  ///   - location: The directory to write the checkpoint into. If it doesn't exist, it will be
+  ///     created.
+  ///   - name: The base name of the checkpoint, which is what will have the .index and
+  ///     .data-0000X-of-0000Y extensions appended to it for files in the checkpoint directory.
+  ///   - fileSystem: The filesystem used for writing the checkpoint. Defaults to
+  ///     FoundationFileSystem.
+  ///   - nameTable: A lookup table of generated tensor path names to their corresponding tensor
+  ///     name in the checkpoint file. If an internal tensor path name is not represented, the
+  ///     internal path name is used for the on-disk checkpoint.
   func writeCheckpoint(
     to location: URL, name: String, fileSystem: FileSystem = FoundationFileSystem(),
     nameTable: [String: String]
@@ -44,6 +66,17 @@ public extension Checkpointable {
       nameMap: CheckpointWriter.lookupMap(table: nameTable))
   }
   
+  /// Writes a checkpoint of this model's tensors to disk.
+  ///
+  /// - Parameters:
+  ///   - location: The directory to write the checkpoint into. If it doesn't exist, it will be
+  ///     created.
+  ///   - name: The base name of the checkpoint, which is what will have the .index and
+  ///     .data-0000X-of-0000Y extensions appended to it for files in the checkpoint directory.
+  ///   - fileSystem: The filesystem used for writing the checkpoint. Defaults to
+  ///     FoundationFileSystem.
+  ///   - nameMap: A mapping function that converts generated tensor path names to their
+  ///     corresponding tensor name in the checkpoint file.
   func writeCheckpoint(
     to location: URL, name: String, fileSystem: FileSystem = FoundationFileSystem(),
     nameMap: ((String) -> String)? = nil
@@ -58,5 +91,64 @@ public extension Checkpointable {
     
     let writer = CheckpointWriter(fileSystem: fileSystem)
     try writer.write(tensors: tensors, to: location, name: name)
+  }
+  
+  /// Reads a checkpoint of this model's tensors from disk.
+  ///
+  /// - Parameters:
+  ///   - location: Either a URL to the checkpoint files, where the last component is the file
+  ///     base of the checkpoint files, or a URL to an archive containing the checkpoint files.
+  ///   - name: The base name of the checkpoint, which is what will have the .index and
+  ///     .data-0000X-of-0000Y extensions appended to it for files in the checkpoint directory.
+  ///   - fileSystem: The filesystem used for reading the checkpoint. Defaults to
+  ///     FoundationFileSystem.
+  ///   - nameMap: A mapping function that converts generated tensor path names to their
+  ///     corresponding tensor name in the checkpoint file.
+  mutating func readCheckpoint(
+    from location: URL, name: String, fileSystem: FileSystem = FoundationFileSystem(),
+    nameMap: ((String) -> String)? = nil
+  ) throws {
+    var rawTensorNames: [String] = []
+    CheckpointReader.recursivelyObtainTensorNames(
+      self, tensors: &rawTensorNames, separator: self.checkpointSeparator,
+      ignoredTensorPaths: self.ignoredTensorPaths)
+
+    let concreteNameMap = nameMap ?? self.tensorNameMap
+    let tensorNames = rawTensorNames.map{ concreteNameMap($0) }
+    
+    let keypaths = self.recursivelyAllWritableKeyPaths(to: Tensor<Float>.self)
+    
+    guard keypaths.count == tensorNames.count else {
+      fatalError(
+        "The number of writable key paths: \(keypaths.count) did not match the number of tensor names: \(tensorNames.count)")
+    }
+    
+    let reader: CheckpointReader = try CheckpointReader(checkpointLocation: location,
+      modelName: name)
+
+    for (index, keypath) in keypaths.enumerated() {
+      self[keyPath: keypath] = Tensor<Float>(reader.loadTensor(named: tensorNames[index]))
+    }
+  }
+  
+  /// Reads a checkpoint of this model's tensors from disk.
+  ///
+  /// - Parameters:
+  ///   - location: Either a URL to the checkpoint files, where the last component is the file
+  ///     base of the checkpoint files, or a URL to an archive containing the checkpoint files.
+  ///   - name: The base name of the checkpoint, which is what will have the .index and
+  ///     .data-0000X-of-0000Y extensions appended to it for files in the checkpoint directory.
+  ///   - fileSystem: The filesystem used for reading the checkpoint. Defaults to
+  ///     FoundationFileSystem.
+  ///   - nameTable: A lookup table of generated tensor path names to their corresponding tensor
+  ///     name in the checkpoint file. If an internal tensor path name is not represented, the
+  ///     internal path name is used for the on-disk checkpoint.
+  mutating func readCheckpoint(
+    from location: URL, name: String, fileSystem: FileSystem = FoundationFileSystem(),
+    nameTable: [String: String]
+  ) throws {
+    try readCheckpoint(
+      from: location, name: name, fileSystem: fileSystem,
+      nameMap: CheckpointWriter.lookupMap(table: nameTable))
   }
 }

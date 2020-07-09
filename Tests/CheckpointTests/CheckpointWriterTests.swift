@@ -93,6 +93,10 @@ final class CheckpointWriterTests: XCTestCase {
             XCTAssertEqual(loadedTensor1.shape, [5, 5, 6, 16])
             let loadedTensor2: ShapedArray<Float> = reader.loadTensor(named: "fc2/bias")
             XCTAssertEqual(loadedTensor2.shape, [84])
+          
+            var newModel = LeNet()
+            try newModel.readCheckpoint(
+              from: temporaryDirectory.appendingPathComponent("LeNet"), name: "LeNet")
         } catch {
             XCTFail("LeNet checkpoint writing / reading failed with error: \(error).")
         }
@@ -112,6 +116,10 @@ final class CheckpointWriterTests: XCTestCase {
             XCTAssertEqual(loadedTensor1.shape, [3, 3, 16, 64])
             let loadedTensor2: ShapedArray<Float> = reader.loadTensor(named: "conv10_filter")
             XCTAssertEqual(loadedTensor2.shape, [1, 1, 512, 1000])
+
+            var newModel = SqueezeNetV1_0(classCount: 1000)
+            try newModel.readCheckpoint(
+              from: temporaryDirectory.appendingPathComponent("SqueezeNet"), name: "SqueezeNet")
         } catch {
             XCTFail("SqueezeNet checkpoint writing / reading failed with error: \(error).")
         }

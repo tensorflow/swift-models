@@ -67,7 +67,6 @@ open class CheckpointWriter {
         var outputBuffer = Data()
         // TODO: Write this directly to disk, rather than accumulating it in memory.
         for tensorName in tensorList {
-            print("Writing tensor: \(tensorName)")
             guard let tensor = tensors[tensorName] else {
                 fatalError("Mismatch in sorted tensors at name: \(tensorName).")
             }
@@ -90,6 +89,26 @@ extension CheckpointWriter {
     static func recursivelyObtainTensors(
         _ current: Any, scope: String? = nil, tensors: inout [String: Tensor<Float>],
         separator: String, ignoredTensorPaths: Set<String> = []
+    ) {
+        recursivelyVisitTensors(
+            current, scope: scope, separator: separator, ignoredTensorPaths: ignoredTensorPaths
+        ) { child, path in
+            if let tensor = child.value as? Tensor<Float> {
+                if tensors[path] != nil {
+                    print(
+                        "Warning: Saved two different tensors with the same name: \(path). This is most likely undesired behavior.")
+                }
+                tensors[path] = tensor
+                return false
+            } else {
+                return true
+            }
+        }
+    }
+    
+    static func recursivelyVisitTensors(
+        _ current: Any, scope: String? = nil, separator: String,
+        ignoredTensorPaths: Set<String> = [], visitor: (Mirror.Child, String) -> Bool
     ) {
         let currentType = String(describing: type(of: current.self))
         let m = Mirror(reflecting: current)
@@ -115,16 +134,10 @@ extension CheckpointWriter {
             if ignoredTensorPaths.contains(compoundTypeDescription) {
                 continue
             }
-            if let tensor = child.value as? Tensor<Float> {
-                if tensors[path] != nil {
-                    print(
-                        "Warning: Saved two different tensors with the same name: \(path). This is most likely undesired behavior.")
-                }
-                tensors[path] = tensor
-            } else {
-                recursivelyObtainTensors(
-                    child.value, scope: path, tensors: &tensors, separator: separator,
-                    ignoredTensorPaths: ignoredTensorPaths)
+            if visitor(child, path) {
+                recursivelyVisitTensors(
+                    child.value, scope: path, separator: separator,
+                    ignoredTensorPaths: ignoredTensorPaths, visitor: visitor)
             }
         }
     }
