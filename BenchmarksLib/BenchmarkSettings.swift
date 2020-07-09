@@ -15,39 +15,39 @@
 import Benchmark
 import TensorFlow
 
-struct BatchSize: BenchmarkSetting {
+public struct BatchSize: BenchmarkSetting {
   var value: Int
   init(_ value: Int) {
     self.value = value
   }
 }
 
-struct Length: BenchmarkSetting {
+public struct Length: BenchmarkSetting {
   var value: Int
   init(_ value: Int) {
     self.value = value
   }
 }
 
-struct Synthetic: BenchmarkSetting {
+public struct Synthetic: BenchmarkSetting {
   var value: Bool
   init(_ value: Bool) {
     self.value = value
   }
 }
 
-struct Backend: BenchmarkSetting {
+public struct Backend: BenchmarkSetting {
   var value: Value
   init(_ value: Value) {
     self.value = value
   }
-  enum Value {
+  public enum Value {
     case x10
     case eager
   }
 }
 
-extension BenchmarkSettings {
+public extension BenchmarkSettings {
   var batchSize: Int? {
     return self[BatchSize.self]?.value
   }
@@ -85,7 +85,7 @@ extension BenchmarkSettings {
   }
 }
 
-let defaultSettings: [BenchmarkSetting] = [
+public let defaultSettings: [BenchmarkSetting] = [
   TimeUnit(.s),
   InverseTimeUnit(.s),
   Backend(.eager),

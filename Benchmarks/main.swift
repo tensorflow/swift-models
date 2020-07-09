@@ -13,10 +13,11 @@
 // limitations under the License.
 
 import Benchmark
+import BenchmarksLib
 
 registerCustomColumns()
 let command = BenchmarkCommand.parseOrExit()
 Benchmark.main(
   suites,
   settings: command.arguments.settings,
-  customDefaults: defaultSettings)
+  customDefaults: BenchmarksLib.defaultSettings)
