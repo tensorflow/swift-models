@@ -12,8 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let suites = Array(
-  [
-    layerSuites,
-    modelSuites,
-  ].joined())
+import ImageClassificationModels
+
+let VGGSuites = [
+  makeLayerSuite(
+    name: "VGG16",
+    inputDimensions: imageNetInput,
+    outputDimensions: imageNetOutput
+  ) {
+    VGG16(classCount: 1000)
+  },
+  makeLayerSuite(
+    name: "VGG19",
+    inputDimensions: imageNetInput,
+    outputDimensions: imageNetOutput
+  ) {
+    VGG19(classCount: 1000)
+  },
+]

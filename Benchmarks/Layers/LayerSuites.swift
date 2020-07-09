@@ -12,8 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let suites = Array(
+let layerSuites = Array(
   [
-    layerSuites,
-    modelSuites,
+    DenseNetSuites,
+    EfficientNetSuites,
+    LeNetSuites,
+    MobileNetV1Suites,
+    MobileNetV2Suites,
+    MobileNetV3Suites,
+    ResNetSuites,
+    ResNetV2Suites,
+    ShuffleNetV2Suites,
+    SqueezeNetSuites,
+    VGGSuites,
+    WideResNetSuites,
   ].joined())

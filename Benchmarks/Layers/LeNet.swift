@@ -12,8 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-let suites = Array(
-  [
-    layerSuites,
-    modelSuites,
-  ].joined())
+import ImageClassificationModels
+
+let LeNetSuites = [
+  makeLayerSuite(
+    name: "LeNet",
+    inputDimensions: mnistInput,
+    outputDimensions: mnistOutput
+  ) {
+    LeNet()
+  }
+]
