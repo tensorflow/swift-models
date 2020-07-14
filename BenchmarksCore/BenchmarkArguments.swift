@@ -36,6 +36,16 @@ public struct BenchmarkArguments: ParsableArguments {
 
   public init() {}
 
+  public init(arguments: Benchmark.BenchmarkArguments, batchSize: Int?, eager: Bool, x10: Bool,
+              synthetic: Bool, real: Bool) {
+    self.arguments = arguments
+    self.batchSize = batchSize
+    self.eager = eager
+    self.x10 = x10
+    self.synthetic = synthetic
+    self.real = real
+  }
+
   public mutating func validate() throws {
     try arguments.validate()
 
