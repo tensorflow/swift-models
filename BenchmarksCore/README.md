@@ -60,7 +60,7 @@ Let's walk through the process of adding a new String-typed setting:
     c. Convert command-line flag to a setting in `BenchmarkArgument.settings` computed property:
 
     ```swift
-      if value = mySettingFlagName {
+      if let value = mySettingFlagName {
         settings.append(MySetting(value))
       }
     ```
