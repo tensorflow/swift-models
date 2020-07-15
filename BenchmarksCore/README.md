@@ -2,7 +2,7 @@
 
 Let's walk through the process of adding a new String-typed setting:
 
-1. Add a new setting to BenchmarkSettings.swift:
+1. Add a new setting to [BenchmarkSettings.swift](https://github.com/tensorflow/swift-models/blob/master/BenchmarksCore/BenchmarkSettings.swift):
 
     a. Add a new setting type:
 
