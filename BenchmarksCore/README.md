@@ -46,7 +46,7 @@ Let's walk through the process of adding a new String-typed setting:
       }
     ```
 
-4. Add a new benchmark flag to BenchmarkArguments.swift:
+4. Add a new benchmark flag to [BenchmarkArguments.swift](https://github.com/tensorflow/swift-models/blob/master/BenchmarksCore/BenchmarkArguments.swift):
 
     a. Add a flag property:
 
