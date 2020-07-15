@@ -34,16 +34,20 @@ public struct BenchmarkArguments: ParsableArguments {
   @Flag(help: "Use real data.")
   var real: Bool
 
+  @Option(name: .customLong("datasetFilePath"), help: "File path for dataset loading.")
+  var datasetFilePath: String?
+
   public init() {}
 
   public init(arguments: Benchmark.BenchmarkArguments, batchSize: Int?, eager: Bool, x10: Bool,
-              synthetic: Bool, real: Bool) {
+              synthetic: Bool, real: Bool, datasetFilePath: String?) {
     self.arguments = arguments
     self.batchSize = batchSize
     self.eager = eager
     self.x10 = x10
     self.synthetic = synthetic
     self.real = real
+    self.datasetFilePath = datasetFilePath
   }
 
   public mutating func validate() throws {
@@ -77,6 +81,9 @@ public struct BenchmarkArguments: ParsableArguments {
     }
     if real {
       settings.append(Synthetic(false))
+    }
+    if let value = datasetFilePath {
+      settings.append(DatasetFilePath(value))
     }
 
     return settings
