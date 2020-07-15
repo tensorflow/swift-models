@@ -2,7 +2,7 @@
 
 Let's walk through the process of adding a new String-typed setting:
 
-1. Add a type for command line flag in BenchmarkSettings.swift:
+1. Add a new setting to BenchmarkSettings.swift:
 
     a. Add a new setting type:
 
@@ -46,12 +46,12 @@ Let's walk through the process of adding a new String-typed setting:
       }
     ```
 
-4. Add a benchmark argument to BenchmarkArguments.swift:
+4. Add a new benchmark flag to BenchmarkArguments.swift:
 
     a. Add a flag property:
 
     ```swift
-    @Flag(helpl: "Useful description of MySetting here.")
+    @Flag(help: "Useful description of MySetting here.")
     var mySettingFlagName: String?
     ```
 
