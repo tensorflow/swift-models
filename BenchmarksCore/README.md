@@ -51,7 +51,7 @@ Let's walk through the process of adding a new String-typed setting:
     a. Add a flag property:
 
     ```swift
-    @Flag(help: "Useful description of MySetting here.")
+    @Option(help: "Useful description of MySetting here.")
     var mySettingFlagName: String?
     ```
 
