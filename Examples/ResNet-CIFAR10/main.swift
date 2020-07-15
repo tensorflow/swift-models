@@ -19,11 +19,11 @@ import TrainingLoop
 
 // Until https://github.com/tensorflow/swift-apis/issues/993 is fixed, default to the eager-mode
 // device on macOS instead of X10.
-#if os(macOS)
+// #if os(macOS)
   let device = Device.defaultTFEager
-#else
-  let device = Device.defaultXLA
-#endif
+// #else
+//   let device = Device.defaultXLA
+// #endif
 
 let dataset = CIFAR10(batchSize: 10, on: device)
 var model = ResNet(classCount: 10, depth: .resNet56, downsamplingInFirstStage: false)

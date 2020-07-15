@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import TensorFlow
+import LayerInit
 
 // Original Paper:
 // "Deep Residual Learning for Image Recognition"
@@ -24,93 +25,89 @@ import TensorFlow
 // The structure of this implementation was inspired by the Flax ResNet example:
 // https://github.com/google/flax/blob/master/examples/imagenet/models.py
 
-public struct ConvBN: Layer {
-    public var conv: Conv2D<Float>
-    public var norm: BatchNorm<Float>
-
-    public init(
-        filterShape: (Int, Int, Int, Int),
-        strides: (Int, Int) = (1, 1),
-        padding: Padding = .valid
-    ) {
-        self.conv = Conv2D(filterShape: filterShape, strides: strides, padding: padding, useBias: false)
-        self.norm = BatchNorm(featureCount: filterShape.3, momentum: 0.9, epsilon: 1e-5)
-    }
-
-    @differentiable
-    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        return input.sequenced(through: conv, norm)
+extension FunctionalLayer {
+    public func convBN(filterShape: (Int, Int), outputChannels: Int, strides: (Int, Int) = (1, 1), padding: Padding = .valid) -> FunctionalLayer {
+        return self
+            .conv2D(filterShape: filterShape, outputChannels: outputChannels, strides: strides, padding: padding, useBias: false)
+            .batchNorm(momentum: 0.9, epsilon: 1e-5)
     }
 }
 
-public struct ResidualBlock: Layer {
-    public var projection: ConvBN
-    @noDerivative public let needsProjection: Bool
-    public var earlyConvs: [ConvBN] = []
-    public var lastConv: ConvBN
+public func residualBlock(input: FunctionalLayer, inputFilters: Int, filters: Int, strides: (Int, Int), useLaterStride: Bool, isBasic: Bool) -> FunctionalLayer {
+    let outFilters = filters * (isBasic ? 1 : 4)
 
-    public init(
-        inputFilters: Int, filters: Int, strides: (Int, Int), useLaterStride: Bool, isBasic: Bool
-    ) {
-        let outFilters = filters * (isBasic ? 1 : 4)
-        self.needsProjection = (inputFilters != outFilters) || (strides.0 != 1)
-        // TODO: Replace the following, so as to not waste memory for non-projection cases.
-        if needsProjection {
-            projection = ConvBN(filterShape: (1, 1, inputFilters, outFilters), strides: strides)
+    let needsProjection = (inputFilters != outFilters) || (strides.0 != 1)
+    let residual = needsProjection ?
+        input.convBN(filterShape: (1, 1), outputChannels: outFilters, strides: strides) :
+        input
+
+    let convsApplied: FunctionalLayer
+    if isBasic {
+        convsApplied = input
+            .convBN(filterShape: (3, 3), outputChannels: filters, strides: strides, padding: .same).relu()
+            .convBN(filterShape: (3, 3), outputChannels: outFilters, padding: .same)
+    } else {
+        let earlyConvsApplied: FunctionalLayer
+        if useLaterStride {
+            // Configure for ResNet V1.5 (the more common implementation).
+            earlyConvsApplied = input
+                .convBN(filterShape: (1, 1), outputChannels: filters).relu()
+                .convBN(filterShape: (3, 3), outputChannels: filters, strides: strides, padding: .same).relu()
         } else {
-            projection = ConvBN(filterShape: (1, 1, 1, 1))
+            // Configure for ResNet V1 (the paper implementation).
+            earlyConvsApplied = input
+                .convBN(filterShape: (1, 1), outputChannels: filters, strides: strides).relu()
+                .convBN(filterShape: (3, 3), outputChannels: filters, padding: .same).relu()
         }
+        
+        convsApplied = earlyConvsApplied.convBN(filterShape: (1, 1), outputChannels: outFilters)
+    }
 
-        if isBasic {
-            earlyConvs = [
-                (ConvBN(
-                    filterShape: (3, 3, inputFilters, filters), strides: strides, padding: .same)),
-            ]
-            lastConv = ConvBN(filterShape: (3, 3, filters, outFilters), padding: .same)
-        } else {
-            if useLaterStride {
-                // Configure for ResNet V1.5 (the more common implementation).
-                earlyConvs.append(ConvBN(filterShape: (1, 1, inputFilters, filters)))
-                earlyConvs.append(
-                    ConvBN(filterShape: (3, 3, filters, filters), strides: strides, padding: .same))
-            } else {
-                // Configure for ResNet V1 (the paper implementation).
-                earlyConvs.append(
-                    ConvBN(filterShape: (1, 1, inputFilters, filters), strides: strides))
-                earlyConvs.append(ConvBN(filterShape: (3, 3, filters, filters), padding: .same))
-            }
-            lastConv = ConvBN(filterShape: (1, 1, filters, outFilters))
+    return (residual + convsApplied).relu()
+}
+
+public func resNet(_ input: FunctionalLayer, classCount: Int, depth: ResNet.Depth, downsamplingInFirstStage: Bool = true, useLaterStride: Bool = true) -> FunctionalLayer {
+    let inputFilters: Int
+    let initialTransformed: FunctionalLayer
+        
+    if downsamplingInFirstStage {
+        inputFilters = 64
+        initialTransformed = input
+            .convBN(filterShape: (7, 7), outputChannels: inputFilters, strides: (2, 2), padding: .same)
+            .relu()
+            .maxPool2D(poolSize: (3, 3), strides: (2, 2), padding: .same)
+    } else {
+        inputFilters = 16
+        initialTransformed = input
+            .convBN(filterShape: (3, 3), outputChannels: inputFilters, padding: .same)
+            .relu()
+    }
+
+    var throughBlocks = initialTransformed
+    var lastInputFilterCount = inputFilters
+    for (blockSizeIndex, blockSize) in depth.layerBlockSizes.enumerated() {
+        for blockIndex in 0..<blockSize {
+            let strides = ((blockSizeIndex > 0) && (blockIndex == 0)) ? (2, 2) : (1, 1)
+            let filters = inputFilters * Int(pow(2.0, Double(blockSizeIndex)))
+            throughBlocks = residualBlock(
+                input: throughBlocks,
+                inputFilters: lastInputFilterCount, filters: filters, strides: strides,
+                useLaterStride: useLaterStride, isBasic: depth.usesBasicBlocks
+            )
+
+            lastInputFilterCount = filters * (depth.usesBasicBlocks ? 1 : 4)
         }
     }
 
-    @differentiable
-    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        let residual: Tensor<Float>
-        // TODO: Find a way for this to be checked only at initialization, not during training or 
-        // inference.
-        if needsProjection {
-            residual = projection(input)
-        } else {
-            residual = input
-        }
-
-        let earlyConvsReduced = earlyConvs.differentiableReduce(input) { last, layer in
-            relu(layer(last))
-        }
-        let lastConvResult = lastConv(earlyConvsReduced)
-
-        return relu(lastConvResult + residual)
-    }
+    return throughBlocks
+        .globalAvgPool2D()
+        .flatten()
+        .dense(outputSize: classCount)
 }
 
 /// An implementation of the ResNet v1 and v1.5 architectures, at various depths.
 public struct ResNet: Layer {
-    public var initialLayer: ConvBN
-    public var maxPool: MaxPool2D<Float>
-    public var residualBlocks: [ResidualBlock] = []
-    public var avgPool = GlobalAvgPool2D<Float>()
-    public var flatten = Flatten<Float>()
-    public var classifier: Dense<Float>
+    public var underlying: ComposedLayer
 
     /// Initializes a new ResNet v1 or v1.5 network model.
     ///
@@ -129,45 +126,16 @@ public struct ResNet: Layer {
         classCount: Int, depth: Depth, downsamplingInFirstStage: Bool = true,
         useLaterStride: Bool = true
     ) {
-        let inputFilters: Int
-        
-        if downsamplingInFirstStage {
-            inputFilters = 64
-            initialLayer = ConvBN(
-                filterShape: (7, 7, 3, inputFilters), strides: (2, 2), padding: .same)
-            maxPool = MaxPool2D(poolSize: (3, 3), strides: (2, 2), padding: .same)
-        } else {
-            inputFilters = 16
-            initialLayer = ConvBN(filterShape: (3, 3, 3, inputFilters), padding: .same)
-            maxPool = MaxPool2D(poolSize: (1, 1), strides: (1, 1))  // no-op
-        }
-
-        var lastInputFilterCount = inputFilters
-        for (blockSizeIndex, blockSize) in depth.layerBlockSizes.enumerated() {
-            for blockIndex in 0..<blockSize {
-                let strides = ((blockSizeIndex > 0) && (blockIndex == 0)) ? (2, 2) : (1, 1)
-                let filters = inputFilters * Int(pow(2.0, Double(blockSizeIndex)))
-                let residualBlock = ResidualBlock(
-                    inputFilters: lastInputFilterCount, filters: filters, strides: strides,
-                    useLaterStride: useLaterStride, isBasic: depth.usesBasicBlocks)
-                lastInputFilterCount = filters * (depth.usesBasicBlocks ? 1 : 4)
-                residualBlocks.append(residualBlock)
-            }
-        }
-
-        let finalFilters = inputFilters * Int(pow(2.0, Double(depth.layerBlockSizes.count - 1)))
-        classifier = Dense(
-            inputSize: depth.usesBasicBlocks ? finalFilters : finalFilters * 4,
-            outputSize: classCount)
+        underlying = resNet(
+            InputFunctionalLayer(shape: [1, 1, 3]),
+            classCount: classCount, depth: depth, downsamplingInFirstStage: downsamplingInFirstStage,
+            useLaterStride: useLaterStride
+        ).build()
     }
 
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-        let inputLayer = maxPool(relu(initialLayer(input)))
-        let blocksReduced = residualBlocks.differentiableReduce(inputLayer) { last, layer in
-            layer(last)
-        }
-        return blocksReduced.sequenced(through: avgPool, flatten, classifier)
+        return underlying(input)
     }
 }
 

@@ -58,3 +58,38 @@ where L.Input == Tensor<Float>, L.Output == Tensor<Float>, L.TangentVector.Vecto
         }
     }
 }
+
+public class MergeLayerWrapper: FunctionalLayer {
+    let mergeFn: @differentiable (Tensor<Float>, Tensor<Float>) -> Tensor<Float>
+    let parent1: FunctionalLayer
+    let parent2: FunctionalLayer
+    
+    let _outputShape: [Int]
+
+    public init(parent1: FunctionalLayer, parent2: FunctionalLayer, mergeFn: @escaping @differentiable (Tensor<Float>, Tensor<Float>) -> Tensor<Float>, outputShape: [Int]) {
+        self.parent1 = parent1
+        self.parent2 = parent2
+        self.mergeFn = mergeFn
+        self._outputShape = outputShape
+    }
+
+    public override func outputShape() -> [Int] {
+        return _outputShape
+    }
+
+    public override func getLayer() -> DynamicLayerStore {
+        return DynamicLayerStore(Dense<Float>(inputSize: 1, outputSize: 1)) // TODO
+    }
+
+    public override func getDependencies() -> [FunctionalLayer] {
+        return [parent1, parent2]
+    }
+
+    public override func buildLayerApplication(dependencyIndices: [Int]) -> @differentiable ([Tensor<Float>], DynamicLayerStore) -> Tensor<Float> {
+        let prev1Index = dependencyIndices[0]
+        let prev2Index = dependencyIndices[1]
+        return { (outputs: [Tensor<Float>], selfLayer: DynamicLayerStore) in
+            return self.mergeFn(outputs[prev1Index], outputs[prev2Index])
+        }
+    }
+}
