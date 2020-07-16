@@ -47,6 +47,13 @@ public struct Backend: BenchmarkSetting {
   }
 }
 
+public struct DatasetFilePath: BenchmarkSetting {
+  var value: String
+  init(_ value: String) {
+    self.value = value
+  }
+}
+
 public extension BenchmarkSettings {
   var batchSize: Int? {
     return self[BatchSize.self]?.value
@@ -82,6 +89,10 @@ public extension BenchmarkSettings {
     case .eager: return Device.defaultTFEager
     case .x10: return Device.defaultXLA
     }
+  }
+
+  var datasetFilePath: String? {
+    return self[DatasetFilePath.self]?.value
   }
 }
 

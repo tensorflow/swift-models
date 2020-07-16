@@ -71,7 +71,13 @@ func wordSegBenchmark(_ operation: @escaping (SNLM, CharacterSequence, Device) -
 
     state.start()
 
-    let dataset = try WordSegDataset()
+    let dataset: WordSegDataset
+    if let trainingFilePath = settings.datasetFilePath {
+      dataset = try WordSegDataset(training: trainingFilePath)
+    } else {
+      dataset = try WordSegDataset()
+    }
+
     let sentence = try testSentence(
       length: length,
       alphabet: dataset.alphabet)
