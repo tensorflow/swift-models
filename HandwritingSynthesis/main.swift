@@ -9,6 +9,7 @@ func generateAndVisualize(m: HandwritingGenerator, text: String, bias: Float) {
     let (seqPt, _) = m.predict(ptIni: iSeqPt, seqStr: iSeqStr, seqStrMask: iSeqStrMask, bias: bias)
 
     plt.figure(figsize: [10, 2])
+    plt.savefig("Handwriting.png")
     visualize(strokes: seqPt.squeezingShape(at: 1))
 }
 
