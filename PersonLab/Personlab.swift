@@ -41,13 +41,11 @@ public struct PersonLab {
     let startTime = Date()
 
     let resizedImage = inputImage.resized(to: config.inputImageSize)
-    let normalizedImagesTensorBGR = resizedImage.tensor * (2.0 / 255.0) - 1.0
-    let normalizedImagesTensorRGB = _Raw.reverse(
-      normalizedImagesTensorBGR, dims: [false, false, true])
-    let batchedNormalizedImagesTensorRGB = normalizedImagesTensorRGB.expandingShape(at: 0)
+    let normalizedImageTensor = resizedImage.tensor * (2.0 / 255.0) - 1.0
+    let batchedNormalizedImagesTensor = normalizedImageTensor.expandingShape(at: 0)
     let preprocessingTime = Date()
 
-    let convnetResults = personlabHeads(backbone(batchedNormalizedImagesTensorRGB))
+    let convnetResults = personlabHeads(backbone(batchedNormalizedImagesTensor))
     let convnetTime = Date()
 
     let poseDecoder = PoseDecoder(for: convnetResults, with: self.config)

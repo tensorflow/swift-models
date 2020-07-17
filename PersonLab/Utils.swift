@@ -13,7 +13,6 @@
 // limitations under the License.
 
 import ModelSupport
-import SwiftCV
 import TensorFlow
 
 public struct Config {
@@ -27,10 +26,6 @@ public struct Config {
   let keypointScoreThreshold: Float = 0.1
   let nmsRadius: Float = 20.0
   let keypointLocalMaximumRadius = 1
-
-  // Drawing
-  let color = Scalar(val1: 0, val2: 255, val3: 255, val4: 1)
-  let lineWidth: Int32 = 2
 }
 
 extension CheckpointReader {
@@ -39,24 +34,26 @@ extension CheckpointReader {
   }
 }
 
-func draw(_ pose: Pose, on image: Mat, color: Scalar, lineWidth: Int32) {
+func draw(_ pose: Pose, on imageTensor: inout Tensor<Float>) {
   var pose = pose
-  pose.rescale(to: (height: image.rows, width: image.cols))
+  pose.rescale(to: (height: imageTensor.shape[0], width: imageTensor.shape[1]))
 
-  func recursivellyDrawNextKeypoint(after previousKeypoint: Keypoint, into image: Mat) {
+  func recursivellyDrawNextKeypoint(after previousKeypoint: Keypoint, into imageTensor: inout Tensor<Float>) {
     for (nextKeypointIndex, direction) in getNextKeypointIndexAndDirection(previousKeypoint.index) {
       if direction == .fwd {
         if let nextKeypoint = pose.getKeypoint(nextKeypointIndex) {
-          let point1 = Point(x: Int32(previousKeypoint.x), y: Int32(previousKeypoint.y))
-          let point2 = Point(x: Int32(nextKeypoint.x), y: Int32(nextKeypoint.y))
-          line(img: image, pt1: point1, pt2: point2, color: color, thickness: lineWidth)
-          recursivellyDrawNextKeypoint(after: nextKeypoint, into: image)
+          drawLine(
+            on: &imageTensor,
+            from: (previousKeypoint.x, previousKeypoint.y),
+            to: (nextKeypoint.x, nextKeypoint.y)
+          )
+          recursivellyDrawNextKeypoint(after: nextKeypoint, into: &imageTensor)
         }
       }
     }
   }
 
-  recursivellyDrawNextKeypoint(after: pose.getKeypoint(.nose)!, into: image)
+  recursivellyDrawNextKeypoint(after: pose.getKeypoint(.nose)!, into: &imageTensor)
 }
 
 /// Used as an ad-hoc "hash" for tensor checking when copying the backbone from
@@ -87,4 +84,11 @@ struct CPUTensor<T: TensorFlowScalar> {
     oneDimensionalIndex += indexes.last!
     return flattenedTensor[oneDimensionalIndex]
   }
+}
+
+func drawLine(on imageTensor: inout Tensor<Float>, from pt1: (Float, Float), to pt2: (Float, Float)) {
+  let pt1 = (Int(pt1.0), Int(pt1.1))
+  let pt2 = (Int(pt2.0), Int(pt2.1))
+  imageTensor[pt1.1, pt1.0] = Tensor<Float>([255.0, 255.0, 255.0])
+  imageTensor[pt2.1, pt2.0] = Tensor<Float>([255.0, 255.0, 255.0])
 }

@@ -15,7 +15,6 @@
 import ArgumentParser
 import Foundation
 import ModelSupport
-import SwiftCV
 import TensorFlow
 
 struct Inference: ParsableCommand {
@@ -29,11 +28,8 @@ struct Inference: ParsableCommand {
   @Argument(help: "Path to checkpoint directory")
   var checkpointPath: String
 
-  @Option(name: .shortAndLong, help: "Path to local image to run pose estimation on")
-  var imagePath: String?
-
-  @Flag(name: .shortAndLong, help: "Run local webcam demo")
-  var webcamDemo: Bool
+  @Argument(help: "Path to local image to run pose estimation on")
+  var imagePath: String
 
   @Flag(name: .shortAndLong, help: "Print profiling data")
   var profiling: Bool
@@ -43,49 +39,28 @@ struct Inference: ParsableCommand {
     let config = Config(checkpointPath: checkpointPath, printProfilingData: profiling)
     let model = PersonLab(config)
 
-    if let imagePath = imagePath {
-      let fileManager = FileManager()
-      if !fileManager.fileExists(atPath: imagePath) {
-        print("No image found at path: \(imagePath)")
-        return
-      }
-      let swiftcvImage = imread(imagePath)
-      let image = Image(tensor: Tensor<UInt8>(cvMat: swiftcvImage)!)
+    let fileManager = FileManager()
+    if !fileManager.fileExists(atPath: imagePath) {
+      print("No image found at path: \(imagePath)")
+      return
+    }
+    let image = Image(jpeg: URL(fileURLWithPath: imagePath))
 
-      var poses = [Pose]()
-      if profiling {
-        print("Running model 10 times to see how inference time improves.")
-        for _ in 1...10 {
-          poses = model(image)
-        }
-      } else {
+    var poses = [Pose]()
+    if profiling {
+      print("Running model 10 times to see how inference time changes.")
+      for _ in 1...10 {
         poses = model(image)
       }
-
-      for pose in poses {
-        draw(pose, on: swiftcvImage, color: config.color, lineWidth: config.lineWidth)
-      }
-      ImShow(image: swiftcvImage)
-      WaitKey(delay: 0)
+    } else {
+      poses = model(image)
     }
 
-    if webcamDemo {
-      let videoCaptureDevice = VideoCapture(0)
-      videoCaptureDevice.set(VideoCaptureProperties.CAP_PROP_BUFFERSIZE, 1)  // Reduces latency
-
-      let frame = Mat()
-      while true {
-        videoCaptureDevice.read(into: frame)
-        let image = Image(tensor: Tensor<UInt8>(cvMat: frame)!)
-        let poses = model(image)
-
-        for pose in poses {
-          draw(pose, on: frame, color: config.color, lineWidth: config.lineWidth)
-        }
-        ImShow(image: frame)
-        WaitKey(delay: 1)
-      }
+    var drawnTensor = image.tensor
+    for pose in poses {
+      draw(pose, on: &drawnTensor)
     }
+    Image(tensor: drawnTensor).save(to: URL(fileURLWithPath: "out.jpg"))
   }
 }
 

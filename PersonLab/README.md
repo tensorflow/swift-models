@@ -2,12 +2,7 @@
 
 [PersonLab](https://arxiv.org/abs/1803.08225) human pose estimator, inference only version.
 
-CLI demo with option to run benchmarks on a local image file or on live video from a local webcam using SwiftCV. Very fast at over 200 fps on a GeForce GTX 1080 Ti, which it vastly underutilizes.
-
-## SwiftCV installation
-Installation of SwiftCV should be handled automatically by the SPM, but openCV has to be installed manually beforehand. OpenCV instsallation is easy though, just run the `install/install_cv4.sh` [script](https://github.com/joaqo/SwiftCV/blob/master/install/install_cv4.sh) in the SwiftCV repo. Note: This has only been tested in Ubuntu.
-
-I had to add several features to SwiftCV for this demo to run, most are merged upstream (webcam and gui support), but some are not (line drawing), so I had to use [my own branch](https://github.com/joaqo/SwiftCV) of SwiftCV as a dependency for this demo. I'll upstream the features to SwiftCV soon though.
+CLI demo with option to run benchmarks on a local image file. Very fast at over 200 fps on a GeForce GTX 1080 Ti, which it vastly underutilizes.
 
 ## Checkpoints
 Download the [checkpoint](https://github.com/joaqo/swift-models/releases/download/PersonlabDemo/personlabCheckpoint.tar.gz) from the releases page in this repo, whose path you'll have to provide to the CLI demo.
