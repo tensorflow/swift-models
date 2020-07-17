@@ -4,7 +4,11 @@ public func input(shape: [Int]) -> FunctionalLayer {
     return InputFunctionalLayer(shape: shape)
 }
 
-public func dense(_ prev: FunctionalLayer, outputSize: Int, activation: @escaping Dense<Float>.Activation = identity) -> FunctionalLayer {
+public func dense(
+    _ prev: FunctionalLayer,
+    outputSize: Int,
+    activation: @escaping Dense<Float>.Activation = identity
+) -> FunctionalLayer {
     return FunctionalLayerWrapper(
         parent: prev,
         layer: Dense<Float>(inputSize: prev.outputShape()[0], outputSize: outputSize, activation: activation),
@@ -168,7 +172,10 @@ public func merge(
 }
 
 extension FunctionalLayer {
-    public func dense(outputSize: Int, activation: @escaping Dense<Float>.Activation = identity) -> FunctionalLayer {
+    public func dense(
+        outputSize: Int,
+        activation: @escaping Dense<Float>.Activation = identity
+    ) -> FunctionalLayer {
         return LayerInit.dense(self, outputSize: outputSize, activation: activation)
     }
 

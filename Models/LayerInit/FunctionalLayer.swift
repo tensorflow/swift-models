@@ -13,7 +13,8 @@ public extension Array {
 
 public extension Array where Element: Differentiable {
   @derivative(of: updated)
-  mutating func vjpUpdated(at index: Int, with newValue: Element) -> (value: Void, pullback: (inout TangentVector) -> (Element.TangentVector)) {
+  mutating func vjpUpdated(at index: Int, with newValue: Element)
+    -> (value: Void, pullback: (inout TangentVector) -> (Element.TangentVector)) {
     self.updated(at: index, with: newValue)
     return ((), { v in
        let dElement = v[index]
@@ -38,7 +39,8 @@ public class FunctionalLayer : Hashable {
         fatalError("Must implement")
     }
 
-    func buildLayerApplication(dependencyIndices: [Int]) -> @differentiable ([Tensor<Float>], DynamicLayerStore) -> Tensor<Float> {
+    func buildLayerApplication(dependencyIndices: [Int])
+        -> @differentiable ([Tensor<Float>], DynamicLayerStore) -> Tensor<Float> {
         fatalError("Must implement")
     }
 
@@ -134,7 +136,7 @@ extension FunctionalLayer {
                 openSlots.append(0) // the input value is only used once, in the single input layer
             }
 
-            let underlyingFunction = layer.buildLayerApplication(dependencyIndices: dependencyIndices)
+            let layerCaller = layer.buildLayerApplication(dependencyIndices: dependencyIndices)
 
             let prevAccumulated = accumulatedFunction
             let allocatedSlot = openSlots.count > 0 ? openSlots.removeFirst() : maxIndex + 1
@@ -143,12 +145,12 @@ extension FunctionalLayer {
                 assert(allocatedSlot == maxIndex + 1)
                 accumulatedFunction = { (outputs: inout [Tensor<Float>], layers: [DynamicLayerStore]) in
                     prevAccumulated(&outputs, layers)
-                    outputs.append(underlyingFunction(outputs, layers[layerIndex]))
+                    outputs.append(layerCaller(outputs, layers[layerIndex]))
                 }
             } else {
                 accumulatedFunction = { (outputs: inout [Tensor<Float>], layers: [DynamicLayerStore]) in
                     prevAccumulated(&outputs, layers)
-                    outputs.updated(at: allocatedSlot, with: underlyingFunction(outputs, layers[layerIndex]))
+                    outputs.updated(at: allocatedSlot, with: layerCaller(outputs, layers[layerIndex]))
                     // faster: outputs = [underlyingFunction(outputs, layers[index])]
                 }
             }
@@ -158,12 +160,13 @@ extension FunctionalLayer {
             maxIndex = max(maxIndex, allocatedSlot)
         }
 
-        let computeFunction: @differentiable ([DynamicLayerStore], Tensor<Float>) -> Tensor<Float> = { (layers: [DynamicLayerStore], input: Tensor<Float>) in
-            var outputs: [Tensor<Float>] = [input]
-            accumulatedFunction(&outputs, layers)
-            return outputs[lastIndex]
-        }
-
-        return ComposedLayer(layers: layersBuilt, callFunction: computeFunction)
+        return ComposedLayer(
+            layers: layersBuilt,
+            callFunction: { (layers: [DynamicLayerStore], input: Tensor<Float>) in
+                var outputs: [Tensor<Float>] = [input]
+                accumulatedFunction(&outputs, layers)
+                return outputs[lastIndex]
+            }
+        )
     }
 }
