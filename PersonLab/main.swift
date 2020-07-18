@@ -21,7 +21,7 @@ struct Inference: ParsableCommand {
   static var configuration = CommandConfiguration(
     commandName: "personlab",
     abstract: """
-      Runs human pose estimation on a local image file or on a local webcam.
+      Runs human pose estimation on a local image file.
       """
   )
 
