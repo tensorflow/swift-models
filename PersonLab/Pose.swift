@@ -14,7 +14,7 @@
 
 import TensorFlow
 
-struct Keypoint: XYCoordinate {
+struct Keypoint {
   var y: Float
   var x: Float
   let index: KeypointIndex

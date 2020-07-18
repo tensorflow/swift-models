@@ -14,6 +14,7 @@
 
 import ModelSupport
 import TensorFlow
+import ModelSupport
 
 public struct Config {
   let checkpointPath: String
@@ -44,8 +45,8 @@ func draw(_ pose: Pose, on imageTensor: inout Tensor<Float>) {
         if let nextKeypoint = pose.getKeypoint(nextKeypointIndex) {
           drawLine(
             on: &imageTensor,
-            from: (previousKeypoint.x, previousKeypoint.y),
-            to: (nextKeypoint.x, nextKeypoint.y)
+            from: (Int(previousKeypoint.x), Int(previousKeypoint.y)),
+            to: (Int(nextKeypoint.x), Int(nextKeypoint.y))
           )
           recursivellyDrawNextKeypoint(after: nextKeypoint, into: &imageTensor)
         }
@@ -84,11 +85,4 @@ struct CPUTensor<T: TensorFlowScalar> {
     oneDimensionalIndex += indexes.last!
     return flattenedTensor[oneDimensionalIndex]
   }
-}
-
-func drawLine(on imageTensor: inout Tensor<Float>, from pt1: (Float, Float), to pt2: (Float, Float)) {
-  let pt1 = (Int(pt1.0), Int(pt1.1))
-  let pt2 = (Int(pt2.0), Int(pt2.1))
-  imageTensor[pt1.1, pt1.0] = Tensor<Float>([255.0, 255.0, 255.0])
-  imageTensor[pt2.1, pt2.0] = Tensor<Float>([255.0, 255.0, 255.0])
 }
