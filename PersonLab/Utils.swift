@@ -14,7 +14,6 @@
 
 import ModelSupport
 import TensorFlow
-import ModelSupport
 
 public struct Config {
   let checkpointPath: String
@@ -39,7 +38,9 @@ func draw(_ pose: Pose, on imageTensor: inout Tensor<Float>) {
   var pose = pose
   pose.rescale(to: (height: imageTensor.shape[0], width: imageTensor.shape[1]))
 
-  func recursivellyDrawNextKeypoint(after previousKeypoint: Keypoint, into imageTensor: inout Tensor<Float>) {
+  func recursivellyDrawNextKeypoint(
+    after previousKeypoint: Keypoint, into imageTensor: inout Tensor<Float>
+  ) {
     for (nextKeypointIndex, direction) in getNextKeypointIndexAndDirection(previousKeypoint.index) {
       if direction == .fwd {
         if let nextKeypoint = pose.getKeypoint(nextKeypointIndex) {
