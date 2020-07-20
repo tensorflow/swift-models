@@ -55,11 +55,9 @@ where L.Input == Tensor<Float>, L.Output == Tensor<Float>, L.TangentVector.Vecto
     public override func buildLayerApplication(dependencyIndices: [Int])
         -> @differentiable ([Tensor<Float>], DynamicLayerStore) -> Tensor<Float> {
         let prevIndex = dependencyIndices[0]
-        return { (outputs: [Tensor<Float>], selfLayer: DynamicLayerStore) in
-            return selfLayer.callWithLayer(
-                outputs[prevIndex],
-                { (layer: L, input: Tensor<Float>) in layer.callAsFunction(input) }
-            )
+        return { (outputs: [Tensor<Float>], selfLayer: DynamicLayerStore) -> Tensor<Float> in
+            let layerSpecializer: L? = nil // Guide type parameter inference to pick up the layer type
+            return selfLayer.callDynamically(outputs[prevIndex], layerSpecializer: layerSpecializer)
         }
     }
 }

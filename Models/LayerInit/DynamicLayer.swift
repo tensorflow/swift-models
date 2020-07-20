@@ -9,23 +9,25 @@ public struct DynamicLayerStore: EuclideanDifferentiable, KeyPathIterable {
   }
 
   @differentiable
-  public func callWithLayer<T: Differentiable, L: Layer, R: Differentiable>(
-    _ input: T, _ thunk: @differentiable (L, T) -> R
-  ) -> R where L.TangentVector.VectorSpaceScalar == Float {
-    return thunk(underlying.base as! L, input)
+  public func callDynamically<L: Layer>(
+    _ input: L.Input,
+    layerSpecializer: L?
+  ) -> L.Output where L.TangentVector.VectorSpaceScalar == Float {
+    return (underlying.base as! L).callAsFunction(input)
   }
 
-  @derivative(of: callWithLayer)
-  public func dCallDynamically<T: Differentiable, L: Layer, R: Differentiable>(
-    _ input: T, _ thunk: @differentiable (L, T) -> R
+  @derivative(of: callDynamically)
+  public func dCallDynamically<L: Layer>(
+    _ input: L.Input,
+    layerSpecializer: L?
   ) -> (
-    value: R,
-    pullback: (R.TangentVector) -> (TangentVector, T.TangentVector)
+    value: L.Output,
+    pullback: (L.Output.TangentVector) -> (TangentVector, L.Input.TangentVector)
   ) where L.TangentVector.VectorSpaceScalar == Float {
     let underlyingLayer = underlying.base as! L
     let (y, pullback) = valueWithPullback(
       at: underlyingLayer, input,
-      in: thunk
+      in: { $0.callAsFunction($1) }
     )
 
     return (value: y, pullback: { v in
