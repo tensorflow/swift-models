@@ -1,6 +1,9 @@
 add_library(LayerInit
+  AnyLayer.swift
+  CommonTracingLayers.swift
   DynamicLayer.swift
-  FunctionalBuild.swift)
+  TracingLayer.swift
+  TracingLayerWrappers.swift)
 set_target_properties(LayerInit PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
 target_compile_options(LayerInit PRIVATE

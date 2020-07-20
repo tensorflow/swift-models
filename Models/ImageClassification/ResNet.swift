@@ -25,15 +25,15 @@ import LayerInit
 // The structure of this implementation was inspired by the Flax ResNet example:
 // https://github.com/google/flax/blob/master/examples/imagenet/models.py
 
-extension FunctionalLayer {
-    public func convBN(filterShape: (Int, Int), outputChannels: Int, strides: (Int, Int) = (1, 1), padding: Padding = .valid) -> FunctionalLayer {
+extension TracingLayer {
+    public func convBN(filterShape: (Int, Int), outputChannels: Int, strides: (Int, Int) = (1, 1), padding: Padding = .valid) -> TracingLayer {
         return self
             .conv2D(filterShape: filterShape, outputChannels: outputChannels, strides: strides, padding: padding, useBias: false)
             .batchNorm(momentum: 0.9, epsilon: 1e-5)
     }
 }
 
-public func residualBlock(input: FunctionalLayer, inputFilters: Int, filters: Int, strides: (Int, Int), useLaterStride: Bool, isBasic: Bool) -> FunctionalLayer {
+public func residualBlock(input: TracingLayer, inputFilters: Int, filters: Int, strides: (Int, Int), useLaterStride: Bool, isBasic: Bool) -> TracingLayer {
     let outFilters = filters * (isBasic ? 1 : 4)
 
     let needsProjection = (inputFilters != outFilters) || (strides.0 != 1)
@@ -41,13 +41,13 @@ public func residualBlock(input: FunctionalLayer, inputFilters: Int, filters: In
         input.convBN(filterShape: (1, 1), outputChannels: outFilters, strides: strides) :
         input
 
-    let convsApplied: FunctionalLayer
+    let convsApplied: TracingLayer
     if isBasic {
         convsApplied = input
             .convBN(filterShape: (3, 3), outputChannels: filters, strides: strides, padding: .same).relu()
             .convBN(filterShape: (3, 3), outputChannels: outFilters, padding: .same)
     } else {
-        let earlyConvsApplied: FunctionalLayer
+        let earlyConvsApplied: TracingLayer
         if useLaterStride {
             // Configure for ResNet V1.5 (the more common implementation).
             earlyConvsApplied = input
@@ -66,9 +66,9 @@ public func residualBlock(input: FunctionalLayer, inputFilters: Int, filters: In
     return (residual + convsApplied).relu()
 }
 
-public func resNet(_ input: FunctionalLayer, classCount: Int, depth: ResNet.Depth, downsamplingInFirstStage: Bool = true, useLaterStride: Bool = true) -> FunctionalLayer {
+public func resNet(_ input: TracingLayer, classCount: Int, depth: ResNet.Depth, downsamplingInFirstStage: Bool = true, useLaterStride: Bool = true) -> TracingLayer {
     let inputFilters: Int
-    let initialTransformed: FunctionalLayer
+    let initialTransformed: TracingLayer
         
     if downsamplingInFirstStage {
         inputFilters = 64
@@ -127,7 +127,7 @@ public struct ResNet: Layer {
         useLaterStride: Bool = true
     ) {
         underlying = resNet(
-            InputFunctionalLayer(shape: [1, 1, 3]),
+            InputTracingLayer(shape: [1, 1, 3]),
             classCount: classCount, depth: depth, downsamplingInFirstStage: downsamplingInFirstStage,
             useLaterStride: useLaterStride
         ).build()

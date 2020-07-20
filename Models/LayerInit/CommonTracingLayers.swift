@@ -1,23 +1,23 @@
 import TensorFlow
 
-public func input(shape: [Int]) -> FunctionalLayer {
-    return InputFunctionalLayer(shape: shape)
+public func input(shape: [Int]) -> TracingLayer {
+    return InputTracingLayer(shape: shape)
 }
 
 public func dense(
-    _ prev: FunctionalLayer,
+    _ prev: TracingLayer,
     outputSize: Int,
     activation: @escaping Dense<Float>.Activation = identity
-) -> FunctionalLayer {
-    return FunctionalLayerWrapper(
+) -> TracingLayer {
+    return TracingLayerWrapper(
         parent: prev,
         layer: Dense<Float>(inputSize: prev.outputShape()[0], outputSize: outputSize, activation: activation),
         outputShape: [outputSize]
     )
 }
 
-public func flatten(_ prev: FunctionalLayer) -> FunctionalLayer {
-    return FunctionalLayerWrapper(
+public func flatten(_ prev: TracingLayer) -> TracingLayer {
+    return TracingLayerWrapper(
         parent: prev,
         layer: Flatten<Float>(),
         outputShape: [prev.outputShape().reduce(1, { $0 * $1 })]
@@ -25,7 +25,7 @@ public func flatten(_ prev: FunctionalLayer) -> FunctionalLayer {
 }
 
 public func conv2D(
-    _ prev: FunctionalLayer,
+    _ prev: TracingLayer,
     filterShape: (Int, Int),
     outputChannels: Int,
     strides: (Int, Int) = (1, 1),
@@ -35,7 +35,7 @@ public func conv2D(
     useBias: Bool = true,
     filterInitializer: @escaping ParameterInitializer<Float> = glorotUniform(),
     biasInitializer: @escaping ParameterInitializer<Float> = zeros()
-) -> FunctionalLayer {
+) -> TracingLayer {
     let inputShape = prev.outputShape()
 
     let outputShape: [Int]
@@ -53,7 +53,7 @@ public func conv2D(
         ]
     }
 
-    return FunctionalLayerWrapper(
+    return TracingLayerWrapper(
         parent: prev,
         layer: Conv2D<Float>(
             filterShape: (filterShape.0, filterShape.1, inputShape[2], outputChannels),
@@ -66,11 +66,11 @@ public func conv2D(
 }
 
 public func avgPool2D(
-    _ prev: FunctionalLayer,
+    _ prev: TracingLayer,
     poolSize: (Int, Int),
     strides: (Int, Int) = (1, 1),
     padding: Padding = .valid
-) -> FunctionalLayer {
+) -> TracingLayer {
     let inputShape = prev.outputShape()
 
     let outputShape: [Int]
@@ -88,7 +88,7 @@ public func avgPool2D(
         ]
     }
 
-    return FunctionalLayerWrapper(
+    return TracingLayerWrapper(
         parent: prev,
         layer: AvgPool2D<Float>(
             poolSize: poolSize,
@@ -100,11 +100,11 @@ public func avgPool2D(
 }
 
 public func maxPool2D(
-    _ prev: FunctionalLayer,
+    _ prev: TracingLayer,
     poolSize: (Int, Int),
     strides: (Int, Int) = (1, 1),
     padding: Padding = .valid
-) -> FunctionalLayer {
+) -> TracingLayer {
     let inputShape = prev.outputShape()
 
     let outputShape: [Int]
@@ -122,7 +122,7 @@ public func maxPool2D(
         ]
     }
 
-    return FunctionalLayerWrapper(
+    return TracingLayerWrapper(
         parent: prev,
         layer: MaxPool2D<Float>(
             poolSize: poolSize,
@@ -133,9 +133,9 @@ public func maxPool2D(
     )
 }
 
-public func globalAvgPool2D(_ prev: FunctionalLayer) -> FunctionalLayer {
+public func globalAvgPool2D(_ prev: TracingLayer) -> TracingLayer {
     let inputShape = prev.outputShape()
-    return FunctionalLayerWrapper(
+    return TracingLayerWrapper(
         parent: prev,
         layer: GlobalAvgPool2D<Float>(),
         outputShape: [inputShape[2]]
@@ -143,14 +143,14 @@ public func globalAvgPool2D(_ prev: FunctionalLayer) -> FunctionalLayer {
 }
 
 public func batchNorm(
-    _ prev: FunctionalLayer,
+    _ prev: TracingLayer,
     axis: Int = -1,
     momentum: Float = 0.99,
     epsilon: Float = 0.001
-) -> FunctionalLayer {
+) -> TracingLayer {
     let prevShape = prev.outputShape()
     let featureCount = prevShape[(prevShape.count + axis) % prevShape.count]
-    return FunctionalLayerWrapper(
+    return TracingLayerWrapper(
         parent: prev,
         layer: BatchNorm<Float>(featureCount: featureCount, axis: axis, momentum: momentum, epsilon: epsilon),
         outputShape: prevShape
@@ -158,12 +158,12 @@ public func batchNorm(
 }
 
 public func merge(
-    _ prev1: FunctionalLayer,
-    _ prev2: FunctionalLayer,
+    _ prev1: TracingLayer,
+    _ prev2: TracingLayer,
     mergeShapes: ([Int], [Int]) -> [Int],
     mergeValues: @escaping @differentiable (Tensor<Float>, Tensor<Float>) -> Tensor<Float>
-) -> FunctionalLayer {
-    return MergeLayerWrapper(
+) -> TracingLayer {
+    return MergeTracingLayer(
         parent1: prev1,
         parent2: prev2,
         mergeFn: mergeValues,
@@ -171,15 +171,15 @@ public func merge(
     )
 }
 
-extension FunctionalLayer {
+extension TracingLayer {
     public func dense(
         outputSize: Int,
         activation: @escaping Dense<Float>.Activation = identity
-    ) -> FunctionalLayer {
+    ) -> TracingLayer {
         return LayerInit.dense(self, outputSize: outputSize, activation: activation)
     }
 
-    public func flatten() -> FunctionalLayer {
+    public func flatten() -> TracingLayer {
         return LayerInit.flatten(self)
     }
 
@@ -193,7 +193,7 @@ extension FunctionalLayer {
         useBias: Bool = true,
         filterInitializer: @escaping ParameterInitializer<Float> = glorotUniform(),
         biasInitializer: @escaping ParameterInitializer<Float> = zeros()
-    ) -> FunctionalLayer {
+    ) -> TracingLayer {
         return LayerInit.conv2D(
             self,
             filterShape: filterShape,
@@ -212,7 +212,7 @@ extension FunctionalLayer {
         poolSize: (Int, Int),
         strides: (Int, Int) = (1, 1),
         padding: Padding = .valid
-    ) -> FunctionalLayer {
+    ) -> TracingLayer {
         return LayerInit.avgPool2D(
             self,
             poolSize: poolSize,
@@ -225,7 +225,7 @@ extension FunctionalLayer {
         poolSize: (Int, Int),
         strides: (Int, Int) = (1, 1),
         padding: Padding = .valid
-    ) -> FunctionalLayer {
+    ) -> TracingLayer {
         return LayerInit.maxPool2D(
             self,
             poolSize: poolSize,
@@ -234,7 +234,7 @@ extension FunctionalLayer {
         )
     }
 
-    public func globalAvgPool2D() -> FunctionalLayer {
+    public func globalAvgPool2D() -> TracingLayer {
         return LayerInit.globalAvgPool2D(self)
     }
 
@@ -242,7 +242,7 @@ extension FunctionalLayer {
         axis: Int = -1,
         momentum: Float = 0.99,
         epsilon: Float = 0.001
-    ) -> FunctionalLayer {
+    ) -> TracingLayer {
         return LayerInit.batchNorm(
             self,
             axis: axis,
@@ -251,15 +251,15 @@ extension FunctionalLayer {
         )
     }
 
-    public func relu() -> FunctionalLayer {
-        return FunctionalLayerWrapper(
+    public func relu() -> TracingLayer {
+        return TracingLayerWrapper(
             parent: self,
             layer: Function(TensorFlow.relu),
             outputShape: self.outputShape()
         )
     }
 
-    public static func +(a: FunctionalLayer, b: FunctionalLayer) -> FunctionalLayer {
+    public static func +(a: TracingLayer, b: TracingLayer) -> TracingLayer {
         return merge(
             a, b,
             mergeShapes: { (shape1, shape2) in

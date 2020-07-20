@@ -26,7 +26,7 @@ public extension Array where Element: Differentiable {
   }
 }
 
-public class FunctionalLayer : Hashable {
+public class TracingLayer : Hashable {
     func outputShape() -> [Int] {
         fatalError("Must implement")
     }
@@ -35,7 +35,7 @@ public class FunctionalLayer : Hashable {
         fatalError("Must implement")
     }
 
-    func getDependencies() -> [FunctionalLayer] {
+    func getDependencies() -> [TracingLayer] {
         fatalError("Must implement")
     }
 
@@ -44,7 +44,7 @@ public class FunctionalLayer : Hashable {
         fatalError("Must implement")
     }
 
-    public static func ==(lhs: FunctionalLayer, rhs: FunctionalLayer) -> Bool {
+    public static func ==(lhs: TracingLayer, rhs: TracingLayer) -> Bool {
         return lhs === rhs
     }
 
@@ -53,16 +53,16 @@ public class FunctionalLayer : Hashable {
     }
 }
 
-extension FunctionalLayer {
+extension TracingLayer {
     public func build() -> ComposedLayer {
         // compute topological sort
-        var allLayers: [FunctionalLayer] = []
-        var toVisit: [FunctionalLayer] = [self] // TODO(shadaj): should be a queue
-        var unresolvedDependenciesPerLayer: [FunctionalLayer:Int] = [:]
-        var allDependenciesMet: [FunctionalLayer] = []
+        var allLayers: [TracingLayer] = []
+        var toVisit: [TracingLayer] = [self] // TODO(shadaj): should be a queue
+        var unresolvedDependenciesPerLayer: [TracingLayer:Int] = [:]
+        var allDependenciesMet: [TracingLayer] = []
         
-        var dependents: [FunctionalLayer:[FunctionalLayer]] = [:]
-        var dependentsCount: [FunctionalLayer : Int] = [:]
+        var dependents: [TracingLayer:[TracingLayer]] = [:]
+        var dependentsCount: [TracingLayer : Int] = [:]
 
         while toVisit.count > 0 {
             let next = toVisit.removeFirst()
@@ -94,9 +94,9 @@ extension FunctionalLayer {
             allLayersBuilt.append(layer.getLayer())
         }
 
-        var layerComputeOrder: [FunctionalLayer] = []
+        var layerComputeOrder: [TracingLayer] = []
         var layersBuilt: [DynamicLayerStore] = []
-        var layerToIndex: [FunctionalLayer : Int] = [:]
+        var layerToIndex: [TracingLayer : Int] = [:]
 
         while allDependenciesMet.count > 0 {
             let next = allDependenciesMet.removeFirst()
@@ -115,7 +115,7 @@ extension FunctionalLayer {
 
         var lastIndex = 0
         var maxIndex = 0
-        var allocatedIndices: [FunctionalLayer : Int] = [:]
+        var allocatedIndices: [TracingLayer : Int] = [:]
         var openSlots: [Int] = []
 
         for (layerIndex, layer) in layerComputeOrder.enumerated() {

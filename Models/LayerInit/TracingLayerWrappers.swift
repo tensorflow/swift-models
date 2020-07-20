@@ -1,6 +1,6 @@
 import TensorFlow
 
-public class InputFunctionalLayer: FunctionalLayer {
+public class InputTracingLayer: TracingLayer {
     let shape: [Int]
 
     public init(shape: [Int]) {
@@ -15,7 +15,7 @@ public class InputFunctionalLayer: FunctionalLayer {
         return DynamicLayerStore(Dense<Float>(inputSize: 1, outputSize: 1)) // TODO
     }
 
-    public override func getDependencies() -> [FunctionalLayer] {
+    public override func getDependencies() -> [TracingLayer] {
         return []
     }
 
@@ -28,13 +28,13 @@ public class InputFunctionalLayer: FunctionalLayer {
     }
 }
 
-public class FunctionalLayerWrapper<L: Layer>: FunctionalLayer
+public class TracingLayerWrapper<L: Layer>: TracingLayer
 where L.Input == Tensor<Float>, L.Output == Tensor<Float>, L.TangentVector.VectorSpaceScalar == Float {
     let layer: L
-    let parent: FunctionalLayer
+    let parent: TracingLayer
     let _outputShape: [Int]
 
-    public init(parent: FunctionalLayer, layer: L, outputShape: [Int]) {
+    public init(parent: TracingLayer, layer: L, outputShape: [Int]) {
         self.parent = parent
         self.layer = layer
         self._outputShape = outputShape
@@ -48,7 +48,7 @@ where L.Input == Tensor<Float>, L.Output == Tensor<Float>, L.TangentVector.Vecto
         return DynamicLayerStore(layer)
     }
 
-    public override func getDependencies() -> [FunctionalLayer] {
+    public override func getDependencies() -> [TracingLayer] {
         return [parent]
     }
 
@@ -64,15 +64,15 @@ where L.Input == Tensor<Float>, L.Output == Tensor<Float>, L.TangentVector.Vecto
     }
 }
 
-public class MergeLayerWrapper: FunctionalLayer {
+public class MergeTracingLayer: TracingLayer {
     let mergeFn: @differentiable (Tensor<Float>, Tensor<Float>) -> Tensor<Float>
-    let parent1: FunctionalLayer
-    let parent2: FunctionalLayer
+    let parent1: TracingLayer
+    let parent2: TracingLayer
     
     let _outputShape: [Int]
 
     public init(
-        parent1: FunctionalLayer, parent2: FunctionalLayer,
+        parent1: TracingLayer, parent2: TracingLayer,
         mergeFn: @escaping @differentiable (Tensor<Float>, Tensor<Float>) -> Tensor<Float>,
         outputShape: [Int]
     ) {
@@ -90,7 +90,7 @@ public class MergeLayerWrapper: FunctionalLayer {
         return DynamicLayerStore(Dense<Float>(inputSize: 1, outputSize: 1)) // TODO
     }
 
-    public override func getDependencies() -> [FunctionalLayer] {
+    public override func getDependencies() -> [TracingLayer] {
         return [parent1, parent2]
     }
 
