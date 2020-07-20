@@ -28,6 +28,7 @@ let package = Package(
         .package(url: "https://github.com/google/swift-benchmark", .branch("master")),
     ],
     targets: [
+        .target(name: "Bees", dependencies: ["Datasets", "ImageClassificationModels"], path: "Bees"),
         .target(name: "Batcher", path: "Batcher"),
         .target(
             name: "Checkpoints", dependencies: ["SwiftProtobuf", "ModelSupport"],
@@ -136,7 +137,7 @@ let package = Package(
         ),
         .target(
             name: "UNet",
-            dependencies: ["Datasets"],
+            dependencies: ["Datasets", "ImageClassificationModels"],
             path: "UNet"
         ),
         .target(
