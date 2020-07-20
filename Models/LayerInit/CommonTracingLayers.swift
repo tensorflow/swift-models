@@ -263,7 +263,7 @@ extension TracingLayer {
         return merge(
             a, b,
             mergeShapes: { (shape1, shape2) in
-                if (shape1 != shape2) { // TODO(shadaj): how does array equality work in Swift?
+                if (shape1.elementsEqual(shape2)) {
                     fatalError("Cannot add layers with different shapes")
                 } else {
                     return shape1
