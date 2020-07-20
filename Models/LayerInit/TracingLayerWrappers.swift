@@ -1,5 +1,6 @@
 import TensorFlow
 
+/// A tracing layer which represents the input to a model
 public class InputTracingLayer: TracingLayer {
     let shape: [Int]
 
@@ -28,6 +29,7 @@ public class InputTracingLayer: TracingLayer {
     }
 }
 
+/// A tracing layer which passes the parent's result through a classic layer
 public class TracingLayerWrapper<L: Layer>: TracingLayer
 where L.Input == Tensor<Float>, L.Output == Tensor<Float>, L.TangentVector.VectorSpaceScalar == Float {
     let layer: L
@@ -62,6 +64,7 @@ where L.Input == Tensor<Float>, L.Output == Tensor<Float>, L.TangentVector.Vecto
     }
 }
 
+/// A tracing layer which combines the results of two parent layers with a custom function
 public class MergeTracingLayer: TracingLayer {
     let mergeFn: @differentiable (Tensor<Float>, Tensor<Float>) -> Tensor<Float>
     let parent1: TracingLayer
