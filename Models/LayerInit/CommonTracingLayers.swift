@@ -10,17 +10,17 @@ public func dense(
     activation: @escaping Dense<Float>.Activation = identity
 ) -> TracingLayer {
     return TracingLayerWrapper(
-        parent: prev,
-        layer: Dense<Float>(inputSize: prev.outputShape()[0], outputSize: outputSize, activation: activation),
+        dependency: prev,
+        layer: Dense<Float>(inputSize: prev.outputShape[0], outputSize: outputSize, activation: activation),
         outputShape: [outputSize]
     )
 }
 
 public func flatten(_ prev: TracingLayer) -> TracingLayer {
     return TracingLayerWrapper(
-        parent: prev,
+        dependency: prev,
         layer: Flatten<Float>(),
-        outputShape: [prev.outputShape().reduce(1, { $0 * $1 })]
+        outputShape: [prev.outputShape.reduce(1, { $0 * $1 })]
     )
 }
 
@@ -36,7 +36,7 @@ public func conv2D(
     filterInitializer: @escaping ParameterInitializer<Float> = glorotUniform(),
     biasInitializer: @escaping ParameterInitializer<Float> = zeros()
 ) -> TracingLayer {
-    let inputShape = prev.outputShape()
+    let inputShape = prev.outputShape
 
     let outputShape: [Int]
     if (padding == .valid) {
@@ -54,7 +54,7 @@ public func conv2D(
     }
 
     return TracingLayerWrapper(
-        parent: prev,
+        dependency: prev,
         layer: Conv2D<Float>(
             filterShape: (filterShape.0, filterShape.1, inputShape[2], outputChannels),
             strides: strides, padding: padding, dilations: dilations,
@@ -71,7 +71,7 @@ public func avgPool2D(
     strides: (Int, Int) = (1, 1),
     padding: Padding = .valid
 ) -> TracingLayer {
-    let inputShape = prev.outputShape()
+    let inputShape = prev.outputShape
 
     let outputShape: [Int]
     if (padding == .valid) {
@@ -89,7 +89,7 @@ public func avgPool2D(
     }
 
     return TracingLayerWrapper(
-        parent: prev,
+        dependency: prev,
         layer: AvgPool2D<Float>(
             poolSize: poolSize,
             strides: strides,
@@ -105,7 +105,7 @@ public func maxPool2D(
     strides: (Int, Int) = (1, 1),
     padding: Padding = .valid
 ) -> TracingLayer {
-    let inputShape = prev.outputShape()
+    let inputShape = prev.outputShape
 
     let outputShape: [Int]
     if (padding == .valid) {
@@ -123,7 +123,7 @@ public func maxPool2D(
     }
 
     return TracingLayerWrapper(
-        parent: prev,
+        dependency: prev,
         layer: MaxPool2D<Float>(
             poolSize: poolSize,
             strides: strides,
@@ -134,9 +134,9 @@ public func maxPool2D(
 }
 
 public func globalAvgPool2D(_ prev: TracingLayer) -> TracingLayer {
-    let inputShape = prev.outputShape()
+    let inputShape = prev.outputShape
     return TracingLayerWrapper(
-        parent: prev,
+        dependency: prev,
         layer: GlobalAvgPool2D<Float>(),
         outputShape: [inputShape[2]]
     )
@@ -148,10 +148,10 @@ public func batchNorm(
     momentum: Float = 0.99,
     epsilon: Float = 0.001
 ) -> TracingLayer {
-    let prevShape = prev.outputShape()
+    let prevShape = prev.outputShape
     let featureCount = prevShape[(prevShape.count + axis) % prevShape.count]
     return TracingLayerWrapper(
-        parent: prev,
+        dependency: prev,
         layer: BatchNorm<Float>(featureCount: featureCount, axis: axis, momentum: momentum, epsilon: epsilon),
         outputShape: prevShape
     )
@@ -164,10 +164,10 @@ public func merge(
     mergeValues: @escaping @differentiable (Tensor<Float>, Tensor<Float>) -> Tensor<Float>
 ) -> TracingLayer {
     return MergeTracingLayer(
-        parent1: prev1,
-        parent2: prev2,
+        dependency1: prev1,
+        dependency2: prev2,
         mergeFn: mergeValues,
-        outputShape: mergeShapes(prev1.outputShape(), prev2.outputShape())
+        outputShape: mergeShapes(prev1.outputShape, prev2.outputShape)
     )
 }
 
@@ -253,9 +253,9 @@ extension TracingLayer {
 
     public func relu() -> TracingLayer {
         return TracingLayerWrapper(
-            parent: self,
+            dependency: self,
             layer: Function(TensorFlow.relu),
-            outputShape: self.outputShape()
+            outputShape: self.outputShape
         )
     }
 

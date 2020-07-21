@@ -1,25 +1,26 @@
 import TensorFlow
 import _Differentiation
 
-public struct DynamicLayerStore: EuclideanDifferentiable, KeyPathIterable {
+struct DynamicLayerStore: EuclideanDifferentiable, KeyPathIterable {
   @differentiable var underlying: AnyDifferentiable
 
-  public init<T: Layer>(_ layer: T) where T.TangentVector.VectorSpaceScalar == Float {
+  init<T: Layer>(_ layer: T) where T.TangentVector.VectorSpaceScalar == Float {
     underlying = AnyDifferentiable(_box: _ConcreteDifferentiableBox(layer))
   }
 
   @differentiable
-  public func callDynamically<L: Layer>(
+  func callDynamically<L: Layer>(
     _ input: L.Input,
-    layerSpecializer: L?
+    layerType: L.Type
   ) -> L.Output where L.TangentVector.VectorSpaceScalar == Float {
+    // TODO(shadaj): unsafeDowncast
     return (underlying.base as! L).callAsFunction(input)
   }
 
   @derivative(of: callDynamically)
-  public func dCallDynamically<L: Layer>(
+  func dCallDynamically<L: Layer>(
     _ input: L.Input,
-    layerSpecializer: L?
+    layerType: L.Type
   ) -> (
     value: L.Output,
     pullback: (L.Output.TangentVector) -> (TangentVector, L.Input.TangentVector)
@@ -38,12 +39,12 @@ public struct DynamicLayerStore: EuclideanDifferentiable, KeyPathIterable {
 }
 
 public struct ComposedLayer: Layer {
-  public typealias CallFunction = @differentiable ([DynamicLayerStore], Tensor<Float>) -> Tensor<Float>
+  typealias CallFunction = @differentiable ([DynamicLayerStore], Tensor<Float>) -> Tensor<Float>
 
   var layers: [DynamicLayerStore] = []
   @noDerivative let callFunction: CallFunction
 
-  public init(layers: [DynamicLayerStore], callFunction: @escaping CallFunction) {
+  init(layers: [DynamicLayerStore], callFunction: @escaping CallFunction) {
     self.layers = layers
     self.callFunction = callFunction
   }

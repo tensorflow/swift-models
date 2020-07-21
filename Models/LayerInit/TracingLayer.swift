@@ -26,28 +26,28 @@ public extension Array where Element: Differentiable {
   }
 }
 
-/// Tracks a staged layer which keeps track of its parents and can be built into a classic layer.
+/// A specification for a layer and all its dependencies.
 public class TracingLayer : Hashable {
-    /// Gets the shape of the tensor emitted by this layer
-    func outputShape() -> [Int] {
+    /// The shape of the tensor emitted by this layer
+    var outputShape: [Int] {
         fatalError("Must implement")
     }
 
-    /// Gets the underlying classic layer wrapped into a type-erased container
-    func getLayer() -> DynamicLayerStore {
+    /// Constructs the underlying classic layer wrapped into a type-erased container
+    func makeClassicLayer() -> DynamicLayerStore {
         fatalError("Must implement")
     }
 
     /// Gets the list of immediate dependencies of the current layer, whose outputs are used in the current layer's computation
-    func getDependencies() -> [TracingLayer] {
+    var dependencies: [TracingLayer] {
         fatalError("Must implement")
     }
 
-    /// Builds a closure which pulls dependencies from a cache of tensors and uses the passed type-erased container to compute the output
+    /// Returns a closure which executes the layer by pulling inputs from a dependency source and calling the classic layer
     /// - dependencyIndices: the indices of the cache at which the layer's dependencies lie; each index in the array corresponds
-    ///                      to the layer at the same index in getDependencies()
-    func buildLayerApplication(dependencyIndices: [Int])
-        -> @differentiable ([Tensor<Float>], DynamicLayerStore) -> Tensor<Float> {
+    ///   to the layer at the same index in getDependencies()
+    func buildLayerApplication(dependencyIndices: [Int]) // TODO(shadaj): layerApplication
+        -> @differentiable (_ dependencySource: [Tensor<Float>], _ classicLayer: DynamicLayerStore) -> Tensor<Float> {
         fatalError("Must implement")
     }
 
@@ -61,6 +61,7 @@ public class TracingLayer : Hashable {
 }
 
 extension TracingLayer {
+    /// Constructs an instance of the layer graph specified by `self`.
     public func build() -> ComposedLayer {
         // first, explore the graph to locate all layers and precompute values for topological sort
         var allLayers: [TracingLayer] = []
@@ -75,8 +76,8 @@ extension TracingLayer {
             let next = toVisit.removeFirst()
             if (!allLayers.contains(next)) {
                 allLayers.append(next)
-                let dependencies = next.getDependencies()
                 
+                let dependencies = next.dependencies
                 unresolvedDependenciesPerLayer[next] = dependencies.count
                 
                 if dependencies.count > 0 {
@@ -97,12 +98,6 @@ extension TracingLayer {
             }
         }
 
-        // build the nodes into classic layers
-        var allLayersBuilt: [DynamicLayerStore] = []
-        for layer in allLayers {
-            allLayersBuilt.append(layer.getLayer())
-        }
-
         // compute topological sort
         var allDependenciesMet: [TracingLayer] = [inputLayer!]
         var layerComputeOrder: [TracingLayer] = []
@@ -112,7 +107,7 @@ extension TracingLayer {
         while allDependenciesMet.count > 0 {
             let next = allDependenciesMet.removeFirst()
             layerComputeOrder.append(next)
-            layersBuilt.append(next.getLayer())
+            layersBuilt.append(next.makeClassicLayer())
             layerToIndex[next] = layersBuilt.count - 1
             for dependent in dependents[next, default: []] {
                 unresolvedDependenciesPerLayer[dependent]! -= 1
@@ -132,7 +127,7 @@ extension TracingLayer {
 
         for (layerIndex, layer) in layerComputeOrder.enumerated() {
             var dependencyIndices: [Int] = []
-            for dependency in layer.getDependencies() {
+            for dependency in layer.dependencies {
                 let previouslyAllocated = allocatedIndices[dependency]!
                 dependencyIndices.append(previouslyAllocated)
                 
