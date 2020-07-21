@@ -19,13 +19,7 @@ import TensorFlow
 import TextModels
 import x10_optimizers_optimizer
 
-// Until https://github.com/tensorflow/swift-apis/issues/993 is fixed, default to the eager-mode
-// device on macOS instead of X10.
-#if os(macOS)
-  let device = Device.defaultTFEager
-#else
-  let device = Device.defaultXLA
-#endif
+let device = Device.defaultXLA
 
 var bertPretrained: BERT.PreTrainedModel
 if CommandLine.arguments.count >= 2 {
