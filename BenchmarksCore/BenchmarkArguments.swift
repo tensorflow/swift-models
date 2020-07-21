@@ -23,16 +23,16 @@ public struct BenchmarkArguments: ParsableArguments {
   var batchSize: Int?
 
   @Flag(help: "Use eager backend.")
-  var eager: Bool
+  var eager: Bool = false
 
   @Flag(help: "Use X10 backend.")
-  var x10: Bool
+  var x10: Bool = false
 
   @Flag(help: "Use synthetic data.")
-  var synthetic: Bool
+  var synthetic: Bool = false 
 
   @Flag(help: "Use real data.")
-  var real: Bool
+  var real: Bool = false 
 
   @Option(help: "File path for dataset loading.")
   var datasetFilePath: String?
