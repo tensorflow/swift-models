@@ -27,6 +27,8 @@ if CommandLine.arguments.count >= 2 {
         bertPretrained = BERT.PreTrainedModel.albertBase
     } else if CommandLine.arguments[1].lowercased() == "roberta" {
         bertPretrained = BERT.PreTrainedModel.robertaBase
+    } else if CommandLine.arguments[1].lowercased() == "electra" {
+        bertPretrained = BERT.PreTrainedModel.electraBase
     } else {
         bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
     }
