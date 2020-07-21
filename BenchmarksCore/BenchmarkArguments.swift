@@ -19,7 +19,7 @@ public struct BenchmarkArguments: ParsableArguments {
   @OptionGroup()
   var arguments: Benchmark.BenchmarkArguments
 
-  @Option(name: .customLong("batchSize"), help: "Size of a single batch.")
+  @Option(help: "Size of a single batch.")
   var batchSize: Int?
 
   @Flag(help: "Use eager backend.")
@@ -34,7 +34,7 @@ public struct BenchmarkArguments: ParsableArguments {
   @Flag(help: "Use real data.")
   var real: Bool
 
-  @Option(name: .customLong("datasetFilePath"), help: "File path for dataset loading.")
+  @Option(help: "File path for dataset loading.")
   var datasetFilePath: String?
 
   public init() {}
