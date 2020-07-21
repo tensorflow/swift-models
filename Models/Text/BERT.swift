@@ -550,6 +550,7 @@ extension BERT {
             let bertPrefix = "https://storage.googleapis.com/bert_models/2018_"
             let robertaPrefix = "https://storage.googleapis.com/s4tf-hosted-binaries/checkpoints/Text/RoBERTa"
             let albertPrefix = "https://storage.googleapis.com/tfhub-modules/google/albert"
+            let electraPrefix = "https://storage.googleapis.com/electra-data/electra_"
             switch self {
             case .bertBase(false, false):
                 return URL(string: "\(bertPrefix)10_18/\(subDirectory).zip")!
@@ -574,9 +575,9 @@ extension BERT {
             case .albertBase, .albertLarge, .albertXLarge, .albertXXLarge:
                 return URL(string: "\(albertPrefix)_\(subDirectory)/1.tar.gz")!
             case .electraBase:
-                return URL(string: "\(electraPrefix)base.zip")
+                return URL(string: "\(electraPrefix)base.zip")!
             case .electraLarge:
-                return URL(string: "\(electraPrefix)large.zip")
+                return URL(string: "\(electraPrefix)large.zip")!
             }
         }
 
@@ -790,22 +791,22 @@ extension BERT {
         switch variant {
         case .bert, .albert, .roberta:    
             tokenEmbedding.embeddings =
-                Tensor(checkpointReader.loadTensor(named: "bert/embeddings/word_embeddings"))
+                reader.readTensor(name: "bert/embeddings/word_embeddings")
             positionEmbedding.embeddings =
-                Tensor(checkpointReader.loadTensor(named: "bert/embeddings/position_embeddings"))
+                reader.readTensor(name: "bert/embeddings/position_embeddings")
             embeddingLayerNorm.offset =
-                Tensor(checkpointReader.loadTensor(named: "bert/embeddings/LayerNorm/beta"))
+                reader.readTensor(name: "bert/embeddings/LayerNorm/beta")
             embeddingLayerNorm.scale =
-                Tensor(checkpointReader.loadTensor(named: "bert/embeddings/LayerNorm/gamma"))
+                reader.readTensor(name: "bert/embeddings/LayerNorm/gamma")
         case .electra:
             tokenEmbedding.embeddings =
-                Tensor(checkpointReader.loadTensor(named: "electra/embeddings/word_embeddings"))
+                reader.readTensor(name: "electra/embeddings/word_embeddings")
             positionEmbedding.embeddings =
-                Tensor(checkpointReader.loadTensor(named: "electra/embeddings/position_embeddings"))
+                reader.readTensor(name: "electra/embeddings/position_embeddings")
             embeddingLayerNorm.offset =
-                Tensor(checkpointReader.loadTensor(named: "electra/embeddings/LayerNorm/beta"))
+                reader.readTensor(name: "electra/embeddings/LayerNorm/beta")
             embeddingLayerNorm.scale =
-                Tensor(checkpointReader.loadTensor(named: "electra/embeddings/LayerNorm/gamma"))
+                reader.readTensor(name: "electra/embeddings/LayerNorm/gamma")
         }
         switch variant {
         case .bert, .albert:
@@ -814,7 +815,7 @@ extension BERT {
         case .roberta: ()
         case .electra:
             tokenTypeEmbedding.embeddings =
-                Tensor(checkpointReader.loadTensor(named: "electra/embeddings/token_type_embeddings"))    
+                reader.readTensor(name: "electra/embeddings/token_type_embeddings")    
         }
         switch variant {
         case .bert, .roberta:
@@ -835,37 +836,37 @@ extension BERT {
             for layerIndex in encoderLayers.indices {
                 let prefix = "electra/encoder/layer_\(layerIndex)"
                 encoderLayers[layerIndex].multiHeadAttention.queryWeight =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/self/query/kernel"))
+                    reader.readTensor(name:  "\(prefix)/attention/self/query/kernel")
                 encoderLayers[layerIndex].multiHeadAttention.queryBias =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/self/query/bias"))
+                    reader.readTensor(name:  "\(prefix)/attention/self/query/bias")
                 encoderLayers[layerIndex].multiHeadAttention.keyWeight =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/self/key/kernel"))
+                    reader.readTensor(name:  "\(prefix)/attention/self/key/kernel")
                 encoderLayers[layerIndex].multiHeadAttention.keyBias =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/self/key/bias"))
+                    reader.readTensor(name:  "\(prefix)/attention/self/key/bias")
                 encoderLayers[layerIndex].multiHeadAttention.valueWeight =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/self/value/kernel"))
+                    reader.readTensor(name:  "\(prefix)/attention/self/value/kernel")
                 encoderLayers[layerIndex].multiHeadAttention.valueBias =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/self/value/bias"))
+                    reader.readTensor(name:  "\(prefix)/attention/self/value/bias")
                 encoderLayers[layerIndex].attentionWeight =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/output/dense/kernel"))
+                    reader.readTensor(name:  "\(prefix)/attention/output/dense/kernel")
                 encoderLayers[layerIndex].attentionBias =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/output/dense/bias"))
+                    reader.readTensor(name:  "\(prefix)/attention/output/dense/bias")
                 encoderLayers[layerIndex].attentionLayerNorm.offset =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/output/LayerNorm/beta"))
+                    reader.readTensor(name:  "\(prefix)/attention/output/LayerNorm/beta")
                 encoderLayers[layerIndex].attentionLayerNorm.scale =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/attention/output/LayerNorm/gamma"))
+                    reader.readTensor(name:  "\(prefix)/attention/output/LayerNorm/gamma")
                 encoderLayers[layerIndex].intermediateWeight =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/intermediate/dense/kernel"))
+                    reader.readTensor(name:  "\(prefix)/intermediate/dense/kernel")
                 encoderLayers[layerIndex].intermediateBias =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/intermediate/dense/bias"))
+                    reader.readTensor(name:  "\(prefix)/intermediate/dense/bias")
                 encoderLayers[layerIndex].outputWeight =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/output/dense/kernel"))
+                    reader.readTensor(name:  "\(prefix)/output/dense/kernel")
                 encoderLayers[layerIndex].outputBias =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/output/dense/bias"))
+                    reader.readTensor(name:  "\(prefix)/output/dense/bias")
                 encoderLayers[layerIndex].outputLayerNorm.offset =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/output/LayerNorm/beta"))
+                    reader.readTensor(name:  "\(prefix)/output/LayerNorm/beta")
                 encoderLayers[layerIndex].outputLayerNorm.scale =
-                    Tensor(checkpointReader.loadTensor(named: "\(prefix)/output/LayerNorm/gamma"))
+                    reader.readTensor(name:  "\(prefix)/output/LayerNorm/gamma")
             }
         }
     }
