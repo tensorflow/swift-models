@@ -123,7 +123,6 @@ add_dependencies(ArgumentParser swift-argument-parser-install)
 
 add_subdirectory(Autoencoder)
 add_subdirectory(Support)
-add_subdirectory(Batcher)
 add_subdirectory(Checkpoints)
 add_subdirectory(Datasets)
 add_subdirectory(Models)
