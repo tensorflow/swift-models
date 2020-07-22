@@ -55,7 +55,7 @@ extension TextBatch: Collatable {
 extension Collection where Element == TextBatch {
   /// Returns the elements of `self`, padded to `maxLength` if specified
   /// or the maximum length of the elements in `self` otherwise.
-  public func paddedAndCollated(on device: Device, to maxLength: Int? = nil) -> TextBatch {
+  public func paddedAndCollated(to maxLength: Int? = nil, on device: Device = .default) -> TextBatch {
     let maxLength = maxLength ?? self.map { $0.tokenIds.shape[1] }.max()!
     let paddedTexts = self.map { text -> TextBatch in
       let paddingSize = maxLength - text.tokenIds.shape[1]

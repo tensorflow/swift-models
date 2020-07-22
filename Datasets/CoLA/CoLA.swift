@@ -114,7 +114,7 @@ extension CoLA {
     maxSequenceLength: Int,
     batchSize: Int,
     entropy: Entropy,
-    on device: Device,
+    on device: Device = .default,
     exampleMap: @escaping (CoLAExample) -> LabeledTextBatch
   ) throws {
     self.directoryURL = taskDirectoryURL.appendingPathComponent("CoLA")
@@ -159,7 +159,7 @@ extension CoLA {
     ).lazy.map { (batches: Batches) -> LazyMapSequence<Batches, LabeledTextBatch> in
       batches.lazy.map{ 
         (
-          data: $0.map(\.data).paddedAndCollated(on: device, to: maxSequenceLength),
+          data: $0.map(\.data).paddedAndCollated(to: maxSequenceLength, on: device),
           label: Tensor(copying: Tensor($0.map(\.label)), to: device)
         )
       }
@@ -168,7 +168,7 @@ extension CoLA {
     // Create the validation collection of batches.
     validationBatches = validationExamples.inBatches(of: batchSize / maxSequenceLength).lazy.map{ 
       (
-        data: $0.map(\.data).paddedAndCollated(on: device, to: maxSequenceLength),
+        data: $0.map(\.data).paddedAndCollated(to: maxSequenceLength, on: device),
         label: Tensor(copying: Tensor($0.map(\.label)), to: device)
       )
     }
@@ -184,7 +184,7 @@ extension CoLA where Entropy == SystemRandomNumberGenerator {
     taskDirectoryURL: URL,
     maxSequenceLength: Int,
     batchSize: Int,
-    on: Device,
+    on device: Device = .default,
     exampleMap: @escaping (CoLAExample) -> LabeledTextBatch
   ) throws {
     try self.init(
@@ -192,7 +192,7 @@ extension CoLA where Entropy == SystemRandomNumberGenerator {
       maxSequenceLength: maxSequenceLength,
       batchSize: batchSize,
       entropy: SystemRandomNumberGenerator(),
-      on: on,
+      on: device,
       exampleMap: exampleMap
     )
   }
