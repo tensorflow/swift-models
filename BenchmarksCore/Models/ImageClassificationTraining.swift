@@ -16,7 +16,6 @@ import Benchmark
 import Datasets
 import TensorFlow
 
-// TODO: Ease the tight restriction on Batcher data sources to allow for lazy datasets.
 func runImageClassificationTraining<Model, ClassificationDataset>(
   model modelType: Model.Type,
   dataset datasetType: ClassificationDataset.Type,

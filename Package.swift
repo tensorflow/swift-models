@@ -9,7 +9,6 @@ let package = Package(
         .macOS(.v10_13),
     ],
     products: [
-        .library(name: "Batcher", targets: ["Batcher"]),
         .library(name: "Checkpoints", targets: ["Checkpoints"]),
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
@@ -28,7 +27,6 @@ let package = Package(
         .package(url: "https://github.com/google/swift-benchmark", .branch("master")),
     ],
     targets: [
-        .target(name: "Batcher", path: "Batcher"),
         .target(
             name: "Checkpoints", dependencies: ["SwiftProtobuf", "ModelSupport"],
             path: "Checkpoints"),
