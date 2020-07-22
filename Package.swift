@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "TensorFlowModels",
+    name: "swift-models",
     platforms: [
         .macOS(.v10_13),
     ],
