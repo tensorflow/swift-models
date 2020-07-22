@@ -114,7 +114,7 @@ extension CoLA {
     maxSequenceLength: Int,
     batchSize: Int,
     entropy: Entropy,
-    on: Device,
+    on device: Device,
     exampleMap: @escaping (CoLAExample) -> LabeledTextBatch
   ) throws {
     self.directoryURL = taskDirectoryURL.appendingPathComponent("CoLA")
@@ -159,8 +159,8 @@ extension CoLA {
     ).lazy.map { (batches: Batches) -> LazyMapSequence<Batches, LabeledTextBatch> in
       batches.lazy.map{ 
         (
-          data: $0.map(\.data).paddedAndCollated(on: on, to: maxSequenceLength),
-          label: Tensor(copying: Tensor($0.map(\.label)), to: on)
+          data: $0.map(\.data).paddedAndCollated(on: device, to: maxSequenceLength),
+          label: Tensor(copying: Tensor($0.map(\.label)), to: device)
         )
       }
     }
@@ -168,8 +168,8 @@ extension CoLA {
     // Create the validation collection of batches.
     validationBatches = validationExamples.inBatches(of: batchSize / maxSequenceLength).lazy.map{ 
       (
-        data: $0.map(\.data).paddedAndCollated(on: on, to: maxSequenceLength),
-        label: Tensor(copying: Tensor($0.map(\.label)), to: on)
+        data: $0.map(\.data).paddedAndCollated(on: device, to: maxSequenceLength),
+        label: Tensor(copying: Tensor($0.map(\.label)), to: device)
       )
     }
   }
