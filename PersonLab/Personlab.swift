@@ -26,7 +26,7 @@ public struct PersonLab {
     self.config = config
     do {
       self.ckpt = try CheckpointReader(
-        checkpointLocation: URL(fileURLWithPath: config.checkpointPath), modelName: "Personlab"
+        checkpointLocation: config.checkpointPath, modelName: "Personlab"
       )
     } catch {
       print("Error loading checkpoint file: \(config.checkpointPath)")

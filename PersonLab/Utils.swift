@@ -12,12 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Foundation
 import ModelSupport
 import TensorFlow
 
 public struct Config {
-  let checkpointPath: String
   let printProfilingData: Bool
+  var checkpointPath = URL(
+    string:
+      "https://github.com/tryolabs/swift-models/releases/download/PersonlabDemo/personlabCheckpoint.zip"
+  )!
   let inputImageSize = (height: 241, width: 289)
 
   // Decoder

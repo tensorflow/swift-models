@@ -25,18 +25,21 @@ struct Inference: ParsableCommand {
       """
   )
 
-  @Argument(help: "Path to checkpoint directory")
-  var checkpointPath: String
-
   @Argument(help: "Path to local image to run pose estimation on")
   var imagePath: String
+
+  @Option(name: .shortAndLong, help: "Path to checkpoint directory")
+  var checkpointPath: String?
 
   @Flag(name: .shortAndLong, help: "Print profiling data")
   var profiling: Bool
 
   func run() {
     Context.local.learningPhase = .inference
-    let config = Config(checkpointPath: checkpointPath, printProfilingData: profiling)
+    var config = Config(printProfilingData: profiling)
+    if checkpointPath != nil {
+      config.checkpointPath = URL(fileURLWithPath: checkpointPath!)
+    }
     let model = PersonLab(config)
 
     let fileManager = FileManager()
