@@ -64,6 +64,7 @@ struct Inference: ParsableCommand {
       draw(pose, on: &drawnTensor)
     }
     Image(tensor: drawnTensor).save(to: URL(fileURLWithPath: "out.jpg"))
+    print("Output image saved to 'out.jpg'")
   }
 }
 

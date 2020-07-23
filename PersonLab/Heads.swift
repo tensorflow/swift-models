@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import ModelSupport
+import Checkpoints
 import TensorFlow
 
 public struct PersonlabHeadsResults: Differentiable {
