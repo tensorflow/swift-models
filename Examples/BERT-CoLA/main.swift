@@ -27,6 +27,8 @@ if CommandLine.arguments.count >= 2 {
         bertPretrained = BERT.PreTrainedModel.albertBase
     } else if CommandLine.arguments[1].lowercased() == "roberta" {
         bertPretrained = BERT.PreTrainedModel.robertaBase
+    } else if CommandLine.arguments[1].lowercased() == "electra" {
+        bertPretrained = BERT.PreTrainedModel.electraBase
     } else {
         bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
     }
@@ -62,8 +64,11 @@ var cola = try CoLA(
   taskDirectoryURL: workspaceURL,
   maxSequenceLength: maxSequenceLength,
   batchSize: batchSize,
-  entropy: SystemRandomNumberGenerator()
-) { (example: CoLAExample) -> LabeledTextBatch in
+  entropy: SystemRandomNumberGenerator(),
+  on: device
+) { (example: CoLAExample) -> CoLA.LabeledTextBatch in
+  // In this closure, both the input and output text batches must be eager
+  // since the text is not padded and x10 requires stable shapes.
   let textBatch = bertClassifier.bert.preprocess(
     sequences: [example.sentence],
     maxSequenceLength: maxSequenceLength)
@@ -103,13 +108,7 @@ for (epoch, epochBatches) in cola.trainingEpochs.prefix(epochCount).enumerated()
     var trainingBatchCount = 0
 
     for batch in epochBatches {
-        let (eagerDocuments, eagerLabels) = (batch.data, Tensor<Float>(batch.label))
-        let documents = TextBatch(
-          tokenIds: Tensor(copying: eagerDocuments.tokenIds, to: device),
-          tokenTypeIds: Tensor(copying: eagerDocuments.tokenTypeIds, to: device),
-          mask: Tensor(copying: eagerDocuments.mask, to: device)
-        )
-        let labels = Tensor(copying: eagerLabels, to: device)
+        let (documents, labels) = (batch.data, Tensor<Float>(batch.label))
         var (loss, gradients) = valueWithGradient(at: bertClassifier) { model -> Tensor<Float> in
             let logits = model(documents)
             return sigmoidCrossEntropy(
@@ -145,13 +144,7 @@ for (epoch, epochBatches) in cola.trainingEpochs.prefix(epochCount).enumerated()
     var devPredictedLabels = [Bool]()
     var devGroundTruth = [Bool]()
     for batch in cola.validationBatches {
-        let (eagerDocuments, eagerLabels) = (batch.data, Tensor<Float>(batch.label))
-        let documents = TextBatch(
-          tokenIds: Tensor(copying: eagerDocuments.tokenIds, to: device),
-          tokenTypeIds: Tensor(copying: eagerDocuments.tokenTypeIds, to: device),
-          mask: Tensor(copying: eagerDocuments.mask, to: device)
-        )
-        let labels = Tensor(copying: eagerLabels, to: device)
+        let (documents, labels) = (batch.data, Tensor<Float>(batch.label))
         let logits = bertClassifier(documents)
         let loss = sigmoidCrossEntropy(
             logits: logits.squeezingShape(at: -1),

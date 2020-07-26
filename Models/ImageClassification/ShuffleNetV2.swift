@@ -19,6 +19,8 @@ import TensorFlow
 // Ningning Ma, Xiangyu Zhang, Hai-Tao Zheng, Jian Sun
 
 public struct ChannelShuffle: ParameterlessLayer {
+    public typealias TangentVector = EmptyTangentVector
+
     @noDerivative public var groups: Int
     
     public init(groups: Int = 2) {

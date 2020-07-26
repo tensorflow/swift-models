@@ -130,6 +130,8 @@ func _vjpCausallyMasked(_ dotProducts: Tensor<Float>, enable: Bool)
 }
 
 struct Attention: ParameterlessLayer {
+    typealias TangentVector = EmptyTangentVector
+
     @noDerivative var dropout: Dropout<Float>
     @noDerivative var scale: Tensor<Float>
     @noDerivative var causal: Bool

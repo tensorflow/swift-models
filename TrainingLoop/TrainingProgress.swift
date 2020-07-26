@@ -82,7 +82,7 @@ public class TrainingProgress {
       guard let epochIndex = loop.epochIndex, let epochCount = loop.epochCount else {
         return
       }
-      print("Epoch \(epochIndex + 1)/\(epochCount)\n")
+      print("Epoch \(epochIndex + 1)/\(epochCount)")
     case .batchEnd:
       guard let batchIndex = loop.batchIndex, let batchCount = loop.batchCount else {
         return
@@ -96,8 +96,12 @@ public class TrainingProgress {
         metricDescriptionComponent = ""
       }
       print(
-        "\u{1B}[1A\u{1B}[K\(batchIndex + 1)/\(batchCount) \(progressBarComponent)\(metricDescriptionComponent)"
+        "\r\(batchIndex + 1)/\(batchCount) \(progressBarComponent)\(metricDescriptionComponent)",
+        terminator: ""
       )
+      fflush(stdout)
+    case .epochEnd:
+      print("")
     case .validationStart:
       print("")
     default: break

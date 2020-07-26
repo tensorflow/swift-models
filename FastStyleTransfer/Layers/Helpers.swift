@@ -2,6 +2,8 @@ import TensorFlow
 
 /// A 2-D layer applying padding with reflection over a mini-batch.
 public struct ReflectionPad2D<Scalar: TensorFlowFloatingPoint>: ParameterlessLayer {
+    public typealias TangentVector = EmptyTangentVector
+
     /// The padding values along the spatial dimensions.
     @noDerivative public let padding: ((Int, Int), (Int, Int))
 
@@ -39,6 +41,8 @@ public struct ReflectionPad2D<Scalar: TensorFlowFloatingPoint>: ParameterlessLay
 
 /// A layer applying `relu` activation function.
 public struct ReLU<Scalar: TensorFlowFloatingPoint>: ParameterlessLayer {
+    public typealias TangentVector = EmptyTangentVector
+
     /// Returns the output obtained from applying the layer to the given input.
     ///
     /// - Parameter input: The input to the layer.

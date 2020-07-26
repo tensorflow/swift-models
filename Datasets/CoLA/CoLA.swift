@@ -19,8 +19,6 @@ import Foundation
 import ModelSupport
 import TensorFlow
 
-/// A `TextBatch` with the corresponding labels.
-public typealias LabeledTextBatch = (data: TextBatch, label: Tensor<Int32>)
 
 /// CoLA example.
 public struct CoLAExample {
@@ -42,6 +40,9 @@ public struct CoLAExample {
 public struct CoLA<Entropy: RandomNumberGenerator> {
   /// The directory where the dataset will be downloaded
   public let directoryURL: URL
+
+  /// A `TextBatch` with the corresponding labels.
+  public typealias LabeledTextBatch = (data: TextBatch, label: Tensor<Int32>)
   /// The type of the labeled samples.
   public typealias Samples = LazyMapSequence<[CoLAExample], LabeledTextBatch>
   /// The training texts.
@@ -113,6 +114,7 @@ extension CoLA {
     maxSequenceLength: Int,
     batchSize: Int,
     entropy: Entropy,
+    on device: Device = .default,
     exampleMap: @escaping (CoLAExample) -> LabeledTextBatch
   ) throws {
     self.directoryURL = taskDirectoryURL.appendingPathComponent("CoLA")
@@ -157,8 +159,8 @@ extension CoLA {
     ).lazy.map { (batches: Batches) -> LazyMapSequence<Batches, LabeledTextBatch> in
       batches.lazy.map{ 
         (
-          data: $0.map(\.data).paddedAndCollated(to: maxSequenceLength),
-          label: Tensor($0.map(\.label))
+          data: $0.map(\.data).paddedAndCollated(to: maxSequenceLength, on: device),
+          label: Tensor(copying: Tensor($0.map(\.label)), to: device)
         )
       }
     }
@@ -166,8 +168,8 @@ extension CoLA {
     // Create the validation collection of batches.
     validationBatches = validationExamples.inBatches(of: batchSize / maxSequenceLength).lazy.map{ 
       (
-        data: $0.map(\.data).paddedAndCollated(to: maxSequenceLength),
-        label: Tensor($0.map(\.label))
+        data: $0.map(\.data).paddedAndCollated(to: maxSequenceLength, on: device),
+        label: Tensor(copying: Tensor($0.map(\.label)), to: device)
       )
     }
   }
@@ -182,6 +184,7 @@ extension CoLA where Entropy == SystemRandomNumberGenerator {
     taskDirectoryURL: URL,
     maxSequenceLength: Int,
     batchSize: Int,
+    on device: Device = .default,
     exampleMap: @escaping (CoLAExample) -> LabeledTextBatch
   ) throws {
     try self.init(
@@ -189,6 +192,7 @@ extension CoLA where Entropy == SystemRandomNumberGenerator {
       maxSequenceLength: maxSequenceLength,
       batchSize: batchSize,
       entropy: SystemRandomNumberGenerator(),
+      on: device,
       exampleMap: exampleMap
     )
   }

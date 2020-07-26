@@ -27,7 +27,7 @@ set_target_properties(MiniGo PROPERTIES
 target_compile_options(MiniGo PRIVATE
   $<$<BOOL:${BUILD_TESTING}>:-enable-testing>)
 target_link_libraries(MiniGo PUBLIC
-  ModelSupport)
+  Checkpoints)
 
 add_executable(MiniGoDemo
   main.swift)
