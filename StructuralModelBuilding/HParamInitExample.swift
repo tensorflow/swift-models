@@ -1,7 +1,5 @@
 import TensorFlow
-import StructuralCore
 import PenguinStructures
-
 
 
 public struct MyInitModel {
@@ -12,9 +10,16 @@ public struct MyInitModel {
 // See below for explicit conformances to `DifferentiableStructural` and `StaticKeyPathIterable`
 
 // Thanks to `DifferentiableStructural` conformances, we can derive these protocols automagically!
-// extension MyInitModel: HParamInitLayer, Layer, SequentialLayer {
-//     public typealias HParam = StructuralRepresentation.HParam
-// }
+extension MyInitModel: HParamInitLayer, Layer, SequentialLayer {
+    // Must specify typealiases because they are not inferred automatically. :-(
+    public typealias Input = Tensor<Float>
+    public typealias Output = Tensor<Float>
+    public typealias SequentialInput = Input
+    public typealias SequentialOutput = Output    
+
+    public typealias HParam = StaticStructuralRepresentation.HParam
+    public init(hparam: HParam, inputExample: Input) {fatalError()}  // TODO: Infer automatically from.
+}
 
 func sampleModelUsage() -> MyInitModel {
     fatalError("TODO: WRITE ME OUT!")
@@ -72,12 +77,21 @@ extension MyInitModel: StaticKeyPathIterable {
 
 extension MyInitModel: DifferentiableStructural {
 
+    public typealias StaticStructuralRepresentation =
+        StaticStructuralStruct<MyInitModel,
+            StructuralCons<StaticStructuralProperty<MyInitModel, Conv2D<Float>>,
+            StructuralCons<StaticStructuralProperty<MyInitModel, Flatten<Float>>,
+            StaticStructuralProperty<MyInitModel, Dense<Float>>
+            >>>
+
+    public static var staticStructuralRepresentation: StaticStructuralRepresentation { fatalError() }  
+    
     public typealias StructuralRepresentation =
-        StructuralStruct<
-            StructuralCons<StructuralProperty<Conv2D<Float>>,
-            StructuralCons<StructuralProperty<Flatten<Float>>,
-            StructuralCons<StructuralProperty<Dense<Float>>,
-            StructuralEmpty>>>>
+        StructuralStruct<MyInitModel,
+            StructuralCons<StructuralProperty<MyInitModel, Conv2D<Float>>,
+            StructuralCons<StructuralProperty<MyInitModel, Flatten<Float>>,
+            StructuralProperty<MyInitModel, Dense<Float>>
+            >>>
 
     @differentiable
     public init(differentiableStructuralRepresentation: StructuralRepresentation) {
@@ -93,7 +107,8 @@ extension MyInitModel: DifferentiableStructural {
 
     @differentiable
     public var differentiableStructuralRepresentation: StructuralRepresentation {
-        fatalError()
+        get { fatalError() }
+        set { fatalError() }
     }
 
     @derivative(of: differentiableStructuralRepresentation)

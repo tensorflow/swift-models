@@ -1,5 +1,4 @@
 import TensorFlow
-import StructuralCore
 import PenguinStructures
 
 // TODO: Pick a better name.
@@ -57,14 +56,6 @@ extension StructuralStruct: SequentialLayer where Properties: SequentialLayer {
     public typealias SequentialOutput = Properties.SequentialOutput
     @differentiable
     public func sequentialApply(_ input: SequentialInput) -> SequentialOutput { properties.sequentialApply(input) }
-}
-
-extension StructuralEmpty: SequentialLayer {
-    public typealias SequentialInput = Tensor<Float>  // BAD!
-    public typealias SequentialOutput = Tensor<Float>  // BAD!
-
-    @differentiable
-    public func sequentialApply(_ input: SequentialInput) -> SequentialOutput { input }
 }
 
 /// Allows skipping a field in a SequentialLayer

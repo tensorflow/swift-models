@@ -1,5 +1,4 @@
 import PenguinStructures
-import StructuralCore
 import TensorFlow
 
 // TODO: Pick a better name.
@@ -50,10 +49,6 @@ extension StructuralStruct: ShapePropagatingLayer where Properties: ShapePropaga
     public init(shapeTracker: inout Tensor<Float>) {
         self.init(Properties(shapeTracker: &shapeTracker))
     }
-}
-
-extension StructuralEmpty: ShapePropagatingLayer {
-    public init(shapeTracker: inout Tensor<Float>) { self.init() }
 }
 
 // TODO: HParam property wrapper?

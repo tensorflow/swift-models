@@ -1,4 +1,3 @@
-import StructuralCore
 import PenguinStructures
 
 public protocol DifferentiableStructural: Structural where Self: Differentiable, StructuralRepresentation: Differentiable {
@@ -7,11 +6,14 @@ public protocol DifferentiableStructural: Structural where Self: Differentiable,
     init(differentiableStructuralRepresentation: StructuralRepresentation)
 
     @differentiable
-    var differentiableStructuralRepresentation: StructuralRepresentation { get }
+    var differentiableStructuralRepresentation: StructuralRepresentation { get set }
 }
 
 extension DifferentiableStructural {
-    public var structuralRepresentation: StructuralRepresentation { differentiableStructuralRepresentation }
+    public var structuralRepresentation: StructuralRepresentation {
+        get { differentiableStructuralRepresentation }
+        set { differentiableStructuralRepresentation = newValue }
+    }
 
     public init(structuralRepresentation: StructuralRepresentation) {
         self.init(differentiableStructuralRepresentation: structuralRepresentation)
@@ -50,21 +52,6 @@ extension StructuralProperty: Differentiable where Value: Differentiable {
         let valueInit = value.zeroTangentVectorInitializer
         return { () in TangentVector(value: valueInit()) }
     }
-}
-
-extension StructuralEmpty: AdditiveArithmetic {
-    public static func == (lhs: Self, rhs: Self) -> Bool { true }
-    public static var zero: Self { Self() }
-    public static func + (lhs: Self, rhs: Self) -> Self { Self() }
-    public static func += (lhs: inout Self, rhs: Self) {}
-    public static func - (lhs: Self, rhs: Self) -> Self { Self() }
-    public static func -= (lhs: inout Self, rhs: Self) {}
-}
-
-extension StructuralEmpty: Differentiable {
-    public typealias TangentVector = Self
-    public mutating func move(along direction: TangentVector) {}
-    public var zeroTangentVectorInitializer: () -> TangentVector { { () in Self() } }
 }
 
 extension StructuralStruct: Differentiable where Properties: Differentiable {

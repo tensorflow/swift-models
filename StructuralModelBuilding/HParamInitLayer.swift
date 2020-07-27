@@ -1,5 +1,4 @@
 import TensorFlow
-import StructuralCore
 import PenguinStructures
 
 /// A layer that can be initialized with some hyperparameters and a representative input.
@@ -201,25 +200,22 @@ extension StructuralCons: _HParamHolderProtocol where Value: _HParamHolderProtoc
     }
 }
 
-public protocol _HParamHolderStructural {
-    associatedtype HParam: _HParamHolderProtocol
-
-    func makeEmptyHParam() -> HParam
+public protocol _HParamHolderStructural: BaseTypeProtocol {
+    associatedtype HParam: _HParamHolderProtocol where HParam.Model == BaseType
 }
 
 extension StaticStructuralStruct where Properties: _HParamHolderStructural, BaseType: HParamInitLayer, Properties.HParam.Model == BaseType {
     public typealias HParam = StructuralHParams<BaseType, Properties.HParam>
-
-    public func makeEmptyHParam() -> HParam {
-        .init()
-    }
 }
 
 extension StaticStructuralProperty: _HParamHolderStructural where BaseType: StaticKeyPathIterable, Value: HParamInitLayer {
     public typealias HParam = HParamHolder<BaseType, Value>
-
-    public func makeEmptyHParam() -> HParam {
-        .init(keyPath)
-    }
 }
 
+extension StructuralCons: _HParamHolderStructural where Value: _HParamHolderStructural, Next: _HParamHolderStructural, Value.BaseType == Next.BaseType {
+    public typealias HParam = HParamCons<BaseType, Value.HParam, Next.HParam>
+}
+
+extension HParamInitLayer where Self: Structural, Self.StaticStructuralRepresentation: _HParamHolderStructural {
+    // public typealias HParam = Self.StaticStructuralRepresentation.HParam  // Note: this causes problems! :-(
+}

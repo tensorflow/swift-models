@@ -1,5 +1,4 @@
 import TensorFlow
-import StructuralCore
 import PenguinStructures
 
 /// A simple model, where we don't have to write `callAsFunction`, thanks to `SequentialLayer`.
@@ -35,13 +34,21 @@ extension MyModel: DifferentiableStructural {
     public typealias SequentialInput = Input
     public typealias SequentialOutput = Output
 
+    public typealias StaticStructuralRepresentation =
+        StaticStructuralStruct<Self,
+            StructuralCons<StaticStructuralProperty<Self, Conv2D<Float>>,
+            StructuralCons<StaticStructuralProperty<MyModel, MaxPool2D<Float>>,
+            StructuralCons<StaticStructuralProperty<MyModel, Flatten<Float>>,
+                StaticStructuralProperty<MyModel, Dense<Float>>>>>>
+
+    public static var staticStructuralRepresentation: StaticStructuralRepresentation { fatalError() }
+
     public typealias StructuralRepresentation =
-        StructuralStruct<
-            StructuralCons<StructuralProperty<Conv2D<Float>>,
-            StructuralCons<StructuralProperty<MaxPool2D<Float>>,
-            StructuralCons<StructuralProperty<Flatten<Float>>,
-            StructuralCons<StructuralProperty<Dense<Float>>,
-            StructuralEmpty>>>>>
+        StructuralStruct<MyModel,
+            StructuralCons<StructuralProperty<MyModel, Conv2D<Float>>,
+            StructuralCons<StructuralProperty<MyModel, MaxPool2D<Float>>,
+            StructuralCons<StructuralProperty<MyModel, Flatten<Float>>,
+                StructuralProperty<MyModel, Dense<Float>>>>>>
 
     @differentiable
     public init(differentiableStructuralRepresentation: StructuralRepresentation) {
@@ -57,7 +64,8 @@ extension MyModel: DifferentiableStructural {
 
     @differentiable
     public var differentiableStructuralRepresentation: StructuralRepresentation {
-        fatalError()
+        get { fatalError() }
+        set { fatalError() }
     }
 
     @derivative(of: differentiableStructuralRepresentation)
@@ -75,14 +83,23 @@ extension MyModelSkipping: DifferentiableStructural {
     public typealias SequentialInput = Input
     public typealias SequentialOutput = Output
 
+    public typealias StaticStructuralRepresentation =
+        StaticStructuralStruct<MyModelSkipping,
+            StructuralCons<StaticStructuralProperty<MyModelSkipping, Conv2D<Float>>,
+            StructuralCons<StaticStructuralProperty<MyModelSkipping, MaxPool2D<Float>>,
+            StructuralCons<StaticStructuralProperty<MyModelSkipping, Flatten<Float>>,
+            StructuralCons<StaticStructuralProperty<MyModelSkipping, SequentialSkip<Dense<Float>, Tensor<Float>>>,
+                StaticStructuralProperty<MyModelSkipping, Dense<Float>>>>>>>
+
+    public static var staticStructuralRepresentation: StaticStructuralRepresentation { fatalError() }    
+
     public typealias StructuralRepresentation =
-        StructuralStruct<
-            StructuralCons<StructuralProperty<Conv2D<Float>>,
-            StructuralCons<StructuralProperty<MaxPool2D<Float>>,
-            StructuralCons<StructuralProperty<Flatten<Float>>,
-            StructuralCons<StructuralProperty<SequentialSkip<Dense<Float>, Tensor<Float>>>,
-            StructuralCons<StructuralProperty<Dense<Float>>,
-            StructuralEmpty>>>>>>
+        StructuralStruct<MyModelSkipping,
+            StructuralCons<StructuralProperty<MyModelSkipping, Conv2D<Float>>,
+            StructuralCons<StructuralProperty<MyModelSkipping, MaxPool2D<Float>>,
+            StructuralCons<StructuralProperty<MyModelSkipping, Flatten<Float>>,
+            StructuralCons<StructuralProperty<MyModelSkipping, SequentialSkip<Dense<Float>, Tensor<Float>>>,
+            StructuralProperty<MyModelSkipping, Dense<Float>>>>>>>
 
     @differentiable
     public init(differentiableStructuralRepresentation: StructuralRepresentation) {
@@ -98,7 +115,8 @@ extension MyModelSkipping: DifferentiableStructural {
 
     @differentiable
     public var differentiableStructuralRepresentation: StructuralRepresentation {
-        fatalError()
+        get { fatalError() }
+        set { fatalError() }
     }
 
     @derivative(of: differentiableStructuralRepresentation)
@@ -116,14 +134,23 @@ extension MyResidualModel: DifferentiableStructural {
     public typealias SequentialInput = Input
     public typealias SequentialOutput = Output
 
+    public typealias StaticStructuralRepresentation =
+        StaticStructuralStruct<MyResidualModel, 
+            StructuralCons<StaticStructuralProperty<MyResidualModel, Conv2D<Float>>,
+            StructuralCons<StaticStructuralProperty<MyResidualModel, MaxPool2D<Float>>,
+            StructuralCons<StaticStructuralProperty<MyResidualModel, Flatten<Float>>,
+            StructuralCons<StaticStructuralProperty<MyResidualModel, ResidualConnection<Dense<Float>>>,
+                StaticStructuralProperty<MyResidualModel, Dense<Float>>>>>>>
+
+    public static var staticStructuralRepresentation: StaticStructuralRepresentation { fatalError() }  
+    
     public typealias StructuralRepresentation =
-        StructuralStruct<
-            StructuralCons<StructuralProperty<Conv2D<Float>>,
-            StructuralCons<StructuralProperty<MaxPool2D<Float>>,
-            StructuralCons<StructuralProperty<Flatten<Float>>,
-            StructuralCons<StructuralProperty<ResidualConnection<Dense<Float>>>,
-            StructuralCons<StructuralProperty<Dense<Float>>,
-            StructuralEmpty>>>>>>
+        StructuralStruct<MyResidualModel, 
+            StructuralCons<StructuralProperty<MyResidualModel, Conv2D<Float>>,
+            StructuralCons<StructuralProperty<MyResidualModel, MaxPool2D<Float>>,
+            StructuralCons<StructuralProperty<MyResidualModel, Flatten<Float>>,
+            StructuralCons<StructuralProperty<MyResidualModel, ResidualConnection<Dense<Float>>>,
+            StructuralProperty<MyResidualModel, Dense<Float>>>>>>>
 
     @differentiable
     public init(differentiableStructuralRepresentation: StructuralRepresentation) {
@@ -139,7 +166,8 @@ extension MyResidualModel: DifferentiableStructural {
 
     @differentiable
     public var differentiableStructuralRepresentation: StructuralRepresentation {
-        fatalError()
+        get { fatalError() }
+        set { fatalError() }
     }
 
     @derivative(of: differentiableStructuralRepresentation)
