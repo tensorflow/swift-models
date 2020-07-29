@@ -2,7 +2,8 @@ import TensorFlow
 import _Differentiation
 
 // begin modified copy of https://gist.github.com/dan-zheng/be090293ecea27ce0ad96d769e4a6fbc
-internal class _AnyLayerBox<F: AdditiveArithmetic> {
+internal class _AnyLayerBox<F: AdditiveArithmetic & VectorProtocol>
+where F.VectorSpaceScalar == F {
   // `Differentiable` requirements.
   func _move(along direction: AnyLayerTangentVector<F>) {
     fatalError("Must implement")
@@ -28,7 +29,8 @@ internal class _AnyLayerBox<F: AdditiveArithmetic> {
   }
 }
 
-internal class _ConcreteLayerBox<T: Layer>: _AnyLayerBox<T.TangentVector.VectorSpaceScalar> {
+internal class _ConcreteLayerBox<T: Layer>: _AnyLayerBox<T.TangentVector.VectorSpaceScalar>
+where T.TangentVector.VectorSpaceScalar: VectorProtocol, T.TangentVector.VectorSpaceScalar == T.TangentVector.VectorSpaceScalar.VectorSpaceScalar {
   /// The underlying base value.
   var _base: T
 
@@ -55,19 +57,18 @@ internal class _ConcreteLayerBox<T: Layer>: _AnyLayerBox<T.TangentVector.VectorS
   }
 
   override func _move(along direction: AnyLayerTangentVector<T.TangentVector.VectorSpaceScalar>) {
-    if !direction._box._isOpaqueZero() {
-      guard
-        let directionBase =
-          direction.base as? T.TangentVector
-      else {
-        fatalError()
-      }
-      _base.move(along: directionBase)
+    guard
+      let directionBase =
+        direction.base as? T.TangentVector
+    else {
+      fatalError()
     }
+    _base.move(along: directionBase)
   }
 }
 
-public struct AnyLayer<F: AdditiveArithmetic>: EuclideanDifferentiable, CopyableToDevice {
+public struct AnyLayer<F: AdditiveArithmetic & VectorProtocol>: EuclideanDifferentiable, CopyableToDevice
+where F.VectorSpaceScalar == F {
   internal var _box: _AnyLayerBox<F>
 
   internal init(_box: _AnyLayerBox<F>) {
@@ -120,7 +121,8 @@ public struct AnyLayer<F: AdditiveArithmetic>: EuclideanDifferentiable, Copyable
   }
 }
 
-internal class _AnyLayerTangentVectorBox<F: AdditiveArithmetic> {
+internal class _AnyLayerTangentVectorBox<F: AdditiveArithmetic & VectorProtocol>
+where F.VectorSpaceScalar == F {
   // `Equatable` requirements (implied by `AdditiveArithmetic`).
   func _isEqual(to other: _AnyLayerTangentVectorBox) -> Bool {
     fatalError("Must implement")
@@ -175,8 +177,8 @@ internal class _AnyLayerTangentVectorBox<F: AdditiveArithmetic> {
 
 extension _AnyLayerTangentVectorBox {
   /// Returns true if the underlying value has type `AnyLayerTangentVector.OpaqueZero`.
-  func _isOpaqueZero() -> Bool {
-    return _unboxed(to: AnyLayerTangentVector<F>.OpaqueZero.self) != nil
+  func _getOpaqueScalar() -> F? {
+    return _unboxed(to: AnyLayerTangentVector<F>.OpaqueScalar.self)?.value
   }
 }
 
@@ -192,7 +194,7 @@ internal func _derivativeTypeMismatch(
 }
 
 internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProtocol> : _AnyLayerTangentVectorBox<T.VectorSpaceScalar>
-  where T.TangentVector == T
+  where T.TangentVector == T, T.VectorSpaceScalar: VectorProtocol, T.VectorSpaceScalar.VectorSpaceScalar == T.VectorSpaceScalar
 {
   /// The underlying base value.
   var _base: T
@@ -207,7 +209,7 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
   }
 
   override func _unboxed<U: Differentiable & VectorProtocol>(to type: U.Type) -> U?
-    where U.TangentVector == U, U.VectorSpaceScalar == T.VectorSpaceScalar
+    where U.TangentVector == U, U.VectorSpaceScalar == T.VectorSpaceScalar, U.VectorSpaceScalar : VectorProtocol
   {
     return (self as? _ConcreteAnyLayerTangentVectorBox<U>)?._base
   }
@@ -223,14 +225,15 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
   }
 
   override func _add(_ x: _AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    // 0 + x = x
-    if _isOpaqueZero() {
-      return x
+    // C + x = x + C
+    if let scalar = _getOpaqueScalar() {
+      return x._adding(scalar)
     }
-    // y + 0 = y
-    if x._isOpaqueZero() {
-      return self
+    // self + C = self + C
+    if let scalar = x._getOpaqueScalar() {
+      return self._adding(scalar)
     }
+
     guard let xBase = x._unboxed(to: T.self) else {
       _derivativeTypeMismatch(T.self, type(of: x._typeErasedBase))
     }
@@ -238,14 +241,15 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
   }
 
   override func _subtract(_ x: _AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    // y - 0 = y
-    if x._isOpaqueZero() {
-      return self
+    // C - x = -x + C
+    if let scalar = _getOpaqueScalar() {
+      return type(of: x)._zero._subtract(x)._adding(scalar)
     }
-    // 0 - x = -x
-    if _isOpaqueZero() {
-      return type(of: x)._zero._subtract(x)
+    // self - C = self - C
+    if let scalar = x._getOpaqueScalar() {
+      return self._subtracting(scalar)
     }
+
     guard let xBase = x._unboxed(to: T.self) else {
       _derivativeTypeMismatch(T.self, type(of: x._typeErasedBase))
     }
@@ -272,11 +276,6 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
 
   // `Differentiable` requirements.
   override func _move(along direction: _AnyLayerTangentVectorBox<T.VectorSpaceScalar>) {
-    if direction._isOpaqueZero() {
-      return
-    }
-    // The case where `self._isOpaqueZero()` returns true is handled in
-    // `AnyLayerTangentVector.move(along:)`.
     guard let directionBase =
       direction._unboxed(to: T.TangentVector.self) else {
       _derivativeTypeMismatch(T.self, type(of: direction._typeErasedBase))
@@ -296,7 +295,8 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
 /// base derivative value conforming to `Differentiable` and
 /// `AdditiveArithmetic`, hiding the specifics of the underlying value.
 // public struct AnyLayerTangentVector : EuclideanDifferentiable & AdditiveArithmetic {
-public struct AnyLayerTangentVector<F: AdditiveArithmetic>: VectorProtocol & ElementaryFunctions & PointwiseMultiplicative & KeyPathIterable & EuclideanDifferentiable & AdditiveArithmetic {
+public struct AnyLayerTangentVector<F: AdditiveArithmetic & VectorProtocol>: VectorProtocol & ElementaryFunctions & PointwiseMultiplicative & KeyPathIterable & EuclideanDifferentiable & AdditiveArithmetic
+where F.VectorSpaceScalar == F {
   internal var _box: _AnyLayerTangentVectorBox<F>
 
   internal init(_box: _AnyLayerTangentVectorBox<F>) {
@@ -349,25 +349,32 @@ public struct AnyLayerTangentVector<F: AdditiveArithmetic>: VectorProtocol & Ele
   /// Internal struct representing an opaque zero value.
   @frozen
   @usableFromInline
-  internal struct OpaqueZero : EuclideanDifferentiable & AdditiveArithmetic & VectorProtocol {
+  internal struct OpaqueScalar : EuclideanDifferentiable & AdditiveArithmetic & VectorProtocol {
     @usableFromInline typealias VectorSpaceScalar = F
+    let value: F
 
-    @usableFromInline func adding(_ x: F) -> OpaqueZero {
-      fatalError("not implemented")
+    @usableFromInline typealias TangentVector = OpaqueScalar
+
+    init(_ value: F) {
+      self.value = value
     }
 
-    @usableFromInline func subtracting(_ x: F) -> OpaqueZero {
-      fatalError("not implemented")
+    @usableFromInline func adding(_ x: F) -> OpaqueScalar {
+      return OpaqueScalar(value.adding(x))
     }
 
-    @usableFromInline func scaled(by: F) -> OpaqueZero {
-      return self
+    @usableFromInline func subtracting(_ x: F) -> OpaqueScalar {
+      return OpaqueScalar(value.subtracting(x))
+    }
+
+    @usableFromInline func scaled(by: F) -> OpaqueScalar {
+      return OpaqueScalar(value.scaled(by: by))
     }
   }
 
   public static var zero: AnyLayerTangentVector {
     return AnyLayerTangentVector(
-      _box: _ConcreteAnyLayerTangentVectorBox<OpaqueZero>(OpaqueZero.zero))
+      _box: _ConcreteAnyLayerTangentVectorBox<OpaqueScalar>(OpaqueScalar.zero))
   }
 
   public static func + (
@@ -518,7 +525,7 @@ public struct AnyLayerTangentVector<F: AdditiveArithmetic>: VectorProtocol & Ele
 
   // `Differentiable` requirements.
   public mutating func move(along direction: TangentVector) {
-    if _box._isOpaqueZero() {
+    if _box._getOpaqueScalar() == F.zero {
       _box = direction._box
       return
     }
@@ -529,4 +536,8 @@ public struct AnyLayerTangentVector<F: AdditiveArithmetic>: VectorProtocol & Ele
   public var differentiableVectorView: TangentVector {
     return self
   }
+}
+
+public func testFunc() {
+  let erased = AnyLayer<Float>(Dense<Float>(inputSize: 1, outputSize: 1))
 }
