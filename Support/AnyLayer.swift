@@ -28,8 +28,7 @@ internal class _AnyLayerBox<F: AdditiveArithmetic> {
   }
 }
 
-internal class _ConcreteLayerBox<T: Layer>: _AnyLayerBox<T.TangentVector.VectorSpaceScalar>
-{
+internal class _ConcreteLayerBox<T: Layer>: _AnyLayerBox<T.TangentVector.VectorSpaceScalar> {
   /// The underlying base value.
   var _base: T
 
@@ -130,17 +129,24 @@ internal class _AnyLayerTangentVectorBox<F: AdditiveArithmetic> {
     fatalError("Must implement")
   }
 
+  func _add(_ x: _AnyLayerTangentVectorBox) -> _AnyLayerTangentVectorBox {
+    fatalError("Must implement")
+  }
+  func _subtract(_ x: _AnyLayerTangentVectorBox) -> _AnyLayerTangentVectorBox {
+    fatalError("Must implement")
+  }
+
   // `AdditiveArithmetic` requirements.
   class var _zero: _AnyLayerTangentVectorBox {
     fatalError("Must implement")
   }
-  func _adding(_ x: _AnyLayerTangentVectorBox) -> _AnyLayerTangentVectorBox {
+  
+  func _adding(_ x: F) -> _AnyLayerTangentVectorBox {
     fatalError("Must implement")
   }
-  func _subtracting(_ x: _AnyLayerTangentVectorBox) -> _AnyLayerTangentVectorBox {
+  func _subtracting(_ x: F) -> _AnyLayerTangentVectorBox {
     fatalError("Must implement")
   }
-
   func _scaled(by: F) -> _AnyLayerTangentVectorBox {
     fatalError("Must implement")
   }
@@ -216,13 +222,7 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
     return _base != other._unboxed(to: T.self)
   }
 
-  // `AdditiveArithmetic` requirements.
-
-  override class var _zero: _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return _ConcreteAnyLayerTangentVectorBox(T.zero)
-  }
-
-  override func _adding(_ x: _AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
+  override func _add(_ x: _AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
     // 0 + x = x
     if _isOpaqueZero() {
       return x
@@ -237,14 +237,14 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
     return _ConcreteAnyLayerTangentVectorBox(_base + xBase)
   }
 
-  override func _subtracting(_ x: _AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
+  override func _subtract(_ x: _AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
     // y - 0 = y
     if x._isOpaqueZero() {
       return self
     }
     // 0 - x = -x
     if _isOpaqueZero() {
-      return type(of: x)._zero._subtracting(x)
+      return type(of: x)._zero._subtract(x)
     }
     guard let xBase = x._unboxed(to: T.self) else {
       _derivativeTypeMismatch(T.self, type(of: x._typeErasedBase))
@@ -252,12 +252,25 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
     return _ConcreteAnyLayerTangentVectorBox(_base - xBase)
   }
 
+  // `AdditiveArithmetic` requirements.
+  override class var _zero: _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
+    return _ConcreteAnyLayerTangentVectorBox(T.zero)
+  }
+  
+  override func _adding(_ x: T.VectorSpaceScalar) -> _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
+    return _ConcreteAnyLayerTangentVectorBox<T>(_base.adding(x))
+  }
+  override func _subtracting(_ x: T.VectorSpaceScalar) -> _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
+    return _ConcreteAnyLayerTangentVectorBox<T>(_base.subtracting(x))
+  }
   override func _scaled(by: T.VectorSpaceScalar) -> _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return _ConcreteAnyLayerTangentVectorBox(_base.scaled(by: by))
+    return _ConcreteAnyLayerTangentVectorBox<T>(_base.scaled(by: by))
   }
 
-  // `Differentiable` requirements.
+  // `ElementaryFunctions` requirements.
+  // TODO
 
+  // `Differentiable` requirements.
   override func _move(along direction: _AnyLayerTangentVectorBox<T.VectorSpaceScalar>) {
     if direction._isOpaqueZero() {
       return
@@ -360,7 +373,7 @@ public struct AnyLayerTangentVector<F: AdditiveArithmetic>: VectorProtocol & Ele
   public static func + (
     lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector
   ) -> AnyLayerTangentVector {
-    return AnyLayerTangentVector(_box: lhs._box._adding(rhs._box))
+    return AnyLayerTangentVector(_box: lhs._box._add(rhs._box))
   }
 
   @derivative(of: +)
@@ -382,7 +395,7 @@ public struct AnyLayerTangentVector<F: AdditiveArithmetic>: VectorProtocol & Ele
   public static func - (
     lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector
   ) -> AnyLayerTangentVector {
-    return AnyLayerTangentVector(_box: lhs._box._subtracting(rhs._box))
+    return AnyLayerTangentVector(_box: lhs._box._subtract(rhs._box))
   }
 
   @derivative(of: -)
@@ -416,12 +429,13 @@ public struct AnyLayerTangentVector<F: AdditiveArithmetic>: VectorProtocol & Ele
 
   public typealias VectorSpaceScalar = F
 
+  // `AdditiveArithmetic` requirements.
   public func adding(_ x: VectorSpaceScalar) -> Self {
-    fatalError()
+    return AnyLayerTangentVector(_box: _box._adding(x));
   }
 
   public func subtracting(_ x: VectorSpaceScalar) -> Self {
-    fatalError()
+    return AnyLayerTangentVector(_box: _box._subtracting(x));
   }
 
   public func scaled(by scalar: VectorSpaceScalar) -> Self {
