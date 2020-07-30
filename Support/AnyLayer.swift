@@ -2,7 +2,7 @@ import TensorFlow
 import _Differentiation
 
 // begin modified copy of https://gist.github.com/dan-zheng/be090293ecea27ce0ad96d769e4a6fbc
-internal class _AnyLayerBox<F: AdditiveArithmetic & VectorProtocol & ElementaryFunctions>
+internal class _AnyLayerBox<F: FloatingPoint & VectorProtocol & ElementaryFunctions>
 where F.VectorSpaceScalar == F {
   // `Differentiable` requirements.
   func _move(along direction: AnyLayerTangentVector<F>) {
@@ -30,7 +30,7 @@ where F.VectorSpaceScalar == F {
 }
 
 internal class _ConcreteLayerBox<T: Layer>: _AnyLayerBox<T.TangentVector.VectorSpaceScalar>
-where T.TangentVector.VectorSpaceScalar: VectorProtocol & ElementaryFunctions, T.TangentVector.VectorSpaceScalar == T.TangentVector.VectorSpaceScalar.VectorSpaceScalar {
+where T.TangentVector.VectorSpaceScalar: FloatingPoint & VectorProtocol & ElementaryFunctions, T.TangentVector.VectorSpaceScalar == T.TangentVector.VectorSpaceScalar.VectorSpaceScalar {
   /// The underlying base value.
   var _base: T
 
@@ -61,13 +61,13 @@ where T.TangentVector.VectorSpaceScalar: VectorProtocol & ElementaryFunctions, T
       let directionBase =
         direction.base as? T.TangentVector
     else {
-      fatalError()
+      fatalError("Unexpected tangent vector type")
     }
     _base.move(along: directionBase)
   }
 }
 
-public struct AnyLayer<F: AdditiveArithmetic & VectorProtocol & ElementaryFunctions>: EuclideanDifferentiable, CopyableToDevice
+public struct AnyLayer<F: FloatingPoint & VectorProtocol & ElementaryFunctions>: EuclideanDifferentiable, CopyableToDevice
 where F.VectorSpaceScalar == F {
   internal var _box: _AnyLayerBox<F>
 
@@ -121,7 +121,7 @@ where F.VectorSpaceScalar == F {
   }
 }
 
-internal class _AnyLayerTangentVectorBox<F: AdditiveArithmetic & VectorProtocol & ElementaryFunctions>
+internal class _AnyLayerTangentVectorBox<F: FloatingPoint & VectorProtocol & ElementaryFunctions>
 where F.VectorSpaceScalar == F {
   // `Equatable` requirements (implied by `AdditiveArithmetic`).
   func _isEqual(to other: _AnyLayerTangentVectorBox) -> Bool {
@@ -160,6 +160,19 @@ where F.VectorSpaceScalar == F {
 
   // `EuclideanDifferentiable` requirements.
   var _differentiableVectorView: _AnyLayerTangentVectorBox {
+    fatalError("Must implement")
+  }
+
+  // `PointwiseMultiplicative` requirements.
+  class var _one: _AnyLayerTangentVectorBox {
+    fatalError("Must implement")
+  }
+  
+  func _reciprocal() -> _AnyLayerTangentVectorBox {
+    fatalError("Must implement")
+  }
+
+  func _pointwiseMultiply(by: _AnyLayerTangentVectorBox) -> _AnyLayerTangentVectorBox {
     fatalError("Must implement")
   }
 
@@ -243,8 +256,8 @@ where F.VectorSpaceScalar == F {
   }
 
   /// Returns the underlying value unboxed to the given type, if possible.
-  func _unboxed<U>(to type: U.Type) -> U?
-    where U : Differentiable & VectorProtocol & ElementaryFunctions, U.TangentVector == U, U.VectorSpaceScalar == F {
+  func _unboxed<U: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative>(to type: U.Type) -> U?
+    where U.TangentVector == U, U.VectorSpaceScalar == F {
     fatalError("Must implement")
   }
 }
@@ -267,8 +280,8 @@ internal func _derivativeTypeMismatch(
     """, file: file, line: line)
 }
 
-internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProtocol & ElementaryFunctions> : _AnyLayerTangentVectorBox<T.VectorSpaceScalar>
-  where T.TangentVector == T, T.VectorSpaceScalar: VectorProtocol & ElementaryFunctions, T.VectorSpaceScalar.VectorSpaceScalar == T.VectorSpaceScalar
+internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative> : _AnyLayerTangentVectorBox<T.VectorSpaceScalar>
+  where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & VectorProtocol & ElementaryFunctions, T.VectorSpaceScalar.VectorSpaceScalar == T.VectorSpaceScalar
 {
   /// The underlying base value.
   var _base: T
@@ -282,7 +295,7 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
     return _base
   }
 
-  override func _unboxed<U: Differentiable & VectorProtocol & ElementaryFunctions>(to type: U.Type) -> U?
+  override func _unboxed<U: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative>(to type: U.Type) -> U?
     where U.TangentVector == U, U.VectorSpaceScalar == T.VectorSpaceScalar, U.VectorSpaceScalar : VectorProtocol
   {
     return (self as? _ConcreteAnyLayerTangentVectorBox<U>)?._base
@@ -343,6 +356,19 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
   }
   override func _scaled(by: T.VectorSpaceScalar) -> _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
     return _ConcreteAnyLayerTangentVectorBox<T>(_base.scaled(by: by))
+  }
+
+  // `PointwiseMultiplicative` requirements.
+  override func _reciprocal() -> _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
+    return _ConcreteAnyLayerTangentVectorBox<T>(_base.reciprocal)
+  }
+
+  override class var _one: _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
+    return _ConcreteAnyLayerTangentVectorBox<T>(T.one)
+  }
+
+  override func _pointwiseMultiply(by: _AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
+    return _ConcreteAnyLayerTangentVectorBox<T>(_base .* by._unboxed(to: T.self)!)
   }
 
   // `ElementaryFunctions` requirements.
@@ -421,11 +447,15 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
 
   // `Differentiable` requirements.
   override func _move(along direction: _AnyLayerTangentVectorBox<T.VectorSpaceScalar>) {
-    guard let directionBase =
-      direction._unboxed(to: T.TangentVector.self) else {
-      _derivativeTypeMismatch(T.self, type(of: direction._typeErasedBase))
+    if let scalarDirection = direction._getOpaqueScalar() {
+      _base.move(along: T.TangentVector.zero.adding(scalarDirection))
+    } else {
+      guard let directionBase =
+        direction._unboxed(to: T.TangentVector.self) else {
+        _derivativeTypeMismatch(T.self, type(of: direction._typeErasedBase))
+      }
+      _base.move(along: directionBase)
     }
-    _base.move(along: directionBase)
   }
 
   // `EuclideanDifferentiable` requirements.
@@ -440,7 +470,7 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
 /// base derivative value conforming to `Differentiable` and
 /// `AdditiveArithmetic`, hiding the specifics of the underlying value.
 // public struct AnyLayerTangentVector : EuclideanDifferentiable & AdditiveArithmetic {
-public struct AnyLayerTangentVector<F: AdditiveArithmetic & VectorProtocol & ElementaryFunctions>: VectorProtocol & ElementaryFunctions & PointwiseMultiplicative & KeyPathIterable & EuclideanDifferentiable & AdditiveArithmetic
+public struct AnyLayerTangentVector<F: FloatingPoint & VectorProtocol & ElementaryFunctions>: VectorProtocol & ElementaryFunctions & PointwiseMultiplicative & KeyPathIterable & EuclideanDifferentiable & AdditiveArithmetic
 where F.VectorSpaceScalar == F {
   internal var _box: _AnyLayerTangentVectorBox<F>
 
@@ -455,13 +485,13 @@ where F.VectorSpaceScalar == F {
 
   /// Creates a type-erased derivative from the given derivative.
   @differentiable
-  public init<T: Differentiable & VectorProtocol & ElementaryFunctions>(_ base: T) where T.TangentVector == T, T.VectorSpaceScalar == F {
+  public init<T: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative>(_ base: T) where T.TangentVector == T, T.VectorSpaceScalar == F {
     self._box = _ConcreteAnyLayerTangentVectorBox<T>(base)
   }
 
   @derivative(of: init)
   @usableFromInline
-  internal static func _vjpInit<T: Differentiable & VectorProtocol & ElementaryFunctions>(
+  internal static func _vjpInit<T: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative>(
     _ base: T
   ) -> (value: AnyLayerTangentVector<F>, pullback: (AnyLayerTangentVector<F>) -> T.TangentVector)
     where T.TangentVector == T, T.VectorSpaceScalar == F
@@ -471,7 +501,7 @@ where F.VectorSpaceScalar == F {
 
   @derivative(of: init)
   @usableFromInline
-  internal static func _jvpInit<T: Differentiable & VectorProtocol & ElementaryFunctions>(
+  internal static func _jvpInit<T: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative>(
     _ base: T
   ) -> (value: AnyLayerTangentVector<F>, differential: (T.TangentVector) -> AnyLayerTangentVector<F>)
     where T.TangentVector == T, T.VectorSpaceScalar == F
@@ -494,7 +524,7 @@ where F.VectorSpaceScalar == F {
   /// Internal struct representing an opaque zero value.
   @frozen
   @usableFromInline
-  internal struct OpaqueScalar : EuclideanDifferentiable & AdditiveArithmetic & VectorProtocol & ElementaryFunctions {
+  internal struct OpaqueScalar : EuclideanDifferentiable & AdditiveArithmetic & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative {
     @usableFromInline typealias VectorSpaceScalar = F
     let value: F
 
@@ -516,107 +546,120 @@ where F.VectorSpaceScalar == F {
       return OpaqueScalar(value.scaled(by: by))
     }
 
+    // `PointwiseMultiplicative` requirements.
+    @usableFromInline static var one: OpaqueScalar {
+      return OpaqueScalar(F(exactly: 1)!)
+    }
+
+    @usableFromInline var reciprocal: OpaqueScalar {
+      return OpaqueScalar(F(exactly: 1)! / value)
+    }
+
+    @usableFromInline static func .* (lhs: OpaqueScalar, rhs: OpaqueScalar) -> OpaqueScalar {
+      return OpaqueScalar(lhs.value * rhs.value)
+    }
+
     // `ElementaryFunctions` requirements.
-    @usableFromInline static func sqrt(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func sqrt(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.sqrt(x.value))
     }
 
-    @usableFromInline static func cos(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func cos(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.cos(x.value))
     }
 
-    @usableFromInline static func sin(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func sin(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.sin(x.value))
     }
 
-    @usableFromInline static func tan(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func tan(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.tan(x.value))
     }
 
-    @usableFromInline static func acos(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func acos(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.acos(x.value))
     }
 
-    @usableFromInline static func asin(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func asin(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.asin(x.value))
     }
 
-    @usableFromInline static func atan(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func atan(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.atan(x.value))
     }
 
-    @usableFromInline static func cosh(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func cosh(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.cosh(x.value))
     }
 
-    @usableFromInline static func sinh(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func sinh(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.sinh(x.value))
     }
 
-    @usableFromInline static func tanh(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func tanh(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.tanh(x.value))
     }
 
-    @usableFromInline static func acosh(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func acosh(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.acosh(x.value))
     }
 
-    @usableFromInline static func asinh(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func asinh(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.asinh(x.value))
     }
 
-    @usableFromInline static func atanh(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func atanh(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.atanh(x.value))
     }
 
-    @usableFromInline static func exp(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func exp(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.exp(x.value))
     }
 
-    @usableFromInline static func exp2(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func exp2(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.exp2(x.value))
     }
 
-    @usableFromInline static func exp10(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func exp10(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.exp10(x.value))
     }
 
-    @usableFromInline static func expm1(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func expm1(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.expm1(x.value))
     }
 
-    @usableFromInline static func log(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func log(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.log(x.value))
     }
 
-    @usableFromInline static func log2(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func log2(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.log2(x.value))
     }
 
-    @usableFromInline static func log10(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func log10(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.log10(x.value))
     }
 
-    @usableFromInline static func log1p(_ x: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func log1p(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.log1p(x.value))
     }
 
-    @usableFromInline static func pow(_ x: AnyLayerTangentVector.OpaqueScalar, _ y: AnyLayerTangentVector.OpaqueScalar) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func pow(_ x: OpaqueScalar, _ y: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(F.pow(x.value, y.value))
     }
 
-    @usableFromInline static func pow(_ x: AnyLayerTangentVector.OpaqueScalar, _ n: Int) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func pow(_ x: OpaqueScalar, _ n: Int) -> OpaqueScalar {
       return OpaqueScalar(F.pow(x.value, n))
     }
 
-    @usableFromInline static func root(_ x: AnyLayerTangentVector.OpaqueScalar, _ n: Int) -> AnyLayerTangentVector.OpaqueScalar {
+    @usableFromInline static func root(_ x: OpaqueScalar, _ n: Int) -> OpaqueScalar {
       return OpaqueScalar(F.root(x.value, n))
     }
   }
 
   public static var zero: AnyLayerTangentVector {
     return AnyLayerTangentVector(
-      _box: _ConcreteAnyLayerTangentVectorBox<OpaqueScalar>(OpaqueScalar.zero))
+      _box: _ConcreteAnyLayerTangentVectorBox<OpaqueScalar>._zero)
   }
 
   public static func + (
@@ -665,15 +708,15 @@ where F.VectorSpaceScalar == F {
 
   // `VectorProtocol` requirements.
   public static var one: AnyLayerTangentVector {
-    fatalError()
+    return AnyLayerTangentVector(_box: _ConcreteAnyLayerTangentVectorBox<OpaqueScalar>._one)
   }
 
   public var reciprocal: AnyLayerTangentVector {
-    fatalError()
+    return AnyLayerTangentVector(_box: _box._reciprocal())
   }
 
   public static func .* (lhs: Self, rhs: Self) -> Self {
-    fatalError()
+    return AnyLayerTangentVector(_box: lhs._box._pointwiseMultiply(by: rhs._box))
   }
 
   public typealias VectorSpaceScalar = F
@@ -767,14 +810,6 @@ where F.VectorSpaceScalar == F {
 
   // `Differentiable` requirements.
   public mutating func move(along direction: TangentVector) {
-    if let scalar = _box._getOpaqueScalar() {
-      if (scalar == F.zero) {
-        _box = direction._box
-        return
-      } else {
-        fatalError("Cannot move nonzero opaque scalar along a direction")
-      }
-    }
     _box._move(along: direction._box)
   }
 
