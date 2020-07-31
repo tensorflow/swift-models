@@ -2,7 +2,7 @@ import TensorFlow
 import _Differentiation
 
 // begin modified copy of https://gist.github.com/dan-zheng/be090293ecea27ce0ad96d769e4a6fbc
-internal class _AnyLayerBox<F: FloatingPoint & VectorProtocol & ElementaryFunctions>
+internal class _AnyLayerBox<Input: Differentiable, Output: Differentiable, F: FloatingPoint & VectorProtocol & ElementaryFunctions>
 where F.VectorSpaceScalar == F {
   // `Differentiable` requirements.
   func _move(along direction: AnyLayerTangentVector<F>) {
@@ -18,6 +18,14 @@ where F.VectorSpaceScalar == F {
     fatalError("Must implement")
   }
 
+  func _callAsFunction(_ input: Input) -> Output {
+    fatalError("Must implement")
+  }
+
+  func _dCallAsFunction(_ input: Input) -> (value: Output, pullback: (Output.TangentVector) -> (AnyLayerTangentVector<F>, Input.TangentVector)) {
+    fatalError("Must implement")
+  }
+
   /// Returns the underlying value unboxed to the given type, if possible.
   func _unboxed<U: Layer>(to type: U.Type) -> U?
   where U.TangentVector.VectorSpaceScalar == F {
@@ -29,7 +37,7 @@ where F.VectorSpaceScalar == F {
   }
 }
 
-internal class _ConcreteLayerBox<T: Layer>: _AnyLayerBox<T.TangentVector.VectorSpaceScalar>
+internal class _ConcreteLayerBox<T: Layer>: _AnyLayerBox<T.Input, T.Output, T.TangentVector.VectorSpaceScalar>
 where T.TangentVector.VectorSpaceScalar: FloatingPoint & VectorProtocol & ElementaryFunctions, T.TangentVector.VectorSpaceScalar == T.TangentVector.VectorSpaceScalar.VectorSpaceScalar {
   /// The underlying base value.
   var _base: T
@@ -52,7 +60,7 @@ where T.TangentVector.VectorSpaceScalar: FloatingPoint & VectorProtocol & Elemen
     return (self as? _ConcreteLayerBox<U>)?._base
   }
 
-  override func copyToDevice(to device: Device) -> _AnyLayerBox<T.TangentVector.VectorSpaceScalar> {
+  override func copyToDevice(to device: Device) -> _AnyLayerBox<T.Input, T.Output, T.TangentVector.VectorSpaceScalar> {
     return _ConcreteLayerBox(T(copying: _base, to: device))
   }
 
@@ -65,13 +73,36 @@ where T.TangentVector.VectorSpaceScalar: FloatingPoint & VectorProtocol & Elemen
     }
     _base.move(along: directionBase)
   }
+
+  override func _callAsFunction(_ input: T.Input) -> T.Output {
+    return _base.callAsFunction(input)
+  }
+
+  struct ModelAndInput: Differentiable {
+    var model: T
+    var input: T.Input
+  }
+
+  override func _dCallAsFunction(_ input: T.Input) -> (value: T.Output, pullback: (T.Output.TangentVector) -> (AnyLayerTangentVector<T.TangentVector.VectorSpaceScalar>, T.Input.TangentVector)) {
+    let basePullback = valueWithPullback(at: ModelAndInput(model: _base, input: input), in: { pair in pair.model.callAsFunction(pair.input) })
+    return (
+      value: basePullback.value,
+      pullback: { (outTangent) in
+        let pairTangent = basePullback.pullback(outTangent)
+        return (
+          AnyLayerTangentVector<T.TangentVector.VectorSpaceScalar>(pairTangent.model),
+          pairTangent.input
+        )
+      }
+    )
+  }
 }
 
-public struct AnyLayer<F: FloatingPoint & VectorProtocol & ElementaryFunctions>: EuclideanDifferentiable, CopyableToDevice
+public struct AnyLayer<Input: Differentiable, Output: Differentiable, F: FloatingPoint & VectorProtocol & ElementaryFunctions>: Layer, CopyableToDevice
 where F.VectorSpaceScalar == F {
-  internal var _box: _AnyLayerBox<F>
+  internal var _box: _AnyLayerBox<Input, Output, F>
 
-  internal init(_box: _AnyLayerBox<F>) {
+  internal init(_box: _AnyLayerBox<Input, Output, F>) {
     self._box = _box
   }
 
@@ -82,7 +113,8 @@ where F.VectorSpaceScalar == F {
 
   /// Creates a type-erased derivative from the given derivative.
   @differentiable
-  public init<T: Layer>(_ base: T) where T.TangentVector.VectorSpaceScalar == F {
+  public init<T: Layer>(_ base: T)
+  where T.Input == Input, T.Output == Output, T.TangentVector.VectorSpaceScalar == F {
     self._box = _ConcreteLayerBox<T>(base)
   }
 
@@ -95,9 +127,9 @@ where F.VectorSpaceScalar == F {
   internal static func _vjpInit<T: Layer>(
     _ base: T
   ) -> (value: AnyLayer, pullback: (AnyLayerTangentVector<F>) -> T.TangentVector)
-  where T.TangentVector.VectorSpaceScalar == F
+  where T.Input == Input, T.Output == Output, T.TangentVector.VectorSpaceScalar == F
   {
-    return (AnyLayer<F>(base), { v in v.base as! T.TangentVector })
+    return (AnyLayer<Input, Output, F>(base), { v in v.base as! T.TangentVector })
   }
 
   @inlinable
@@ -106,8 +138,8 @@ where F.VectorSpaceScalar == F {
     _ base: T
   ) -> (
     value: AnyLayer, differential: (T.TangentVector) -> AnyLayerTangentVector<F>
-  ) where T.TangentVector.VectorSpaceScalar == F {
-    return (AnyLayer<F>(base), { dbase in AnyLayerTangentVector<F>(dbase) })
+  ) where T.Input == Input, T.Output == Output, T.TangentVector.VectorSpaceScalar == F {
+    return (AnyLayer<Input, Output, F>(base), { dbase in AnyLayerTangentVector<F>(dbase) })
   }
 
   public typealias TangentVector = AnyLayerTangentVector<F>
@@ -118,6 +150,21 @@ where F.VectorSpaceScalar == F {
 
   public mutating func move(along direction: TangentVector) {
     _box._move(along: direction)
+  }
+
+  // Must be separate since we have a custom derivative
+  func _callAsFunction(_ input: Input) -> Output {
+    return _box._callAsFunction(input)
+  }
+
+  @derivative(of: _callAsFunction)
+  func _dCallAsFunction(_ input: Input) -> (value: Output, pullback: (Output.TangentVector) -> (AnyLayerTangentVector<F>, Input.TangentVector)) {
+    return _box._dCallAsFunction(input)
+  }
+
+  @differentiable
+  public func callAsFunction(_ input: Input) -> Output {
+    return _callAsFunction(input)
   }
 }
 
@@ -819,6 +866,25 @@ where F.VectorSpaceScalar == F {
   }
 }
 
+public struct MyLayer: Layer {
+    public var conv1 = Conv2D<Float>(filterShape: (5, 5, 1, 6), padding: .same, activation: relu)
+    public var pool1 = AvgPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
+    public var conv2 = Conv2D<Float>(filterShape: (5, 5, 6, 16), activation: relu)
+    public var pool2 = AvgPool2D<Float>(poolSize: (2, 2), strides: (2, 2))
+    public var flatten = Flatten<Float>()
+    public var fc1 = Dense<Float>(inputSize: 400, outputSize: 120, activation: relu)
+    public var fc2 = Dense<Float>(inputSize: 120, outputSize: 84, activation: relu)
+    public var fc3 = Dense<Float>(inputSize: 84, outputSize: 10)
+
+    public init() {}
+
+    @differentiable
+    public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
+        let convolved = input.sequenced(through: conv1, pool1, conv2, pool2)
+        return convolved.sequenced(through: flatten, fc1, fc2, fc3)
+    }
+}
+
 public func testFunc() {
-  let erased = AnyLayer<Float>(Dense<Float>(inputSize: 1, outputSize: 1))
+  let erased = AnyLayer<Tensor<Float>, Tensor<Float>, Float>(MyLayer())
 }
