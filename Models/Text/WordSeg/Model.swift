@@ -335,10 +335,11 @@ extension Array {
     value: (),
     pullback: (inout TangentVector) -> Element.TangentVector
   ) where Element: Differentiable {
+    let elementZero = self[index].zeroTangentVector
     update(at: index, to: value)
     func pullback(_ dSelf: inout TangentVector) -> Element.TangentVector {
       let dElement = dSelf[index]
-      dSelf.base[index] = dElement.zeroTangentVector
+      dSelf.base[index] = elementZero
       return dElement
     }
     return ((), pullback)
