@@ -4,12 +4,12 @@
 import PackageDescription
 
 let package = Package(
-    name: "TensorFlowModels",
+    name: "swift-models",
     platforms: [
         .macOS(.v10_13),
     ],
     products: [
-        .library(name: "Batcher", targets: ["Batcher"]),
+        .library(name: "Checkpoints", targets: ["Checkpoints"]),
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
@@ -19,13 +19,17 @@ let package = Package(
         .library(name: "FastStyleTransfer", targets: ["FastStyleTransfer"]),
         .library(name: "MiniGo", targets: ["MiniGo"]),
         .library(name: "TrainingLoop", targets: ["TrainingLoop"]),
+        .library(name: "BenchmarksCore", targets: ["BenchmarksCore"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.9.0"),
-        .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.0.1")),
+        .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.10.0"),
+        .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.2.0")),
+        .package(url: "https://github.com/google/swift-benchmark", .revision("f70bf472b00aeaa05e2374373568c2fe459c11c7")),
     ],
     targets: [
-        .target(name: "Batcher", path: "Batcher"),
+        .target(
+            name: "Checkpoints", dependencies: ["SwiftProtobuf", "ModelSupport"],
+            path: "Checkpoints"),
         .target(name: "Datasets", dependencies: ["ModelSupport"], path: "Datasets"),
         .target(name: "STBImage", path: "Support/STBImage"),
         .target(
@@ -33,7 +37,7 @@ let package = Package(
             exclude: ["STBImage"]),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "VideoClassificationModels", path: "Models/Spatiotemporal"),
-        .target(name: "TextModels", dependencies: ["Datasets"], path: "Models/Text"),
+        .target(name: "TextModels", dependencies: ["Checkpoints", "Datasets"], path: "Models/Text"),
         .target(name: "RecommendationModels", path: "Models/Recommendation"),
         .target(name: "TrainingLoop", dependencies: ["ModelSupport"], path: "TrainingLoop"),
         .target(
@@ -77,7 +81,7 @@ let package = Package(
             dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
             path: "Examples/MobileNetV2-Imagenette"),
         .target(
-            name: "MiniGo", dependencies: ["ModelSupport"], path: "MiniGo", exclude: ["main.swift"]),
+            name: "MiniGo", dependencies: ["Checkpoints"], path: "MiniGo", exclude: ["main.swift"]),
         .target(
             name: "MiniGoDemo", dependencies: ["MiniGo"], path: "MiniGo", sources: ["main.swift"]),
         .target(
@@ -101,20 +105,21 @@ let package = Package(
         .target(name: "GAN", dependencies: ["Datasets", "ModelSupport"], path: "GAN"),
         .target(name: "DCGAN", dependencies: ["Datasets", "ModelSupport"], path: "DCGAN"),
         .target(
-            name: "FastStyleTransfer", dependencies: ["ModelSupport"], path: "FastStyleTransfer",
+            name: "FastStyleTransfer", dependencies: ["Checkpoints"], path: "FastStyleTransfer",
             exclude: ["Demo"]),
         .target(
             name: "FastStyleTransferDemo", dependencies: ["FastStyleTransfer"],
             path: "FastStyleTransfer/Demo"),
         .testTarget(name: "FastStyleTransferTests", dependencies: ["FastStyleTransfer"]),
         .target(
-            name: "Benchmarks",
+            name: "BenchmarksCore",
             dependencies: [
                 "Datasets", "ModelSupport", "ImageClassificationModels", "ArgumentParser",
-                "TextModels"
+                "TextModels", "Benchmark"
             ],
-            path: "Benchmarks"),
-        .testTarget(name: "CheckpointTests", dependencies: ["ModelSupport"]),
+            path: "BenchmarksCore"),
+        .target(name: "Benchmarks", dependencies: ["BenchmarksCore"], path: "Benchmarks"),
+        .testTarget(name: "CheckpointTests", dependencies: ["Checkpoints"]),
         .target(
             name: "BERT-CoLA", dependencies: ["TextModels", "Datasets"], path: "Examples/BERT-CoLA"),
         .testTarget(name: "SupportTests", dependencies: ["ModelSupport"]),

@@ -2,17 +2,9 @@ add_subdirectory(STBImage)
 
 add_library(ModelSupport
   BijectiveDictionary.swift
-  Checkpoints/CheckpointIndexReader.swift
-  Checkpoints/CheckpointIndexWriter.swift
-  Checkpoints/CheckpointReader.swift
-  Checkpoints/CheckpointWriter.swift
-  Checkpoints/Protobufs/tensor_bundle.pb.swift
-  Checkpoints/Protobufs/tensor_shape.pb.swift
-  Checkpoints/Protobufs/tensor_slice.pb.swift
-  Checkpoints/Protobufs/types.pb.swift
-  Checkpoints/Protobufs/versions.pb.swift
-  Checkpoints/SnappyDecompression.swift
   FileManagement.swift
+  FileSystem.swift
+  FoundationFileSystem.swift
   LabeledData.swift
   Image.swift
   Stderr.swift

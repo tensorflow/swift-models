@@ -66,6 +66,8 @@ public class TrainingStatistics {
     case .trainingStart, .validationStart:
       totalBatchLoss = nil
       totalBatches = nil
+      totalCorrect = nil
+      totalExamples = nil
     case .batchEnd:
       if metrics.contains(.accuracy) {
         measureAccuracy(loop)
