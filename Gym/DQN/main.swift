@@ -130,8 +130,8 @@ struct Net: Layer {
     var l1, l2: Dense<Float>
 
     init(observationSize: Int, hiddenSize: Int, actionCount: Int) {
-        l1 = Dense<Float>(inputSize: observationSize, outputSize: hiddenSize, activation: relu, weightInitializer: heNormal())
-        l2 = Dense<Float>(inputSize: hiddenSize, outputSize: actionCount, activation: identity, weightInitializer: heNormal())
+        l1 = Dense<Float>(inputSize: observationSize, outputSize: hiddenSize, activation: relu)
+        l2 = Dense<Float>(inputSize: hiddenSize, outputSize: actionCount, activation: identity)
     }
 
     @differentiable
@@ -143,13 +143,13 @@ struct Net: Layer {
 class Agent {
     var qNet: Net
     var targetQNet: Net
-    let optimizer: Adam<Net>
+    let optimizer: AMSGrad<Net>
     let replayBuffer: ReplayBuffer
     let discount: Float
     let minBufferSize: Int
     let device: Device
 
-    init(qNet: Net, targetQNet: Net, optimizer: Adam<Net>, replayBuffer: ReplayBuffer, discount: Float, minBufferSize: Int, device: Device) {
+    init(qNet: Net, targetQNet: Net, optimizer: AMSGrad<Net>, replayBuffer: ReplayBuffer, discount: Float, minBufferSize: Int, device: Device) {
         self.qNet = qNet
         self.targetQNet = targetQNet
         self.optimizer = optimizer
@@ -185,10 +185,12 @@ class Agent {
                 let predictionBatch = _Raw.gatherNd(params: stateQValueBatch, indices: tfFullIndices)
 
                 // Compute target batch
-                let targetBatch: Tensor<Float> = tfRewardBatch + (1 - Tensor<Float>(tfIsDoneBatch)) * self.discount * self.targetQNet(tfNextStateBatch).max(squeezingAxes: Tensor<Int32>(1))
+                let nextStateQValueBatch = self.targetQNet(tfNextStateBatch).max(squeezingAxes: Tensor<Int32>(1))
+                let targetBatch: Tensor<Float> = tfRewardBatch + self.discount * (1 - Tensor<Float>(tfIsDoneBatch)) * nextStateQValueBatch
+
                 return huberLoss(
                     predicted: predictionBatch,
-                    expected: withoutDerivative(at: targetBatch),
+                    expected: targetBatch,
                     delta: 1
                 )
             }
@@ -200,7 +202,7 @@ class Agent {
     }
 }
 
-func updateTargetQNet(source: Net, target: inout Net, softTargetUpdateRate: Float = 0.001) {
+func updateTargetQNet(source: Net, target: inout Net, softTargetUpdateRate: Float) {
     target.l1.weight = softTargetUpdateRate * Tensor<Float>(source.l1.weight) + (1 - softTargetUpdateRate) * target.l1.weight
     target.l1.bias = softTargetUpdateRate * Tensor<Float>(source.l1.bias) + (1 - softTargetUpdateRate) * target.l1.bias
     target.l2.weight = softTargetUpdateRate * Tensor<Float>(source.l2.weight) + (1 - softTargetUpdateRate) * target.l2.weight
@@ -230,14 +232,15 @@ class TensorFlowEnvironmentWrapper {
 
 // Hyperparameters
 let discount: Float = 0.99
-let learningRate: Float = 0.01
-let hiddenSize: Int = 64
-let startEpsilon: Float = 0.5
+let learningRate: Float = 0.001
+let hiddenSize: Int = 100
+let startEpsilon: Float = 0.5 // TODO(seungjaeryanlee): Ignored right now
 let maxEpisode: Int = 1000
-let replayBufferCapacity: Int = 5000
-let minBufferSize: Int = 1000
-let batchSize: Int = 64
-let targetNetUpdateRate: Int = 32
+let replayBufferCapacity: Int = 1000
+let minBufferSize: Int = 32
+let batchSize: Int = 32
+let targetNetUpdateRate: Int = 5
+let softTargetUpdateRate: Float = 0.05
 let device: Device = Device.default
 
 // Initialize environment
@@ -247,7 +250,7 @@ let env = TensorFlowEnvironmentWrapper(gym.make("CartPole-v0"))
 var qNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
 var targetQNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
 updateTargetQNet(source: qNet, target: &targetQNet, softTargetUpdateRate: 1)
-let optimizer = Adam(for: qNet, learningRate: learningRate)
+let optimizer = AMSGrad(for: qNet, learningRate: learningRate)
 var replayBuffer: ReplayBuffer = ReplayBuffer(capacity: replayBufferCapacity, device: device)
 var agent = Agent(qNet: qNet, targetQNet: targetQNet, optimizer: optimizer, replayBuffer: replayBuffer, discount: discount, minBufferSize: minBufferSize, device: device)
 
@@ -258,11 +261,17 @@ var episodeReturn: Float = 0
 var episodeReturns: Array<Float> = []
 var losses: Array<Float> = []
 var state = env.reset()
+var bestReturn: Float = 0
 while episodeIndex < maxEpisode {
     stepIndex += 1
 
     // Interact with environment
-    let epsilon = startEpsilon * Float(maxEpisode - episodeIndex) / Float(maxEpisode)
+    // let epsilon = startEpsilon * Float(maxEpisode - episodeIndex) / Float(maxEpisode)
+    let epsilon: Float = 0.1
+    // let epsilon_start: Float = 0.9
+    // let epsilon_end: Float = 0.05
+    // let epsilon_decay: Int = 200
+    // let epsilon: Float = epsilon_end + (epsilon_start - epsilon_end) * Float(np.exp(-1 * stepIndex / epsilon_decay, dtype: np.float32))!
     let action = agent.getAction(state: state, epsilon: epsilon)
     let (nextState, reward, isDone, _) = env.step(action)
     episodeReturn += reward.scalarized()
@@ -275,14 +284,19 @@ while episodeIndex < maxEpisode {
 
     // Periodically update Target Net
     if stepIndex % targetNetUpdateRate == 0 {
-        updateTargetQNet(source: qNet, target: &targetQNet)
+        updateTargetQNet(source: qNet, target: &targetQNet, softTargetUpdateRate: softTargetUpdateRate)
     }
 
     // End-of-episode
     if isDone.scalarized() == true {
         state = env.reset()
         episodeIndex += 1
-        print(String(format: "Episode: %4d | Epsilon: %.03f | Return: %3d", episodeIndex, epsilon, Int(episodeReturn)))
+        print(String(format: "Episode: %4d | Step %6d | Epsilon: %.03f | Return: %3d", episodeIndex, stepIndex, epsilon, Int(episodeReturn)))
+        if episodeReturn > bestReturn {
+            // print(String(format: "Episode: %4d | Step %6d | Epsilon: %.03f | Return: %3d", episodeIndex, stepIndex, epsilon, Int(episodeReturn)))
+            // print("New best return of \(episodeReturn)")
+            bestReturn = episodeReturn
+        }
         if episodeReturn > 199 {
             print("Solved in \(episodeIndex) episodes with \(stepIndex) steps!")
             break
@@ -296,7 +310,7 @@ while episodeIndex < maxEpisode {
 }
 
 // Save smoothed learning curve
-let runningMeanWindow: Int = 2
+let runningMeanWindow: Int = 1
 let smoothedEpisodeReturns = np.convolve(episodeReturns, np.ones((runningMeanWindow)) / np.array(runningMeanWindow, dtype: np.int32), mode: "same")
 
 plt.plot(smoothedEpisodeReturns)
