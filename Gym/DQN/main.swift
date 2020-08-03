@@ -200,11 +200,11 @@ class Agent {
     }
 }
 
-func updateTargetQNet(source: Net, target: inout Net) {
-    target.l1.weight = Tensor<Float>(source.l1.weight)
-    target.l1.bias = Tensor<Float>(source.l1.bias)
-    target.l2.weight = Tensor<Float>(source.l2.weight)
-    target.l2.bias = Tensor<Float>(source.l2.bias)
+func updateTargetQNet(source: Net, target: inout Net, softTargetUpdateRate: Float = 0.001) {
+    target.l1.weight = softTargetUpdateRate * Tensor<Float>(source.l1.weight) + (1 - softTargetUpdateRate) * target.l1.weight
+    target.l1.bias = softTargetUpdateRate * Tensor<Float>(source.l1.bias) + (1 - softTargetUpdateRate) * target.l1.bias
+    target.l2.weight = softTargetUpdateRate * Tensor<Float>(source.l2.weight) + (1 - softTargetUpdateRate) * target.l2.weight
+    target.l2.bias = softTargetUpdateRate * Tensor<Float>(source.l2.bias) + (1 - softTargetUpdateRate) * target.l2.bias
 }
 
 class TensorFlowEnvironmentWrapper {
