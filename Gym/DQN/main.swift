@@ -146,14 +146,16 @@ class Agent {
     let optimizer: Adam<Net>
     let replayBuffer: ReplayBuffer
     let discount: Float
+    let minBufferSize: Int
     let device: Device
 
-    init(qNet: Net, targetQNet: Net, optimizer: Adam<Net>, replayBuffer: ReplayBuffer, discount: Float, device: Device) {
+    init(qNet: Net, targetQNet: Net, optimizer: Adam<Net>, replayBuffer: ReplayBuffer, discount: Float, minBufferSize: Int, device: Device) {
         self.qNet = qNet
         self.targetQNet = targetQNet
         self.optimizer = optimizer
         self.replayBuffer = replayBuffer
         self.discount = discount
+        self.minBufferSize = minBufferSize
         self.device = device
     }
 
@@ -247,7 +249,7 @@ var targetQNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
 updateTargetQNet(source: qNet, target: &targetQNet)
 let optimizer = Adam(for: qNet, learningRate: learningRate)
 var replayBuffer: ReplayBuffer = ReplayBuffer(capacity: replayBufferCapacity, device: device)
-var agent = Agent(qNet: qNet, targetQNet: targetQNet, optimizer: optimizer, replayBuffer: replayBuffer, discount: discount, device: device)
+var agent = Agent(qNet: qNet, targetQNet: targetQNet, optimizer: optimizer, replayBuffer: replayBuffer, discount: discount, minBufferSize: minBufferSize, device: device)
 
 // RL Loop
 var stepIndex = 0
