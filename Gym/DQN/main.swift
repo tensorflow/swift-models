@@ -185,7 +185,7 @@ class Agent {
                 let predictionBatch = _Raw.gatherNd(params: stateQValueBatch, indices: tfFullIndices)
 
                 // Compute target batch
-                let targetBatch: Tensor<Float> = tfRewardBatch + Tensor<Float>(tfIsDoneBatch) * self.discount * self.targetQNet(tfNextStateBatch).max(squeezingAxes: Tensor<Int32>(1))
+                let targetBatch: Tensor<Float> = tfRewardBatch + (1 - Tensor<Float>(tfIsDoneBatch)) * self.discount * self.targetQNet(tfNextStateBatch).max(squeezingAxes: Tensor<Int32>(1))
                 return huberLoss(
                     predicted: predictionBatch,
                     expected: withoutDerivative(at: targetBatch),
