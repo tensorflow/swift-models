@@ -230,6 +230,21 @@ class TensorFlowEnvironmentWrapper {
     }
 }
 
+func eval(agent: Agent) -> Float {
+    let evalEnv = TensorFlowEnvironmentWrapper(gym.make("CartPole-v0"))
+    var evalEpisodeReturn: Float = 0
+    var state: Tensor<Float> = evalEnv.reset()
+    var reward: Tensor<Float>
+    var evalIsDone: Tensor<Bool> = Tensor<Bool>(false)
+    while evalIsDone.scalarized() == false {
+        let action = agent.getAction(state: state, epsilon: 0)
+        (state, reward, evalIsDone, _) = evalEnv.step(action)
+        evalEpisodeReturn += reward.scalarized()
+    }
+
+    return evalEpisodeReturn
+}
+
 // Hyperparameters
 let discount: Float = 0.99
 let learningRate: Float = 0.001
@@ -289,19 +304,20 @@ while episodeIndex < maxEpisode {
 
     // End-of-episode
     if isDone.scalarized() == true {
+        let evalEpisodeReturn = eval(agent: agent)
         state = env.reset()
         episodeIndex += 1
-        print(String(format: "Episode: %4d | Step %6d | Epsilon: %.03f | Return: %3d", episodeIndex, stepIndex, epsilon, Int(episodeReturn)))
-        if episodeReturn > bestReturn {
-            // print(String(format: "Episode: %4d | Step %6d | Epsilon: %.03f | Return: %3d", episodeIndex, stepIndex, epsilon, Int(episodeReturn)))
+        // print(String(format: "Episode: %4d | Step %6d | Epsilon: %.03f | Return: %3d", episodeIndex, stepIndex, epsilon, Int(episodeReturn)))
+        if evalEpisodeReturn > bestReturn {
+            print(String(format: "Episode: %4d | Step %6d | Epsilon: %.03f | Return: %3d | Eval : %3d", episodeIndex, stepIndex, epsilon, Int(episodeReturn), Int(evalEpisodeReturn)))
             // print("New best return of \(episodeReturn)")
-            bestReturn = episodeReturn
+            bestReturn = evalEpisodeReturn
         }
-        if episodeReturn > 199 {
+        if evalEpisodeReturn > 199 {
             print("Solved in \(episodeIndex) episodes with \(stepIndex) steps!")
             break
         }
-        episodeReturns.append(episodeReturn)
+        episodeReturns.append(evalEpisodeReturn)
         episodeReturn = 0
     }
 
