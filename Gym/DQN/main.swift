@@ -246,7 +246,7 @@ let env = TensorFlowEnvironmentWrapper(gym.make("CartPole-v0"))
 // Initialize agent
 var qNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
 var targetQNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
-updateTargetQNet(source: qNet, target: &targetQNet)
+updateTargetQNet(source: qNet, target: &targetQNet, softTargetUpdateRate: 1)
 let optimizer = Adam(for: qNet, learningRate: learningRate)
 var replayBuffer: ReplayBuffer = ReplayBuffer(capacity: replayBufferCapacity, device: device)
 var agent = Agent(qNet: qNet, targetQNet: targetQNet, optimizer: optimizer, replayBuffer: replayBuffer, discount: discount, minBufferSize: minBufferSize, device: device)
