@@ -236,12 +236,7 @@ class Agent {
     }
 }
 
-func updateTargetQNet(source: Net, target: inout Net, softTargetUpdateRate: Float) {
-    target.l1.weight = softTargetUpdateRate * Tensor<Float>(source.l1.weight) + (1 - softTargetUpdateRate) * target.l1.weight
-    target.l1.bias = softTargetUpdateRate * Tensor<Float>(source.l1.bias) + (1 - softTargetUpdateRate) * target.l1.bias
-    target.l2.weight = softTargetUpdateRate * Tensor<Float>(source.l2.weight) + (1 - softTargetUpdateRate) * target.l2.weight
-    target.l2.bias = softTargetUpdateRate * Tensor<Float>(source.l2.bias) + (1 - softTargetUpdateRate) * target.l2.bias
-}
+
 
 class TensorFlowEnvironmentWrapper {
     let originalEnv: PythonObject
@@ -280,18 +275,27 @@ func eval(agent: Agent) -> Float {
 }
 
 // Hyperparameters
-let discount: Float = 0.99
-let learningRate: Float = 0.001
+// - Network Hyperparameters
 let hiddenSize: Int = 100
-let startEpsilon: Float = 0.5 // TODO(seungjaeryanlee): Ignored right now
+// - Agent-Env Interaction Hyperparameters
 let maxEpisode: Int = 1000
-let replayBufferCapacity: Int = 1000
-let useCombinedExperienceReplay: Bool = true
+let epsilonStart: Float = 0.1
+let epsilonEnd: Float = 0.1
+let epsilonDecay: Float = 10000
+// - Update Hyperparameters
+let learningRate: Float = 0.001
+let discount: Float = 0.99
 let useDoubleDQN: Bool = true
+// - Replay Buffer Hyperparameters
+let replayBufferCapacity: Int = 1000
 let minBufferSize: Int = 32
 let batchSize: Int = 32
+let useCombinedExperienceReplay: Bool = true
+// - Target Network Hyperparameters
 let targetNetUpdateRate: Int = 5
 let softTargetUpdateRate: Float = 0.05
+
+// Setup device
 let device: Device = Device.default
 
 // Initialize environment
@@ -302,8 +306,21 @@ var qNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
 var targetQNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
 updateTargetQNet(source: qNet, target: &targetQNet, softTargetUpdateRate: 1)
 let optimizer = AMSGrad(for: qNet, learningRate: learningRate)
-var replayBuffer: ReplayBuffer = ReplayBuffer(capacity: replayBufferCapacity, combined: useCombinedExperienceReplay, device: device)
-var agent = Agent(qNet: qNet, targetQNet: targetQNet, optimizer: optimizer, replayBuffer: replayBuffer, discount: discount, minBufferSize: minBufferSize, doubleDQN: useDoubleDQN, device: device)
+var replayBuffer = ReplayBuffer(
+    capacity: replayBufferCapacity,
+    combined: useCombinedExperienceReplay,
+    device: device
+)
+var agent = Agent(
+    qNet: qNet,
+    targetQNet: targetQNet,
+    optimizer: optimizer,
+    replayBuffer: replayBuffer,
+    discount: discount,
+    minBufferSize: minBufferSize,
+    doubleDQN: useDoubleDQN,
+    device: device
+)
 
 // RL Loop
 var stepIndex = 0
@@ -317,12 +334,7 @@ while episodeIndex < maxEpisode {
     stepIndex += 1
 
     // Interact with environment
-    // let epsilon = startEpsilon * Float(maxEpisode - episodeIndex) / Float(maxEpisode)
-    let epsilon: Float = 0.1
-    // let epsilon_start: Float = 0.9
-    // let epsilon_end: Float = 0.05
-    // let epsilon_decay: Int = 200
-    // let epsilon: Float = epsilon_end + (epsilon_start - epsilon_end) * Float(np.exp(-1 * stepIndex / epsilon_decay, dtype: np.float32))!
+    let epsilon: Float = epsilonEnd + (epsilonStart - epsilonEnd) * Float(np.exp(-1.0 * Float(stepIndex) / epsilonDecay))!
     let action = agent.getAction(state: state, epsilon: epsilon)
     let (nextState, reward, isDone, _) = env.step(action)
     episodeReturn += reward.scalarized()
@@ -340,20 +352,18 @@ while episodeIndex < maxEpisode {
 
     // End-of-episode
     if isDone.scalarized() == true {
-        let evalEpisodeReturn = eval(agent: agent)
         state = env.reset()
         episodeIndex += 1
-        // print(String(format: "Episode: %4d | Step %6d | Epsilon: %.03f | Return: %3d", episodeIndex, stepIndex, epsilon, Int(episodeReturn)))
+        let evalEpisodeReturn = eval(agent: agent)
+        episodeReturns.append(evalEpisodeReturn)
         if evalEpisodeReturn > bestReturn {
-            print(String(format: "Episode: %4d | Step %6d | Epsilon: %.03f | Return: %3d | Eval : %3d", episodeIndex, stepIndex, epsilon, Int(episodeReturn), Int(evalEpisodeReturn)))
-            // print("New best return of \(episodeReturn)")
+            print(String(format: "Episode: %4d | Step %6d | Epsilon: %.03f | Train: %3d | Eval: %3d", episodeIndex, stepIndex, epsilon, Int(episodeReturn), Int(evalEpisodeReturn)))
             bestReturn = evalEpisodeReturn
         }
         if evalEpisodeReturn > 199 {
             print("Solved in \(episodeIndex) episodes with \(stepIndex) steps!")
             break
         }
-        episodeReturns.append(evalEpisodeReturn)
         episodeReturn = 0
     }
 
@@ -361,18 +371,26 @@ while episodeIndex < maxEpisode {
     state = nextState
 }
 
+// Save learning curve
+plt.plot(episodeReturns)
+plt.title("Deep Q-Network on CartPole-v0")
+plt.xlabel("Episode")
+plt.ylabel("Episode Return")
+plt.savefig("dqnEpisodeReturns.png")
+plt.clf()
+
 // Save smoothed learning curve
-let runningMeanWindow: Int = 1
+let runningMeanWindow: Int = 10
 let smoothedEpisodeReturns = np.convolve(episodeReturns, np.ones((runningMeanWindow)) / np.array(runningMeanWindow, dtype: np.int32), mode: "same")
 
-plt.plot(smoothedEpisodeReturns)
+plt.plot(episodeReturns)
 plt.title("Deep Q-Network on CartPole-v0")
 plt.xlabel("Episode")
 plt.ylabel("Smoothed Episode Return")
 plt.savefig("dqnSmoothedEpisodeReturns.png")
 plt.clf()
 
-// Save TD loss curve
+// // Save TD loss curve
 plt.plot(losses)
 plt.title("Deep Q-Network on CartPole-v0")
 plt.xlabel("Step")
