@@ -111,7 +111,11 @@ class ReplayBuffer {
         nextStateBatch: Tensor<Float>,
         isDoneBatch: Tensor<Bool>
     ) {
-        let randomIndices = Tensor<Int32>(numpy: np.random.randint(count, size: batchSize, dtype: np.int32))!
+        // Vanilla
+        // let randomIndices = Tensor<Int32>(numpy: np.random.randint(count, size: batchSize, dtype: np.int32))!
+        // Combined Experience Replay
+        let sampledIndices = np.random.randint(count, size: batchSize-1, dtype: np.int32)
+        let randomIndices = Tensor<Int32>(numpy: np.append(sampledIndices, np.array([(index + capacity - 1) % capacity], dtype: np.int32)))!
 
         let stateBatch = states.gathering(atIndices: randomIndices, alongAxis: 0)
         let actionBatch = actions.gathering(atIndices: randomIndices, alongAxis: 0)
