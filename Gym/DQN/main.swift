@@ -155,7 +155,7 @@ struct Net: Layer {
 class Agent {
     var qNet: Net
     var targetQNet: Net
-    let optimizer: AMSGrad<Net>
+    let optimizer: Adam<Net>
     let replayBuffer: ReplayBuffer
     let discount: Float
     let minBufferSize: Int
@@ -165,7 +165,7 @@ class Agent {
     init(
         qNet: Net,
         targetQNet: Net,
-        optimizer: AMSGrad<Net>,
+        optimizer: Adam<Net>,
         replayBuffer: ReplayBuffer,
         discount: Float,
         minBufferSize: Int,
@@ -295,9 +295,9 @@ let learningRate: Float = 0.001
 let discount: Float = 0.99
 let useDoubleDQN: Bool = true
 // - Replay Buffer Hyperparameters
-let replayBufferCapacity: Int = 1000
-let minBufferSize: Int = 32
-let batchSize: Int = 32
+let replayBufferCapacity: Int = 100000
+let minBufferSize: Int = 64
+let batchSize: Int = 64
 let useCombinedExperienceReplay: Bool = true
 // - Target Network Hyperparameters
 let targetNetUpdateRate: Int = 5
@@ -312,7 +312,7 @@ let env = TensorFlowEnvironmentWrapper(gym.make("CartPole-v0"))
 // Initialize agent
 var qNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
 var targetQNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
-let optimizer = AMSGrad(for: qNet, learningRate: learningRate)
+let optimizer = Adam(for: qNet, learningRate: learningRate)
 var replayBuffer = ReplayBuffer(
     capacity: replayBufferCapacity,
     combined: useCombinedExperienceReplay,
