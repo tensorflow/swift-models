@@ -180,6 +180,9 @@ class Agent {
         self.minBufferSize = minBufferSize
         self.doubleDQN = doubleDQN
         self.device = device
+
+        // Copy Q-network to Target Q-network before training
+        updateTargetQNet(tau: 1)
     }
 
     func getAction(state: Tensor<Float>, epsilon: Float) -> Tensor<Int32> {
@@ -234,9 +237,14 @@ class Agent {
         }
         return 0
     }
+
+    func updateTargetQNet(tau: Float) {
+        self.targetQNet.l1.weight = tau * Tensor<Float>(self.qNet.l1.weight) + (1 - tau) * self.targetQNet.l1.weight
+        self.targetQNet.l1.bias = tau * Tensor<Float>(self.qNet.l1.bias) + (1 - tau) * self.targetQNet.l1.bias
+        self.targetQNet.l2.weight = tau * Tensor<Float>(self.qNet.l2.weight) + (1 - tau) * self.targetQNet.l2.weight
+        self.targetQNet.l2.bias = tau * Tensor<Float>(self.qNet.l2.bias) + (1 - tau) * self.targetQNet.l2.bias
+    }
 }
-
-
 
 class TensorFlowEnvironmentWrapper {
     let originalEnv: PythonObject
@@ -304,7 +312,6 @@ let env = TensorFlowEnvironmentWrapper(gym.make("CartPole-v0"))
 // Initialize agent
 var qNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
 var targetQNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
-updateTargetQNet(source: qNet, target: &targetQNet, softTargetUpdateRate: 1)
 let optimizer = AMSGrad(for: qNet, learningRate: learningRate)
 var replayBuffer = ReplayBuffer(
     capacity: replayBufferCapacity,
@@ -347,7 +354,7 @@ while episodeIndex < maxEpisode {
 
     // Periodically update Target Net
     if stepIndex % targetNetUpdateRate == 0 {
-        updateTargetQNet(source: qNet, target: &targetQNet, softTargetUpdateRate: softTargetUpdateRate)
+        agent.updateTargetQNet(tau: softTargetUpdateRate)
     }
 
     // End-of-episode
