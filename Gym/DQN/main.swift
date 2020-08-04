@@ -64,6 +64,7 @@ let plt = Python.import("matplotlib.pyplot")
 
 class ReplayBuffer {
     let capacity: Int
+    let combined: Bool
     let device: Device
 
     var states: Tensor<Float>
@@ -74,8 +75,9 @@ class ReplayBuffer {
     var count: Int = 0
     var index: Int = 0
 
-    init(capacity: Int, device: Device) {
+    init(capacity: Int, combined: Bool, device: Device) {
         self.capacity = capacity
+        self.combined = combined
         self.device = device
 
         states = Tensor<Float>(zeros: [capacity, 4], on: device)
@@ -111,17 +113,23 @@ class ReplayBuffer {
         nextStateBatch: Tensor<Float>,
         isDoneBatch: Tensor<Bool>
     ) {
-        // Vanilla
-        // let randomIndices = Tensor<Int32>(numpy: np.random.randint(count, size: batchSize, dtype: np.int32))!
-        // Combined Experience Replay
-        let sampledIndices = np.random.randint(count, size: batchSize-1, dtype: np.int32)
-        let randomIndices = Tensor<Int32>(numpy: np.append(sampledIndices, np.array([(index + capacity - 1) % capacity], dtype: np.int32)))!
+        let indices: Tensor<Int32>
+        if self.combined == true {
+            // Combined Experience Replay
+            let sampledIndices = np.random.randint(count, size: batchSize - 1, dtype: np.int32)
+            let lastIndex = np.array([(index + capacity - 1) % capacity], dtype: np.int32)
+            indices = Tensor<Int32>(numpy: np.append(sampledIndices, lastIndex))!
+        }
+        else {
+            // Vanilla Experience Replay
+            indices = Tensor<Int32>(numpy: np.random.randint(count, size: batchSize, dtype: np.int32))!
+        }
 
-        let stateBatch = states.gathering(atIndices: randomIndices, alongAxis: 0)
-        let actionBatch = actions.gathering(atIndices: randomIndices, alongAxis: 0)
-        let rewardBatch = rewards.gathering(atIndices: randomIndices, alongAxis: 0)
-        let nextStateBatch = nextStates.gathering(atIndices: randomIndices, alongAxis: 0)
-        let isDoneBatch = isDones.gathering(atIndices: randomIndices, alongAxis: 0)
+        let stateBatch = states.gathering(atIndices: indices, alongAxis: 0)
+        let actionBatch = actions.gathering(atIndices: indices, alongAxis: 0)
+        let rewardBatch = rewards.gathering(atIndices: indices, alongAxis: 0)
+        let nextStateBatch = nextStates.gathering(atIndices: indices, alongAxis: 0)
+        let isDoneBatch = isDones.gathering(atIndices: indices, alongAxis: 0)
 
         return (stateBatch, actionBatch, rewardBatch, nextStateBatch, isDoneBatch)
     }
@@ -151,15 +159,26 @@ class Agent {
     let replayBuffer: ReplayBuffer
     let discount: Float
     let minBufferSize: Int
+    let doubleDQN: Bool
     let device: Device
 
-    init(qNet: Net, targetQNet: Net, optimizer: AMSGrad<Net>, replayBuffer: ReplayBuffer, discount: Float, minBufferSize: Int, device: Device) {
+    init(
+        qNet: Net,
+        targetQNet: Net,
+        optimizer: AMSGrad<Net>,
+        replayBuffer: ReplayBuffer,
+        discount: Float,
+        minBufferSize: Int,
+        doubleDQN: Bool,
+        device: Device
+    ) {
         self.qNet = qNet
         self.targetQNet = targetQNet
         self.optimizer = optimizer
         self.replayBuffer = replayBuffer
         self.discount = discount
         self.minBufferSize = minBufferSize
+        self.doubleDQN = doubleDQN
         self.device = device
     }
 
@@ -189,13 +208,18 @@ class Agent {
                 let predictionBatch = _Raw.gatherNd(params: stateQValueBatch, indices: tfFullIndices)
 
                 // Compute target batch
-                // DQN
-                // let nextStateQValueBatch = self.targetQNet(tfNextStateBatch).max(squeezingAxes: 1)
-                // DDQN
-                let npNextStateActionBatch = self.qNet(tfNextStateBatch).argmax(squeezingAxis: 1).makeNumpyArray()
-                let npNextStateFullIndices = np.stack([np.arange(batchSize, dtype: np.int32), npNextStateActionBatch], axis: 1)
-                let tfNextStateFullIndices = Tensor<Int32>(numpy: npNextStateFullIndices)!
-                let nextStateQValueBatch = _Raw.gatherNd(params: self.targetQNet(tfNextStateBatch), indices: tfNextStateFullIndices)
+                let nextStateQValueBatch: Tensor<Float>
+                if self.doubleDQN == true {
+                    // Double DQN
+                    let npNextStateActionBatch = self.qNet(tfNextStateBatch).argmax(squeezingAxis: 1).makeNumpyArray()
+                    let npNextStateFullIndices = np.stack([np.arange(batchSize, dtype: np.int32), npNextStateActionBatch], axis: 1)
+                    let tfNextStateFullIndices = Tensor<Int32>(numpy: npNextStateFullIndices)!
+                    nextStateQValueBatch = _Raw.gatherNd(params: self.targetQNet(tfNextStateBatch), indices: tfNextStateFullIndices)
+                }
+                else {
+                    // DQN
+                    nextStateQValueBatch = self.targetQNet(tfNextStateBatch).max(squeezingAxes: 1)
+                }
                 let targetBatch: Tensor<Float> = tfRewardBatch + self.discount * (1 - Tensor<Float>(tfIsDoneBatch)) * nextStateQValueBatch
 
                 return huberLoss(
@@ -262,6 +286,8 @@ let hiddenSize: Int = 100
 let startEpsilon: Float = 0.5 // TODO(seungjaeryanlee): Ignored right now
 let maxEpisode: Int = 1000
 let replayBufferCapacity: Int = 1000
+let useCombinedExperienceReplay: Bool = true
+let useDoubleDQN: Bool = true
 let minBufferSize: Int = 32
 let batchSize: Int = 32
 let targetNetUpdateRate: Int = 5
@@ -276,8 +302,8 @@ var qNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
 var targetQNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
 updateTargetQNet(source: qNet, target: &targetQNet, softTargetUpdateRate: 1)
 let optimizer = AMSGrad(for: qNet, learningRate: learningRate)
-var replayBuffer: ReplayBuffer = ReplayBuffer(capacity: replayBufferCapacity, device: device)
-var agent = Agent(qNet: qNet, targetQNet: targetQNet, optimizer: optimizer, replayBuffer: replayBuffer, discount: discount, minBufferSize: minBufferSize, device: device)
+var replayBuffer: ReplayBuffer = ReplayBuffer(capacity: replayBufferCapacity, combined: useCombinedExperienceReplay, device: device)
+var agent = Agent(qNet: qNet, targetQNet: targetQNet, optimizer: optimizer, replayBuffer: replayBuffer, discount: discount, minBufferSize: minBufferSize, doubleDQN: useDoubleDQN, device: device)
 
 // RL Loop
 var stepIndex = 0
