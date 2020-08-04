@@ -8,6 +8,7 @@ add_library(ModelSupport
   LabeledData.swift
   Image.swift
   Stderr.swift
+  AnyLayer.swift
   Text/BytePairEncoder.swift
   Text/SentencePiece/SentencePieceModel.pb.swift
   Text/TextBatch.swift
