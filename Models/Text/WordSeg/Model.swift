@@ -278,10 +278,7 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
       let logp_chr = decode(candidates, current_state, device: device)
         .scalarsADHack(device: device)  // [candidates.count]
       if pos != 0 {
-        // Cleanup: lattice[pos].recomputeSemiringScore()
-        var updatedNode = lattice[pos]
-        updatedNode.recomputeSemiringScore()
-        lattice.positions.update(at: pos, to: updatedNode)
+        lattice[pos].recomputeSemiringScore()
       }
 
       for (i, candidate) in candidates.enumerated() {
@@ -296,53 +293,14 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
           logp: logp_i,
           previous: lattice[pos].semiringScore,
           order: parameters.order)
-
-        // Cleanup: lattice[next_pos].edges.append(edge)
-        var updatedNode = lattice[next_pos]
-        updatedNode.edges.append(edge)
-        lattice.positions.update(at: next_pos, to: updatedNode)
+        lattice[next_pos].edges.append(edge)
       }
 
       LazyTensorBarrier()
     }
 
-    // Cleanup: lattice[sentence.count].recomputeSemiringScore()
-    var lastNode = lattice[sentence.count]
-    lastNode.recomputeSemiringScore()
-    lattice.positions.update(at: sentence.count, to: lastNode)
-
+    lattice[sentence.count].recomputeSemiringScore()
     return lattice
-  }
-}
-
-extension Array {
-
-  /// Sets the `index`th element of `self` to `value`.
-  ///
-  /// Semantically, this function behaves like `Array.subscript.set`.
-  ///
-  /// - Note: this mutating method exists as a workaround for
-  ///   `Array.subscript._modify` not being differentiable (TF-1277).
-  @inlinable
-  mutating func update(at index: Int, to value: Element) {
-    self[index] = value
-  }
-
-  /// Returns the value and pullback of `self.update`.
-  @usableFromInline
-  @derivative(of: update)
-  mutating func vjpUpdate(at index: Int, to value: Element) -> (
-    value: (),
-    pullback: (inout TangentVector) -> Element.TangentVector
-  ) where Element: Differentiable {
-    let elementZero = self[index].zeroTangentVector
-    update(at: index, to: value)
-    func pullback(_ dSelf: inout TangentVector) -> Element.TangentVector {
-      let dElement = dSelf[index]
-      dSelf.base[index] = elementZero
-      return dElement
-    }
-    return ((), pullback)
   }
 }
 
