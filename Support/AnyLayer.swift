@@ -1,7 +1,6 @@
 import TensorFlow
 import _Differentiation
 
-// begin modified copy of https://gist.github.com/dan-zheng/be090293ecea27ce0ad96d769e4a6fbc
 internal class _AnyLayerBox<Input: Differentiable, Output: Differentiable, F: FloatingPoint & VectorProtocol & ElementaryFunctions>
 where F.VectorSpaceScalar == F {
   // `Differentiable` requirements.
@@ -65,13 +64,15 @@ where T.TangentVector.VectorSpaceScalar: FloatingPoint & VectorProtocol & Elemen
   }
 
   override func _move(along direction: AnyLayerTangentVector<T.TangentVector.VectorSpaceScalar>) {
-    guard
-      let directionBase =
-        direction.base as? T.TangentVector
-    else {
-      fatalError("Unexpected tangent vector type")
+    if let scalarDirection = direction._box._getOpaqueScalar() {
+      _base.move(along: T.TangentVector.zero.adding(scalarDirection))
+    } else {
+      guard let directionBase =
+        direction._box._unboxed(to: T.TangentVector.self) else {
+        _derivativeTypeMismatch(T.self, type(of: direction._tangentOrScalar))
+      }
+      _base.move(along: directionBase)
     }
-    _base.move(along: directionBase)
   }
 
   override func _callAsFunction(_ input: T.Input) -> T.Output {
@@ -98,6 +99,17 @@ where T.TangentVector.VectorSpaceScalar: FloatingPoint & VectorProtocol & Elemen
   }
 }
 
+/// A type-erased layer.
+///
+/// The `AnyLayerTangentVector` type forwards its operations to an arbitrary underlying
+/// base value conforming to `Layer`, and `PointwiseMultiplicative`, hiding the specifics of the underlying value.
+///
+/// This erased layer does not implement `KeyPathIterable` due to a Swift constraint that makes it impossible to
+/// cast within a keypath (necessary because the layer is stored as an erased `Any` value). The layer _does_ support
+/// `CopyableToDevice`, however, so it can be moved between devices.
+///
+/// The tangent vector of this type is also type-erased, using the `AnyLayerTangentVector` type. All tangents
+/// (other than `zero` and `one`), wrap the tangent vector type of the underlying layer.
 public struct AnyLayer<Input: Differentiable, Output: Differentiable, F: FloatingPoint & VectorProtocol & ElementaryFunctions>: Layer, CopyableToDevice
 where F.VectorSpaceScalar == F {
   internal var _box: _AnyLayerBox<Input, Output, F>
@@ -106,12 +118,12 @@ where F.VectorSpaceScalar == F {
     self._box = _box
   }
 
-  /// The underlying base value.
+  /// The underlying base layer.
   public var base: Any {
     return _box._typeErasedBase
   }
 
-  /// Creates a type-erased derivative from the given derivative.
+  /// Creates a type-erased derivative from the given layer.
   @differentiable
   public init<T: Layer>(_ base: T)
   where T.Input == Input, T.Output == Output, T.TangentVector.VectorSpaceScalar == F {
@@ -129,7 +141,7 @@ where F.VectorSpaceScalar == F {
   ) -> (value: AnyLayer, pullback: (AnyLayerTangentVector<F>) -> T.TangentVector)
   where T.Input == Input, T.Output == Output, T.TangentVector.VectorSpaceScalar == F
   {
-    return (AnyLayer<Input, Output, F>(base), { v in v.base as! T.TangentVector })
+    return (AnyLayer<Input, Output, F>(base), { v in v._tangentOrScalar as! T.TangentVector })
   }
 
   @inlinable
@@ -310,7 +322,7 @@ where F.VectorSpaceScalar == F {
 }
 
 extension _AnyLayerTangentVectorBox {
-  /// Returns true if the underlying value has type `AnyLayerTangentVector.OpaqueZero`.
+  /// Optionally returns the underlying scalar if the wrapped value has type `AnyLayerTangentVector.OpaqueScalar`.
   func _getOpaqueScalar() -> F? {
     return _unboxed(to: AnyLayerTangentVector<F>.OpaqueScalar.self)?.value
   }
@@ -514,9 +526,8 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
 /// A type-erased derivative value.
 ///
 /// The `AnyLayerTangentVector` type forwards its operations to an arbitrary underlying
-/// base derivative value conforming to `Differentiable` and
-/// `AdditiveArithmetic`, hiding the specifics of the underlying value.
-// public struct AnyLayerTangentVector : EuclideanDifferentiable & AdditiveArithmetic {
+/// base derivative value conforming to `Differentiable`, `VectorProtocol`,
+/// `ElementaryFunctions`, and `PointwiseMultiplicative`, hiding the specifics of the underlying value.
 public struct AnyLayerTangentVector<F: FloatingPoint & VectorProtocol & ElementaryFunctions>: VectorProtocol & ElementaryFunctions & PointwiseMultiplicative & KeyPathIterable & EuclideanDifferentiable & AdditiveArithmetic
 where F.VectorSpaceScalar == F {
   internal var _box: _AnyLayerTangentVectorBox<F>
@@ -525,9 +536,21 @@ where F.VectorSpaceScalar == F {
     self._box = _box
   }
 
-  /// The underlying base value.
-  public var base: Any {
+  /// The underlying base value, without logic applied to handle `OpaqueScalar`.
+  @usableFromInline
+  var _tangentOrScalar: Any {
     return _box._typeErasedBase
+  }
+
+  /// The underlying base tangent vector.
+  /// This will either be an instance of the underlying layer's tangent vector,
+  /// or just a scalar when the tangent vector contains only elements with that value.
+  public var base: Any {
+    if let scalar = _box._getOpaqueScalar() {
+      return scalar
+    } else {
+      return _box._typeErasedBase
+    }
   }
 
   /// Creates a type-erased derivative from the given derivative.
@@ -543,7 +566,7 @@ where F.VectorSpaceScalar == F {
   ) -> (value: AnyLayerTangentVector<F>, pullback: (AnyLayerTangentVector<F>) -> T.TangentVector)
     where T.TangentVector == T, T.VectorSpaceScalar == F
   {
-    return (AnyLayerTangentVector<F>(base), { v in v.base as! T.TangentVector })
+    return (AnyLayerTangentVector<F>(base), { v in v._tangentOrScalar as! T.TangentVector })
   }
 
   @derivative(of: init)
