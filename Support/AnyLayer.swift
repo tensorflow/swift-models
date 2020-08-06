@@ -387,9 +387,9 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
   }
 
   override func _subtract(_ x: _AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    // C - x = -x + C
+    // C - x = (1 * C) - x
     if let scalar = _getOpaqueScalar() {
-      return type(of: x)._zero._subtract(x)._adding(scalar)
+      return _AnyLayerTangentVectorBox<T.VectorSpaceScalar>._one._scaled(by: scalar)._subtract(x)
     }
     // self - C = self - C
     if let scalar = x._getOpaqueScalar() {
@@ -591,7 +591,11 @@ where F.VectorSpaceScalar == F {
 
   // `AdditiveArithmetic` requirements.
 
-  /// Internal struct representing an opaque zero value.
+  /// Internal struct representing an opaque scalar value.
+  /// This is equivalent to T.TangentVector.one.scaled(by: scalar)
+  /// where T is the actual layer type. Because `zero` and `one` are
+  /// static, however, we just capture the scalar value for now and expand
+  /// into the actual `TangentVector` type lazily.
   @frozen
   @usableFromInline
   internal struct OpaqueScalar : EuclideanDifferentiable & AdditiveArithmetic & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative {
