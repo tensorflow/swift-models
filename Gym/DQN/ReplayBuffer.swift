@@ -14,7 +14,7 @@
 
 import TensorFlow
 
-struct ReplayBuffer {
+class ReplayBuffer {
   let capacity: Int
   let combined: Bool
 
@@ -30,7 +30,7 @@ struct ReplayBuffer {
     self.combined = combined
   }
 
-  mutating func append(
+  func append(
     state: Tensor<Float>,
     action: Tensor<Int32>,
     reward: Tensor<Float>,
