@@ -65,9 +65,9 @@ func eval(agent: Agent) -> Float {
 let hiddenSize: Int = 100
 // - Agent-Env Interaction Hyperparameters
 let maxEpisode: Int = 1000
-let epsilonStart: Float = 0.1
-let epsilonEnd: Float = 0.1
-let epsilonDecay: Float = 10000
+let epsilonStart: Float = 1
+let epsilonEnd: Float = 0.01
+let epsilonDecay: Float = 1000
 // - Update Hyperparameters
 let learningRate: Float = 0.001
 let discount: Float = 0.99
