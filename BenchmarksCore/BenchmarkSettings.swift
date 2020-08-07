@@ -47,6 +47,18 @@ public struct Backend: BenchmarkSetting {
   }
 }
 
+public struct Platform: BenchmarkSetting {
+  var value: Value
+  init(_ value: Value) {
+    self.value = value
+  }
+  public enum Value {
+    case cpu
+    case gpu
+    case tpu
+  }
+}
+
 public struct DatasetFilePath: BenchmarkSetting {
   var value: String
   init(_ value: String) {
@@ -79,6 +91,14 @@ public extension BenchmarkSettings {
     }
   }
 
+  var platform: Platform.Value {
+    if let value = self[Platform.self]?.value {
+      return value
+    } else {
+      fatalError("Platform setting must have a default.")
+    }
+  }
+
   var device: Device {
     // Note: The line is needed, or all GPU memory
     // will be exhausted on initial allocation of the model.
@@ -87,7 +107,12 @@ public extension BenchmarkSettings {
 
     switch backend {
     case .eager: return Device.defaultTFEager
-    case .x10: return Device.defaultXLA
+    case .x10:
+      switch platform {
+      case .cpu: return Device.defaultXLA
+      case .gpu: return Device.defaultXLA
+      case .tpu: return (Device.allDevices.filter { $0.kind == .TPU }).first!
+      }
     }
   }
 
@@ -100,6 +125,7 @@ public let defaultSettings: [BenchmarkSetting] = [
   TimeUnit(.s),
   InverseTimeUnit(.s),
   Backend(.eager),
+  Platform(.cpu),
   Synthetic(false),
   Columns([
     "name",

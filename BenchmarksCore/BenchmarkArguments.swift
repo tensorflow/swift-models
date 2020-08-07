@@ -28,6 +28,15 @@ public struct BenchmarkArguments: ParsableArguments {
   @Flag(help: "Use X10 backend.")
   var x10: Bool = false
 
+  @Flag(help: "Use CPU platform.")
+  var cpu: Bool = false
+
+  @Flag(help: "Use GPU platform.")
+  var gpu: Bool = false
+
+  @Flag(help: "Use TPU platform.")
+  var tpu: Bool = false
+
   @Flag(help: "Use synthetic data.")
   var synthetic: Bool = false 
 
@@ -40,11 +49,15 @@ public struct BenchmarkArguments: ParsableArguments {
   public init() {}
 
   public init(arguments: Benchmark.BenchmarkArguments, batchSize: Int?, eager: Bool, x10: Bool,
-              synthetic: Bool, real: Bool, datasetFilePath: String?) {
+              cpu: Bool, gpu: Bool, tpu: Bool, synthetic: Bool, real: Bool,
+              datasetFilePath: String?) {
     self.arguments = arguments
     self.batchSize = batchSize
     self.eager = eager
     self.x10 = x10
+    self.cpu = cpu
+    self.gpu = gpu
+    self.tpu = tpu
     self.synthetic = synthetic
     self.real = real
     self.datasetFilePath = datasetFilePath
@@ -62,6 +75,11 @@ public struct BenchmarkArguments: ParsableArguments {
       throw ValidationError(
         "Can't specify both --eager and --x10 backends.")
     }
+
+    guard !(cpu && gpu) || !(cpu && tpu) || !(gpu && tpu) else {
+      throw ValidationError(
+        "Can't specify multiple platforms.")
+    }
   }
 
   public var settings: [BenchmarkSetting] {
@@ -75,6 +93,15 @@ public struct BenchmarkArguments: ParsableArguments {
     }
     if eager {
       settings.append(Backend(.eager))
+    }
+    if cpu {
+      settings.append(Platform(.cpu))
+    }
+    if gpu {
+      settings.append(Platform(.gpu))
+    }
+    if tpu {
+      settings.append(Platform(.tpu))
     }
     if synthetic {
       settings.append(Synthetic(true))
