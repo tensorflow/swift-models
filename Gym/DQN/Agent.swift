@@ -54,12 +54,26 @@ struct DeepQNetwork: Layer {
 /// Bellman equation. For more information, check Human-level control through deep reinforcement
 /// learning (Mnih et al., 2015).
 class DeepQNetworkAgent {
+  /// The Q-network uses to estimate the action values.
   var qNet: DeepQNetwork
+  /// The copy of the Q-network updated less frequently to stabilize the
+  /// training process.
   var targetQNet: DeepQNetwork
+  /// The optimizer used to train the Q-network.
   let optimizer: Adam<DeepQNetwork>
+  /// The replay buffer that stores experiences of the interactions between the
+  /// agent and the environment. The Q-network is trained from experiences
+  /// sampled from the replay buffer.
   let replayBuffer: ReplayBuffer
+  /// The discount factor that measures how much to weight to give to future
+  /// rewards when calculating the action value.
   let discount: Float
+  /// The minimum replay buffer size before the training starts.
   let minBufferSize: Int
+  /// If enabled, uses the Double DQN update equation instead of the original
+  /// DQN equation. This mitigates the overestimation problem of DQN. For more
+  /// information about Double DQN, check Deep Reinforcement Learning with
+  /// Double Q-learning (Hasselt, Guez, and Silver, 2015).
   let doubleDQN: Bool
   let device: Device
 

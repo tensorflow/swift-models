@@ -22,14 +22,31 @@ import TensorFlow
 /// and also train in batches. For more information, check Human-level control
 /// through deep reinforcement learning (Mnih et al., 2015).
 class ReplayBuffer {
+  /// The maximum size of the replay buffer. When the replay buffer is full,
+  /// new elements replace the oldest element in the replay buffer.
   let capacity: Int
+  /// If enabled, uses Combined Experience Replay (CER) sampling instead of the
+  /// uniform random sampling in the original DQN paper. Original DQN samples
+  /// batch uniformly randomly in the replay buffer. CER always includes the
+  /// most recent element and samples the rest of the batch uniformly randomly.
+  /// This makes the agent more robust to different replay buffer capacities.
+  /// For more information about Combined Experience Replay, check A Deeper Look
+  /// at Experience Replay (Zhang and Sutton, 2017).
   let combined: Bool
 
+  /// The states that the agent observed.
   @noDerivative var states: [Tensor<Float>] = []
+  /// The actions that the agent took.
   @noDerivative var actions: [Tensor<Int32>] = []
+  /// The rewards that the agent received from the environment after taking
+  /// an action.
   @noDerivative var rewards: [Tensor<Float>] = []
+  /// The next states that the agent received from the environment after taking
+  /// an action.
   @noDerivative var nextStates: [Tensor<Float>] = []
+  /// The episode-terminal flag that the agent received after taking an action.
   @noDerivative var isDones: [Tensor<Bool>] = []
+  /// The current size of the replay buffer.
   var count: Int { return states.count }
 
   init(capacity: Int, combined: Bool) {
