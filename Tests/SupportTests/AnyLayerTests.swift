@@ -16,31 +16,33 @@ import XCTest
 import ModelSupport
 import TensorFlow
 
+// TODO(shadaj): create generic protocol test for things like `ElementaryFunctions`
+
 final class AnyLayerTests: XCTestCase {
     func testGradients() {
-        let originalLayer = Dense<Float>(inputSize: 1, outputSize: 1)
-        let anyLayer = AnyLayer<Tensor<Float>, Tensor<Float>, Float>(originalLayer)
+        let original = Dense<Float>(inputSize: 1, outputSize: 1)
+        let erased = AnyLayer<Tensor<Float>, Tensor<Float>, Float>(original)
 
-        let originalGradient = gradient(at: originalLayer, in: { layer in
+        let originalGradient = gradient(at: original, in: { layer in
             return (layer(Tensor([[1.0]])) - Tensor([2.0])).squared().mean()
         })
 
-        let anyLayerGradient = gradient(at: anyLayer, in: { layer in
+        let erasedGradient = gradient(at: erased, in: { layer in
             return (layer(Tensor([[1.0]])) - Tensor([2.0])).squared().mean()
         })
 
-        XCTAssertEqual(originalGradient, anyLayerGradient.base as! Dense<Float>.TangentVector)
+        XCTAssertEqual(originalGradient, erasedGradient.base as! Dense<Float>.TangentVector)
     }
 
     func testTangentOperations() {
-        let originalLayer = Dense<Float>(inputSize: 1, outputSize: 1)
-        let anyLayer = AnyLayer<Tensor<Float>, Tensor<Float>, Float>(originalLayer)
+        let original = Dense<Float>(inputSize: 1, outputSize: 1)
+        let erased = AnyLayer<Tensor<Float>, Tensor<Float>, Float>(original)
 
-        let originalGradient = gradient(at: originalLayer, in: { layer in
+        let originalGradient = gradient(at: original, in: { layer in
             return (layer(Tensor([[1.0]])) - Tensor([2.0])).squared().mean()
         })
 
-        let anyLayerGradient = gradient(at: anyLayer, in: { layer in
+        let anyLayerGradient = gradient(at: erased, in: { layer in
             return (layer(Tensor([[1.0]])) - Tensor([2.0])).squared().mean()
         })
 
@@ -52,8 +54,8 @@ final class AnyLayerTests: XCTestCase {
     }
 
     func testScalarTangentVectorBase() {
-        let originalLayer = Dense<Float>(inputSize: 1, outputSize: 1)
-        let anyLayer = AnyLayer<Tensor<Float>, Tensor<Float>, Float>(originalLayer)
+        let original = Dense<Float>(inputSize: 1, outputSize: 1)
+        let erased = AnyLayer<Tensor<Float>, Tensor<Float>, Float>(original)
 
         XCTAssertEqual(AnyLayer<Tensor<Float>, Tensor<Float>, Float>.TangentVector.zero.base as! Float, 0)
         XCTAssertEqual(AnyLayer<Tensor<Float>, Tensor<Float>, Float>.TangentVector.one.base as! Float, 1)
