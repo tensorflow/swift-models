@@ -25,7 +25,12 @@ extension Optional {
   }
 }
 
-struct Net: Layer {
+/// A Deep Q-Network.
+///
+/// A Q-network is a neural network that receives the observation (state) as input and estimates
+/// the action values (Q values) of each action. For more information, check Human-level control
+/// through deep reinforcement learning (Mnih et al., 2015).
+struct DeepQNetwork: Layer {
   typealias Input = Tensor<Float>
   typealias Output = Tensor<Float>
 
@@ -42,10 +47,16 @@ struct Net: Layer {
   }
 }
 
-class Agent {
-  var qNet: Net
-  var targetQNet: Net
-  let optimizer: Adam<Net>
+/// Agent that uses the Deep Q-Network.
+///
+/// Deep Q-Network is an algorithm that trains a Q-network that estimates the action values of
+/// each action given an observation (state). The Q-network is trained iteratively using the 
+/// Bellman equation. For more information, check Human-level control through deep reinforcement
+/// learning (Mnih et al., 2015).
+class DeepQNetworkAgent {
+  var qNet: DeepQNetwork
+  var targetQNet: DeepQNetwork
+  let optimizer: Adam<DeepQNetwork>
   let replayBuffer: ReplayBuffer
   let discount: Float
   let minBufferSize: Int
@@ -53,9 +64,9 @@ class Agent {
   let device: Device
 
   init(
-    qNet: Net,
-    targetQNet: Net,
-    optimizer: Adam<Net>,
+    qNet: DeepQNetwork,
+    targetQNet: DeepQNetwork,
+    optimizer: Adam<DeepQNetwork>,
     replayBuffer: ReplayBuffer,
     discount: Float,
     minBufferSize: Int,

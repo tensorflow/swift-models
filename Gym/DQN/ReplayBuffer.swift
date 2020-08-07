@@ -14,6 +14,13 @@
 
 import TensorFlow
 
+/// Replay buffer to store the agent's experiences.
+///
+/// Vanilla Q-learning only trains on the latest experience. Deep Q-network uses
+/// a technique called "experience replay", where all experience is stored into
+/// a replay buffer. By storing experience, the agent can reuse the experiences
+/// and also train in batches. For more information, check Human-level control
+/// through deep reinforcement learning (Mnih et al., 2015).
 class ReplayBuffer {
   let capacity: Int
   let combined: Bool

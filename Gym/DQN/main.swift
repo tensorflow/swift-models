@@ -45,7 +45,7 @@ class TensorFlowEnvironmentWrapper {
   }
 }
 
-func eval(agent: Agent) -> Float {
+func evaluate(_ agent: DeepQNetworkAgent) -> Float {
   let evalEnv = TensorFlowEnvironmentWrapper(gym.make("CartPole-v0"))
   var evalEpisodeReturn: Float = 0
   var state: Tensor<Float> = evalEnv.reset()
@@ -61,24 +61,58 @@ func eval(agent: Agent) -> Float {
 }
 
 // Hyperparameters
-// - Network Hyperparameters
+/// The size of the hidden layer of the 2-layer Q-network. The network has the
+/// shape observationSize - hiddenSize - actionCount.
 let hiddenSize: Int = 100
-// - Agent-Env Interaction Hyperparameters
+/// Maximum number of episodes to train the agent. The training is terminated
+/// early if maximum score is achieved during evaluation.
 let maxEpisode: Int = 1000
+/// The initial epsilon value. With probability epsilon, the agent chooses a
+/// random action instead of the action that it thinks is the best.
 let epsilonStart: Float = 1
+/// The terminal epsilon value.
 let epsilonEnd: Float = 0.01
+/// The decay rate of epsilon.
 let epsilonDecay: Float = 1000
-// - Update Hyperparameters
+/// The learning rate for the Q-network.
 let learningRate: Float = 0.001
+/// The discount factor. This measures how much to "discount" the future rewards
+/// that the agent will receive. The discount factor must be from 0 to 1
+/// (inclusive). Discount factor of 0 means that the agent only considers the
+/// immediate reward and disregards all future rewards. Discount factor of 1
+/// means that the agent values all rewards equally, no matter how distant
+/// in the future they may be.
 let discount: Float = 0.99
+/// If enabled, uses the Double DQN update equation instead of the original DQN
+/// equation. This mitigates the overestimation problem of DQN. For more
+/// information about Double DQN, check Deep Reinforcement Learning with Double
+/// Q-learning (Hasselt, Guez, and Silver, 2015).
 let useDoubleDQN: Bool = true
-// - Replay Buffer Hyperparameters
+/// The maximum size of the replay buffer. If the replay buffer is full, the new
+/// element replaces the oldest element.
 let replayBufferCapacity: Int = 100000
+/// The minimum replay buffer size before the training starts. Must be at least
+/// the training batch size.
 let minBufferSize: Int = 64
+/// The training batch size.
 let batchSize: Int = 64
+/// If enabled, uses Combined Experience Replay (CER) sampling instead of the
+/// uniform random sampling in the original DQN paper. Original DQN samples
+/// batch uniformly randomly in the replay buffer. CER always includes the most
+/// recent element and samples the rest of the batch uniformly randomly. This
+/// makes the agent more robust to different replay buffer capacities. For more
+/// information about Combined Experience Replay, check A Deeper Look at
+/// Experience Replay (Zhang and Sutton, 2017).
 let useCombinedExperienceReplay: Bool = true
-// - Target Network Hyperparameters
+/// The number of steps between target network updates. The target network is
+/// a copy of the Q-network that is updated less frequently to stabilize the
+/// training process.
 let targetNetUpdateRate: Int = 5
+/// The update rate for target network. In the original DQN paper, the target
+/// network is updated to be the same as the Q-network. Soft target network
+/// only updates the target network slightly towards the direction of the
+/// Q-network. The softTargetUpdateRate of 0 means that the target network is
+/// not updated at all, and 1 means that soft target network update is disabled.
 let softTargetUpdateRate: Float = 0.05
 
 // Setup device
@@ -88,14 +122,14 @@ let device: Device = Device.default
 let env = TensorFlowEnvironmentWrapper(gym.make("CartPole-v0"))
 
 // Initialize agent
-var qNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
-var targetQNet = Net(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
+var qNet = DeepQNetwork(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
+var targetQNet = DeepQNetwork(observationSize: 4, hiddenSize: hiddenSize, actionCount: 2)
 let optimizer = Adam(for: qNet, learningRate: learningRate)
 var replayBuffer = ReplayBuffer(
   capacity: replayBufferCapacity,
   combined: useCombinedExperienceReplay
 )
-var agent = Agent(
+var agent = DeepQNetworkAgent(
   qNet: qNet,
   targetQNet: targetQNet,
   optimizer: optimizer,
@@ -140,7 +174,7 @@ while episodeIndex < maxEpisode {
   if isDone.scalarized() == true {
     state = env.reset()
     episodeIndex += 1
-    let evalEpisodeReturn = eval(agent: agent)
+    let evalEpisodeReturn = evaluate(agent)
     episodeReturns.append(evalEpisodeReturn)
     if evalEpisodeReturn > bestReturn {
       print(
@@ -165,7 +199,7 @@ plt.plot(episodeReturns)
 plt.title("Deep Q-Network on CartPole-v0")
 plt.xlabel("Episode")
 plt.ylabel("Episode Return")
-plt.savefig("dqnEpisodeReturns.png")
+plt.savefig("/tmp/dqnEpisodeReturns.png")
 plt.clf()
 
 // Save smoothed learning curve
@@ -178,7 +212,7 @@ plt.plot(episodeReturns)
 plt.title("Deep Q-Network on CartPole-v0")
 plt.xlabel("Episode")
 plt.ylabel("Smoothed Episode Return")
-plt.savefig("dqnSmoothedEpisodeReturns.png")
+plt.savefig("/tmp/dqnSmoothedEpisodeReturns.png")
 plt.clf()
 
 // // Save TD loss curve
@@ -186,5 +220,5 @@ plt.plot(losses)
 plt.title("Deep Q-Network on CartPole-v0")
 plt.xlabel("Step")
 plt.ylabel("TD Loss")
-plt.savefig("dqnTDLoss.png")
+plt.savefig("/tmp/dqnTDLoss.png")
 plt.clf()
