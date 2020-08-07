@@ -1,8 +1,7 @@
 import TensorFlow
 import _Differentiation
 
-internal class _AnyLayerTangentVectorBox<F: FloatingPoint & VectorProtocol & ElementaryFunctions>
-where F.VectorSpaceScalar == F {
+internal class _AnyLayerTangentVectorBox<F: FloatingPoint & ElementaryFunctions> {
   // `Equatable` requirements (implied by `AdditiveArithmetic`).
   func _isEqual(to other: _AnyLayerTangentVectorBox) -> Bool {
     fatalError("Must implement")
@@ -150,10 +149,8 @@ extension _AnyLayerTangentVectorBox {
   }
 }
 
-
-
 internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative> : _AnyLayerTangentVectorBox<T.VectorSpaceScalar>
-  where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & VectorProtocol & ElementaryFunctions, T.VectorSpaceScalar.VectorSpaceScalar == T.VectorSpaceScalar
+  where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & ElementaryFunctions
 {
   /// The underlying base value.
   var _base: T
@@ -168,7 +165,7 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
   }
 
   override func _unboxed<U: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative>(as type: U.Type) -> U?
-    where U.TangentVector == U, U.VectorSpaceScalar == T.VectorSpaceScalar, U.VectorSpaceScalar : VectorProtocol
+    where U.TangentVector == U, U.VectorSpaceScalar == T.VectorSpaceScalar
   {
     return (self as? _ConcreteAnyLayerTangentVectorBox<U>)?._base
   }
@@ -342,8 +339,7 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
 /// The `AnyLayerTangentVector` type forwards its operations to an arbitrary underlying
 /// base derivative value conforming to `Differentiable`, `VectorProtocol`,
 /// `ElementaryFunctions`, and `PointwiseMultiplicative`, hiding the specifics of the underlying value.
-public struct AnyLayerTangentVector<F: FloatingPoint & VectorProtocol & ElementaryFunctions>: VectorProtocol & ElementaryFunctions & PointwiseMultiplicative & KeyPathIterable & EuclideanDifferentiable & AdditiveArithmetic
-where F.VectorSpaceScalar == F {
+public struct AnyLayerTangentVector<F: FloatingPoint & ElementaryFunctions>: VectorProtocol & ElementaryFunctions & PointwiseMultiplicative & KeyPathIterable & EuclideanDifferentiable & AdditiveArithmetic {
   internal var _box: _AnyLayerTangentVectorBox<F>
 
   internal init(_box: _AnyLayerTangentVectorBox<F>) {
@@ -423,15 +419,15 @@ where F.VectorSpaceScalar == F {
     }
 
     @usableFromInline func adding(_ x: F) -> OpaqueScalar {
-      return OpaqueScalar(value.adding(x))
+      return OpaqueScalar(value + x)
     }
 
     @usableFromInline func subtracting(_ x: F) -> OpaqueScalar {
-      return OpaqueScalar(value.subtracting(x))
+      return OpaqueScalar(value - x)
     }
 
     @usableFromInline func scaled(by: F) -> OpaqueScalar {
-      return OpaqueScalar(value.scaled(by: by))
+      return OpaqueScalar(value * by)
     }
 
     // `PointwiseMultiplicative` requirements.

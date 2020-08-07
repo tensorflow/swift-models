@@ -14,8 +14,7 @@ internal func _derivativeTypeMismatch(
 
 // TODO(shadaj): docs
 // TODO(shadaj): floating and vector???
-internal class _AnyLayerBox<Input: Differentiable, Output: Differentiable, F: FloatingPoint & VectorProtocol & ElementaryFunctions>
-where F.VectorSpaceScalar == F {
+internal class _AnyLayerBox<Input: Differentiable, Output: Differentiable, F: FloatingPoint & ElementaryFunctions> {
   // `Differentiable` requirements.
   func _move(along direction: AnyLayerTangentVector<F>) {
     fatalError("Must implement")
@@ -50,7 +49,7 @@ where F.VectorSpaceScalar == F {
 }
 
 internal class _ConcreteLayerBox<T: Layer>: _AnyLayerBox<T.Input, T.Output, T.TangentVector.VectorSpaceScalar>
-where T.TangentVector.VectorSpaceScalar: FloatingPoint & VectorProtocol & ElementaryFunctions, T.TangentVector.VectorSpaceScalar == T.TangentVector.VectorSpaceScalar.VectorSpaceScalar {
+where T.TangentVector.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
   /// The underlying base value.
   var _base: T
 
@@ -123,8 +122,7 @@ where T.TangentVector.VectorSpaceScalar: FloatingPoint & VectorProtocol & Elemen
 ///
 /// The tangent vector of this type is also type-erased, using the `AnyLayerTangentVector` type. All tangents
 /// (other than `zero` and `one`) wrap the tangent vector type of the underlying layer.
-public struct AnyLayer<Input: Differentiable, Output: Differentiable, F: FloatingPoint & VectorProtocol & ElementaryFunctions>: Layer, CopyableToDevice
-where F.VectorSpaceScalar == F {
+public struct AnyLayer<Input: Differentiable, Output: Differentiable, F: FloatingPoint & ElementaryFunctions>: Layer, CopyableToDevice {
   internal var _box: _AnyLayerBox<Input, Output, F>
 
   internal init(_box: _AnyLayerBox<Input, Output, F>) {

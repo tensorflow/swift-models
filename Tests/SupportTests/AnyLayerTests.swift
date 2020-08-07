@@ -21,7 +21,7 @@ import TensorFlow
 final class AnyLayerTests: XCTestCase {
     func testGradients() {
         let original = Dense<Float>(inputSize: 1, outputSize: 1)
-        let erased = AnyLayer<Tensor<Float>, Tensor<Float>, Float>(original)
+        let erased = AnyLayer(original)
 
         let originalGradient = gradient(at: original, in: { layer in
             return (layer(Tensor([[1.0]])) - Tensor([2.0])).squared().mean()
@@ -36,7 +36,7 @@ final class AnyLayerTests: XCTestCase {
 
     func testTangentOperations() {
         let original = Dense<Float>(inputSize: 1, outputSize: 1)
-        let erased = AnyLayer<Tensor<Float>, Tensor<Float>, Float>(original)
+        let erased = AnyLayer(original)
 
         let originalGradient = gradient(at: original, in: { layer in
             return (layer(Tensor([[1.0]])) - Tensor([2.0])).squared().mean()
@@ -54,9 +54,6 @@ final class AnyLayerTests: XCTestCase {
     }
 
     func testScalarTangentVectorBase() {
-        let original = Dense<Float>(inputSize: 1, outputSize: 1)
-        let erased = AnyLayer<Tensor<Float>, Tensor<Float>, Float>(original)
-
         XCTAssertEqual(AnyLayer<Tensor<Float>, Tensor<Float>, Float>.TangentVector.zero.base as! Float, 0)
         XCTAssertEqual(AnyLayer<Tensor<Float>, Tensor<Float>, Float>.TangentVector.one.base as! Float, 1)
         XCTAssertEqual((AnyLayer<Tensor<Float>, Tensor<Float>, Float>.TangentVector.one.scaled(by: 2)).base as! Float, 2)
