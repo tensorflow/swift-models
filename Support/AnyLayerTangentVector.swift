@@ -232,7 +232,7 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
   override class var _one: _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
     return _ConcreteAnyLayerTangentVectorBox<T>(T.one)
   }
-  
+
   override func _reciprocal() -> _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
     return _ConcreteAnyLayerTangentVectorBox<T>(_base.reciprocal)
   }
@@ -403,7 +403,7 @@ public struct AnyLayerTangentVector<F: FloatingPoint & ElementaryFunctions>: Vec
   public static func + (
     lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector
   ) -> AnyLayerTangentVector {
-    return AnyLayerTangentVector(_box: lhs._box._add(rhs._box))
+    return .init(_box: lhs._box._add(rhs._box))
   }
 
   @derivative(of: +)
@@ -425,7 +425,7 @@ public struct AnyLayerTangentVector<F: FloatingPoint & ElementaryFunctions>: Vec
   public static func - (
     lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector
   ) -> AnyLayerTangentVector {
-    return AnyLayerTangentVector(_box: lhs._box._subtract(rhs._box))
+    return .init(_box: lhs._box._subtract(rhs._box))
   }
 
   @derivative(of: -)
@@ -599,109 +599,108 @@ extension AnyLayerTangentVector: EuclideanDifferentiable {
 
 extension AnyLayerTangentVector: AdditiveArithmetic {
   public static var zero: AnyLayerTangentVector {
-    return AnyLayerTangentVector(
+    return .init(
       _box: _ConcreteAnyLayerTangentVectorBox<OpaqueScalar>._zero)
   }
   
   public func adding(_ x: VectorSpaceScalar) -> Self {
-    // TODO(shadaj): .init
-    return AnyLayerTangentVector(_box: _box._adding(x));
+    return .init(_box: _box._adding(x));
   }
 
   public func subtracting(_ x: VectorSpaceScalar) -> Self {
-    return AnyLayerTangentVector(_box: _box._subtracting(x));
+    return .init(_box: _box._subtracting(x));
   }
 
   public func scaled(by scalar: VectorSpaceScalar) -> Self {
-    return AnyLayerTangentVector(_box: _box._scaled(by: scalar))
+    return .init(_box: _box._scaled(by: scalar))
   }
 }
 
 extension AnyLayerTangentVector: PointwiseMultiplicative {
   public static var one: AnyLayerTangentVector {
-    return AnyLayerTangentVector(_box: _ConcreteAnyLayerTangentVectorBox<OpaqueScalar>._one)
+    return .init(_box: _ConcreteAnyLayerTangentVectorBox<OpaqueScalar>._one)
   }
 
   public var reciprocal: AnyLayerTangentVector {
-    return AnyLayerTangentVector(_box: _box._reciprocal())
+    return .init(_box: _box._reciprocal())
   }
 
   public static func .* (lhs: Self, rhs: Self) -> Self {
-    return AnyLayerTangentVector(_box: lhs._box._pointwiseMultiply(by: rhs._box))
+    return .init(_box: lhs._box._pointwiseMultiply(by: rhs._box))
   }
 }
 
 extension AnyLayerTangentVector: ElementaryFunctions {
   public static func sqrt(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._sqrt())
+    return .init(_box: x._box._sqrt())
   }
   public static func cos(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._cos())
+    return .init(_box: x._box._cos())
   }
   public static func sin(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._sin())
+    return .init(_box: x._box._sin())
   }
   public static func tan(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._tan())
+    return .init(_box: x._box._tan())
   }
   public static func acos(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._acos())
+    return .init(_box: x._box._acos())
   }
   public static func asin(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._asin())
+    return .init(_box: x._box._asin())
   }
   public static func atan(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._atan())
+    return .init(_box: x._box._atan())
   }
   public static func cosh(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._cosh())
+    return .init(_box: x._box._cosh())
   }
   public static func sinh(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._sinh())
+    return .init(_box: x._box._sinh())
   }
   public static func tanh(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._tanh())
+    return .init(_box: x._box._tanh())
   }
   public static func acosh(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._acosh())
+    return .init(_box: x._box._acosh())
   }
   public static func asinh(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._asinh())
+    return .init(_box: x._box._asinh())
   }
   public static func atanh(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._atanh())
+    return .init(_box: x._box._atanh())
   }
   public static func exp(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._exp())
+    return .init(_box: x._box._exp())
   }
   public static func exp2(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._exp2())
+    return .init(_box: x._box._exp2())
   }
   public static func exp10(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._exp10())
+    return .init(_box: x._box._exp10())
   }
   public static func expm1(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._expm1())
+    return .init(_box: x._box._expm1())
   }
   public static func log(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._log())
+    return .init(_box: x._box._log())
   }
   public static func log2(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._log2())
+    return .init(_box: x._box._log2())
   }
   public static func log10(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._log10())
+    return .init(_box: x._box._log10())
   }
   public static func log1p(_ x: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._log1p())
+    return .init(_box: x._box._log1p())
   }
   public static func pow(_ x: Self, _ y: Self) -> Self {
-    return AnyLayerTangentVector(_box: x._box._pow(y._box))
+    return .init(_box: x._box._pow(y._box))
   }
   public static func pow(_ x: Self, _ n: Int) -> Self {
-    return AnyLayerTangentVector(_box: x._box._pow(n))
+    return .init(_box: x._box._pow(n))
   }
   public static func root(_ x: Self, _ n: Int) -> Self {
-    return AnyLayerTangentVector(_box: x._box._root(n))
+    return .init(_box: x._box._root(n))
   }
 }
