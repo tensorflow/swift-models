@@ -32,12 +32,12 @@ let gamma: Float = 0.99
 let K_epochs: Int = 4
 let eps_clip: Float = 0.2
 // Interaction
-let max_episodes: Int = 500
-let max_timesteps: Int = 300
-let update_timestep: Int = 2000
+let maxEpisodes: Int = 500
+let maxTimesteps: Int = 300
+let updateTimestep: Int = 2000
 // Log
-let log_interval: Int = 20
-let solved_reward: Float = 199
+let logInterval: Int = 20
+let solvedReward: Float = 199
 
 var memory: Memory = Memory()
 var ppo = PPO(
@@ -53,44 +53,45 @@ var ppo = PPO(
 
 // Training loop
 var timestep: Int = 0
-var running_reward: Float = 0
-var avg_length: Float = 0
-for i_episode in 1..<max_episodes+1 {
+var runningReward: Float = 0
+var averageLength: Float = 0
+for episodeIndex in 1..<maxEpisodes+1 {
     var state = env.reset()
     var t: Int = 1
-    for _ in 0..<max_timesteps {
+    for _ in 0..<maxTimesteps {
         timestep += 1
-        let action: Int32 = ppo.oldActorCritic.act(state: Tensor<Float>(numpy: np.array(state, dtype: np.float32))!, memory: memory)
-        var (state, reward, done, _) = env.step(action).tuple4
-
+        let tfState = Tensor<Float>(numpy: np.array(state, dtype: np.float32))!
+        let action: Int32 = ppo.oldActorCritic.act(state: tfState, memory: memory)
+        let (newState, reward, done, _) = env.step(action).tuple4
         memory.rewards.append(Float(reward)!)
         memory.isDones.append(Bool(done)!)
 
-        if timestep % update_timestep == 0 {
+        if timestep % updateTimestep == 0 {
             ppo.update(memory: memory)
             memory.clear_memory()
             timestep = 0
         }
 
-        running_reward += Float(reward)!
+        runningReward += Float(reward)!
         if Bool(done)! == true {
             break
         }
 
         t += 1
+        state = newState
     }
 
-    avg_length += Float(t)
+    averageLength += Float(t)
 
-    if Float(running_reward) > (Float(log_interval) * Float(solved_reward)) {
+    if Float(runningReward) > (Float(logInterval) * Float(solvedReward)) {
         print("########## Solved! ##########")
         break
     }
 
-    if i_episode % log_interval == 0 {
-        avg_length = Float(avg_length) / Float(log_interval)
-        running_reward = Float(running_reward) / Float(log_interval)
+    if episodeIndex % logInterval == 0 {
+        averageLength = Float(averageLength) / Float(logInterval)
+        runningReward = Float(runningReward) / Float(logInterval)
 
-        print(String(format: "Episode: %4d | Average Length %5.2f | Running Reward: %5.2f", i_episode, avg_length, running_reward))
+        print(String(format: "Episode: %4d | Average Length %5.2f | Running Reward: %5.2f", episodeIndex, averageLength, runningReward))
     }
 }
