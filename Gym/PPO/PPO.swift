@@ -77,12 +77,11 @@ class PPO {
         let old_actions: Tensor<Int32> = Tensor<Int32>(numpy: np.array(memory.actions, dtype: np.int32))!
         let old_logprobs: Tensor<Float> = Tensor<Float>(numpy: np.array(memory.logProbs, dtype: np.float32))!
 
-        // TODO (seungjaeryanlee): Optimize both critic and actor
-        var net = self.actorCritic.criticNet
-
-        var losses: [Float] = []
+        var actorLosses: [Float] = []
+        var criticLosses: [Float] = []
         for _ in 0..<K_epochs {
-            let (loss, gradients) = valueWithGradient(at: net) { net -> Tensor<Float> in
+            // Optimize policy network (actor)
+            let (actorLoss, actorGradients) = valueWithGradient(at: self.actorCritic.actorNet) { actorNet -> Tensor<Float> in
                 let (logProbs, state_values, dist_entropy) = self.actorCritic.evaluate(state: old_states, action: old_actions)
                 let ratios: Tensor<Float> = exp(logProbs - old_logprobs)
 
@@ -90,18 +89,31 @@ class PPO {
                 let surr1: Tensor<Float> = ratios * advantages
                 let surr2: Tensor<Float> = ratios.clipped(min:1 - self.eps_clip, max: 1 + self.eps_clip) * advantages
                 let loss1 = -1 * Tensor(stacking: [surr1, surr2]).min(alongAxes: 0).flattened()
-                let loss2: Tensor<Float> = 0.5 * pow(state_values - tfRewards, 2)
                 let loss3: Tensor<Float> = -0.01 * Tensor<Float>(dist_entropy)
-                let loss: Tensor<Float> = loss1 + loss2 + loss3
+                let loss: Tensor<Float> = loss1 + loss3
 
                 return loss.mean()
             }
             // TODO (seungjaeryanlee): Fix gradients all being zero
-            // print(loss)
-            // print(gradients)
+            // print(actorLoss)
+            // print(actorGradients)
 
-            self.criticOptimizer.update(&net, along: gradients)
-            losses.append(loss.scalarized())
+            // Optimize value network (critic)
+            let (criticLoss, criticGradients) = valueWithGradient(at: self.actorCritic.criticNet) { criticNet -> Tensor<Float> in
+                let (logProbs, state_values, dist_entropy) = self.actorCritic.evaluate(state: old_states, action: old_actions)
+
+                let loss: Tensor<Float> = 0.5 * pow(state_values - tfRewards, 2)
+
+                return loss.mean()
+            }
+            // TODO (seungjaeryanlee): Fix gradients all being zero
+            // print(criticLoss)
+            // print(criticGradients)
+
+            self.actorOptimizer.update(&self.actorCritic.actorNet, along: actorGradients)
+            self.criticOptimizer.update(&self.actorCritic.criticNet, along: criticGradients)
+            actorLosses.append(actorLoss.scalarized())
+            criticLosses.append(criticLoss.scalarized())
         }
         self.updateOldActorCritic()
     }
