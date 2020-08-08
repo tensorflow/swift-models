@@ -61,16 +61,14 @@ class ActorCritic {
         return action
     }
 
-    func evaluate(state: Tensor<Float>, action: Tensor<Int32>) -> ([Float], [Float], Float) {
-        let actionProbs = self.actorNet(state).flattened()
+    func evaluate(state: Tensor<Float>, action: Tensor<Int32>) -> (Tensor<Float>, Tensor<Float>, Tensor<Float>) {
+        let npIndices = np.stack([np.arange(action.shape[0], dtype: np.int32), action.makeNumpyArray()], axis: 1)
+        let tfIndices = Tensor<Int32>(numpy: npIndices)!
+        let actionProbs = self.actorNet(state).dimensionGathering(atIndices: tfIndices)
+
         let dist = Categorical<Int32>(probabilities: actionProbs)
+        let stateValue = self.criticNet(state).flattened()
 
-        let stateValue = self.criticNet(state)
-        let entropy: Tensor<Float> = dist.entropy()
-
-        let convertedActionLogProbs: [Float] = Array(numpy: dist.logProbabilities.makeNumpyArray())!
-        let convertedStateValue: [Float] = Array(numpy: stateValue.makeNumpyArray().flatten())!
-
-        return (convertedActionLogProbs, convertedStateValue, entropy.scalarized())
+        return (dist.logProbabilities, stateValue, dist.entropy())
     }
 }

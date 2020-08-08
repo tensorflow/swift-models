@@ -57,8 +57,8 @@ var running_reward: Float = 0
 var avg_length: Float = 0
 for i_episode in 1..<max_episodes+1 {
     var state = env.reset()
-    var t: Int = 0
-    for t in 0..<max_timesteps {
+    var t: Int = 1
+    for _ in 0..<max_timesteps {
         timestep += 1
         let action: Int32 = ppo.oldActorCritic.act(state: Tensor<Float>(numpy: np.array(state, dtype: np.float32))!, memory: memory)
         var (state, reward, done, _) = env.step(action).tuple4
@@ -76,6 +76,8 @@ for i_episode in 1..<max_episodes+1 {
         if Bool(done)! == true {
             break
         }
+
+        t += 1
     }
 
     avg_length += Float(t)
