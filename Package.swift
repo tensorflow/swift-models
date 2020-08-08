@@ -53,6 +53,7 @@ let package = Package(
         .target(name: "Gym-FrozenLake", path: "Gym/FrozenLake"),
         .target(name: "Gym-CartPole", path: "Gym/CartPole"),
         .target(name: "Gym-Blackjack", path: "Gym/Blackjack"),
+        .target(name: "Gym-PPO", path: "Gym/PPO"),
         .target(
             name: "VGG-Imagewoof",
             dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
