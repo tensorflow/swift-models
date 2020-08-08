@@ -61,44 +61,44 @@ class PPO {
     }
 
     func update(memory: Memory) {
+        // Discount rewards for advantage estimation
         var rewards: [Float] = []
-        var discounted_reward: Float = 0
+        var discountedReward: Float = 0
         for i in (0..<memory.rewards.count).reversed() {
             if memory.isDones[i] {
-                discounted_reward = 0
+                discountedReward = 0
             }
-            discounted_reward = memory.rewards[i] + (gamma * discounted_reward)
-            rewards.insert(discounted_reward, at: 0)
+            discountedReward = memory.rewards[i] + (gamma * discountedReward)
+            rewards.insert(discountedReward, at: 0)
         }
         var tfRewards = Tensor<Float>(rewards)
         tfRewards = (tfRewards - tfRewards.mean()) / (tfRewards.standardDeviation() + 1e-5)
 
-        let old_states: Tensor<Float> = Tensor<Float>(numpy: np.array(memory.states, dtype: np.float32))!
-        let old_actions: Tensor<Int32> = Tensor<Int32>(numpy: np.array(memory.actions, dtype: np.int32))!
-        let old_logprobs: Tensor<Float> = Tensor<Float>(numpy: np.array(memory.logProbs, dtype: np.float32))!
+        // Retrieve stored states, actions, and log probabilities
+        let oldStates: Tensor<Float> = Tensor<Float>(numpy: np.array(memory.states, dtype: np.float32))!
+        let oldActions: Tensor<Int32> = Tensor<Int32>(numpy: np.array(memory.actions, dtype: np.int32))!
+        let oldLogProbs: Tensor<Float> = Tensor<Float>(numpy: np.array(memory.logProbs, dtype: np.float32))!
 
+        // Optimize actor and critic
         var actorLosses: [Float] = []
         var criticLosses: [Float] = []
         for _ in 0..<K_epochs {
             // Optimize policy network (actor)
             let (actorLoss, actorGradients) = valueWithGradient(at: self.actorCritic.actorNet) { actorNet -> Tensor<Float> in
-                let npIndices = np.stack([np.arange(old_actions.shape[0], dtype: np.int32), old_actions.makeNumpyArray()], axis: 1)
+                let npIndices = np.stack([np.arange(oldActions.shape[0], dtype: np.int32), oldActions.makeNumpyArray()], axis: 1)
                 let tfIndices = Tensor<Int32>(numpy: npIndices)!
-                let actionProbs = actorNet(old_states).dimensionGathering(atIndices: tfIndices)
+                let actionProbs = actorNet(oldStates).dimensionGathering(atIndices: tfIndices)
 
                 let dist = Categorical<Int32>(probabilities: actionProbs)
-                let stateValue = self.actorCritic.criticNet(old_states).flattened()
-                let logProbs = dist.logProbabilities
-                let state_values = stateValue
-                let dist_entropy = dist.entropy()
-                let ratios: Tensor<Float> = exp(logProbs - old_logprobs)
+                let stateValues = self.actorCritic.criticNet(oldStates).flattened()
+                let ratios: Tensor<Float> = exp(dist.logProbabilities - oldLogProbs)
 
-                let advantages: Tensor<Float> = tfRewards - state_values
-                let surr1: Tensor<Float> = ratios * advantages
-                let surr2: Tensor<Float> = ratios.clipped(min:1 - self.eps_clip, max: 1 + self.eps_clip) * advantages
-                let loss1 = -1 * Tensor(stacking: [surr1, surr2]).min(alongAxes: 0).flattened()
-                let loss3: Tensor<Float> = -0.01 * Tensor<Float>(dist_entropy)
-                let loss: Tensor<Float> = loss1 + loss3
+                let advantages: Tensor<Float> = tfRewards - stateValues
+                let surrogateObjective1: Tensor<Float> = ratios * advantages
+                let surrogateObjective2: Tensor<Float> = ratios.clipped(min:1 - self.eps_clip, max: 1 + self.eps_clip) * advantages
+                let mainObjective = -1 * Tensor(stacking: [surrogateObjective1, surrogateObjective2]).min(alongAxes: 0).flattened()
+                let entropyBonus: Tensor<Float> = -0.01 * Tensor<Float>(dist.entropy())
+                let loss: Tensor<Float> = mainObjective + entropyBonus
 
                 return loss.mean()
             }
@@ -107,10 +107,8 @@ class PPO {
 
             // Optimize value network (critic)
             let (criticLoss, criticGradients) = valueWithGradient(at: self.actorCritic.criticNet) { criticNet -> Tensor<Float> in
-                let stateValue = criticNet(old_states).flattened()
-                let state_values = stateValue
-
-                let loss: Tensor<Float> = 0.5 * pow(state_values - tfRewards, 2)
+                let stateValues = criticNet(oldStates).flattened()
+                let loss: Tensor<Float> = 0.5 * pow(stateValues - tfRewards, 2)
 
                 return loss.mean()
             }
