@@ -89,11 +89,9 @@ class PPO {
                 let advantages: Tensor<Float> = tfRewards - state_values
                 let surr1: Tensor<Float> = ratios * advantages
                 let surr2: Tensor<Float> = ratios.clipped(min:1 - self.eps_clip, max: 1 + self.eps_clip) * advantages
-                // TODO (seungjaeryanlee): Find how to find minimum
-                // let loss1: PythonObject =  -1 * np.minimum(surr1.makeNumpyArray(), surr2.makeNumpyArray())
-                let loss1: Tensor<Float> = 0 * surr1 + -1 * surr2
+                let loss1 = -1 * Tensor(stacking: [surr1, surr2]).min(alongAxes: 0).flattened()
                 let loss2: Tensor<Float> = 0.5 * pow(state_values - tfRewards, 2)
-                let loss3: Tensor<Float> = Tensor<Float>(-0.01 * dist_entropy)
+                let loss3: Tensor<Float> = -0.01 * Tensor<Float>(dist_entropy)
                 let loss: Tensor<Float> = loss1 + loss2 + loss3
 
                 return loss.mean()
