@@ -82,7 +82,15 @@ class PPO {
         for _ in 0..<K_epochs {
             // Optimize policy network (actor)
             let (actorLoss, actorGradients) = valueWithGradient(at: self.actorCritic.actorNet) { actorNet -> Tensor<Float> in
-                let (logProbs, state_values, dist_entropy) = self.actorCritic.evaluate(state: old_states, action: old_actions)
+                let npIndices = np.stack([np.arange(old_actions.shape[0], dtype: np.int32), old_actions.makeNumpyArray()], axis: 1)
+                let tfIndices = Tensor<Int32>(numpy: npIndices)!
+                let actionProbs = actorNet(old_states).dimensionGathering(atIndices: tfIndices)
+
+                let dist = Categorical<Int32>(probabilities: actionProbs)
+                let stateValue = self.actorCritic.criticNet(old_states).flattened()
+                let logProbs = dist.logProbabilities
+                let state_values = stateValue
+                let dist_entropy = dist.entropy()
                 let ratios: Tensor<Float> = exp(logProbs - old_logprobs)
 
                 let advantages: Tensor<Float> = tfRewards - state_values
@@ -94,25 +102,19 @@ class PPO {
 
                 return loss.mean()
             }
-            // TODO (seungjaeryanlee): Fix gradients all being zero
-            // print(actorLoss)
-            // print(actorGradients)
+            self.actorOptimizer.update(&self.actorCritic.actorNet, along: actorGradients)
+            actorLosses.append(actorLoss.scalarized())
 
             // Optimize value network (critic)
             let (criticLoss, criticGradients) = valueWithGradient(at: self.actorCritic.criticNet) { criticNet -> Tensor<Float> in
-                let (logProbs, state_values, dist_entropy) = self.actorCritic.evaluate(state: old_states, action: old_actions)
+                let stateValue = criticNet(old_states).flattened()
+                let state_values = stateValue
 
                 let loss: Tensor<Float> = 0.5 * pow(state_values - tfRewards, 2)
 
                 return loss.mean()
             }
-            // TODO (seungjaeryanlee): Fix gradients all being zero
-            // print(criticLoss)
-            // print(criticGradients)
-
-            self.actorOptimizer.update(&self.actorCritic.actorNet, along: actorGradients)
             self.criticOptimizer.update(&self.actorCritic.criticNet, along: criticGradients)
-            actorLosses.append(actorLoss.scalarized())
             criticLosses.append(criticLoss.scalarized())
         }
         self.updateOldActorCritic()
