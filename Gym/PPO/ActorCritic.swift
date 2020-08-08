@@ -41,8 +41,15 @@ class ActorCritic {
     var criticNet: CriticNet
 
     init(observationSize: Int, hiddenSize: Int, actionCount: Int) {
-        self.actorNet = ActorNet(observationSize: observationSize, hiddenSize: hiddenSize, actionCount: actionCount)
-        self.criticNet = CriticNet(observationSize: observationSize, hiddenSize: hiddenSize)
+        self.actorNet = ActorNet(
+            observationSize: observationSize,
+            hiddenSize: hiddenSize,
+            actionCount: actionCount
+        )
+        self.criticNet = CriticNet(
+            observationSize: observationSize,
+            hiddenSize: hiddenSize
+        )
     }
 
     func act(state: Tensor<Float>, memory: Memory) -> Int32 {
