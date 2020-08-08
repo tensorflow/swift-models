@@ -151,13 +151,28 @@ public struct Lattice: Differentiable {
   public subscript(index: Int) -> Node {
     get { return positions[index] }
 
-    // TODO(TF-1193): Support derivative registration for accessors.
-    // This enables cleanup:
-    // - Before: `lattice.positions.update(at: i, to: node)`
-    // - After: `lattice[i] = node`
+    @differentiable
     set { positions[index] = newValue }
 
+    // TODO(TF-1080): Support `_modify` accessor differentiation.
     // _modify { yield &positions[index] }
+  }
+
+  @derivative(of: subscript.set)
+  @usableFromInline
+  mutating func vjpSubscriptSetter(newValue: Node, _ index: Int) -> (
+    value: Void, pullback: (inout TangentVector) -> Node.TangentVector
+  ) {
+    let elementZero = positions[index].zeroTangentVector
+    positions[index] = newValue
+    return (
+      (),
+      { dSelf in
+        let dElement = dSelf.positions.base[index]
+        dSelf.positions.base[index] = elementZero
+        return dElement
+      }
+    )
   }
 
   /// Creates an empty instance with a start node, followed by `count` nodes.
