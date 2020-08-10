@@ -43,7 +43,7 @@ internal class _AnyLayerBox<Input: Differentiable, Output: Differentiable, F: Fl
     fatalError("Must implement")
   }
 
-  func _dCallAsFunction(_ input: Input) -> (value: Output, pullback: (Output.TangentVector) -> (AnyLayerTangentVector<F>, Input.TangentVector)) {
+  func _vjpCallAsFunction(_ input: Input) -> (value: Output, pullback: (Output.TangentVector) -> (AnyLayerTangentVector<F>, Input.TangentVector)) {
     fatalError("Must implement")
   }
 
@@ -59,6 +59,7 @@ where T.TangentVector.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
   /// The underlying base value.
   var base: T
 
+  /// Constructs the type-erased wrapper given the underlying layer.
   init(_ base: T) {
     self.base = base
   }
@@ -103,7 +104,7 @@ where T.TangentVector.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
     var input: T.Input
   }
 
-  override func _dCallAsFunction(_ input: T.Input) -> (value: T.Output, pullback: (T.Output.TangentVector) -> (AnyLayerTangentVector<T.TangentVector.VectorSpaceScalar>, T.Input.TangentVector)) {
+  override func _vjpCallAsFunction(_ input: T.Input) -> (value: T.Output, pullback: (T.Output.TangentVector) -> (AnyLayerTangentVector<T.TangentVector.VectorSpaceScalar>, T.Input.TangentVector)) {
     let basePullback = valueWithPullback(at: ModelAndInput(model: base, input: input), in: { pair in pair.model.callAsFunction(pair.input) })
     return (
       value: basePullback.value,
@@ -199,8 +200,8 @@ extension AnyLayer: Layer {
   }
 
   @derivative(of: _callAsFunction)
-  func _dCallAsFunction(_ input: Input) -> (value: Output, pullback: (Output.TangentVector) -> (AnyLayerTangentVector<F>, Input.TangentVector)) {
-    return box._dCallAsFunction(input)
+  func _vjpCallAsFunction(_ input: Input) -> (value: Output, pullback: (Output.TangentVector) -> (AnyLayerTangentVector<F>, Input.TangentVector)) {
+    return box._vjpCallAsFunction(input)
   }
 
   @differentiable
