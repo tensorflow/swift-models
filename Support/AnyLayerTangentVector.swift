@@ -1,6 +1,8 @@
 import TensorFlow
 import _Differentiation
 
+public typealias TangentVectorConformances = Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative
+
 /// The base type for a type-erased box that encapsulates a layer's tangent vector.
 /// Offers forwarders to implement conformance to `Equatable`, `AdditiveArithmetic`, `Differentiable`,
 /// `EuclideanDifferentiable`, `PointwiseMultiplicative`, and `ElementaryFunctions`.
@@ -11,8 +13,8 @@ internal class AnyLayerTangentVectorBox<F: FloatingPoint & ElementaryFunctions> 
   }
 
   /// Returns the underlying value unboxed to the given type, if possible.
-  func unboxed<U: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative>(as type: U.Type) -> U?
-    where U.TangentVector == U, U.VectorSpaceScalar == F {
+  func unboxed<U: TangentVectorConformances>(as type: U.Type) -> U?
+  where U.TangentVector == U, U.VectorSpaceScalar == F {
     fatalError("Must implement")
   }
   
@@ -153,9 +155,8 @@ extension AnyLayerTangentVectorBox {
 }
 
 /// A concrete implementation of the type-erased tangent vector wrapper that forwards to an underlying tangent vector.
-internal class ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative> : AnyLayerTangentVectorBox<T.VectorSpaceScalar>
-  where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & ElementaryFunctions
-{
+internal class ConcreteAnyLayerTangentVectorBox<T: TangentVectorConformances>: AnyLayerTangentVectorBox<T.VectorSpaceScalar>
+where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
   /// The underlying base value.
   var base: T
 
@@ -168,9 +169,8 @@ internal class ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProtoc
     return base
   }
 
-  override func unboxed<U: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative>(as type: U.Type) -> U?
-    where U.TangentVector == U, U.VectorSpaceScalar == T.VectorSpaceScalar
-  {
+  override func unboxed<U: TangentVectorConformances>(as type: U.Type) -> U?
+  where U.TangentVector == U, U.VectorSpaceScalar == T.VectorSpaceScalar {
     return (self as? ConcreteAnyLayerTangentVectorBox<U>)?.base
   }
 
@@ -369,13 +369,13 @@ public struct AnyLayerTangentVector<F: FloatingPoint & ElementaryFunctions>: Vec
   }
 
   /// Returns the underlying value unboxed to the given type, if possible.
-  public func unboxed<U: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative>(as type: U.Type) -> U?
+  public func unboxed<U: TangentVectorConformances>(as type: U.Type) -> U?
     where U.TangentVector == U, U.VectorSpaceScalar == F {
     return box.unboxed(as: type)
   }
 
   /// The underlying base tangent vector.
-  /// This will either be an instance of the underlying layer's tangent vector,
+  /// This will either be an instance of the underlying layer's tangent vector type,
   /// or just a scalar when the tangent vector contains only elements with that value.
   public var base: Any {
     if let scalar = box.getOpaqueScalar() {
@@ -385,15 +385,16 @@ public struct AnyLayerTangentVector<F: FloatingPoint & ElementaryFunctions>: Vec
     }
   }
 
-  /// Creates a type-erased wrapper from the given layer.
+  /// Creates a type-erased wrapper from the given tangent vector.
   @differentiable
-  public init<T: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative>(_ base: T) where T.TangentVector == T, T.VectorSpaceScalar == F {
+  public init<T: TangentVectorConformances>(_ base: T)
+  where T.TangentVector == T, T.VectorSpaceScalar == F {
     self.box = ConcreteAnyLayerTangentVectorBox<T>(base)
   }
 
   @derivative(of: init)
   @usableFromInline
-  internal static func _vjpInit<T: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative>(
+  internal static func _vjpInit<T: TangentVectorConformances>(
     _ base: T
   ) -> (value: AnyLayerTangentVector<F>, pullback: (AnyLayerTangentVector<F>) -> T.TangentVector)
     where T.TangentVector == T, T.VectorSpaceScalar == F
@@ -403,7 +404,7 @@ public struct AnyLayerTangentVector<F: FloatingPoint & ElementaryFunctions>: Vec
 
   @derivative(of: init)
   @usableFromInline
-  internal static func _jvpInit<T: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative>(
+  internal static func _jvpInit<T: TangentVectorConformances>(
     _ base: T
   ) -> (value: AnyLayerTangentVector<F>, differential: (T.TangentVector) -> AnyLayerTangentVector<F>)
     where T.TangentVector == T, T.VectorSpaceScalar == F
