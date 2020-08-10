@@ -20,7 +20,7 @@ struct ElementaryFunctionsTests<WrapperTestType: XCTestCase, Reference: Elementa
     let createReference: ([Float]) -> Reference
     let referenceToTest: (Reference) -> Test
     let compareReferenceAndTest: (Reference, Test) -> ()
-    let rng: SystemRandomNumberGenerator
+    var rng: SystemRandomNumberGenerator
 
     public init(
         createReference: @escaping ([Float]) -> Reference,
@@ -61,16 +61,15 @@ struct ElementaryFunctionsTests<WrapperTestType: XCTestCase, Reference: Elementa
         ("root", -100.0...100.0, { Reference.root($0, 3) }, { Test.root($0, 3) }),
     ]
 
-    func testFunction(range: ClosedRange<Float>, referenceOperator: (Reference) -> Reference, testOperator: (Test) -> Test) {
-        var localRng = rng
-        let randomNumbers = (0..<10).map { _ in Float.random(in: range, using: &localRng) }
+    mutating func testFunction(range: ClosedRange<Float>, referenceOperator: (Reference) -> Reference, testOperator: (Test) -> Test) {
+        let randomNumbers = (0..<10).map { _ in Float.random(in: range, using: &rng) }
         let reference = createReference(randomNumbers)
         let test = referenceToTest(reference)
 
         compareReferenceAndTest(referenceOperator(reference), testOperator(test))
     }
     
-    func testAll() {
+    mutating func testAll() {
         for function in functions {
             testFunction(range: function.1, referenceOperator: function.2, testOperator: function.3)
         }
@@ -136,12 +135,14 @@ final class AnyLayerTests: XCTestCase {
     }
 
     func testTangentVectorElementaryFunctions() {
-        ElementaryFunctionsTests<AnyLayerTests, Tensor<Float>, AnyLayerTangentVector<Float>>(
+        var generatedTests = ElementaryFunctionsTests<AnyLayerTests, Tensor<Float>, AnyLayerTangentVector<Float>>(
             createReference: { Tensor<Float>($0) },
             referenceToTest: { AnyLayerTangentVector($0) },
             compareReferenceAndTest: { XCTAssertEqual($0, $1.unboxed(as: Tensor<Float>.self)!) },
             rng: SystemRandomNumberGenerator()
-        ).testAll()
+        )
+        
+        generatedTests.testAll()
     }
     
     static var allTests = [
