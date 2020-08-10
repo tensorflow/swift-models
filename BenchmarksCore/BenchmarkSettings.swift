@@ -53,6 +53,7 @@ public struct Platform: BenchmarkSetting {
     self.value = value
   }
   public enum Value {
+    case `default`
     case cpu
     case gpu
     case tpu
@@ -108,12 +109,14 @@ extension BenchmarkSettings {
     switch backend {
     case .eager:
       switch platform {
+      case .default: return Device.defaultTFEager
       case .cpu: return Device(kind: .CPU, ordinal: 0, backend: .TF_EAGER)
       case .gpu: return Device(kind: .GPU, ordinal: 0, backend: .TF_EAGER)
       case .tpu: fatalError("TFEager is unsupported on TPU.")
       }
     case .x10:
       switch platform {
+      case .default: return Device.defaultXLA
       case .cpu: return Device(kind: .CPU, ordinal: 0, backend: .XLA)
       case .gpu: return Device(kind: .GPU, ordinal: 0, backend: .XLA)
       case .tpu: return (Device.allDevices.filter { $0.kind == .TPU }).first!
@@ -130,7 +133,7 @@ public let defaultSettings: [BenchmarkSetting] = [
   TimeUnit(.s),
   InverseTimeUnit(.s),
   Backend(.eager),
-  Platform(.cpu),
+  Platform(.default),
   Synthetic(false),
   Columns([
     "name",
