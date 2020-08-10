@@ -1,6 +1,8 @@
 import TensorFlow
 import _Differentiation
 
+/// A helper that raises an error when an erased derivative type does not match up with the true
+/// underlying type.
 @inline(never)
 @usableFromInline
 internal func derivativeTypeMismatch(
@@ -12,23 +14,31 @@ internal func derivativeTypeMismatch(
     """, file: file, line: line)
 }
 
-// TODO(shadaj): docs
-// TODO(shadaj): floating and vector???
+/// The base type for a type-erased box that encapsulates a layer.
+/// Offers forwarders to implement conformance to `Layer` and `CopyableToDevice`.
 internal class _AnyLayerBox<Input: Differentiable, Output: Differentiable, F: FloatingPoint & ElementaryFunctions> {
+  /// The underlying base layer, type-erased to `Any`.
+  var typeErasedBase: Any {
+    fatalError("Must implement")
+  }
+
+  /// Returns the underlying layer unboxed to the given type, if possible.
+  func unboxed<U: Layer>(to type: U.Type) -> U?
+  where U.TangentVector.VectorSpaceScalar == F {
+    fatalError("Must implement")
+  }
+  
   // `Differentiable` requirements.
   func _move(along direction: AnyLayerTangentVector<F>) {
     fatalError("Must implement")
   }
 
-  /// The underlying base value, type-erased to `Any`.
-  var typeErasedBase: Any {
-    fatalError("Must implement")
-  }
-
+  // `EuclideanDifferentiable` requirements.
   var _differentiableVectorView: AnyLayerTangentVector<F> {
     fatalError("Must implement")
   }
 
+  // `Layer` requirements.
   func _callAsFunction(_ input: Input) -> Output {
     fatalError("Must implement")
   }
@@ -37,17 +47,13 @@ internal class _AnyLayerBox<Input: Differentiable, Output: Differentiable, F: Fl
     fatalError("Must implement")
   }
 
-  /// Returns the underlying value unboxed to the given type, if possible.
-  func unboxed<U: Layer>(to type: U.Type) -> U?
-  where U.TangentVector.VectorSpaceScalar == F {
-    fatalError("Must implement")
-  }
-
-  func copyToDevice(to device: Device) -> _AnyLayerBox {
+  // `CopyableToDevice` requirements.
+  func _copyToDevice(to device: Device) -> _AnyLayerBox {
     fatalError("Must implement")
   }
 }
 
+/// A concrete implementation of the type-erased layer wrapper that forwards to an underlying layer.
 internal class _ConcreteLayerBox<T: Layer>: _AnyLayerBox<T.Input, T.Output, T.TangentVector.VectorSpaceScalar>
 where T.TangentVector.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
   /// The underlying base value.
@@ -57,24 +63,18 @@ where T.TangentVector.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
     self.base = base
   }
 
-  /// The underlying base value, type-erased to `Any`.
+  /// The underlying base layer, type-erased to `Any`.
   override var typeErasedBase: Any {
     return base
   }
 
-  public override var _differentiableVectorView: AnyLayerTangentVector<T.TangentVector.VectorSpaceScalar> {
-    return AnyLayerTangentVector(base.differentiableVectorView)
-  }
-
+  /// Returns the underlying layer unboxed to the given type, if possible.
   override func unboxed<U: Layer>(to type: U.Type) -> U?
   where U.TangentVector.VectorSpaceScalar == T.TangentVector.VectorSpaceScalar {
     return (self as? _ConcreteLayerBox<U>)?.base
   }
 
-  override func copyToDevice(to device: Device) -> _AnyLayerBox<T.Input, T.Output, T.TangentVector.VectorSpaceScalar> {
-    return _ConcreteLayerBox(T(copying: base, to: device))
-  }
-
+  // `Differentiable` requirements.
   override func _move(along direction: AnyLayerTangentVector<T.TangentVector.VectorSpaceScalar>) {
     if let scalarDirection = direction.box.getOpaqueScalar() {
       base.move(along: T.TangentVector.zero.adding(scalarDirection))
@@ -87,10 +87,17 @@ where T.TangentVector.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
     }
   }
 
+  // `EuclideanDifferentiable` requirements.
+  public override var _differentiableVectorView: AnyLayerTangentVector<T.TangentVector.VectorSpaceScalar> {
+    return AnyLayerTangentVector(base.differentiableVectorView)
+  }
+
+  // `Layer` requirements.
   override func _callAsFunction(_ input: T.Input) -> T.Output {
     return base.callAsFunction(input)
   }
 
+  // A helper to group together the model an input since we need a pullback with respect to both.
   struct ModelAndInput: Differentiable {
     var model: T
     var input: T.Input
@@ -109,6 +116,11 @@ where T.TangentVector.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
       }
     )
   }
+
+  // `CopyableToDevice` requirements.
+  override func _copyToDevice(to device: Device) -> _AnyLayerBox<T.Input, T.Output, T.TangentVector.VectorSpaceScalar> {
+    return _ConcreteLayerBox(T(copying: base, to: device))
+  }
 }
 
 /// A type-erased layer.
@@ -122,7 +134,7 @@ where T.TangentVector.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
 ///
 /// The tangent vector of this type is also type-erased, using the `AnyLayerTangentVector` type. All tangents
 /// (other than `zero` and `one`) wrap the tangent vector type of the underlying layer.
-public struct AnyLayer<Input: Differentiable, Output: Differentiable, F: FloatingPoint & ElementaryFunctions>: Layer, CopyableToDevice {
+public struct AnyLayer<Input: Differentiable, Output: Differentiable, F: FloatingPoint & ElementaryFunctions>: CopyableToDevice {
   internal var box: _AnyLayerBox<Input, Output, F>
 
   internal init(box: _AnyLayerBox<Input, Output, F>) {
@@ -137,12 +149,12 @@ public struct AnyLayer<Input: Differentiable, Output: Differentiable, F: Floatin
   /// Creates a type-erased derivative from the given layer.
   @differentiable
   public init<T: Layer>(_ base: T)
-  where T.Input == Input, T.Output == Output, T.TangentVector.VectorSpaceScalar == F { // TODO(shadaj): is there a shorter path to T.TangentVector.VectorSpaceScalar?
+  where T.Input == Input, T.Output == Output, T.TangentVector.VectorSpaceScalar == F {
     self.box = _ConcreteLayerBox<T>(base)
   }
 
   public init(copying other: AnyLayer, to device: Device) {
-    self.box = other.box.copyToDevice(to: device)
+    self.box = other.box._copyToDevice(to: device)
   }
 
   @inlinable
@@ -164,17 +176,23 @@ public struct AnyLayer<Input: Differentiable, Output: Differentiable, F: Floatin
   ) where T.Input == Input, T.Output == Output, T.TangentVector.VectorSpaceScalar == F {
     return (AnyLayer<Input, Output, F>(base), { dbase in AnyLayerTangentVector<F>(dbase) })
   }
+}
 
+extension AnyLayer: Differentiable {
   public typealias TangentVector = AnyLayerTangentVector<F>
-
-  public var differentiableVectorView: TangentVector {
-    return box._differentiableVectorView
-  }
 
   public mutating func move(along direction: TangentVector) {
     box._move(along: direction)
   }
+}
 
+extension AnyLayer: EuclideanDifferentiable {
+  public var differentiableVectorView: TangentVector {
+    return box._differentiableVectorView
+  }
+}
+
+extension AnyLayer: Layer {
   // Must be separate since we have a custom derivative
   func _callAsFunction(_ input: Input) -> Output {
     return box._callAsFunction(input)
@@ -190,4 +208,3 @@ public struct AnyLayer<Input: Differentiable, Output: Differentiable, F: Floatin
     return _callAsFunction(input)
   }
 }
-

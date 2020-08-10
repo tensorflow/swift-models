@@ -1,7 +1,21 @@
 import TensorFlow
 import _Differentiation
 
+/// The base type for a type-erased box that encapsulates a layer's tangent vector.
+/// Offers forwarders to implement conformance to `Equatable`, `AdditiveArithmetic`, `Differentiable`,
+/// `EuclideanDifferentiable`, `PointwiseMultiplicative`, and `ElementaryFunctions`.
 internal class _AnyLayerTangentVectorBox<F: FloatingPoint & ElementaryFunctions> {
+  /// The underlying base value, type-erased to `Any`.
+  var typeErasedBase: Any {
+    fatalError("Must implement")
+  }
+
+  /// Returns the underlying value unboxed to the given type, if possible.
+  func unboxed<U: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative>(as type: U.Type) -> U?
+    where U.TangentVector == U, U.VectorSpaceScalar == F {
+    fatalError("Must implement")
+  }
+  
   // `Equatable` requirements (implied by `AdditiveArithmetic`).
   func _isEqual(to other: _AnyLayerTangentVectorBox) -> Bool {
     fatalError("Must implement")
@@ -129,17 +143,6 @@ internal class _AnyLayerTangentVectorBox<F: FloatingPoint & ElementaryFunctions>
   func _root(_ n: Int) -> _AnyLayerTangentVectorBox {
     fatalError("Must implement")
   }
-
-  /// The underlying base value, type-erased to `Any`.
-  var typeErasedBase: Any {
-    fatalError("Must implement")
-  }
-
-  /// Returns the underlying value unboxed to the given type, if possible.
-  func unboxed<U: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative>(as type: U.Type) -> U?
-    where U.TangentVector == U, U.VectorSpaceScalar == F {
-    fatalError("Must implement")
-  }
 }
 
 extension _AnyLayerTangentVectorBox {
@@ -149,6 +152,7 @@ extension _AnyLayerTangentVectorBox {
   }
 }
 
+/// A concrete implementation of the type-erased tangent vector wrapper that forwards to an underlying tangent vector.
 internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative> : _AnyLayerTangentVectorBox<T.VectorSpaceScalar>
   where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & ElementaryFunctions
 {
@@ -171,7 +175,6 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
   }
 
   // `Equatable` requirements (implied by `AdditiveArithmetic`).
-
   override func _isEqual(to other: _AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> Bool {
     if let otherScalar = other.getOpaqueScalar() {
       if let scalar = getOpaqueScalar() {
