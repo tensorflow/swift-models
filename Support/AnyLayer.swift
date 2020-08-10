@@ -16,7 +16,7 @@ internal func derivativeTypeMismatch(
 
 /// The base type for a type-erased box that encapsulates a layer.
 /// Offers forwarders to implement conformance to `Layer` and `CopyableToDevice`.
-internal class _AnyLayerBox<Input: Differentiable, Output: Differentiable, F: FloatingPoint & ElementaryFunctions> {
+internal class AnyLayerBox<Input: Differentiable, Output: Differentiable, F: FloatingPoint & ElementaryFunctions> {
   /// The underlying base layer, type-erased to `Any`.
   var typeErasedBase: Any {
     fatalError("Must implement")
@@ -48,13 +48,13 @@ internal class _AnyLayerBox<Input: Differentiable, Output: Differentiable, F: Fl
   }
 
   // `CopyableToDevice` requirements.
-  func _copyToDevice(to device: Device) -> _AnyLayerBox {
+  func _copyToDevice(to device: Device) -> AnyLayerBox {
     fatalError("Must implement")
   }
 }
 
 /// A concrete implementation of the type-erased layer wrapper that forwards to an underlying layer.
-internal class _ConcreteLayerBox<T: Layer>: _AnyLayerBox<T.Input, T.Output, T.TangentVector.VectorSpaceScalar>
+internal class ConcreteLayerBox<T: Layer>: AnyLayerBox<T.Input, T.Output, T.TangentVector.VectorSpaceScalar>
 where T.TangentVector.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
   /// The underlying base value.
   var base: T
@@ -72,7 +72,7 @@ where T.TangentVector.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
   /// Returns the underlying layer unboxed to the given type, if possible.
   override func unboxed<U: Layer>(to type: U.Type) -> U?
   where U.TangentVector.VectorSpaceScalar == T.TangentVector.VectorSpaceScalar {
-    return (self as? _ConcreteLayerBox<U>)?.base
+    return (self as? ConcreteLayerBox<U>)?.base
   }
 
   // `Differentiable` requirements.
@@ -104,7 +104,8 @@ where T.TangentVector.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
     var input: T.Input
   }
 
-  override func _vjpCallAsFunction(_ input: T.Input) -> (value: T.Output, pullback: (T.Output.TangentVector) -> (AnyLayerTangentVector<T.TangentVector.VectorSpaceScalar>, T.Input.TangentVector)) {
+  override func _vjpCallAsFunction(_ input: T.Input) ->
+  (value: T.Output, pullback: (T.Output.TangentVector) -> (AnyLayerTangentVector<T.TangentVector.VectorSpaceScalar>, T.Input.TangentVector)) {
     let basePullback = valueWithPullback(at: ModelAndInput(model: base, input: input), in: { pair in pair.model.callAsFunction(pair.input) })
     return (
       value: basePullback.value,
@@ -119,8 +120,8 @@ where T.TangentVector.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
   }
 
   // `CopyableToDevice` requirements.
-  override func _copyToDevice(to device: Device) -> _AnyLayerBox<T.Input, T.Output, T.TangentVector.VectorSpaceScalar> {
-    return _ConcreteLayerBox(T(copying: base, to: device))
+  override func _copyToDevice(to device: Device) -> AnyLayerBox<T.Input, T.Output, T.TangentVector.VectorSpaceScalar> {
+    return ConcreteLayerBox(T(copying: base, to: device))
   }
 }
 
@@ -136,9 +137,9 @@ where T.TangentVector.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
 /// The tangent vector of this type is also type-erased, using the `AnyLayerTangentVector` type. All tangents
 /// (other than `zero` and `one`) wrap the tangent vector type of the underlying layer.
 public struct AnyLayer<Input: Differentiable, Output: Differentiable, F: FloatingPoint & ElementaryFunctions>: CopyableToDevice {
-  internal var box: _AnyLayerBox<Input, Output, F>
+  internal var box: AnyLayerBox<Input, Output, F>
 
-  internal init(box: _AnyLayerBox<Input, Output, F>) {
+  internal init(box: AnyLayerBox<Input, Output, F>) {
     self.box = box
   }
 
@@ -151,7 +152,7 @@ public struct AnyLayer<Input: Differentiable, Output: Differentiable, F: Floatin
   @differentiable
   public init<T: Layer>(_ base: T)
   where T.Input == Input, T.Output == Output, T.TangentVector.VectorSpaceScalar == F {
-    self.box = _ConcreteLayerBox<T>(base)
+    self.box = ConcreteLayerBox<T>(base)
   }
 
   public init(copying other: AnyLayer, to device: Device) {
