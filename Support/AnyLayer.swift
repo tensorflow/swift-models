@@ -38,7 +38,7 @@ internal class _AnyLayerBox<Input: Differentiable, Output: Differentiable, F: Fl
   }
 
   /// Returns the underlying value unboxed to the given type, if possible.
-  func _unboxed<U: Layer>(to type: U.Type) -> U?
+  func unboxed<U: Layer>(to type: U.Type) -> U?
   where U.TangentVector.VectorSpaceScalar == F {
     fatalError("Must implement")
   }
@@ -66,7 +66,7 @@ where T.TangentVector.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
     return AnyLayerTangentVector(_base.differentiableVectorView)
   }
 
-  override func _unboxed<U: Layer>(to type: U.Type) -> U?
+  override func unboxed<U: Layer>(to type: U.Type) -> U?
   where U.TangentVector.VectorSpaceScalar == T.TangentVector.VectorSpaceScalar {
     return (self as? _ConcreteLayerBox<U>)?._base
   }
@@ -80,8 +80,8 @@ where T.TangentVector.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
       _base.move(along: T.TangentVector.zero.adding(scalarDirection))
     } else {
       guard let directionBase =
-        direction._box._unboxed(as: T.TangentVector.self) else {
-        _derivativeTypeMismatch(T.self, type(of: direction._tangentOrScalar))
+        direction.unboxed(as: T.TangentVector.self) else {
+        _derivativeTypeMismatch(T.self, type(of: direction._box._typeErasedBase))
       }
       _base.move(along: directionBase)
     }
@@ -152,7 +152,7 @@ public struct AnyLayer<Input: Differentiable, Output: Differentiable, F: Floatin
   ) -> (value: AnyLayer, pullback: (AnyLayerTangentVector<F>) -> T.TangentVector)
   where T.Input == Input, T.Output == Output, T.TangentVector.VectorSpaceScalar == F
   {
-    return (AnyLayer<Input, Output, F>(base), { v in v._tangentOrScalar as! T.TangentVector })
+    return (AnyLayer<Input, Output, F>(base), { v in v.unboxed(as: T.TangentVector.self)! })
   }
 
   @inlinable
