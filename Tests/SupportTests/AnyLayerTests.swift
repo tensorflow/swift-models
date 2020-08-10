@@ -16,7 +16,66 @@ import XCTest
 import ModelSupport
 import TensorFlow
 
-// TODO(shadaj): create generic protocol test for things like `ElementaryFunctions`
+struct ElementaryFunctionsTests<WrapperTestType: XCTestCase, Reference: ElementaryFunctions, Test: ElementaryFunctions> {
+    let createReference: ([Float]) -> Reference
+    let referenceToTest: (Reference) -> Test
+    let compareReferenceAndTest: (Reference, Test) -> ()
+    let rng: SystemRandomNumberGenerator
+
+    public init(
+        createReference: @escaping ([Float]) -> Reference,
+        referenceToTest: @escaping (Reference) -> Test,
+        compareReferenceAndTest: @escaping (Reference, Test) -> (),
+        rng: SystemRandomNumberGenerator
+    ) {
+        self.createReference = createReference
+        self.referenceToTest = referenceToTest
+        self.compareReferenceAndTest = compareReferenceAndTest
+        self.rng = rng
+    }
+
+    let functions: [(String, ClosedRange<Float>, (Reference) -> Reference, (Test) -> Test)] = [
+        ("sqrt", 0.0...100, Reference.sqrt, Test.sqrt),
+        ("cos", -100.0...100, Reference.cos, Test.cos),
+        ("sin", -100.0...100, Reference.sin, Test.sin),
+        ("tan", -100.0...100, Reference.tan, Test.tan),
+        ("acos", -1.0...1.0, Reference.acos, Test.acos),
+        ("asin", -1.0...1.0, Reference.asin, Test.asin),
+        ("atan", -100.0...100.0, Reference.atan, Test.atan),
+        ("cosh", -100.0...100.0, Reference.cosh, Test.cosh),
+        ("sinh", -100.0...100.0, Reference.sinh, Test.sinh),
+        ("tanh", -100.0...100.0, Reference.tanh, Test.tanh),
+        ("acosh", 1.0...100.0, Reference.acosh, Test.acosh),
+        ("asinh", -100.0...100.0, Reference.asinh, Test.asinh),
+        ("atanh", -1.0...1.0, Reference.atanh, Test.atanh),
+        ("exp", -100.0...100.0, Reference.exp, Test.exp),
+        ("exp2", -100.0...100.0, Reference.exp2, Test.exp2),
+        ("exp10", -100.0...100.0, Reference.exp10, Test.exp10),
+        ("expm1", -100.0...100.0, Reference.expm1, Test.expm1),
+        ("log", 0.0...100.0, Reference.log, Test.log),
+        ("log2", 0.0...100.0, Reference.log2, Test.log2),
+        ("log10", 0.0...100.0, Reference.log10, Test.log10),
+        ("log1p", -1.0...100.0, Reference.log1p, Test.log1p),
+        ("pow", 0.1...100.0, { Reference.pow($0, $0) }, { Test.pow($0, $0) }),
+        ("pow", -100.0...100.0, { Reference.pow($0, 2) }, { Test.pow($0, 2) }),
+        ("root", -100.0...100.0, { Reference.root($0, 3) }, { Test.root($0, 3) }),
+    ]
+
+    func testFunction(range: ClosedRange<Float>, referenceOperator: (Reference) -> Reference, testOperator: (Test) -> Test) {
+        var localRng = rng
+        let randomNumbers = (0..<10).map { _ in Float.random(in: range, using: &localRng) }
+        let reference = createReference(randomNumbers)
+        let test = referenceToTest(reference)
+
+        compareReferenceAndTest(referenceOperator(reference), testOperator(test))
+    }
+    
+    func testAll() {
+        for function in functions {
+            testFunction(range: function.1, referenceOperator: function.2, testOperator: function.3)
+        }
+    }
+}
 
 final class AnyLayerTests: XCTestCase {
     func testGradients() {
@@ -75,11 +134,21 @@ final class AnyLayerTests: XCTestCase {
         XCTAssertEqual(AnyLayer<Tensor<Float>, Tensor<Float>, Float>.TangentVector.one.base as! Float, 1)
         XCTAssertEqual((AnyLayer<Tensor<Float>, Tensor<Float>, Float>.TangentVector.one.scaled(by: 2)).base as! Float, 2)
     }
+
+    func testTangentVectorElementaryFunctions() {
+        ElementaryFunctionsTests<AnyLayerTests, Tensor<Float>, AnyLayerTangentVector<Float>>(
+            createReference: { Tensor<Float>($0) },
+            referenceToTest: { AnyLayerTangentVector($0) },
+            compareReferenceAndTest: { XCTAssertEqual($0, $1.unboxed(as: Tensor<Float>.self)!) },
+            rng: SystemRandomNumberGenerator()
+        ).testAll()
+    }
     
     static var allTests = [
         ("testGradients", testGradients),
         ("testTangentOperations", testTangentOperations),
         ("testOpaqueScalarEquality", testOpaqueScalarEquality),
         ("testScalarTangentVectorBase", testScalarTangentVectorBase),
+        ("testTangentVectorElementaryFunctions", testTangentVectorElementaryFunctions),
     ]
 }
