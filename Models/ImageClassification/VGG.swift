@@ -41,16 +41,16 @@ public struct VGGBlock: Layer {
 }
 
 public struct VGG16: Layer {
-    var layer1: VGGBlock
-    var layer2: VGGBlock
-    var layer3: VGGBlock
-    var layer4: VGGBlock
-    var layer5: VGGBlock
+    @_Freezable var layer1: VGGBlock
+    @_Freezable var layer2: VGGBlock
+    @_Freezable var layer3: VGGBlock
+    @_Freezable var layer4: VGGBlock
+    @_Freezable var layer5: VGGBlock
 
     var flatten = Flatten<Float>()
-    var dense1 = Dense<Float>(inputSize: 512 * 7 * 7, outputSize: 4096, activation: relu)
-    var dense2 = Dense<Float>(inputSize: 4096, outputSize: 4096, activation: relu)
-    var output: Dense<Float>
+    @_Freezable var dense1 = Dense<Float>(inputSize: 512 * 7 * 7, outputSize: 4096, activation: relu)
+    @_Freezable var dense2 = Dense<Float>(inputSize: 4096, outputSize: 4096, activation: relu)
+    @_Freezable var output: Dense<Float>
 
     public init(classCount: Int = 1000) {
         layer1 = VGGBlock(featureCounts: (3, 64, 64, 64), blockCount: 2)
@@ -69,16 +69,16 @@ public struct VGG16: Layer {
 }
 
 public struct VGG19: Layer {
-    var layer1: VGGBlock
-    var layer2: VGGBlock
-    var layer3: VGGBlock
-    var layer4: VGGBlock
-    var layer5: VGGBlock
+    @_Freezable var layer1: VGGBlock
+    @_Freezable var layer2: VGGBlock
+    @_Freezable var layer3: VGGBlock
+    @_Freezable var layer4: VGGBlock
+    @_Freezable var layer5: VGGBlock
 
     var flatten = Flatten<Float>()
-    var dense1 = Dense<Float>(inputSize: 512 * 7 * 7, outputSize: 4096, activation: relu)
-    var dense2 = Dense<Float>(inputSize: 4096, outputSize: 4096, activation: relu)
-    var output: Dense<Float>
+    @_Freezable var dense1 = Dense<Float>(inputSize: 512 * 7 * 7, outputSize: 4096, activation: relu)
+    @_Freezable var dense2 = Dense<Float>(inputSize: 4096, outputSize: 4096, activation: relu)
+    @_Freezable var output: Dense<Float>
 
     public init(classCount: Int = 1000) {
         layer1 = VGGBlock(featureCounts: (3, 64, 64, 64), blockCount: 2)

@@ -206,22 +206,22 @@ struct MBConvBlockStack: Layer {
 
 public struct EfficientNet: Layer {
     @noDerivative let zeroPad = ZeroPadding2D<Float>(padding: ((0, 1), (0, 1)))
-    var inputConv: Conv2D<Float>
+    @_Freezable var inputConv: Conv2D<Float>
     var inputConvBatchNorm: BatchNorm<Float>
-    var initialMBConv: InitialMBConvBlock
+    @_Freezable var initialMBConv: InitialMBConvBlock
 
-    var residualBlockStack1: MBConvBlockStack
-    var residualBlockStack2: MBConvBlockStack
-    var residualBlockStack3: MBConvBlockStack
-    var residualBlockStack4: MBConvBlockStack
-    var residualBlockStack5: MBConvBlockStack
-    var residualBlockStack6: MBConvBlockStack
+    @_Freezable var residualBlockStack1: MBConvBlockStack
+    @_Freezable var residualBlockStack2: MBConvBlockStack
+    @_Freezable var residualBlockStack3: MBConvBlockStack
+    @_Freezable var residualBlockStack4: MBConvBlockStack
+    @_Freezable var residualBlockStack5: MBConvBlockStack
+    @_Freezable var residualBlockStack6: MBConvBlockStack
 
-    var outputConv: Conv2D<Float>
+    @_Freezable var outputConv: Conv2D<Float>
     var outputConvBatchNorm: BatchNorm<Float>
     var avgPool = GlobalAvgPool2D<Float>()
     var dropoutProb: Dropout<Float>
-    var outputClassifier: Dense<Float>
+    @_Freezable var outputClassifier: Dense<Float>
 
     /// default settings are efficientnetB0 (baseline) network
     /// resolution is here to show what the network can take as input, it doesn't set anything!

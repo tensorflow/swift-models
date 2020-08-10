@@ -20,7 +20,7 @@ import TensorFlow
 // https://arxiv.org/pdf/1608.06993.pdf
 
 public struct DenseNet121: Layer {
-    public var conv = Conv(
+    @_Freezable public var conv = Conv(
         filterSize: 7,
         stride: 2,
         inputFilterCount: 3,
@@ -31,15 +31,15 @@ public struct DenseNet121: Layer {
         strides: (2, 2),
         padding: .same
     )
-    public var denseBlock1 = DenseBlock(repetitionCount: 6, inputFilterCount: 64)
-    public var transitionLayer1 = TransitionLayer(inputFilterCount: 256)
-    public var denseBlock2 = DenseBlock(repetitionCount: 12, inputFilterCount: 128)
-    public var transitionLayer2 = TransitionLayer(inputFilterCount: 512)
-    public var denseBlock3 = DenseBlock(repetitionCount: 24, inputFilterCount: 256)
-    public var transitionLayer3 = TransitionLayer(inputFilterCount: 1024)
-    public var denseBlock4 = DenseBlock(repetitionCount: 16, inputFilterCount: 512)
+    @_Freezable public var denseBlock1 = DenseBlock(repetitionCount: 6, inputFilterCount: 64)
+    @_Freezable public var transitionLayer1 = TransitionLayer(inputFilterCount: 256)
+    @_Freezable public var denseBlock2 = DenseBlock(repetitionCount: 12, inputFilterCount: 128)
+    @_Freezable public var transitionLayer2 = TransitionLayer(inputFilterCount: 512)
+    @_Freezable public var denseBlock3 = DenseBlock(repetitionCount: 24, inputFilterCount: 256)
+    @_Freezable public var transitionLayer3 = TransitionLayer(inputFilterCount: 1024)
+    @_Freezable public var denseBlock4 = DenseBlock(repetitionCount: 16, inputFilterCount: 512)
     public var globalAvgPool = GlobalAvgPool2D<Float>()
-    public var dense: Dense<Float>
+    @_Freezable public var dense: Dense<Float>
 
     public init(classCount: Int) {
         dense = Dense(inputSize: 1024, outputSize: classCount)

@@ -230,32 +230,32 @@ public struct InvertedResidualBlock: Layer {
 
 public struct MobileNetV3Large: Layer {
     @noDerivative public let zeroPad = ZeroPadding2D<Float>(padding: ((0, 1), (0, 1)))
-    public var inputConv: Conv2D<Float>
+    @_Freezable public var inputConv: Conv2D<Float>
     public var inputConvBatchNorm: BatchNorm<Float>
 
-    public var invertedResidualBlock1: InitialInvertedResidualBlock
-    public var invertedResidualBlock2: InvertedResidualBlock
-    public var invertedResidualBlock3: InvertedResidualBlock
-    public var invertedResidualBlock4: InvertedResidualBlock
-    public var invertedResidualBlock5: InvertedResidualBlock
-    public var invertedResidualBlock6: InvertedResidualBlock
-    public var invertedResidualBlock7: InvertedResidualBlock
-    public var invertedResidualBlock8: InvertedResidualBlock
-    public var invertedResidualBlock9: InvertedResidualBlock
-    public var invertedResidualBlock10: InvertedResidualBlock
-    public var invertedResidualBlock11: InvertedResidualBlock
-    public var invertedResidualBlock12: InvertedResidualBlock
-    public var invertedResidualBlock13: InvertedResidualBlock
-    public var invertedResidualBlock14: InvertedResidualBlock
-    public var invertedResidualBlock15: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock1: InitialInvertedResidualBlock
+    @_Freezable public var invertedResidualBlock2: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock3: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock4: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock5: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock6: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock7: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock8: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock9: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock10: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock11: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock12: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock13: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock14: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock15: InvertedResidualBlock
 
-    public var outputConv: Conv2D<Float>
+    @_Freezable public var outputConv: Conv2D<Float>
     public var outputConvBatchNorm: BatchNorm<Float>
 
     public var avgPool = GlobalAvgPool2D<Float>()
-    public var finalConv: Conv2D<Float>
+    @_Freezable public var finalConv: Conv2D<Float>
     public var dropoutLayer: Dropout<Float>
-    public var classiferConv: Conv2D<Float>
+    @_Freezable public var classiferConv: Conv2D<Float>
     public var flatten = Flatten<Float>()
 
     @noDerivative public var lastConvChannel: Int
@@ -363,28 +363,28 @@ public struct MobileNetV3Large: Layer {
 
 public struct MobileNetV3Small: Layer {
     @noDerivative public let zeroPad = ZeroPadding2D<Float>(padding: ((0, 1), (0, 1)))
-    public var inputConv: Conv2D<Float>
+    @_Freezable public var inputConv: Conv2D<Float>
     public var inputConvBatchNorm: BatchNorm<Float>
 
-    public var invertedResidualBlock1: InitialInvertedResidualBlock
-    public var invertedResidualBlock2: InvertedResidualBlock
-    public var invertedResidualBlock3: InvertedResidualBlock
-    public var invertedResidualBlock4: InvertedResidualBlock
-    public var invertedResidualBlock5: InvertedResidualBlock
-    public var invertedResidualBlock6: InvertedResidualBlock
-    public var invertedResidualBlock7: InvertedResidualBlock
-    public var invertedResidualBlock8: InvertedResidualBlock
-    public var invertedResidualBlock9: InvertedResidualBlock
-    public var invertedResidualBlock10: InvertedResidualBlock
-    public var invertedResidualBlock11: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock1: InitialInvertedResidualBlock
+    @_Freezable public var invertedResidualBlock2: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock3: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock4: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock5: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock6: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock7: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock8: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock9: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock10: InvertedResidualBlock
+    @_Freezable public var invertedResidualBlock11: InvertedResidualBlock
 
-    public var outputConv: Conv2D<Float>
+    @_Freezable public var outputConv: Conv2D<Float>
     public var outputConvBatchNorm: BatchNorm<Float>
 
     public var avgPool = GlobalAvgPool2D<Float>()
-    public var finalConv: Conv2D<Float>
+    @_Freezable public var finalConv: Conv2D<Float>
     public var dropoutLayer: Dropout<Float>
-    public var classiferConv: Conv2D<Float>
+    @_Freezable public var classiferConv: Conv2D<Float>
     public var flatten = Flatten<Float>()
 
     @noDerivative public var lastConvChannel: Int

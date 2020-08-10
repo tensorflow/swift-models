@@ -102,23 +102,23 @@ public struct MobileNetV1: Layer {
     @noDerivative let classCount: Int
     @noDerivative let scaledFilterShape: Int
 
-    public var convBlock1: ConvBlock
-    public var dConvBlock1: DepthwiseConvBlock
-    public var dConvBlock2: DepthwiseConvBlock
-    public var dConvBlock3: DepthwiseConvBlock
-    public var dConvBlock4: DepthwiseConvBlock
-    public var dConvBlock5: DepthwiseConvBlock
-    public var dConvBlock6: DepthwiseConvBlock
-    public var dConvBlock7: DepthwiseConvBlock
-    public var dConvBlock8: DepthwiseConvBlock
-    public var dConvBlock9: DepthwiseConvBlock
-    public var dConvBlock10: DepthwiseConvBlock
-    public var dConvBlock11: DepthwiseConvBlock
-    public var dConvBlock12: DepthwiseConvBlock
-    public var dConvBlock13: DepthwiseConvBlock
+    @_Freezable public var convBlock1: ConvBlock
+    @_Freezable public var dConvBlock1: DepthwiseConvBlock
+    @_Freezable public var dConvBlock2: DepthwiseConvBlock
+    @_Freezable public var dConvBlock3: DepthwiseConvBlock
+    @_Freezable public var dConvBlock4: DepthwiseConvBlock
+    @_Freezable public var dConvBlock5: DepthwiseConvBlock
+    @_Freezable public var dConvBlock6: DepthwiseConvBlock
+    @_Freezable public var dConvBlock7: DepthwiseConvBlock
+    @_Freezable public var dConvBlock8: DepthwiseConvBlock
+    @_Freezable public var dConvBlock9: DepthwiseConvBlock
+    @_Freezable public var dConvBlock10: DepthwiseConvBlock
+    @_Freezable public var dConvBlock11: DepthwiseConvBlock
+    @_Freezable public var dConvBlock12: DepthwiseConvBlock
+    @_Freezable public var dConvBlock13: DepthwiseConvBlock
     public var avgPool = GlobalAvgPool2D<Float>()
     public var dropoutLayer: Dropout<Float>
-    public var convLast: Conv2D<Float>
+    @_Freezable public var convLast: Conv2D<Float>
 
     public init(
         classCount: Int, widthMultiplier: Float = 1.0, depthMultiplier: Int = 1,

@@ -114,15 +114,15 @@ public struct InvertedResidual: Layer {
 public struct ShuffleNetV2: Layer {
     @noDerivative public var zeroPad: ZeroPadding2D<Float> = ZeroPadding2D<Float>(padding: ((1, 1), (1, 1)))
     
-    public var conv1: Conv2D<Float>
+    @_Freezable public var conv1: Conv2D<Float>
     public var batchNorm1: BatchNorm<Float>
     public var maxPool: MaxPool2D<Float>
-    public var invertedResidualBlocksStage1: [InvertedResidual]
-    public var invertedResidualBlocksStage2: [InvertedResidual]
-    public var invertedResidualBlocksStage3: [InvertedResidual]
-    public var conv2: Conv2D<Float>
+    @_Freezable public var invertedResidualBlocksStage1: [InvertedResidual]
+    @_Freezable public var invertedResidualBlocksStage2: [InvertedResidual]
+    @_Freezable public var invertedResidualBlocksStage3: [InvertedResidual]
+    @_Freezable public var conv2: Conv2D<Float>
     public var globalPool: GlobalAvgPool2D<Float> = GlobalAvgPool2D()
-    public var dense: Dense<Float>
+    @_Freezable public var dense: Dense<Float>
     
     public init(stagesRepeat: (Int, Int, Int), stagesOutputChannels: (Int, Int, Int, Int, Int),
                 classCount: Int) {

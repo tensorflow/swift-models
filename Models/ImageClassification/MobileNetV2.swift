@@ -158,22 +158,22 @@ public struct InvertedBottleneckBlockStack: Layer {
 
 public struct MobileNetV2: Layer {
     @noDerivative public let zeroPad = ZeroPadding2D<Float>(padding: ((0, 1), (0, 1)))
-    public var inputConv: Conv2D<Float>
+    @_Freezable public var inputConv: Conv2D<Float>
     public var inputConvBatchNorm: BatchNorm<Float>
-    public var initialInvertedBottleneck: InitialInvertedBottleneckBlock
+    @_Freezable public var initialInvertedBottleneck: InitialInvertedBottleneckBlock
 
-    public var residualBlockStack1: InvertedBottleneckBlockStack
-    public var residualBlockStack2: InvertedBottleneckBlockStack
-    public var residualBlockStack3: InvertedBottleneckBlockStack
-    public var residualBlockStack4: InvertedBottleneckBlockStack
-    public var residualBlockStack5: InvertedBottleneckBlockStack
+    @_Freezable public var residualBlockStack1: InvertedBottleneckBlockStack
+    @_Freezable public var residualBlockStack2: InvertedBottleneckBlockStack
+    @_Freezable public var residualBlockStack3: InvertedBottleneckBlockStack
+    @_Freezable public var residualBlockStack4: InvertedBottleneckBlockStack
+    @_Freezable public var residualBlockStack5: InvertedBottleneckBlockStack
 
-    public var invertedBottleneckBlock16: InvertedBottleneckBlock
+    @_Freezable public var invertedBottleneckBlock16: InvertedBottleneckBlock
 
-    public var outputConv: Conv2D<Float>
+    @_Freezable public var outputConv: Conv2D<Float>
     public var outputConvBatchNorm: BatchNorm<Float>
     public var avgPool = GlobalAvgPool2D<Float>()
-    public var outputClassifier: Dense<Float>
+    @_Freezable public var outputClassifier: Dense<Float>
 
     public init(classCount: Int = 1000, widthMultiplier: Float = 1.0) {
         inputConv = Conv2D<Float>(

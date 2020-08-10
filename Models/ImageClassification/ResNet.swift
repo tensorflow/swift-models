@@ -105,12 +105,12 @@ public struct ResidualBlock: Layer {
 
 /// An implementation of the ResNet v1 and v1.5 architectures, at various depths.
 public struct ResNet: Layer {
-    public var initialLayer: ConvBN
+    @_Freezable public var initialLayer: ConvBN
     public var maxPool: MaxPool2D<Float>
-    public var residualBlocks: [ResidualBlock] = []
+    @_Freezable public var residualBlocks: [ResidualBlock] = []
     public var avgPool = GlobalAvgPool2D<Float>()
     public var flatten = Flatten<Float>()
-    public var classifier: Dense<Float>
+    @_Freezable public var classifier: Dense<Float>
 
     /// Initializes a new ResNet v1 or v1.5 network model.
     ///

@@ -90,16 +90,16 @@ public struct WideResNetBasicBlock: Layer {
 }
 
 public struct WideResNet: Layer {
-    public var l1: Conv2D<Float>
+    @_Freezable public var l1: Conv2D<Float>
 
-    public var l2: WideResNetBasicBlock
-    public var l3: WideResNetBasicBlock
-    public var l4: WideResNetBasicBlock
+    @_Freezable public var l2: WideResNetBasicBlock
+    @_Freezable public var l3: WideResNetBasicBlock
+    @_Freezable public var l4: WideResNetBasicBlock
 
     public var norm: BatchNorm<Float>
     public var avgPool: AvgPool2D<Float>
     public var flatten = Flatten<Float>()
-    public var classifier: Dense<Float>
+    @_Freezable public var classifier: Dense<Float>
 
     public init(depthFactor: Int = 2, widenFactor: Int = 8) {
         self.l1 = Conv2D(filterShape: (3, 3, 3, 16), strides: (1, 1), padding: .same)
