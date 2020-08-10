@@ -53,6 +53,23 @@ final class AnyLayerTests: XCTestCase {
         XCTAssertEqual(transformedOriginal, transformedAny.base as! Dense<Float>.TangentVector)
     }
 
+    func testOpaqueScalarEquality() {
+        let original = Dense<Float>(inputSize: 1, outputSize: 1)
+        let erased = AnyLayer(original)
+
+        XCTAssertEqual(erased.zeroTangentVector, AnyLayerTangentVector(original.zeroTangentVector))
+        XCTAssertEqual(AnyLayerTangentVector(original.zeroTangentVector), erased.zeroTangentVector)
+
+        XCTAssertEqual(AnyLayerTangentVector<Float>.one, AnyLayerTangentVector(Dense<Float>.TangentVector.one))
+        XCTAssertEqual(AnyLayerTangentVector(Dense<Float>.TangentVector.one), AnyLayerTangentVector<Float>.one)
+
+        XCTAssertEqual(AnyLayerTangentVector<Float>.one.scaled(by: 2.0), AnyLayerTangentVector(Dense<Float>.TangentVector.one.scaled(by: 2.0)))
+        XCTAssertEqual(AnyLayerTangentVector(Dense<Float>.TangentVector.one.scaled(by: 2.0)), AnyLayerTangentVector<Float>.one.scaled(by: 2.0))
+
+        XCTAssertNotEqual(AnyLayerTangentVector<Float>.one, AnyLayerTangentVector(Dense<Float>.TangentVector.zero))
+        XCTAssertNotEqual(AnyLayerTangentVector(Dense<Float>.TangentVector.zero), AnyLayerTangentVector<Float>.one)
+    }
+
     func testScalarTangentVectorBase() {
         XCTAssertEqual(AnyLayer<Tensor<Float>, Tensor<Float>, Float>.TangentVector.zero.base as! Float, 0)
         XCTAssertEqual(AnyLayer<Tensor<Float>, Tensor<Float>, Float>.TangentVector.one.base as! Float, 1)
@@ -62,6 +79,7 @@ final class AnyLayerTests: XCTestCase {
     static var allTests = [
         ("testGradients", testGradients),
         ("testTangentOperations", testTangentOperations),
+        ("testOpaqueScalarEquality", testOpaqueScalarEquality),
         ("testScalarTangentVectorBase", testScalarTangentVectorBase),
     ]
 }

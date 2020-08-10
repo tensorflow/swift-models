@@ -164,6 +164,15 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
     return _base
   }
 
+  /// The underlying base value, or `OpaqueScalar` expanded into a full tangent vector.
+  var _baseWithScalarUnwrap: T {
+    if let scalar = _getOpaqueScalar() {
+      return T.zero.adding(scalar)
+    } else {
+      return _base
+    }
+  }
+
   override func _unboxed<U: Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative>(as type: U.Type) -> U?
     where U.TangentVector == U, U.VectorSpaceScalar == T.VectorSpaceScalar
   {
@@ -173,12 +182,31 @@ internal class _ConcreteAnyLayerTangentVectorBox<T: Differentiable & VectorProto
   // `Equatable` requirements (implied by `AdditiveArithmetic`).
 
   override func _isEqual(to other: _AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> Bool {
-    // TODO(shadaj): handle opaquescalar
-    return _base == other._unboxed(as: T.self)
+    if let otherScalar = other._getOpaqueScalar() {
+      if let scalar = _getOpaqueScalar() {
+        return scalar == otherScalar
+      } else {
+        return _base == T.zero.adding(otherScalar)
+      }
+    } else if _getOpaqueScalar() != nil {
+      return other._isEqual(to: self)
+    } else {
+      return _base == other._unboxed(as: T.self)
+    }
   }
 
   override func _isNotEqual(to other: _AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> Bool {
-    return _base != other._unboxed(as: T.self)
+    if let otherScalar = other._getOpaqueScalar() {
+      if let scalar = _getOpaqueScalar() {
+        return scalar != otherScalar
+      } else {
+        return _base != T.zero.adding(otherScalar)
+      }
+    } else if _getOpaqueScalar() != nil {
+      return other._isNotEqual(to: self)
+    } else {
+      return _base != other._unboxed(as: T.self)
+    }
   }
 
   override func _add(_ x: _AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> _AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
