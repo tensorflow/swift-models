@@ -106,11 +106,16 @@ public extension BenchmarkSettings {
     let _ = _ExecutionContext.global
 
     switch backend {
-    case .eager: return Device.defaultTFEager
+    case .eager:
+      switch platform {
+      case .cpu: return Device(kind: .CPU, ordinal: 0, backend: .TF_EAGER)
+      case .gpu: return Device(kind: .GPU, ordinal: 0, backend: .TF_EAGER)
+      case .tpu: fatalError("TFEager is unsupported on TPU.")
+      }
     case .x10:
       switch platform {
-      case .cpu: return Device.defaultXLA
-      case .gpu: return Device.defaultXLA
+      case .cpu: return Device(kind: .CPU, ordinal: 0, backend: .XLA)
+      case .gpu: return Device(kind: .GPU, ordinal: 0, backend: .XLA)
       case .tpu: return (Device.allDevices.filter { $0.kind == .TPU }).first!
       }
     }
