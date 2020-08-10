@@ -66,16 +66,16 @@ public struct DatasetFilePath: BenchmarkSetting {
   }
 }
 
-public extension BenchmarkSettings {
-  var batchSize: Int? {
+extension BenchmarkSettings {
+  public var batchSize: Int? {
     return self[BatchSize.self]?.value
   }
 
-  var length: Int? {
+  public var length: Int? {
     return self[Length.self]?.value
   }
 
-  var synthetic: Bool {
+  public var synthetic: Bool {
     if let value = self[Synthetic.self]?.value {
       return value
     } else {
@@ -83,7 +83,7 @@ public extension BenchmarkSettings {
     }
   }
 
-  var backend: Backend.Value {
+  public var backend: Backend.Value {
     if let value = self[Backend.self]?.value {
       return value
     } else {
@@ -91,7 +91,7 @@ public extension BenchmarkSettings {
     }
   }
 
-  var platform: Platform.Value {
+  public var platform: Platform.Value {
     if let value = self[Platform.self]?.value {
       return value
     } else {
@@ -99,7 +99,7 @@ public extension BenchmarkSettings {
     }
   }
 
-  var device: Device {
+  public var device: Device {
     // Note: The line is needed, or all GPU memory
     // will be exhausted on initial allocation of the model.
     // TODO: Remove the following tensor workaround when above is fixed.
@@ -121,7 +121,7 @@ public extension BenchmarkSettings {
     }
   }
 
-  var datasetFilePath: String? {
+  public var datasetFilePath: String? {
     return self[DatasetFilePath.self]?.value
   }
 }

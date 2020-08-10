@@ -38,19 +38,21 @@ public struct BenchmarkArguments: ParsableArguments {
   var tpu: Bool = false
 
   @Flag(help: "Use synthetic data.")
-  var synthetic: Bool = false 
+  var synthetic: Bool = false
 
   @Flag(help: "Use real data.")
-  var real: Bool = false 
+  var real: Bool = false
 
   @Option(help: "File path for dataset loading.")
   var datasetFilePath: String?
 
   public init() {}
 
-  public init(arguments: Benchmark.BenchmarkArguments, batchSize: Int?, eager: Bool, x10: Bool,
-              cpu: Bool, gpu: Bool, tpu: Bool, synthetic: Bool, real: Bool,
-              datasetFilePath: String?) {
+  public init(
+    arguments: Benchmark.BenchmarkArguments, batchSize: Int?, eager: Bool, x10: Bool,
+    cpu: Bool, gpu: Bool, tpu: Bool, synthetic: Bool, real: Bool,
+    datasetFilePath: String?
+  ) {
     self.arguments = arguments
     self.batchSize = batchSize
     self.eager = eager
