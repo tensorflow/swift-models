@@ -474,7 +474,7 @@ public struct AnyLayerTangentVector<F: FloatingPoint & ElementaryFunctions>: Vec
   /// into the actual `TangentVector` type lazily.
   @frozen
   @usableFromInline
-  internal struct OpaqueScalar : EuclideanDifferentiable & AdditiveArithmetic & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative {
+  internal struct OpaqueScalar: TangentVectorConformances {
     @usableFromInline typealias VectorSpaceScalar = F
     let value: F
 
