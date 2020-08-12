@@ -1,12 +1,13 @@
 import TensorFlow
 
 
-class PPO {
-    let lr: Float
+class PPOAgent {
+    let learningRate: Float
     let betas: [Float]
     let gamma: Float
-    let K_epochs: Int
-    let eps_clip: Float
+    let epochs: Int
+    let clipEpsilon: Float
+    let entropyCoefficient: Float
     var actorCritic: ActorCritic
     var oldActorCritic: ActorCritic
     var actorOptimizer: Adam<ActorNet>
@@ -16,17 +17,19 @@ class PPO {
         observationSize: Int,
         hiddenSize: Int,
         actionCount: Int,
-        lr: Float,
+        learningRate: Float,
         betas: [Float],
         gamma: Float,
-        K_epochs: Int,
-        eps_clip: Float
+        epochs: Int,
+        clipEpsilon: Float,
+        entropyCoefficient: Float
     ) {
-        self.lr = lr
+        self.learningRate = learningRate
         self.betas = betas
         self.gamma = gamma
-        self.K_epochs = K_epochs
-        self.eps_clip = eps_clip
+        self.epochs = epochs
+        self.clipEpsilon = clipEpsilon
+        self.entropyCoefficient = entropyCoefficient
 
         self.actorCritic = ActorCritic(
             observationSize: observationSize,
@@ -38,8 +41,8 @@ class PPO {
             hiddenSize: hiddenSize,
             actionCount: actionCount
         )
-        self.actorOptimizer = Adam(for: actorCritic.actorNet, learningRate: lr)
-        self.criticOptimizer = Adam(for: actorCritic.criticNet, learningRate: lr)
+        self.actorOptimizer = Adam(for: actorCritic.actorNet, learningRate: learningRate)
+        self.criticOptimizer = Adam(for: actorCritic.criticNet, learningRate: learningRate)
 
         // Copy actorCritic to oldActorCritic
         self.updateOldActorCritic()
@@ -60,7 +63,7 @@ class PPO {
         self.oldActorCritic.actorNet.l3.bias = self.actorCritic.actorNet.l3.bias
     }
 
-    func update(memory: Memory) {
+    func update(memory: PPOMemory) {
         // Discount rewards for advantage estimation
         var rewards: [Float] = []
         var discountedReward: Float = 0
@@ -82,7 +85,7 @@ class PPO {
         // Optimize actor and critic
         var actorLosses: [Float] = []
         var criticLosses: [Float] = []
-        for _ in 0..<K_epochs {
+        for _ in 0..<epochs {
             // Optimize policy network (actor)
             let (actorLoss, actorGradients) = valueWithGradient(at: self.actorCritic.actorNet) { actorNet -> Tensor<Float> in
                 let npIndices = np.stack([np.arange(oldActions.shape[0], dtype: np.int32), oldActions.makeNumpyArray()], axis: 1)
@@ -94,12 +97,12 @@ class PPO {
                 let ratios: Tensor<Float> = exp(dist.logProbabilities - oldLogProbs)
 
                 let advantages: Tensor<Float> = tfRewards - stateValues
-                let surrogateObjective1: Tensor<Float> = ratios * advantages
-                let surrogateObjective2: Tensor<Float> = ratios.clipped(min:1 - self.eps_clip, max: 1 + self.eps_clip) * advantages
-                let mainObjective = -1 * Tensor(stacking: [surrogateObjective1, surrogateObjective2]).min(alongAxes: 0).flattened()
-                // TODO(seungjaeryanlee): Magic number move to main.swift
-                let entropyBonus: Tensor<Float> = -0.0001 * Tensor<Float>(dist.entropy())
-                let loss: Tensor<Float> = mainObjective + entropyBonus
+                let surrogateObjective = Tensor(stacking: [
+                    ratios * advantages,
+                    ratios.clipped(min:1 - self.clipEpsilon, max: 1 + self.clipEpsilon) * advantages
+                ]).min(alongAxes: 0).flattened()
+                let entropyBonus: Tensor<Float> = Tensor<Float>(self.entropyCoefficient * dist.entropy())
+                let loss: Tensor<Float> = -1 * (surrogateObjective + entropyBonus)
 
                 return loss.mean()
             }

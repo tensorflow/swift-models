@@ -1,4 +1,4 @@
-class Memory {
+class PPOMemory {
     var states: [[Float]] = []
     var actions: [Int32] = []
     var rewards: [Float] = []

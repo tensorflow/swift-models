@@ -7,9 +7,24 @@ struct ActorNet: Layer {
     var l1, l2, l3: Dense<Float>
 
     init(observationSize: Int, hiddenSize: Int, actionCount: Int) {
-        l1 = Dense<Float>(inputSize: observationSize, outputSize: hiddenSize, activation: tanh, weightInitializer: heNormal())
-        l2 = Dense<Float>(inputSize: hiddenSize, outputSize: hiddenSize, activation: tanh, weightInitializer: heNormal())
-        l3 = Dense<Float>(inputSize: hiddenSize, outputSize: actionCount, activation: softmax, weightInitializer: heNormal())
+        l1 = Dense<Float>(
+            inputSize: observationSize,
+            outputSize: hiddenSize,
+            activation: tanh,
+            weightInitializer: heNormal()
+        )
+        l2 = Dense<Float>(
+            inputSize: hiddenSize,
+            outputSize: hiddenSize,
+            activation: tanh,
+            weightInitializer: heNormal()
+        )
+        l3 = Dense<Float>(
+            inputSize: hiddenSize,
+            outputSize: actionCount,
+            activation: softmax,
+            weightInitializer: heNormal()
+        )
     }
 
     @differentiable
@@ -25,9 +40,23 @@ struct CriticNet: Layer {
     var l1, l2, l3: Dense<Float>
 
     init(observationSize: Int, hiddenSize: Int) {
-        l1 = Dense<Float>(inputSize: observationSize, outputSize: hiddenSize, activation: relu, weightInitializer: heNormal())
-        l2 = Dense<Float>(inputSize: hiddenSize, outputSize: hiddenSize, activation: relu, weightInitializer: heNormal())
-        l3 = Dense<Float>(inputSize: hiddenSize, outputSize: 1, weightInitializer: heNormal())
+        l1 = Dense<Float>(
+            inputSize: observationSize,
+            outputSize: hiddenSize,
+            activation: relu,
+            weightInitializer: heNormal()
+        )
+        l2 = Dense<Float>(
+            inputSize: hiddenSize,
+            outputSize: hiddenSize,
+            activation: relu,
+            weightInitializer: heNormal()
+        )
+        l3 = Dense<Float>(
+            inputSize: hiddenSize,
+            outputSize: 1,
+            weightInitializer: heNormal()
+        )
     }
 
     @differentiable
@@ -52,8 +81,8 @@ class ActorCritic {
         )
     }
 
-    func act(state: Tensor<Float>, memory: Memory) -> Int32 {
-        // state needs to be 2D (BATCH_SIZE x STATE_SIZE)
+    func act(state: Tensor<Float>, memory: PPOMemory) -> Int32 {
+        // Input to the network needs to be 2D (BATCH_SIZE x STATE_SIZE)
         let state = Tensor<Float>([state])
         let actionProbs = self.actorNet(state).flattened()
         let dist = Categorical<Int32>(probabilities: actionProbs)
