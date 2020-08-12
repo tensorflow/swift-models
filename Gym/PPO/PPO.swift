@@ -23,8 +23,8 @@ class PPOAgent {
     let entropyCoefficient: Float
     var actorCritic: ActorCritic
     var oldActorCritic: ActorCritic
-    var actorOptimizer: Adam<ActorNet>
-    var criticOptimizer: Adam<CriticNet>
+    var actorOptimizer: Adam<ActorNetwork>
+    var criticOptimizer: Adam<CriticNetwork>
 
     init(
         observationSize: Int,
@@ -54,26 +54,26 @@ class PPOAgent {
             hiddenSize: hiddenSize,
             actionCount: actionCount
         )
-        self.actorOptimizer = Adam(for: actorCritic.actorNet, learningRate: learningRate)
-        self.criticOptimizer = Adam(for: actorCritic.criticNet, learningRate: learningRate)
+        self.actorOptimizer = Adam(for: actorCritic.actorNetwork, learningRate: learningRate)
+        self.criticOptimizer = Adam(for: actorCritic.criticNetwork, learningRate: learningRate)
 
         // Copy actorCritic to oldActorCritic
         self.updateOldActorCritic()
     }
 
     func updateOldActorCritic() {
-        self.oldActorCritic.criticNet.l1.weight = self.actorCritic.criticNet.l1.weight
-        self.oldActorCritic.criticNet.l1.bias = self.actorCritic.criticNet.l1.bias
-        self.oldActorCritic.criticNet.l2.weight = self.actorCritic.criticNet.l2.weight
-        self.oldActorCritic.criticNet.l2.bias = self.actorCritic.criticNet.l2.bias
-        self.oldActorCritic.criticNet.l3.weight = self.actorCritic.criticNet.l3.weight
-        self.oldActorCritic.criticNet.l3.bias = self.actorCritic.criticNet.l3.bias
-        self.oldActorCritic.actorNet.l1.weight = self.actorCritic.actorNet.l1.weight
-        self.oldActorCritic.actorNet.l1.bias = self.actorCritic.actorNet.l1.bias
-        self.oldActorCritic.actorNet.l2.weight = self.actorCritic.actorNet.l2.weight
-        self.oldActorCritic.actorNet.l2.bias = self.actorCritic.actorNet.l2.bias
-        self.oldActorCritic.actorNet.l3.weight = self.actorCritic.actorNet.l3.weight
-        self.oldActorCritic.actorNet.l3.bias = self.actorCritic.actorNet.l3.bias
+        self.oldActorCritic.criticNetwork.l1.weight = self.actorCritic.criticNetwork.l1.weight
+        self.oldActorCritic.criticNetwork.l1.bias = self.actorCritic.criticNetwork.l1.bias
+        self.oldActorCritic.criticNetwork.l2.weight = self.actorCritic.criticNetwork.l2.weight
+        self.oldActorCritic.criticNetwork.l2.bias = self.actorCritic.criticNetwork.l2.bias
+        self.oldActorCritic.criticNetwork.l3.weight = self.actorCritic.criticNetwork.l3.weight
+        self.oldActorCritic.criticNetwork.l3.bias = self.actorCritic.criticNetwork.l3.bias
+        self.oldActorCritic.actorNetwork.l1.weight = self.actorCritic.actorNetwork.l1.weight
+        self.oldActorCritic.actorNetwork.l1.bias = self.actorCritic.actorNetwork.l1.bias
+        self.oldActorCritic.actorNetwork.l2.weight = self.actorCritic.actorNetwork.l2.weight
+        self.oldActorCritic.actorNetwork.l2.bias = self.actorCritic.actorNetwork.l2.bias
+        self.oldActorCritic.actorNetwork.l3.weight = self.actorCritic.actorNetwork.l3.weight
+        self.oldActorCritic.actorNetwork.l3.bias = self.actorCritic.actorNetwork.l3.bias
     }
 
     func update(memory: PPOMemory) {
@@ -100,13 +100,13 @@ class PPOAgent {
         var criticLosses: [Float] = []
         for _ in 0..<epochs {
             // Optimize policy network (actor)
-            let (actorLoss, actorGradients) = valueWithGradient(at: self.actorCritic.actorNet) { actorNet -> Tensor<Float> in
+            let (actorLoss, actorGradients) = valueWithGradient(at: self.actorCritic.actorNetwork) { actorNetwork -> Tensor<Float> in
                 let npIndices = np.stack([np.arange(oldActions.shape[0], dtype: np.int32), oldActions.makeNumpyArray()], axis: 1)
                 let tfIndices = Tensor<Int32>(numpy: npIndices)!
-                let actionProbs = actorNet(oldStates).dimensionGathering(atIndices: tfIndices)
+                let actionProbs = actorNetwork(oldStates).dimensionGathering(atIndices: tfIndices)
 
                 let dist = Categorical<Int32>(probabilities: actionProbs)
-                let stateValues = self.actorCritic.criticNet(oldStates).flattened()
+                let stateValues = self.actorCritic.criticNetwork(oldStates).flattened()
                 let ratios: Tensor<Float> = exp(dist.logProbabilities - oldLogProbs)
 
                 let advantages: Tensor<Float> = tfRewards - stateValues
@@ -119,17 +119,17 @@ class PPOAgent {
 
                 return loss.mean()
             }
-            self.actorOptimizer.update(&self.actorCritic.actorNet, along: actorGradients)
+            self.actorOptimizer.update(&self.actorCritic.actorNetwork, along: actorGradients)
             actorLosses.append(actorLoss.scalarized())
 
             // Optimize value network (critic)
-            let (criticLoss, criticGradients) = valueWithGradient(at: self.actorCritic.criticNet) { criticNet -> Tensor<Float> in
-                let stateValues = criticNet(oldStates).flattened()
+            let (criticLoss, criticGradients) = valueWithGradient(at: self.actorCritic.criticNetwork) { criticNetwork -> Tensor<Float> in
+                let stateValues = criticNetwork(oldStates).flattened()
                 let loss: Tensor<Float> = 0.5 * pow(stateValues - tfRewards, 2)
 
                 return loss.mean()
             }
-            self.criticOptimizer.update(&self.actorCritic.criticNet, along: criticGradients)
+            self.criticOptimizer.update(&self.actorCritic.criticNetwork, along: criticGradients)
             criticLosses.append(criticLoss.scalarized())
         }
         self.updateOldActorCritic()

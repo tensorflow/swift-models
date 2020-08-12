@@ -14,7 +14,11 @@
 
 import TensorFlow
 
-struct ActorNet: Layer {
+/// The actor network that returns a probability for each action.
+///
+/// Actor-Critic methods has an actor network and a critic network. The actor network is the policy
+/// of the agent: it is used to select actions.
+struct ActorNetwork: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
@@ -47,7 +51,12 @@ struct ActorNet: Layer {
     }
 }
 
-struct CriticNet: Layer {
+/// The critic network that returns the estimated value of each action, given a state.
+///
+/// Actor-Critic methods has an actor network and a critic network. The critic network is used to
+/// estimate the value of the state-action pair. With these value functions, the critic can evaluate
+/// the actions made by the actor.
+struct CriticNetwork: Layer {
     typealias Input = Tensor<Float>
     typealias Output = Tensor<Float>
 
@@ -79,17 +88,21 @@ struct CriticNet: Layer {
     }
 }
 
+/// The actor-critic that contains actor and critic networks for action selection and evaluation.
+///
+/// Weight are often shared between the actor network and the critic network, but in this example,
+/// they are separated networks.
 class ActorCritic {
-    var actorNet: ActorNet
-    var criticNet: CriticNet
+    var actorNetwork: ActorNetwork
+    var criticNetwork: CriticNetwork
 
     init(observationSize: Int, hiddenSize: Int, actionCount: Int) {
-        self.actorNet = ActorNet(
+        self.actorNetwork = ActorNetwork(
             observationSize: observationSize,
             hiddenSize: hiddenSize,
             actionCount: actionCount
         )
-        self.criticNet = CriticNet(
+        self.criticNetwork = CriticNetwork(
             observationSize: observationSize,
             hiddenSize: hiddenSize
         )
@@ -98,7 +111,7 @@ class ActorCritic {
     func act(state: Tensor<Float>, memory: PPOMemory) -> Int32 {
         // Input to the network needs to be 2D (BATCH_SIZE x STATE_SIZE)
         let state = Tensor<Float>([state])
-        let actionProbs = self.actorNet(state).flattened()
+        let actionProbs = self.actorNetwork(state).flattened()
         let dist = Categorical<Int32>(probabilities: actionProbs)
         let action = dist.sample().scalarized()
         let logProb = dist.logProbabilities.makeNumpyArray()[action]
