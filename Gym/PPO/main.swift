@@ -16,6 +16,7 @@ fileprivate extension Optional {
 
 let np = Python.import("numpy")
 let gym = Python.import("gym")
+let plt = Python.import("matplotlib.pyplot")
 
 
 let env = gym.make("CartPole-v0")
@@ -55,6 +56,9 @@ var ppo = PPO(
 var timestep: Int = 0
 var runningReward: Float = 0
 var averageLength: Float = 0
+var episodeReturn: Float = 0
+var episodeReturns: [Float] = []
+var bestEpisodeReturn: Float = 0
 for episodeIndex in 1..<maxEpisodes+1 {
     var state = env.reset()
     var t: Int = 1
@@ -73,7 +77,14 @@ for episodeIndex in 1..<maxEpisodes+1 {
         }
 
         runningReward += Float(reward)!
+        episodeReturn += Float(reward)!
         if Bool(done)! == true {
+            if bestEpisodeReturn < episodeReturn {
+                print("Return: \(episodeReturn)")
+                bestEpisodeReturn = episodeReturn
+            }
+            episodeReturns.append(episodeReturn)
+            episodeReturn = 0
             break
         }
 
@@ -95,3 +106,11 @@ for episodeIndex in 1..<maxEpisodes+1 {
         print(String(format: "Episode: %4d | Average Length %5.2f | Running Reward: %5.2f", episodeIndex, averageLength, runningReward))
     }
 }
+
+// Save learning curve
+plt.plot(episodeReturns)
+plt.title("Proximal Policy Optimization on CartPole-v0")
+plt.xlabel("Episode")
+plt.ylabel("Episode Return")
+plt.savefig("ppoEpisodeReturns.png")
+plt.clf()
