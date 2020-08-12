@@ -25,17 +25,18 @@ let actionCount: Int = Int(env.action_space.n)!
 
 // Hyperparameters
 // Network HP
-let hiddenSize: Int = 64
+let hiddenSize: Int = 128
 // Optimizer HP
-let lr: Float = 0.002
+let lr: Float = 0.0003
+// TODO(seungjaeryanlee): Not used
 let betas: [Float] = [0.9, 0.999]
 let gamma: Float = 0.99
-let K_epochs: Int = 4
-let eps_clip: Float = 0.2
+let K_epochs: Int = 10
+let eps_clip: Float = 0.1
 // Interaction
-let maxEpisodes: Int = 500
-let maxTimesteps: Int = 300
-let updateTimestep: Int = 2000
+let maxEpisodes: Int = 1000
+let maxTimesteps: Int = 200
+let updateTimestep: Int = 1000
 // Log
 let logInterval: Int = 20
 let solvedReward: Float = 199

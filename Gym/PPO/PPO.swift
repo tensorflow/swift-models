@@ -97,7 +97,8 @@ class PPO {
                 let surrogateObjective1: Tensor<Float> = ratios * advantages
                 let surrogateObjective2: Tensor<Float> = ratios.clipped(min:1 - self.eps_clip, max: 1 + self.eps_clip) * advantages
                 let mainObjective = -1 * Tensor(stacking: [surrogateObjective1, surrogateObjective2]).min(alongAxes: 0).flattened()
-                let entropyBonus: Tensor<Float> = -0.01 * Tensor<Float>(dist.entropy())
+                // TODO(seungjaeryanlee): Magic number move to main.swift
+                let entropyBonus: Tensor<Float> = -0.0001 * Tensor<Float>(dist.entropy())
                 let loss: Tensor<Float> = mainObjective + entropyBonus
 
                 return loss.mean()
