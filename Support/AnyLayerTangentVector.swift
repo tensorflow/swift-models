@@ -17,6 +17,11 @@ internal class AnyLayerTangentVectorBox<F: FloatingPoint & ElementaryFunctions> 
   where U.TangentVector == U, U.VectorSpaceScalar == F {
     fatalError("Must implement")
   }
+
+  // Creates a new box storing a copy of the underlying tangent vector, used to preserve value semantics.
+  func duplicate() -> AnyLayerTangentVectorBox {
+    fatalError("Must implement")
+  }
   
   // `Equatable` requirements (implied by `AdditiveArithmetic`).
   func _isEqual(to other: AnyLayerTangentVectorBox) -> Bool {
@@ -49,7 +54,7 @@ internal class AnyLayerTangentVectorBox<F: FloatingPoint & ElementaryFunctions> 
   }
 
   // `Differentiable` requirements.
-  func _move(along direction: AnyLayerTangentVectorBox) {
+  func _move(along direction: AnyLayerTangentVector<F>) {
     fatalError("Must implement")
   }
 
@@ -172,6 +177,10 @@ where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & ElementaryFunct
   override func unboxed<U: TangentVectorConformances>(as type: U.Type) -> U?
   where U.TangentVector == U, U.VectorSpaceScalar == T.VectorSpaceScalar {
     return (self as? ConcreteAnyLayerTangentVectorBox<U>)?.base
+  }
+
+  override func duplicate() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox(base)
   }
 
   // `Equatable` requirements (implied by `AdditiveArithmetic`).
@@ -338,13 +347,13 @@ where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & ElementaryFunct
   }
 
   // `Differentiable` requirements.
-  override func _move(along direction: AnyLayerTangentVectorBox<T.VectorSpaceScalar>) {
-    if let scalarDirection = direction.getOpaqueScalar() {
+  override func _move(along direction: AnyLayerTangentVector<T.VectorSpaceScalar>) {
+    if let scalarDirection = direction.box.getOpaqueScalar() {
       base.move(along: T.TangentVector.zero.adding(scalarDirection))
     } else {
       guard let directionBase =
         direction.unboxed(as: T.TangentVector.self) else {
-        derivativeTypeMismatch(T.self, type(of: direction.typeErasedBase))
+        derivativeTypeMismatch(T.self, type(of: direction.base))
       }
       base.move(along: directionBase)
     }
@@ -610,7 +619,11 @@ public struct AnyLayerTangentVector<F: FloatingPoint & ElementaryFunctions>: Vec
 
 extension AnyLayerTangentVector: Differentiable {
   public mutating func move(along direction: TangentVector) {
-    box._move(along: direction.box)
+    if !isKnownUniquelyReferenced(&box) { // preserve value semantics
+      self.box = box.duplicate()
+    }
+
+    box._move(along: direction)
   }
 }
 

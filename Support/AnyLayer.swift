@@ -51,6 +51,11 @@ internal class AnyLayerBox<Input: Differentiable, Output: Differentiable, F: Flo
   func _copyToDevice(to device: Device) -> AnyLayerBox {
     fatalError("Must implement")
   }
+
+  // Creates a new box storing a copy of the underlying layer, used to preserve value semantics.
+  func duplicate() -> AnyLayerBox<Input, Output, F> {
+    fatalError("Must implement")
+  }
 }
 
 /// A concrete implementation of the type-erased layer wrapper that forwards to an underlying layer.
@@ -123,6 +128,10 @@ where T.TangentVector.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
   override func _copyToDevice(to device: Device) -> AnyLayerBox<T.Input, T.Output, T.TangentVector.VectorSpaceScalar> {
     return ConcreteLayerBox(T(copying: base, to: device))
   }
+
+  override func duplicate() -> AnyLayerBox<T.Input, T.Output, T.TangentVector.VectorSpaceScalar> {
+    return ConcreteLayerBox(base)
+  }
 }
 
 /// A type-erased layer.
@@ -184,6 +193,10 @@ extension AnyLayer: Differentiable {
   public typealias TangentVector = AnyLayerTangentVector<F>
 
   public mutating func move(along direction: TangentVector) {
+    if !isKnownUniquelyReferenced(&box) { // preserve value semantics
+      self.box = box.duplicate()
+    }
+    
     box._move(along: direction)
   }
 }
