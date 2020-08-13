@@ -26,8 +26,7 @@ public extension Array where Element: Differentiable {
   }
 }
 
-/// A specification for a layer and all its dependencies.
-public class TracingLayer : Hashable {
+public class AnyTracingLayer: Hashable {
     /// The shape of the tensor emitted by this layer
     var outputShape: [Int] {
         fatalError("Must implement")
@@ -39,7 +38,7 @@ public class TracingLayer : Hashable {
     }
 
     /// Gets the list of immediate dependencies of the current layer, whose outputs are used in the current layer's computation
-    var dependencies: [TracingLayer] {
+    var dependencies: [AnyTracingLayer] {
         fatalError("Must implement")
     }
 
@@ -51,7 +50,7 @@ public class TracingLayer : Hashable {
         fatalError("Must implement")
     }
 
-    public static func ==(lhs: TracingLayer, rhs: TracingLayer) -> Bool {
+    public static func ==(lhs: AnyTracingLayer, rhs: AnyTracingLayer) -> Bool {
         return lhs === rhs
     }
 
@@ -60,17 +59,22 @@ public class TracingLayer : Hashable {
     }
 }
 
-extension TracingLayer {
+/// A specification for a layer and all its dependencies.
+public class TracingLayer<T> : AnyTracingLayer {
+    
+}
+
+extension AnyTracingLayer {
     /// Constructs an instance of the layer graph specified by `self`.
     public func build() -> ComposedLayer {
         // first, explore the graph to locate all layers and precompute values for topological sort
-        var allLayers: [TracingLayer] = []
-        var toVisit: [TracingLayer] = [self] // TODO(shadaj): should be a queue
-        var unresolvedDependenciesPerLayer: [TracingLayer:Int] = [:]
-        var inputLayer: TracingLayer? = nil
+        var allLayers: [AnyTracingLayer] = []
+        var toVisit: [AnyTracingLayer] = [self] // TODO(shadaj): should be a queue
+        var unresolvedDependenciesPerLayer: [AnyTracingLayer:Int] = [:]
+        var inputLayer: AnyTracingLayer? = nil
         
-        var dependents: [TracingLayer: [TracingLayer]] = [:]
-        var dependentsCount: [TracingLayer : Int] = [:]
+        var dependents: [AnyTracingLayer: [AnyTracingLayer]] = [:]
+        var dependentsCount: [AnyTracingLayer : Int] = [:]
 
         while toVisit.count > 0 {
             let next = toVisit.removeFirst()
@@ -99,10 +103,10 @@ extension TracingLayer {
         }
 
         // compute topological sort
-        var allDependenciesMet: [TracingLayer] = [inputLayer!]
-        var layerComputeOrder: [TracingLayer] = []
+        var allDependenciesMet: [AnyTracingLayer] = [inputLayer!]
+        var layerComputeOrder: [AnyTracingLayer] = []
         var layersBuilt: [DynamicLayerStore] = []
-        var layerToIndex: [TracingLayer : Int] = [:]
+        var layerToIndex: [AnyTracingLayer : Int] = [:]
 
         while allDependenciesMet.count > 0 {
             let next = allDependenciesMet.removeFirst()
@@ -122,7 +126,7 @@ extension TracingLayer {
 
         var lastIndex = 0
         var maxIndex = 0
-        var allocatedIndices: [TracingLayer : Int] = [:]
+        var allocatedIndices: [AnyTracingLayer : Int] = [:]
         var openSlots: [Int] = []
 
         for (layerIndex, layer) in layerComputeOrder.enumerated() {

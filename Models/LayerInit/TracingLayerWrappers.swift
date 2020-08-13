@@ -1,7 +1,7 @@
 import TensorFlow
 
 /// A specification of the shape of the input to a traced graph.
-public class InputTracingLayer: TracingLayer {
+public class InputTracingLayer: TracingLayer<()> {
     let _outputShape: [Int]
 
     public init(shape: [Int]) {
@@ -16,7 +16,7 @@ public class InputTracingLayer: TracingLayer {
         return DynamicLayerStore(Dense<Float>(inputSize: 1, outputSize: 1)) // TODO
     }
 
-    public override var dependencies: [TracingLayer] {
+    public override var dependencies: [AnyTracingLayer] {
         return []
     }
 
@@ -30,13 +30,13 @@ public class InputTracingLayer: TracingLayer {
 }
 
 /// A specification for a layer that passes a single dependency's result through a classic layer
-public class TracingLayerWrapper<L: Layer>: TracingLayer
+public class TracingLayerWrapper<L: Layer>: TracingLayer<L>
 where L.Input == Tensor<Float>, L.Output == Tensor<Float>, L.TangentVector.VectorSpaceScalar == Float {
     let layer: L
-    let dependency: TracingLayer
+    let dependency: AnyTracingLayer
     let _outputShape: [Int]
 
-    public init(dependency: TracingLayer, layer: L, outputShape: [Int]) {
+    public init(dependency: AnyTracingLayer, layer: L, outputShape: [Int]) {
         self.dependency = dependency
         self.layer = layer
         self._outputShape = outputShape
@@ -50,7 +50,7 @@ where L.Input == Tensor<Float>, L.Output == Tensor<Float>, L.TangentVector.Vecto
         return DynamicLayerStore(layer)
     }
 
-    public override var dependencies: [TracingLayer] {
+    public override var dependencies: [AnyTracingLayer] {
         return [dependency]
     }
 
@@ -64,15 +64,15 @@ where L.Input == Tensor<Float>, L.Output == Tensor<Float>, L.TangentVector.Vecto
 }
 
 /// A tracing layer which combines the results of two dependencies with a custom function
-public class MergeTracingLayer: TracingLayer {
+public class MergeTracingLayer: TracingLayer<()> {
     let mergeFn: @differentiable (Tensor<Float>, Tensor<Float>) -> Tensor<Float>
-    let dependency1: TracingLayer
-    let dependency2: TracingLayer
+    let dependency1: AnyTracingLayer
+    let dependency2: AnyTracingLayer
     
     let _outputShape: [Int]
 
     public init(
-        dependency1: TracingLayer, dependency2: TracingLayer,
+        dependency1: AnyTracingLayer, dependency2: AnyTracingLayer,
         mergeFn: @escaping @differentiable (Tensor<Float>, Tensor<Float>) -> Tensor<Float>,
         outputShape: [Int]
     ) {
@@ -90,7 +90,7 @@ public class MergeTracingLayer: TracingLayer {
         return DynamicLayerStore(Dense<Float>(inputSize: 1, outputSize: 1)) // TODO
     }
 
-    public override var dependencies: [TracingLayer] {
+    public override var dependencies: [AnyTracingLayer] {
         return [dependency1, dependency2]
     }
 

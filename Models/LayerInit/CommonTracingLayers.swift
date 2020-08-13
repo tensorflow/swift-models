@@ -1,14 +1,14 @@
 import TensorFlow
 
-public func input(shape: [Int]) -> TracingLayer {
+public func input(shape: [Int]) -> TracingLayer<()> {
     return InputTracingLayer(shape: shape)
 }
 
 public func dense(
-    _ prev: TracingLayer,
+    _ prev: AnyTracingLayer,
     outputSize: Int,
     activation: @escaping Dense<Float>.Activation = identity
-) -> TracingLayer {
+) -> TracingLayer<Dense<Float>> {
     return TracingLayerWrapper(
         dependency: prev,
         layer: Dense<Float>(inputSize: prev.outputShape[0], outputSize: outputSize, activation: activation),
@@ -16,7 +16,7 @@ public func dense(
     )
 }
 
-public func flatten(_ prev: TracingLayer) -> TracingLayer {
+public func flatten(_ prev: AnyTracingLayer) -> TracingLayer<Flatten<Float>> {
     return TracingLayerWrapper(
         dependency: prev,
         layer: Flatten<Float>(),
@@ -25,7 +25,7 @@ public func flatten(_ prev: TracingLayer) -> TracingLayer {
 }
 
 public func conv2D(
-    _ prev: TracingLayer,
+    _ prev: AnyTracingLayer,
     filterShape: (Int, Int),
     outputChannels: Int,
     strides: (Int, Int) = (1, 1),
@@ -35,7 +35,7 @@ public func conv2D(
     useBias: Bool = true,
     filterInitializer: @escaping ParameterInitializer<Float> = glorotUniform(),
     biasInitializer: @escaping ParameterInitializer<Float> = zeros()
-) -> TracingLayer {
+) -> TracingLayer<Conv2D<Float>> {
     let inputShape = prev.outputShape
 
     let outputShape: [Int]
@@ -66,11 +66,11 @@ public func conv2D(
 }
 
 public func avgPool2D(
-    _ prev: TracingLayer,
+    _ prev: AnyTracingLayer,
     poolSize: (Int, Int),
     strides: (Int, Int) = (1, 1),
     padding: Padding = .valid
-) -> TracingLayer {
+) -> TracingLayer<AvgPool2D<Float>> {
     let inputShape = prev.outputShape
 
     let outputShape: [Int]
@@ -100,11 +100,11 @@ public func avgPool2D(
 }
 
 public func maxPool2D(
-    _ prev: TracingLayer,
+    _ prev: AnyTracingLayer,
     poolSize: (Int, Int),
     strides: (Int, Int) = (1, 1),
     padding: Padding = .valid
-) -> TracingLayer {
+) -> TracingLayer<MaxPool2D<Float>> {
     let inputShape = prev.outputShape
 
     let outputShape: [Int]
@@ -133,7 +133,7 @@ public func maxPool2D(
     )
 }
 
-public func globalAvgPool2D(_ prev: TracingLayer) -> TracingLayer {
+public func globalAvgPool2D(_ prev: AnyTracingLayer) -> TracingLayer<GlobalAvgPool2D<Float>> {
     let inputShape = prev.outputShape
     return TracingLayerWrapper(
         dependency: prev,
@@ -143,11 +143,11 @@ public func globalAvgPool2D(_ prev: TracingLayer) -> TracingLayer {
 }
 
 public func batchNorm(
-    _ prev: TracingLayer,
+    _ prev: AnyTracingLayer,
     axis: Int = -1,
     momentum: Float = 0.99,
     epsilon: Float = 0.001
-) -> TracingLayer {
+) -> TracingLayer<BatchNorm<Float>> {
     let prevShape = prev.outputShape
     let featureCount = prevShape[(prevShape.count + axis) % prevShape.count]
     return TracingLayerWrapper(
@@ -158,11 +158,11 @@ public func batchNorm(
 }
 
 public func merge(
-    _ prev1: TracingLayer,
-    _ prev2: TracingLayer,
+    _ prev1: AnyTracingLayer,
+    _ prev2: AnyTracingLayer,
     mergeShapes: ([Int], [Int]) -> [Int],
     mergeValues: @escaping @differentiable (Tensor<Float>, Tensor<Float>) -> Tensor<Float>
-) -> TracingLayer {
+) -> TracingLayer<()> {
     return MergeTracingLayer(
         dependency1: prev1,
         dependency2: prev2,
@@ -171,15 +171,15 @@ public func merge(
     )
 }
 
-extension TracingLayer {
+extension AnyTracingLayer {
     public func dense(
         outputSize: Int,
         activation: @escaping Dense<Float>.Activation = identity
-    ) -> TracingLayer {
+    ) -> TracingLayer<Dense<Float>> {
         return LayerInit.dense(self, outputSize: outputSize, activation: activation)
     }
 
-    public func flatten() -> TracingLayer {
+    public func flatten() -> TracingLayer<Flatten<Float>> {
         return LayerInit.flatten(self)
     }
 
@@ -193,7 +193,7 @@ extension TracingLayer {
         useBias: Bool = true,
         filterInitializer: @escaping ParameterInitializer<Float> = glorotUniform(),
         biasInitializer: @escaping ParameterInitializer<Float> = zeros()
-    ) -> TracingLayer {
+    ) -> TracingLayer<Conv2D<Float>> {
         return LayerInit.conv2D(
             self,
             filterShape: filterShape,
@@ -212,7 +212,7 @@ extension TracingLayer {
         poolSize: (Int, Int),
         strides: (Int, Int) = (1, 1),
         padding: Padding = .valid
-    ) -> TracingLayer {
+    ) -> TracingLayer<AvgPool2D<Float>> {
         return LayerInit.avgPool2D(
             self,
             poolSize: poolSize,
@@ -225,7 +225,7 @@ extension TracingLayer {
         poolSize: (Int, Int),
         strides: (Int, Int) = (1, 1),
         padding: Padding = .valid
-    ) -> TracingLayer {
+    ) -> TracingLayer<MaxPool2D<Float>> {
         return LayerInit.maxPool2D(
             self,
             poolSize: poolSize,
@@ -234,7 +234,7 @@ extension TracingLayer {
         )
     }
 
-    public func globalAvgPool2D() -> TracingLayer {
+    public func globalAvgPool2D() -> TracingLayer<GlobalAvgPool2D<Float>> {
         return LayerInit.globalAvgPool2D(self)
     }
 
@@ -242,7 +242,7 @@ extension TracingLayer {
         axis: Int = -1,
         momentum: Float = 0.99,
         epsilon: Float = 0.001
-    ) -> TracingLayer {
+    ) -> TracingLayer<BatchNorm<Float>> {
         return LayerInit.batchNorm(
             self,
             axis: axis,
@@ -251,7 +251,7 @@ extension TracingLayer {
         )
     }
 
-    public func relu() -> TracingLayer {
+    public func relu() -> TracingLayer<Function<Tensor<Float>, Tensor<Float>>> {
         return TracingLayerWrapper(
             dependency: self,
             layer: Function(TensorFlow.relu),
@@ -259,7 +259,7 @@ extension TracingLayer {
         )
     }
 
-    public static func +(a: TracingLayer, b: TracingLayer) -> TracingLayer {
+    public static func +(a: AnyTracingLayer, b: AnyTracingLayer) -> TracingLayer<()> {
         return merge(
             a, b,
             mergeShapes: { (shape1, shape2) in

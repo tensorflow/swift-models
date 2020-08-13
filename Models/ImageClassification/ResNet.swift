@@ -25,8 +25,8 @@ import LayerInit
 // The structure of this implementation was inspired by the Flax ResNet example:
 // https://github.com/google/flax/blob/master/examples/imagenet/models.py
 
-extension TracingLayer {
-    public func convBN(filterShape: (Int, Int), outputChannels: Int, strides: (Int, Int) = (1, 1), padding: Padding = .valid) -> TracingLayer {
+extension AnyTracingLayer {
+    public func convBN(filterShape: (Int, Int), outputChannels: Int, strides: (Int, Int) = (1, 1), padding: Padding = .valid) -> TracingLayer<BatchNorm<Float>> {
         return self
             .conv2D(filterShape: filterShape, outputChannels: outputChannels, strides: strides, padding: padding, useBias: false)
             .batchNorm(momentum: 0.9, epsilon: 1e-5)
@@ -34,7 +34,7 @@ extension TracingLayer {
 }
 
 struct ResidualBlock {
-    let input: TracingLayer
+    let input: AnyTracingLayer
     let inputFilters: Int
     let filters: Int
     let strides: (Int, Int)
@@ -58,7 +58,7 @@ struct ResidualBlock {
                 .convBN(filterShape: (3, 3), outputChannels: filters, padding: .same).relu()
             
 
-    lazy var convsApplied: TracingLayer =
+    lazy var convsApplied =
         isBasic ?
             input
                 .convBN(filterShape: (3, 3), outputChannels: filters, strides: strides, padding: .same).relu()
@@ -69,13 +69,13 @@ struct ResidualBlock {
 }
 
 struct ResNetStruct {
-    let input: TracingLayer
+    let input: AnyTracingLayer
     let classCount: Int
     let depth: ResNet.Depth
     let downsamplingInFirstStage: Bool
     let useLaterStride: Bool
     
-    init(input: TracingLayer, classCount: Int, depth: ResNet.Depth, downsamplingInFirstStage: Bool = true, useLaterStride: Bool = true) {
+    init(input: AnyTracingLayer, classCount: Int, depth: ResNet.Depth, downsamplingInFirstStage: Bool = true, useLaterStride: Bool = true) {
         self.input = input
         self.classCount = classCount
         self.depth = depth
@@ -86,7 +86,7 @@ struct ResNetStruct {
     lazy var inputFilters: Int =
         downsamplingInFirstStage ? 64 : 16 
 
-    lazy var initialTransformed: TracingLayer =
+    lazy var initialTransformed =
         downsamplingInFirstStage ?
             input
                 .convBN(filterShape: (7, 7), outputChannels: inputFilters, strides: (2, 2), padding: .same)
@@ -98,7 +98,7 @@ struct ResNetStruct {
 
     var blocks: [ResidualBlock] = []
 
-    lazy var throughBlocks: TracingLayer = {
+    lazy var throughBlocks: AnyTracingLayer = {
         var soFar = initialTransformed
         
         var lastInputFilterCount = inputFilters
