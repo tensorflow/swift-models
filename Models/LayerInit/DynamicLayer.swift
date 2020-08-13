@@ -42,15 +42,22 @@ public struct ComposedLayer: Layer {
   typealias CallFunction = @differentiable ([DynamicLayerStore], Tensor<Float>) -> Tensor<Float>
 
   var layers: [DynamicLayerStore] = []
+  @noDerivative var nodeToLayer: [AnyTracingLayer : Int]
+
   @noDerivative let callFunction: CallFunction
 
-  init(layers: [DynamicLayerStore], callFunction: @escaping CallFunction) {
+  init(layers: [DynamicLayerStore], nodeToLayer: [AnyTracingLayer : Int], callFunction: @escaping CallFunction) {
     self.layers = layers
+    self.nodeToLayer = nodeToLayer
     self.callFunction = callFunction
   }
 
   @differentiable
   public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
     return callFunction(layers, input)
+  }
+
+  public subscript<T>(_ key: TracingLayer<T>) -> T {
+    return layers[nodeToLayer[key]!].underlying.base as! T
   }
 }

@@ -31,10 +31,14 @@ var optimizer = SGD(for: model, learningRate: 0.001)
 
 let trainingProgress = TrainingProgress()
 var trainingLoop = TrainingLoop(
-  training: dataset.training,
+  training: dataset.training.map({ $0.prefix(32) }),
   validation: dataset.validation,
   optimizer: optimizer,
   lossFunction: softmaxCrossEntropy,
   callbacks: [trainingProgress.update])
 
-try! trainingLoop.fit(&model, epochs: 10, on: device)
+print(model.underlying[model.underlyingStruct.output])
+
+try! trainingLoop.fit(&model, epochs: 1, on: device)
+
+print(model.underlying[model.underlyingStruct.output])

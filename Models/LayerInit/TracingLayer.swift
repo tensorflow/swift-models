@@ -173,6 +173,7 @@ extension AnyTracingLayer {
 
         return ComposedLayer(
             layers: layersBuilt,
+            nodeToLayer: layerToIndex,
             callFunction: { (layers: [DynamicLayerStore], input: Tensor<Float>) in
                 var outputs: [Tensor<Float>] = [input]
                 accumulatedFunction(&outputs, layers)

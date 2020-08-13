@@ -33,7 +33,7 @@ extension AnyTracingLayer {
     }
 }
 
-struct ResidualBlock {
+public struct ResidualBlock {
     let input: AnyTracingLayer
     let inputFilters: Int
     let filters: Int
@@ -44,11 +44,11 @@ struct ResidualBlock {
     lazy var outFilters = filters * (isBasic ? 1 : 4)
 
     lazy var needsProjection = (inputFilters != outFilters) || (strides.0 != 1)
-    lazy var residual = needsProjection ?
+    public lazy var residual = needsProjection ?
         input.convBN(filterShape: (1, 1), outputChannels: outFilters, strides: strides) :
         input
 
-    lazy var earlyConvsApplied =
+    public lazy var earlyConvsApplied =
         useLaterStride ?
             input // Configure for ResNet V1.5 (the more common implementation).
                 .convBN(filterShape: (1, 1), outputChannels: filters).relu()
@@ -58,17 +58,17 @@ struct ResidualBlock {
                 .convBN(filterShape: (3, 3), outputChannels: filters, padding: .same).relu()
             
 
-    lazy var convsApplied =
+    public lazy var convsApplied =
         isBasic ?
             input
                 .convBN(filterShape: (3, 3), outputChannels: filters, strides: strides, padding: .same).relu()
                 .convBN(filterShape: (3, 3), outputChannels: outFilters, padding: .same) :
             earlyConvsApplied.convBN(filterShape: (1, 1), outputChannels: outFilters)
 
-    lazy var output = (residual + convsApplied).relu()
+    public lazy var output = (residual + convsApplied).relu()
 }
 
-struct ResNetStruct {
+public struct ResNetStruct {
     let input: AnyTracingLayer
     let classCount: Int
     let depth: ResNet.Depth
@@ -83,10 +83,10 @@ struct ResNetStruct {
         self.useLaterStride = useLaterStride
     }
     
-    lazy var inputFilters: Int =
+    public lazy var inputFilters: Int =
         downsamplingInFirstStage ? 64 : 16 
 
-    lazy var initialTransformed =
+    public lazy var initialTransformed =
         downsamplingInFirstStage ?
             input
                 .convBN(filterShape: (7, 7), outputChannels: inputFilters, strides: (2, 2), padding: .same)
@@ -96,9 +96,9 @@ struct ResNetStruct {
                 .convBN(filterShape: (3, 3), outputChannels: inputFilters, padding: .same)
                 .relu()
 
-    var blocks: [ResidualBlock] = []
+    public var blocks: [ResidualBlock] = []
 
-    lazy var throughBlocks: AnyTracingLayer = {
+    public lazy var throughBlocks: AnyTracingLayer = {
         var soFar = initialTransformed
         
         var lastInputFilterCount = inputFilters
@@ -123,15 +123,16 @@ struct ResNetStruct {
         return soFar
     }()
 
-    lazy var flattened = throughBlocks
+    public lazy var flattened = throughBlocks
         .globalAvgPool2D()
         .flatten()
 
-    lazy var output = flattened.dense(outputSize: classCount)
+    public lazy var output = flattened.dense(outputSize: classCount)
 }
 
 /// An implementation of the ResNet v1 and v1.5 architectures, at various depths.
 public struct ResNet: Layer {
+    @noDerivative public var underlyingStruct: ResNetStruct
     public var underlying: ComposedLayer
 
     /// Initializes a new ResNet v1 or v1.5 network model.
@@ -151,13 +152,13 @@ public struct ResNet: Layer {
         classCount: Int, depth: Depth, downsamplingInFirstStage: Bool = true,
         useLaterStride: Bool = true
     ) {
-        var traced = ResNetStruct(
+        underlyingStruct = ResNetStruct(
             input: InputTracingLayer(shape: [1, 1, 3]),
             classCount: classCount, depth: depth, downsamplingInFirstStage: downsamplingInFirstStage,
             useLaterStride: useLaterStride
         )
 
-        underlying = traced.output.build()
+        underlying = underlyingStruct.output.build()
     }
 
     @differentiable
