@@ -37,6 +37,7 @@ var trainingLoop = TrainingLoop(
   lossFunction: softmaxCrossEntropy,
   callbacks: [trainingProgress.update])
 
+// print the weights of the final dense layer
 print(model.underlying[model.underlyingStruct.output])
 
 try! trainingLoop.fit(&model, epochs: 1, on: device)
