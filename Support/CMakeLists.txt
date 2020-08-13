@@ -9,6 +9,7 @@ add_library(ModelSupport
   Image.swift
   Stderr.swift
   AnyLayer.swift
+  AnyLayerTangentVector.swift
   Text/BytePairEncoder.swift
   Text/SentencePiece/SentencePieceModel.pb.swift
   Text/TextBatch.swift

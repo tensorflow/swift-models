@@ -1,8 +1,8 @@
 import TensorFlow
 import _Differentiation
 
-/// A helper that raises an error when an erased derivative type does not match up with the true
-/// underlying type.
+/// A helper that stops the program with an error when an erased derivative type does not
+/// match up with the true underlying type.
 @inline(never)
 @usableFromInline
 internal func derivativeTypeMismatch(
@@ -16,6 +16,11 @@ internal func derivativeTypeMismatch(
 
 /// The base type for a type-erased box that encapsulates a layer.
 /// Offers forwarders to implement conformance to `Layer` and `CopyableToDevice`.
+///
+/// Type Parameters:
+///   - Input: the input type of the underlying layar
+///   - Output: the output type of the underlying layer
+//    - F: the scalar type of the underlying tangent vector
 internal class AnyLayerBox<Input: Differentiable, Output: Differentiable, F: FloatingPoint & ElementaryFunctions> {
   /// The underlying base layer, type-erased to `Any`.
   var typeErasedBase: Any {
