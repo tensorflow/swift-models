@@ -16,6 +16,7 @@ import Datasets
 import ImageClassificationModels
 import TensorFlow
 import TrainingLoop
+import LayerInit
 
 // Until https://github.com/tensorflow/swift-apis/issues/993 is fixed, default to the eager-mode
 // device on macOS instead of X10.
@@ -43,3 +44,29 @@ print(model.underlying[model.underlyingStruct.output])
 try! trainingLoop.fit(&model, epochs: 1, on: device)
 
 print(model.underlying[model.underlyingStruct.output])
+
+// scratchpad for weight sharing (TODO: clean up build)
+if (false) {
+  let inputNode = InputTracingLayer(shape: [1])
+  let firstDense = inputNode.dense(outputSize: 1, useBias: false)
+  let secondDense = firstDense.dense(outputSize: 1, useBias: false).sharingWeights(with: firstDense)
+  var builtModel = secondDense.build()
+
+  let sharingOptimizer = SGD(for: builtModel, learningRate: 0.01)
+
+  let x: Tensor<Float> = [[0], [1], [2], [3]]
+  let y: Tensor<Float> = [0, 9, 18, 27]
+
+  for _ in 0...10 {
+      let 𝛁model = gradient(at: builtModel) { classifier -> Tensor<Float> in
+          let ŷ = classifier(x).withDerivative { print("∂L/∂ŷ =", $0) }
+          let loss = (ŷ - y).squared().mean()
+          print("Loss: \(loss)")
+          return loss
+      }
+      sharingOptimizer.update(&builtModel, along: 𝛁model)
+
+      print(builtModel[firstDense])
+      print(builtModel[secondDense])
+  }
+}

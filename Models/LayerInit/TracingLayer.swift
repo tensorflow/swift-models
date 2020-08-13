@@ -32,6 +32,11 @@ public class AnyTracingLayer: Hashable {
         fatalError("Must implement")
     }
 
+    // Optionally, the node that this node shares weights with.
+    var sharingWeightsWith: AnyTracingLayer? {
+        return nil
+    }
+
     /// Constructs the underlying classic layer wrapped into a type-erased container
     func makeClassicLayer() -> DynamicLayerStore {
         fatalError("Must implement")
@@ -60,7 +65,7 @@ public class AnyTracingLayer: Hashable {
 }
 
 /// A specification for a layer and all its dependencies.
-public class TracingLayer<T> : AnyTracingLayer {
+public class TracingLayer<L> : AnyTracingLayer {
     
 }
 
@@ -111,8 +116,14 @@ extension AnyTracingLayer {
         while allDependenciesMet.count > 0 {
             let next = allDependenciesMet.removeFirst()
             layerComputeOrder.append(next)
-            layersBuilt.append(next.makeClassicLayer())
-            layerToIndex[next] = layersBuilt.count - 1
+
+            if let sharingLayer = next.sharingWeightsWith {
+                layerToIndex[next] = layerToIndex[sharingLayer]
+            } else {
+                layersBuilt.append(next.makeClassicLayer())
+                layerToIndex[next] = layersBuilt.count - 1
+            }
+
             for dependent in dependents[next, default: []] {
                 unresolvedDependenciesPerLayer[dependent]! -= 1
                 if unresolvedDependenciesPerLayer[dependent]! == 0 {
@@ -129,7 +140,8 @@ extension AnyTracingLayer {
         var allocatedIndices: [AnyTracingLayer : Int] = [:]
         var openSlots: [Int] = []
 
-        for (layerIndex, layer) in layerComputeOrder.enumerated() {
+        for layer in layerComputeOrder {
+            let layerIndex = layerToIndex[layer]!
             var dependencyIndices: [Int] = []
             for dependency in layer.dependencies {
                 let previouslyAllocated = allocatedIndices[dependency]!

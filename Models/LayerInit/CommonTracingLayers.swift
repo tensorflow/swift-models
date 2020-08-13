@@ -7,11 +7,12 @@ public func input(shape: [Int]) -> TracingLayer<()> {
 public func dense(
     _ prev: AnyTracingLayer,
     outputSize: Int,
+    useBias: Bool = true,
     activation: @escaping Dense<Float>.Activation = identity
 ) -> TracingLayer<Dense<Float>> {
     return TracingLayerWrapper(
         dependency: prev,
-        layer: Dense<Float>(inputSize: prev.outputShape[0], outputSize: outputSize, activation: activation),
+        layer: Dense<Float>(inputSize: prev.outputShape[0], outputSize: outputSize, activation: activation, useBias: useBias),
         outputShape: [outputSize]
     )
 }
@@ -174,9 +175,10 @@ public func merge(
 extension AnyTracingLayer {
     public func dense(
         outputSize: Int,
+        useBias: Bool = true,
         activation: @escaping Dense<Float>.Activation = identity
     ) -> TracingLayer<Dense<Float>> {
-        return LayerInit.dense(self, outputSize: outputSize, activation: activation)
+        return LayerInit.dense(self, outputSize: outputSize, useBias: useBias, activation: activation)
     }
 
     public func flatten() -> TracingLayer<Flatten<Float>> {
