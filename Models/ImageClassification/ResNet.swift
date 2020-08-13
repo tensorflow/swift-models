@@ -33,76 +33,101 @@ extension TracingLayer {
     }
 }
 
-public func residualBlock(input: TracingLayer, inputFilters: Int, filters: Int, strides: (Int, Int), useLaterStride: Bool, isBasic: Bool) -> TracingLayer {
-    let outFilters = filters * (isBasic ? 1 : 4)
+struct ResidualBlock {
+    let input: TracingLayer
+    let inputFilters: Int
+    let filters: Int
+    let strides: (Int, Int)
+    let useLaterStride: Bool
+    let isBasic: Bool
+    
+    lazy var outFilters = filters * (isBasic ? 1 : 4)
 
-    let needsProjection = (inputFilters != outFilters) || (strides.0 != 1)
-    let residual = needsProjection ?
+    lazy var needsProjection = (inputFilters != outFilters) || (strides.0 != 1)
+    lazy var residual = needsProjection ?
         input.convBN(filterShape: (1, 1), outputChannels: outFilters, strides: strides) :
         input
 
-    let convsApplied: TracingLayer
-    if isBasic {
-        convsApplied = input
-            .convBN(filterShape: (3, 3), outputChannels: filters, strides: strides, padding: .same).relu()
-            .convBN(filterShape: (3, 3), outputChannels: outFilters, padding: .same)
-    } else {
-        let earlyConvsApplied: TracingLayer
-        if useLaterStride {
-            // Configure for ResNet V1.5 (the more common implementation).
-            earlyConvsApplied = input
+    lazy var earlyConvsApplied =
+        useLaterStride ?
+            input // Configure for ResNet V1.5 (the more common implementation).
                 .convBN(filterShape: (1, 1), outputChannels: filters).relu()
-                .convBN(filterShape: (3, 3), outputChannels: filters, strides: strides, padding: .same).relu()
-        } else {
-            // Configure for ResNet V1 (the paper implementation).
-            earlyConvsApplied = input
+                .convBN(filterShape: (3, 3), outputChannels: filters, strides: strides, padding: .same).relu() :
+            input // Configure for ResNet V1 (the paper implementation).
                 .convBN(filterShape: (1, 1), outputChannels: filters, strides: strides).relu()
                 .convBN(filterShape: (3, 3), outputChannels: filters, padding: .same).relu()
-        }
-        
-        convsApplied = earlyConvsApplied.convBN(filterShape: (1, 1), outputChannels: outFilters)
-    }
+            
 
-    return (residual + convsApplied).relu()
+    lazy var convsApplied: TracingLayer =
+        isBasic ?
+            input
+                .convBN(filterShape: (3, 3), outputChannels: filters, strides: strides, padding: .same).relu()
+                .convBN(filterShape: (3, 3), outputChannels: outFilters, padding: .same) :
+            earlyConvsApplied.convBN(filterShape: (1, 1), outputChannels: outFilters)
+
+    lazy var output = (residual + convsApplied).relu()
 }
 
-public func resNet(_ input: TracingLayer, classCount: Int, depth: ResNet.Depth, downsamplingInFirstStage: Bool = true, useLaterStride: Bool = true) -> TracingLayer {
-    let inputFilters: Int
-    let initialTransformed: TracingLayer
+struct ResNetStruct {
+    let input: TracingLayer
+    let classCount: Int
+    let depth: ResNet.Depth
+    let downsamplingInFirstStage: Bool
+    let useLaterStride: Bool
+    
+    init(input: TracingLayer, classCount: Int, depth: ResNet.Depth, downsamplingInFirstStage: Bool = true, useLaterStride: Bool = true) {
+        self.input = input
+        self.classCount = classCount
+        self.depth = depth
+        self.downsamplingInFirstStage = downsamplingInFirstStage
+        self.useLaterStride = useLaterStride
+    }
+    
+    lazy var inputFilters: Int =
+        downsamplingInFirstStage ? 64 : 16 
+
+    lazy var initialTransformed: TracingLayer =
+        downsamplingInFirstStage ?
+            input
+                .convBN(filterShape: (7, 7), outputChannels: inputFilters, strides: (2, 2), padding: .same)
+                .relu()
+                .maxPool2D(poolSize: (3, 3), strides: (2, 2), padding: .same) :
+            input
+                .convBN(filterShape: (3, 3), outputChannels: inputFilters, padding: .same)
+                .relu()
+
+    var blocks: [ResidualBlock] = []
+
+    lazy var throughBlocks: TracingLayer = {
+        var soFar = initialTransformed
         
-    if downsamplingInFirstStage {
-        inputFilters = 64
-        initialTransformed = input
-            .convBN(filterShape: (7, 7), outputChannels: inputFilters, strides: (2, 2), padding: .same)
-            .relu()
-            .maxPool2D(poolSize: (3, 3), strides: (2, 2), padding: .same)
-    } else {
-        inputFilters = 16
-        initialTransformed = input
-            .convBN(filterShape: (3, 3), outputChannels: inputFilters, padding: .same)
-            .relu()
-    }
+        var lastInputFilterCount = inputFilters
+        for (blockSizeIndex, blockSize) in depth.layerBlockSizes.enumerated() {
+            for blockIndex in 0..<blockSize {
+                let strides = ((blockSizeIndex > 0) && (blockIndex == 0)) ? (2, 2) : (1, 1)
+                let filters = inputFilters * Int(pow(2.0, Double(blockSizeIndex)))
+                
+                var block = ResidualBlock(
+                    input: soFar,
+                    inputFilters: lastInputFilterCount, filters: filters, strides: strides,
+                    useLaterStride: useLaterStride, isBasic: depth.usesBasicBlocks
+                )
+                
+                blocks.append(block)
+                soFar = block.output
 
-    var throughBlocks = initialTransformed
-    var lastInputFilterCount = inputFilters
-    for (blockSizeIndex, blockSize) in depth.layerBlockSizes.enumerated() {
-        for blockIndex in 0..<blockSize {
-            let strides = ((blockSizeIndex > 0) && (blockIndex == 0)) ? (2, 2) : (1, 1)
-            let filters = inputFilters * Int(pow(2.0, Double(blockSizeIndex)))
-            throughBlocks = residualBlock(
-                input: throughBlocks,
-                inputFilters: lastInputFilterCount, filters: filters, strides: strides,
-                useLaterStride: useLaterStride, isBasic: depth.usesBasicBlocks
-            )
-
-            lastInputFilterCount = filters * (depth.usesBasicBlocks ? 1 : 4)
+                lastInputFilterCount = filters * (depth.usesBasicBlocks ? 1 : 4)
+            }
         }
-    }
 
-    return throughBlocks
+        return soFar
+    }()
+
+    lazy var flattened = throughBlocks
         .globalAvgPool2D()
         .flatten()
-        .dense(outputSize: classCount)
+
+    lazy var output = flattened.dense(outputSize: classCount)
 }
 
 /// An implementation of the ResNet v1 and v1.5 architectures, at various depths.
@@ -126,11 +151,13 @@ public struct ResNet: Layer {
         classCount: Int, depth: Depth, downsamplingInFirstStage: Bool = true,
         useLaterStride: Bool = true
     ) {
-        underlying = resNet(
-            InputTracingLayer(shape: [1, 1, 3]),
+        var traced = ResNetStruct(
+            input: InputTracingLayer(shape: [1, 1, 3]),
             classCount: classCount, depth: depth, downsamplingInFirstStage: downsamplingInFirstStage,
             useLaterStride: useLaterStride
-        ).build()
+        )
+
+        underlying = traced.output.build()
     }
 
     @differentiable
