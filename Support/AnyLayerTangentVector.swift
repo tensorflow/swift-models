@@ -1,161 +1,168 @@
 import TensorFlow
 import _Differentiation
 
+fileprivate func mustOverride(function: StaticString = #function, file: StaticString = #file, line: UInt = #line) -> Never {
+  fatalError("Function AnyLayerTangentVectorBox.\(function) (defined at: \(file):\(line)) must be overridden.")
+}
+
+/// The set of protocol conformances required for the `TangentVector` of a `Layer`.
 public typealias TangentVectorConformances = Differentiable & VectorProtocol & ElementaryFunctions & PointwiseMultiplicative
 
 /// The base type for a type-erased box that encapsulates a layer's tangent vector.
 /// Offers forwarders to implement conformance to `Equatable`, `AdditiveArithmetic`, `Differentiable`,
 /// `EuclideanDifferentiable`, `PointwiseMultiplicative`, and `ElementaryFunctions`.
-internal class AnyLayerTangentVectorBox<F: FloatingPoint & ElementaryFunctions> {
-  /// The underlying base value, type-erased to `Any`.
+/// Type Parameters:
+///   - Scalar: the scalar type of the underlying tangent vector
+internal class AnyLayerTangentVectorBox<Scalar: FloatingPoint & ElementaryFunctions> {
+  /// The underlying value, type-erased to `Any`.
   var typeErasedBase: Any {
-    fatalError("Must implement")
+    mustOverride()
   }
 
   /// Returns the underlying value unboxed to the given type, if possible.
   func unboxed<U: TangentVectorConformances>(as type: U.Type) -> U?
-  where U.TangentVector == U, U.VectorSpaceScalar == F {
-    fatalError("Must implement")
+  where U.TangentVector == U, U.VectorSpaceScalar == Scalar {
+    mustOverride()
   }
 
   // Creates a new box storing a copy of the underlying tangent vector, used to preserve value semantics.
   func duplicate() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   
   // `Equatable` requirements (implied by `AdditiveArithmetic`).
   func _isEqual(to other: AnyLayerTangentVectorBox) -> Bool {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _isNotEqual(to other: AnyLayerTangentVectorBox) -> Bool {
-    fatalError("Must implement")
+    mustOverride()
   }
 
   func _add(_ x: AnyLayerTangentVectorBox) -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _subtract(_ x: AnyLayerTangentVectorBox) -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
 
   // `AdditiveArithmetic` requirements.
   class var _zero: AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   
-  func _adding(_ x: F) -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+  func _adding(_ x: Scalar) -> AnyLayerTangentVectorBox {
+    mustOverride()
   }
-  func _subtracting(_ x: F) -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+  func _subtracting(_ x: Scalar) -> AnyLayerTangentVectorBox {
+    mustOverride()
   }
-  func _scaled(by: F) -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+  func _scaled(by: Scalar) -> AnyLayerTangentVectorBox {
+    mustOverride()
   }
 
   // `Differentiable` requirements.
-  func _move(along direction: AnyLayerTangentVector<F>) {
-    fatalError("Must implement")
+  func _move(along direction: AnyLayerTangentVector<Scalar>) {
+    mustOverride()
   }
 
   // `EuclideanDifferentiable` requirements.
   var _differentiableVectorView: AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
 
   // `PointwiseMultiplicative` requirements.
   class var _one: AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   
   func _reciprocal() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
 
   func _pointwiseMultiply(by: AnyLayerTangentVectorBox) -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
 
   // TODO(shadaj): split out into separate type?
   // `ElementaryFunctions` requirements.
   func _sqrt() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _cos() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _sin() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _tan() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _acos() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _asin() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _atan() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _cosh() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _sinh() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _tanh() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _acosh() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _asinh() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _atanh() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _exp() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _exp2() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _exp10() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _expm1() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _log() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _log2() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _log10() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _log1p() -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _pow(_ y: AnyLayerTangentVectorBox) -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _pow(_ n: Int) -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
   func _root(_ n: Int) -> AnyLayerTangentVectorBox {
-    fatalError("Must implement")
+    mustOverride()
   }
 }
 
 extension AnyLayerTangentVectorBox {
   /// Optionally returns the underlying scalar if the wrapped value has type `AnyLayerTangentVector.OpaqueScalar`.
-  func getOpaqueScalar() -> F? {
-    return unboxed(as: AnyLayerTangentVector<F>.OpaqueScalar.self)?.value
+  func getOpaqueScalar() -> Scalar? {
+    return unboxed(as: AnyLayerTangentVector<Scalar>.OpaqueScalar.self)?.value
   }
 }
 
@@ -223,7 +230,7 @@ where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & ElementaryFunct
     }
 
     guard let xBase = x.unboxed(as: T.self) else {
-      derivativeTypeMismatch(T.self, type(of: x.typeErasedBase))
+      derivativeTypeMismatch(got: type(of: x.typeErasedBase), expected: T.self)
     }
     return ConcreteAnyLayerTangentVectorBox(base + xBase)
   }
@@ -239,7 +246,7 @@ where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & ElementaryFunct
     }
 
     guard let xBase = x.unboxed(as: T.self) else {
-      derivativeTypeMismatch(T.self, type(of: x.typeErasedBase))
+      derivativeTypeMismatch(got: type(of: x.typeErasedBase), expected: T.self)
     }
     return ConcreteAnyLayerTangentVectorBox(base - xBase)
   }
@@ -353,7 +360,7 @@ where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & ElementaryFunct
     } else {
       guard let directionBase =
         direction.unboxed(as: T.TangentVector.self) else {
-        derivativeTypeMismatch(T.self, type(of: direction.base))
+        derivativeTypeMismatch(got: type(of: direction.base), expected: T.self)
       }
       base.move(along: directionBase)
     }

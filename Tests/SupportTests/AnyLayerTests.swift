@@ -78,8 +78,8 @@ struct ElementaryFunctionsTests<WrapperTestType: XCTestCase, Reference: Elementa
 
 final class AnyLayerTests: XCTestCase {
     func testGradients() {
-        let original = Dense<Float>(inputSize: 1, outputSize: 1)
-        let erased = AnyLayer(original)
+        var original = Dense<Float>(inputSize: 1, outputSize: 1)
+        var erased = AnyLayer(original)
 
         let originalGradient = gradient(at: original, in: { layer in
             return (layer(Tensor([[1.0]])) - Tensor([2.0])).squared().mean()
@@ -90,6 +90,19 @@ final class AnyLayerTests: XCTestCase {
         })
 
         XCTAssertEqual(originalGradient, erasedGradient.base as! Dense<Float>.TangentVector)
+
+        original.move(along: originalGradient)
+        erased.move(along: erasedGradient)
+
+        let originalGradient2 = gradient(at: original, in: { layer in
+            return (layer(Tensor([[1.0]])) - Tensor([2.0])).squared().mean()
+        })
+
+        let erasedGradient2 = gradient(at: erased, in: { layer in
+            return (layer(Tensor([[1.0]])) - Tensor([2.0])).squared().mean()
+        })
+
+        XCTAssertEqual(originalGradient2, erasedGradient2.base as! Dense<Float>.TangentVector)
     }
 
     func testTangentOperations() {
