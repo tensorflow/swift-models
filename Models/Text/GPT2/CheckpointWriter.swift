@@ -25,7 +25,7 @@ extension TransformerLM: ExportableLayer {
 }
 
 extension Embedding: ExportableLayer {
-    var nameMappings: [String: String] { ["weight": "wte"] }
+    var nameMappings: [String: String] { ["embeddings": "wte"] }
 }
 
 extension LayerNorm: ExportableLayer {
@@ -44,8 +44,12 @@ extension FeedForward: ExportableLayer {
     var nameMappings: [String: String] { ["dense1": "c_fc", "dense2": "c_proj"] }
 }
 
-extension MultiHeadAttention: ExportableLayer {
-    var nameMappings: [String: String] { ["wqkv": "c_attn", "wo": "c_proj"] }
+extension MultiHeadAttentionGPT2: ExportableLayer {
+    var nameMappings: [String: String] { ["attention": "attn", "wqkv": "c_attn", "wo": "c_proj"] }
+}
+
+extension Attention: ExportableLayer {
+    var nameMappings: [String: String] { ["dropout": "drop", "scale": "sc"] }
 }
 
 extension EncoderLayer: ExportableLayer {
