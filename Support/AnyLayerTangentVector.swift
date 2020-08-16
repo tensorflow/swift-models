@@ -220,12 +220,13 @@ where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & ElementaryFunct
   }
 
   override func _add(_ x: AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    // C + x = x + C
     if let scalar = getOpaqueScalar() {
+      // use the associative property, self + x = x + self
       return x._adding(scalar)
     }
-    // self + C = self + C
+    
     if let scalar = x.getOpaqueScalar() {
+      // add scalar wrapped by `x` to every element of `self`
       return self._adding(scalar)
     }
 
@@ -236,12 +237,13 @@ where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & ElementaryFunct
   }
 
   override func _subtract(_ x: AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    // C - x = (1 * C) - x
     if let scalar = getOpaqueScalar() {
+      // expand by definition of opqaue scalars and perform the original operation
       return AnyLayerTangentVectorBox<T.VectorSpaceScalar>._one._scaled(by: scalar)._subtract(x)
     }
-    // self - C = self - C
+
     if let scalar = x.getOpaqueScalar() {
+      // subtract the scalar wrapped by `x` from every element of `self`
       return self._subtracting(scalar)
     }
 
