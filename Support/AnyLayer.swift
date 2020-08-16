@@ -38,16 +38,19 @@ internal class AnyLayerBox<Input: Differentiable, Output: Differentiable, Scalar
   }
   
   // `Differentiable` requirements.
+  /// Moves `self` along the given direction. In Riemannian geometry, this is equivalent to exponential map, which moves `self` on the geodesic surface along the given tangent vector.
   func _move(along direction: AnyLayerTangentVector<Scalar>) {
     mustOverride()
   }
 
   // `EuclideanDifferentiable` requirements.
+  /// The differentiable vector component of `self`.
   var _differentiableVectorView: AnyLayerTangentVector<Scalar> {
     mustOverride()
   }
 
   // `Layer` requirements.
+  /// Returns the output obtained from applying the layer to the given input.
   func _callAsFunction(_ input: Input) -> Output {
     mustOverride()
   }
@@ -58,11 +61,13 @@ internal class AnyLayerBox<Input: Differentiable, Output: Differentiable, Scalar
   }
 
   // `CopyableToDevice` requirements.
+  /// Creates a copy of `self` on the given Device.
+  /// All cross-device references are moved to the given Device.
   func _copyToDevice(to device: Device) -> AnyLayerBox {
     mustOverride()
   }
 
-  // Creates a new box storing a copy of the underlying layer, used to preserve value semantics.
+  /// Creates a new box storing a copy of the underlying layer, used to preserve value semantics.
   func duplicate() -> AnyLayerBox<Input, Output, Scalar> {
     mustOverride()
   }

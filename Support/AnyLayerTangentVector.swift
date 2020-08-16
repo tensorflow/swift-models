@@ -31,129 +31,197 @@ internal class AnyLayerTangentVectorBox<Scalar: FloatingPoint & ElementaryFuncti
   }
   
   // `Equatable` requirements (implied by `AdditiveArithmetic`).
+  /// Returns a Boolean value indicating whether two values are equal.
   func _isEqual(to other: AnyLayerTangentVectorBox) -> Bool {
     mustOverride()
   }
+
+  /// Returns a Boolean value indicating whether two values are not equal.
   func _isNotEqual(to other: AnyLayerTangentVectorBox) -> Bool {
     mustOverride()
   }
 
-  func _add(_ x: AnyLayerTangentVectorBox) -> AnyLayerTangentVectorBox {
-    mustOverride()
-  }
-  func _subtract(_ x: AnyLayerTangentVectorBox) -> AnyLayerTangentVectorBox {
-    mustOverride()
-  }
-
   // `AdditiveArithmetic` requirements.
+  /// The zero value.
   class var _zero: AnyLayerTangentVectorBox {
     mustOverride()
   }
+
+  /// Adds two values and produces their sum.
+  func _add(_ x: AnyLayerTangentVectorBox) -> AnyLayerTangentVectorBox {
+    mustOverride()
+  }
+
+  /// Subtracts one value from another and produces their difference.
+  func _subtract(_ x: AnyLayerTangentVectorBox) -> AnyLayerTangentVectorBox {
+    mustOverride()
+  }
   
+  // `VectorProtocol` requirements.
   func _adding(_ x: Scalar) -> AnyLayerTangentVectorBox {
     mustOverride()
   }
   func _subtracting(_ x: Scalar) -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+
+  /// Returns `self` multiplied by the given scalar.
   func _scaled(by: Scalar) -> AnyLayerTangentVectorBox {
     mustOverride()
   }
 
   // `Differentiable` requirements.
+  /// Moves `self` along the given direction. In Riemannian geometry, this is equivalent to exponential map, which moves `self` on the geodesic surface along the given tangent vector.
   func _move(along direction: AnyLayerTangentVector<Scalar>) {
     mustOverride()
   }
 
   // `EuclideanDifferentiable` requirements.
+  /// The differentiable vector component of `self`.
   var _differentiableVectorView: AnyLayerTangentVectorBox {
     mustOverride()
   }
 
   // `PointwiseMultiplicative` requirements.
+  /// The one value.
+  /// One is the identity element for multiplication. For any value, `x .* .one == x` and `.one .* x == x`.
   class var _one: AnyLayerTangentVectorBox {
     mustOverride()
   }
   
+  /// The multiplicative inverse of self.
+  /// For any value, `x .* x.reciprocal == .one` and `x.reciprocal .* x == .one`.
   func _reciprocal() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
 
+  /// Multiplies two values and produces their product.
   func _pointwiseMultiply(by: AnyLayerTangentVectorBox) -> AnyLayerTangentVectorBox {
     mustOverride()
   }
 
-  // TODO(shadaj): split out into separate type?
   // `ElementaryFunctions` requirements.
+  /// The square root of `x`.
+  /// For real types, if the argument is negative, either the result is NaN or a precondition failure occurs. For complex types, this function has a branch cut along the negative real axis.
   func _sqrt() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The cosine of `x`.
+  /// For real types, `x` is interpreted as an angle measured in radians.
   func _cos() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The sine of `x`.
+  /// For real types, `x` is interpreted as an angle measured in radians.
   func _sin() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The tangent of `x`.
   func _tan() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The acos function.
   func _acos() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The asin function.
   func _asin() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+ 
+  /// The atan function.
   func _atan() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The cosh function.
   func _cosh() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The sinh function.
   func _sinh() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The tanh function.
   func _tanh() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The acosh function.
   func _acosh() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The asinh function.
   func _asinh() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The atanh function.
   func _atanh() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The exp function.
   func _exp() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The exp2 function.
   func _exp2() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The exp10 function.
   func _exp10() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The expm1 function.
   func _expm1() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The log function.
   func _log() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The log2 function.
   func _log2() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The log10 function.
   func _log10() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The log1p function.
   func _log1p() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// `exp(y log(x))` computed without loss of intermediate precision.
+  /// For real types, if `x` is negative the result is NaN, even if `y` has an integral value. For complex types, there is a branch cut on the negative real axis.
   func _pow(_ y: AnyLayerTangentVectorBox) -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// `x` raised to the `n`th power.
   func _pow(_ n: Int) -> AnyLayerTangentVectorBox {
     mustOverride()
   }
+  
+  /// The `n`th root of `x`.
+  /// For real types, if `x` is negative and `n` is even, the result is NaN. For complex types, there is a branch cut along the negative real axis.
   func _root(_ n: Int) -> AnyLayerTangentVectorBox {
     mustOverride()
   }
@@ -219,6 +287,11 @@ where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & ElementaryFunct
     }
   }
 
+  // `AdditiveArithmetic` requirements.
+  override class var _zero: AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox(T.zero)
+  }
+
   override func _add(_ x: AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
     if let scalar = getOpaqueScalar() {
       // use the associative property, self + x = x + self
@@ -252,12 +325,8 @@ where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & ElementaryFunct
     }
     return ConcreteAnyLayerTangentVectorBox(base - xBase)
   }
-
-  // `AdditiveArithmetic` requirements.
-  override class var _zero: AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox(T.zero)
-  }
   
+  // `VectorProtocol` requirements.
   override func _adding(_ x: T.VectorSpaceScalar) -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
     return ConcreteAnyLayerTangentVectorBox<T>(base.adding(x))
   }
@@ -379,7 +448,7 @@ where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & ElementaryFunct
 /// The `AnyLayerTangentVector` type forwards its operations to an arbitrary underlying
 /// base derivative value conforming to `Differentiable`, `VectorProtocol`,
 /// `ElementaryFunctions`, and `PointwiseMultiplicative`, hiding the specifics of the underlying value.
-public struct AnyLayerTangentVector<F: FloatingPoint & ElementaryFunctions>: VectorProtocol & KeyPathIterable {
+public struct AnyLayerTangentVector<F: FloatingPoint & ElementaryFunctions>: KeyPathIterable {
   internal var box: AnyLayerTangentVectorBox<F>
 
   internal init(box: AnyLayerTangentVectorBox<F>) {
@@ -431,59 +500,6 @@ public struct AnyLayerTangentVector<F: FloatingPoint & ElementaryFunctions>: Vec
   }
 
   public typealias TangentVector = AnyLayerTangentVector
-  public typealias VectorSpaceScalar = F
-
-  // `Equatable` requirements (implied by `AdditiveArithmetic`).
-  public static func == (lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector) -> Bool {
-    return lhs.box._isEqual(to: rhs.box)
-  }
-  public static func != (lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector) -> Bool {
-    return lhs.box._isNotEqual(to: rhs.box)
-  }
-
-  public static func + (
-    lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector
-  ) -> AnyLayerTangentVector {
-    return .init(box: lhs.box._add(rhs.box))
-  }
-
-  @derivative(of: +)
-  @usableFromInline internal static func _vjpAdd(
-    lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector
-  ) -> (value: AnyLayerTangentVector,
-        pullback: (AnyLayerTangentVector) -> (AnyLayerTangentVector, AnyLayerTangentVector)) {
-    return (lhs + rhs, { v in (v, v) })
-  }
-
-  @derivative(of: +)
-  @usableFromInline internal static func _jvpAdd(
-    lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector
-  ) -> (value: AnyLayerTangentVector,
-    differential: (AnyLayerTangentVector, AnyLayerTangentVector) -> (AnyLayerTangentVector)) {
-      return (lhs + rhs, { (dlhs, drhs) in dlhs + drhs })
-  }
-
-  public static func - (
-    lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector
-  ) -> AnyLayerTangentVector {
-    return .init(box: lhs.box._subtract(rhs.box))
-  }
-
-  @derivative(of: -)
-  @usableFromInline internal static func _vjpSubtract(
-    lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector
-  ) -> (value: AnyLayerTangentVector,
-        pullback: (AnyLayerTangentVector) -> (AnyLayerTangentVector, AnyLayerTangentVector)) {
-    return (lhs - rhs, { v in (v, .zero - v) })
-  }
-
-  @derivative(of: -)
-  @usableFromInline internal static func _jvpSubtract(
-    lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector
-  ) -> (value: AnyLayerTangentVector,
-        differential: (AnyLayerTangentVector, AnyLayerTangentVector) -> AnyLayerTangentVector) {
-    return (lhs - rhs, { (dlhs, drhs) in dlhs - drhs })
-  }
 
   /// Internal struct representing an opaque scalar value.
   /// This is equivalent to T.TangentVector.zero.adding(scalar)
@@ -502,6 +518,7 @@ public struct AnyLayerTangentVector<F: FloatingPoint & ElementaryFunctions>: Vec
       self.value = value
     }
 
+    // `VectorProtocol` requirements.
     @usableFromInline func adding(_ x: F) -> OpaqueScalar {
       return OpaqueScalar(value + x)
     }
@@ -626,6 +643,16 @@ public struct AnyLayerTangentVector<F: FloatingPoint & ElementaryFunctions>: Vec
   }
 }
 
+extension AnyLayerTangentVector: Equatable {
+  public static func == (lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector) -> Bool {
+    return lhs.box._isEqual(to: rhs.box)
+  }
+  
+  public static func != (lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector) -> Bool {
+    return lhs.box._isNotEqual(to: rhs.box)
+  }
+}
+
 extension AnyLayerTangentVector: Differentiable {
   public mutating func move(along direction: TangentVector) {
     if !isKnownUniquelyReferenced(&box) { // preserve value semantics
@@ -647,7 +674,55 @@ extension AnyLayerTangentVector: AdditiveArithmetic {
     return .init(
       box: ConcreteAnyLayerTangentVectorBox<OpaqueScalar>._zero)
   }
-  
+
+  public static func + (
+    lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector
+  ) -> AnyLayerTangentVector {
+    return .init(box: lhs.box._add(rhs.box))
+  }
+
+  @derivative(of: +)
+  @usableFromInline internal static func _vjpAdd(
+    lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector
+  ) -> (value: AnyLayerTangentVector,
+        pullback: (AnyLayerTangentVector) -> (AnyLayerTangentVector, AnyLayerTangentVector)) {
+    return (lhs + rhs, { v in (v, v) })
+  }
+
+  @derivative(of: +)
+  @usableFromInline internal static func _jvpAdd(
+    lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector
+  ) -> (value: AnyLayerTangentVector,
+    differential: (AnyLayerTangentVector, AnyLayerTangentVector) -> (AnyLayerTangentVector)) {
+      return (lhs + rhs, { (dlhs, drhs) in dlhs + drhs })
+  }
+
+  public static func - (
+    lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector
+  ) -> AnyLayerTangentVector {
+    return .init(box: lhs.box._subtract(rhs.box))
+  }
+
+  @derivative(of: -)
+  @usableFromInline internal static func _vjpSubtract(
+    lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector
+  ) -> (value: AnyLayerTangentVector,
+        pullback: (AnyLayerTangentVector) -> (AnyLayerTangentVector, AnyLayerTangentVector)) {
+    return (lhs - rhs, { v in (v, .zero - v) })
+  }
+
+  @derivative(of: -)
+  @usableFromInline internal static func _jvpSubtract(
+    lhs: AnyLayerTangentVector, rhs: AnyLayerTangentVector
+  ) -> (value: AnyLayerTangentVector,
+        differential: (AnyLayerTangentVector, AnyLayerTangentVector) -> AnyLayerTangentVector) {
+    return (lhs - rhs, { (dlhs, drhs) in dlhs - drhs })
+  }
+}
+
+extension AnyLayerTangentVector: VectorProtocol {
+  public typealias VectorSpaceScalar = F
+
   public func adding(_ x: VectorSpaceScalar) -> Self {
     return .init(box: box._adding(x));
   }
