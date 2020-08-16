@@ -235,64 +235,64 @@ extension AnyLayerTangentVectorBox {
 }
 
 /// A concrete implementation of the type-erased tangent vector wrapper that forwards to an underlying tangent vector.
-internal class ConcreteAnyLayerTangentVectorBox<T: TangentVectorConformances>: AnyLayerTangentVectorBox<T.VectorSpaceScalar>
-where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
-  /// The underlying base value.
-  var base: T
+internal class ConcreteAnyLayerTangentVectorBox<Underlying: TangentVectorConformances>: AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar>
+where Underlying.TangentVector == Underlying, Underlying.VectorSpaceScalar: FloatingPoint & ElementaryFunctions {
+  /// The underlying tangent vector.
+  var underlying: Underlying
 
-  init(_ base: T) {
-    self.base = base
+  init(_ underlying: Underlying) {
+    self.underlying = underlying
   }
 
-  /// The underlying base value, type-erased to `Any`.
+  /// The underlying tangent vector, type-erased to `Any`.
   override var typeErasedBase: Any {
-    return base
+    return underlying
   }
 
   override func unboxed<U: TangentVectorConformances>(as type: U.Type) -> U?
-  where U.TangentVector == U, U.VectorSpaceScalar == T.VectorSpaceScalar {
-    return (self as? ConcreteAnyLayerTangentVectorBox<U>)?.base
+  where U.TangentVector == U, U.VectorSpaceScalar == Underlying.VectorSpaceScalar {
+    return (self as? ConcreteAnyLayerTangentVectorBox<U>)?.underlying
   }
 
-  override func duplicate() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox(base)
+  override func duplicate() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox(underlying)
   }
 
   // `Equatable` requirements (implied by `AdditiveArithmetic`).
-  override func _isEqual(to other: AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> Bool {
+  override func _isEqual(to other: AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar>) -> Bool {
     if let otherScalar = other.getOpaqueScalar() {
       if let scalar = getOpaqueScalar() {
         return scalar == otherScalar
       } else {
-        return base == T.zero.adding(otherScalar)
+        return underlying == Underlying.zero.adding(otherScalar)
       }
     } else if getOpaqueScalar() != nil {
       return other._isEqual(to: self)
     } else {
-      return base == other.unboxed(as: T.self)
+      return underlying == other.unboxed(as: Underlying.self)
     }
   }
 
-  override func _isNotEqual(to other: AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> Bool {
+  override func _isNotEqual(to other: AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar>) -> Bool {
     if let otherScalar = other.getOpaqueScalar() {
       if let scalar = getOpaqueScalar() {
         return scalar != otherScalar
       } else {
-        return base != T.zero.adding(otherScalar)
+        return underlying != Underlying.zero.adding(otherScalar)
       }
     } else if getOpaqueScalar() != nil {
       return other._isNotEqual(to: self)
     } else {
-      return base != other.unboxed(as: T.self)
+      return underlying != other.unboxed(as: Underlying.self)
     }
   }
 
   // `AdditiveArithmetic` requirements.
-  override class var _zero: AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox(T.zero)
+  override class var _zero: AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox(Underlying.zero)
   }
 
-  override func _add(_ x: AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
+  override func _add(_ x: AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar>) -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
     if let scalar = getOpaqueScalar() {
       // use the associative property, self + x = x + self
       return x._adding(scalar)
@@ -303,16 +303,16 @@ where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & ElementaryFunct
       return self._adding(scalar)
     }
 
-    guard let xBase = x.unboxed(as: T.self) else {
-      derivativeTypeMismatch(got: type(of: x.typeErasedBase), expected: T.self)
+    guard let xBase = x.unboxed(as: Underlying.self) else {
+      derivativeTypeMismatch(got: type(of: x.typeErasedBase), expected: Underlying.self)
     }
-    return ConcreteAnyLayerTangentVectorBox(base + xBase)
+    return ConcreteAnyLayerTangentVectorBox(underlying + xBase)
   }
 
-  override func _subtract(_ x: AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
+  override func _subtract(_ x: AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar>) -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
     if let scalar = getOpaqueScalar() {
       // expand by definition of opqaue scalars and perform the original operation
-      return AnyLayerTangentVectorBox<T.VectorSpaceScalar>._one._scaled(by: scalar)._subtract(x)
+      return AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar>._one._scaled(by: scalar)._subtract(x)
     }
 
     if let scalar = x.getOpaqueScalar() {
@@ -320,125 +320,125 @@ where T.TangentVector == T, T.VectorSpaceScalar: FloatingPoint & ElementaryFunct
       return self._subtracting(scalar)
     }
 
-    guard let xBase = x.unboxed(as: T.self) else {
-      derivativeTypeMismatch(got: type(of: x.typeErasedBase), expected: T.self)
+    guard let xBase = x.unboxed(as: Underlying.self) else {
+      derivativeTypeMismatch(got: type(of: x.typeErasedBase), expected: Underlying.self)
     }
-    return ConcreteAnyLayerTangentVectorBox(base - xBase)
+    return ConcreteAnyLayerTangentVectorBox(underlying - xBase)
   }
   
   // `VectorProtocol` requirements.
-  override func _adding(_ x: T.VectorSpaceScalar) -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(base.adding(x))
+  override func _adding(_ x: Underlying.VectorSpaceScalar) -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(underlying.adding(x))
   }
-  override func _subtracting(_ x: T.VectorSpaceScalar) -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(base.subtracting(x))
+  override func _subtracting(_ x: Underlying.VectorSpaceScalar) -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(underlying.subtracting(x))
   }
-  override func _scaled(by: T.VectorSpaceScalar) -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(base.scaled(by: by))
+  override func _scaled(by: Underlying.VectorSpaceScalar) -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(underlying.scaled(by: by))
   }
 
   // `PointwiseMultiplicative` requirements.
-  override class var _one: AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.one)
+  override class var _one: AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.one)
   }
 
-  override func _reciprocal() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(base.reciprocal)
+  override func _reciprocal() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(underlying.reciprocal)
   }
 
-  override func _pointwiseMultiply(by: AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(base .* by.unboxed(as: T.self)!)
+  override func _pointwiseMultiply(by: AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar>) -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(underlying .* by.unboxed(as: Underlying.self)!)
   }
 
   // `ElementaryFunctions` requirements.
-  override func _sqrt() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.sqrt(base));
+  override func _sqrt() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.sqrt(underlying));
   }
-  override func _cos() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.cos(base));
+  override func _cos() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.cos(underlying));
   }
-  override func _sin() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.sin(base));
+  override func _sin() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.sin(underlying));
   }
-  override func _tan() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.tan(base));
+  override func _tan() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.tan(underlying));
   }
-  override func _acos() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.acos(base));
+  override func _acos() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.acos(underlying));
   }
-  override func _asin() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.asin(base));
+  override func _asin() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.asin(underlying));
   }
-  override func _atan() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.atan(base));
+  override func _atan() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.atan(underlying));
   }
-  override func _cosh() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.cosh(base));
+  override func _cosh() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.cosh(underlying));
   }
-  override func _sinh() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.sinh(base));
+  override func _sinh() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.sinh(underlying));
   }
-  override func _tanh() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.tanh(base));
+  override func _tanh() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.tanh(underlying));
   }
-  override func _acosh() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.acosh(base));
+  override func _acosh() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.acosh(underlying));
   }
-  override func _asinh() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.asinh(base));
+  override func _asinh() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.asinh(underlying));
   }
-  override func _atanh() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.atanh(base));
+  override func _atanh() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.atanh(underlying));
   }
-  override func _exp() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.exp(base));
+  override func _exp() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.exp(underlying));
   }
-  override func _exp2() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.exp2(base));
+  override func _exp2() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.exp2(underlying));
   }
-  override func _exp10() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.exp10(base));
+  override func _exp10() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.exp10(underlying));
   }
-  override func _expm1() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.expm1(base));
+  override func _expm1() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.expm1(underlying));
   }
-  override func _log() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.log(base));
+  override func _log() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.log(underlying));
   }
-  override func _log2() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.log2(base));
+  override func _log2() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.log2(underlying));
   }
-  override func _log10() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.log10(base));
+  override func _log10() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.log10(underlying));
   }
-  override func _log1p() -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.log1p(base));
+  override func _log1p() -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.log1p(underlying));
   }
-  override func _pow(_ y: AnyLayerTangentVectorBox<T.VectorSpaceScalar>) -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.pow(base, y.unboxed(as: T.self)!));
+  override func _pow(_ y: AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar>) -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.pow(underlying, y.unboxed(as: Underlying.self)!));
   }
-  override func _pow(_ n: Int) -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.pow(base, n));
+  override func _pow(_ n: Int) -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.pow(underlying, n));
   }
-  override func _root(_ n: Int) -> AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
-    return ConcreteAnyLayerTangentVectorBox<T>(T.root(base, n));
+  override func _root(_ n: Int) -> AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
+    return ConcreteAnyLayerTangentVectorBox<Underlying>(Underlying.root(underlying, n));
   }
 
   // `Differentiable` requirements.
-  override func _move(along direction: AnyLayerTangentVector<T.VectorSpaceScalar>) {
+  override func _move(along direction: AnyLayerTangentVector<Underlying.VectorSpaceScalar>) {
     if let scalarDirection = direction.box.getOpaqueScalar() {
-      base.move(along: T.TangentVector.zero.adding(scalarDirection))
+      underlying.move(along: Underlying.TangentVector.zero.adding(scalarDirection))
     } else {
       guard let directionBase =
-        direction.unboxed(as: T.TangentVector.self) else {
-        derivativeTypeMismatch(got: type(of: direction.base), expected: T.self)
+        direction.unboxed(as: Underlying.TangentVector.self) else {
+        derivativeTypeMismatch(got: type(of: direction.base), expected: Underlying.self)
       }
-      base.move(along: directionBase)
+      underlying.move(along: directionBase)
     }
   }
 
   // `EuclideanDifferentiable` requirements.
-  override var _differentiableVectorView: AnyLayerTangentVectorBox<T.VectorSpaceScalar> {
+  override var _differentiableVectorView: AnyLayerTangentVectorBox<Underlying.VectorSpaceScalar> {
     return self
   }
 }
@@ -474,35 +474,35 @@ public struct AnyLayerTangentVector<F: FloatingPoint & ElementaryFunctions>: Key
 
   /// Creates a type-erased wrapper from the given tangent vector.
   @differentiable
-  public init<T: TangentVectorConformances>(_ base: T)
-  where T.TangentVector == T, T.VectorSpaceScalar == F {
-    self.box = ConcreteAnyLayerTangentVectorBox<T>(base)
+  public init<Underlying: TangentVectorConformances>(_ underlying: Underlying)
+  where Underlying.TangentVector == Underlying, Underlying.VectorSpaceScalar == F {
+    self.box = ConcreteAnyLayerTangentVectorBox<Underlying>(underlying)
   }
 
   @derivative(of: init)
   @usableFromInline
-  internal static func _vjpInit<T: TangentVectorConformances>(
-    _ base: T
-  ) -> (value: AnyLayerTangentVector<F>, pullback: (AnyLayerTangentVector<F>) -> T.TangentVector)
-    where T.TangentVector == T, T.VectorSpaceScalar == F
+  internal static func _vjpInit<Underlying: TangentVectorConformances>(
+    _ underlying: Underlying
+  ) -> (value: AnyLayerTangentVector<F>, pullback: (AnyLayerTangentVector<F>) -> Underlying.TangentVector)
+    where Underlying.TangentVector == Underlying, Underlying.VectorSpaceScalar == F
   {
-    return (AnyLayerTangentVector<F>(base), { v in v.unboxed(as: T.TangentVector.self)! })
+    return (AnyLayerTangentVector<F>(underlying), { v in v.unboxed(as: Underlying.TangentVector.self)! })
   }
 
   @derivative(of: init)
   @usableFromInline
-  internal static func _jvpInit<T: TangentVectorConformances>(
-    _ base: T
-  ) -> (value: AnyLayerTangentVector<F>, differential: (T.TangentVector) -> AnyLayerTangentVector<F>)
-    where T.TangentVector == T, T.VectorSpaceScalar == F
+  internal static func _jvpInit<Underlying: TangentVectorConformances>(
+    _ underlying: Underlying
+  ) -> (value: AnyLayerTangentVector<F>, differential: (Underlying.TangentVector) -> AnyLayerTangentVector<F>)
+    where Underlying.TangentVector == Underlying, Underlying.VectorSpaceScalar == F
   {
-    return (AnyLayerTangentVector<F>(base), { dbase in AnyLayerTangentVector<F>(dbase) })
+    return (AnyLayerTangentVector<F>(underlying), { dbase in AnyLayerTangentVector<F>(dbase) })
   }
 
   public typealias TangentVector = AnyLayerTangentVector
 
   /// Internal struct representing an opaque scalar value.
-  /// This is equivalent to T.TangentVector.zero.adding(scalar)
+  /// This is equivalent to Underlying.TangentVector.zero.adding(scalar)
   /// where T is the actual layer type. Because `zero` and `one` are
   /// static, however, we just capture the scalar value for now and expand
   /// into the actual `TangentVector` type lazily.
