@@ -48,7 +48,23 @@ print()
 /*
 import Foundation
 let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent("Transformer")
-try gpt.writeCheckpoint(to: temporaryDirectory, name: "model2.ckpt")
+
+do {
+    try gpt.writeCheckpoint(to: temporaryDirectory, name: "model2.ckpt")
+} catch {
+    fatalError("ERROR: Write of checkpoint failed")
+}
 
 let recreatedmodel = try GPT2(checkpoint: temporaryDirectory.appendingPathComponent("model2.ckpt"))
+
+for _ in 0..<100 {
+    do {
+        try print(recreatedmodel.generate(), terminator: "")
+    } catch GPT2.GPT2Error.invalidEncoding(let id) {
+        print("ERROR: Invalid encoding: \(id)")
+    } catch {
+        fatalError("ERROR: Unexpected error: \(error).")
+    }
+}
+print()
 */

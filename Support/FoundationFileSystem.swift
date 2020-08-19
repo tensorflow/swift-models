@@ -28,6 +28,10 @@ public struct FoundationFileSystem: FileSystem {
   public func open(_ filename: String) -> File {
     return FoundationFile(path: filename)
   }
+    
+  public func copy(source: URL, dest: URL) throws {
+    try FileManager.default.copyItem(at: source, to: dest)
+  }
 }
 
 public struct FoundationFile: File {
