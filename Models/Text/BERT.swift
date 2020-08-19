@@ -58,6 +58,8 @@ extension Embedding: Regularizable {
 ///       https://arxiv.org/pdf/1907.11692.pdf).
 ///   - [ALBERT: A Lite BERT for Self-Supervised Learning of Language Representations](
 ///       https://arxiv.org/pdf/1909.11942.pdf).
+/// -   [ELECTRA: Pre-training Text Encoders as Discriminators Rather Than Generators](
+///       https://arxiv.org/abs/2003.10555.pdf)
 public struct BERT: Module, Regularizable {
     // TODO: Convert to a generic constraint once TF-427 is resolved.
     public typealias Scalar = Float
@@ -153,7 +155,7 @@ public struct BERT: Module, Regularizable {
 
         let embeddingSize: Int = {
             switch variant {
-            case .bert, .roberta: return hiddenSize
+            case .bert, .roberta, .electra: return hiddenSize
             case let .albert(embeddingSize, _): return embeddingSize
             }
         }()
@@ -180,7 +182,7 @@ public struct BERT: Module, Regularizable {
         // [0, 1, 2, ..., sequenceLength - 1], so we can just perform a slice.
         let positionPaddingIndex = { () -> Int in
             switch variant {
-            case .bert, .albert: return 0
+            case .bert, .albert, .electra: return 0
             case .roberta: return 2
             }
         }()
@@ -199,7 +201,7 @@ public struct BERT: Module, Regularizable {
         // Add an embedding projection layer if using the ALBERT variant.
         self.embeddingProjection = {
             switch variant {
-            case .bert, .roberta: return []
+            case .bert, .roberta, .electra: return []
             case let .albert(embeddingSize, _):
                 // TODO: [AD] Change to optional once supported.
                 return [Dense<Scalar>(
@@ -211,7 +213,7 @@ public struct BERT: Module, Regularizable {
         }()
 
         switch variant {
-        case .bert, .roberta:
+        case .bert, .roberta, .electra:
         self.encoderLayers = (0..<hiddenLayerCount).map { _ in
             TransformerEncoderLayer(
                 hiddenSize: hiddenSize,
@@ -264,7 +266,7 @@ public struct BERT: Module, Regularizable {
         var totalLength = sequences.map { $0.count }.reduce(0, +)
         let totalLengthLimit = { () -> Int in
             switch variant {
-            case .bert, .albert: return maxSequenceLength - 1 - sequences.count
+            case .bert, .albert, .electra: return maxSequenceLength - 1 - sequences.count
             case .roberta: return maxSequenceLength - 1 - 2 * sequences.count
             }
         }()
@@ -327,7 +329,7 @@ public struct BERT: Module, Regularizable {
         let tokenTypeEmbeddings = tokenTypeEmbedding(input.tokenTypeIds)
         let positionPaddingIndex: Int
         switch variant {
-        case .bert, .albert: positionPaddingIndex = 0
+        case .bert, .albert, .electra: positionPaddingIndex = 0
         case .roberta: positionPaddingIndex = 2
         }
         let positionEmbeddings = positionEmbedding.embeddings.slice(
@@ -338,7 +340,7 @@ public struct BERT: Module, Regularizable {
 
         // Add token type embeddings if needed, based on which BERT variant is being used.
         switch variant {
-        case .bert, .albert: embeddings = embeddings + tokenTypeEmbeddings
+        case .bert, .albert, .electra: embeddings = embeddings + tokenTypeEmbeddings
         case .roberta: break
         }
 
@@ -361,7 +363,7 @@ public struct BERT: Module, Regularizable {
 
         // Run the stacked transformer.
         switch variant {
-        case .bert, .roberta:
+        case .bert, .roberta, .electra:
             for layerIndex in 0..<(withoutDerivative(at: encoderLayers) { $0.count }) {
                 transformerInput = encoderLayers[layerIndex](TransformerInput(
                 sequence: transformerInput,
@@ -398,6 +400,10 @@ extension BERT {
         ///             https://arxiv.org/pdf/1909.11942.pdf).
         case albert(embeddingSize: Int, hiddenGroupCount: Int)
 
+        /// - Source: [ELECTRA: Pre-training Text Encoders as Discriminators Rather Than Generators]
+        ///              https://arxiv.org/abs/2003.10555
+        case electra
+
         public var description: String {
             switch self {
             case .bert:
@@ -406,6 +412,8 @@ extension BERT {
                 return "roberta"
             case let .albert(embeddingSize, hiddenGroupCount):
                 return "albert-E-\(embeddingSize)-G-\(hiddenGroupCount)"
+            case .electra:
+                return "electra"
             }
         }
     }
@@ -512,6 +520,8 @@ extension BERT {
         case albertLarge
         case albertXLarge
         case albertXXLarge
+        case electraBase
+        case electraLarge
 
         /// The name of this pre-trained model.
         public var name: String {
@@ -530,6 +540,8 @@ extension BERT {
             case .albertLarge: return "ALBERT Large"
             case .albertXLarge: return "ALBERT xLarge"
             case .albertXXLarge: return "ALBERT xxLarge"
+            case .electraBase: return "ELECTRA Base"
+            case .electraLarge: return "ELECTRA Large"
             }
         }
 
@@ -538,6 +550,7 @@ extension BERT {
             let bertPrefix = "https://storage.googleapis.com/bert_models/2018_"
             let robertaPrefix = "https://storage.googleapis.com/s4tf-hosted-binaries/checkpoints/Text/RoBERTa"
             let albertPrefix = "https://storage.googleapis.com/tfhub-modules/google/albert"
+            let electraPrefix = "https://storage.googleapis.com/electra-data/electra_"
             switch self {
             case .bertBase(false, false):
                 return URL(string: "\(bertPrefix)10_18/\(subDirectory).zip")!
@@ -561,6 +574,10 @@ extension BERT {
                 return URL(string: "\(robertaPrefix)/large.zip")!
             case .albertBase, .albertLarge, .albertXLarge, .albertXXLarge:
                 return URL(string: "\(albertPrefix)_\(subDirectory)/1.tar.gz")!
+            case .electraBase:
+                return URL(string: "\(electraPrefix)base.zip")!
+            case .electraLarge:
+                return URL(string: "\(electraPrefix)large.zip")!
             }
         }
 
@@ -572,6 +589,8 @@ extension BERT {
                 return .roberta
             case .albertBase, .albertLarge, .albertXLarge, .albertXXLarge:
                 return .albert(embeddingSize: 128, hiddenGroupCount: 1)
+            case .electraBase, .electraLarge:
+                return .electra
             }
         }
 
@@ -581,6 +600,7 @@ extension BERT {
             case let .bertLarge(cased, _): return cased
             case .robertaBase, .robertaLarge: return true
             case .albertBase, .albertLarge, .albertXLarge, .albertXXLarge: return false
+            case .electraBase, .electraLarge: return false
             }
         }
 
@@ -594,6 +614,8 @@ extension BERT {
             case .albertLarge: return 1024
             case .albertXLarge: return 2048
             case .albertXXLarge: return 4096
+            case .electraBase: return 768
+            case .electraLarge: return 1024
             }
         }
 
@@ -607,6 +629,8 @@ extension BERT {
             case .albertLarge: return 24
             case .albertXLarge: return 24
             case .albertXXLarge: return 12
+            case .electraBase: return 12
+            case .electraLarge: return 24
             }
         }
 
@@ -620,6 +644,8 @@ extension BERT {
             case .albertLarge: return 16
             case .albertXLarge: return 16
             case .albertXXLarge: return 64
+            case .electraBase: return 12
+            case .electraLarge: return 16
             }
         }
 
@@ -633,6 +659,8 @@ extension BERT {
             case .albertLarge: return 4096
             case .albertXLarge: return 8192
             case .albertXXLarge: return 16384
+            case .electraBase: return 3072
+            case .electraLarge: return 4096
             }
         }
 
@@ -653,6 +681,8 @@ extension BERT {
             case .albertLarge: return "large"
             case .albertXLarge: return "xLarge"
             case .albertXXLarge: return "xxLarge"
+            case .electraBase: return "electra_base"
+            case .electraLarge: return "electra_large"
             }
         }
 
@@ -675,7 +705,7 @@ extension BERT {
             // Load the appropriate vocabulary file.
             let vocabulary: Vocabulary = {
                 switch self {
-                case .bertBase, .bertLarge:
+                case .bertBase, .bertLarge, .electraBase, .electraLarge:
                     let vocabularyURL = storage.appendingPathComponent("vocab.txt")
                     return try! Vocabulary(fromFile: vocabularyURL)
                 case .robertaBase, .robertaLarge:
@@ -696,7 +726,8 @@ extension BERT {
             // Create the tokenizer and load any necessary files.
             let tokenizer: Tokenizer = try {
                 switch self {
-                case .bertBase, .bertLarge, .albertBase, .albertLarge, .albertXLarge, .albertXXLarge:
+                case .bertBase, .bertLarge, .albertBase, .albertLarge, .albertXLarge, .albertXXLarge,
+                .electraBase, .electraLarge:
                     return BERTTokenizer(
                         vocabulary: vocabulary,
                         caseSensitive: caseSensitive,
@@ -757,15 +788,34 @@ extension BERT {
     /// - Parameters:
     ///   - reader: CheckpointReader object to load tensors from.
     public mutating func loadTensors(_ reader: CheckpointReader) {
-        tokenEmbedding.embeddings = reader.readTensor(name: "bert/embeddings/word_embeddings")
-        positionEmbedding.embeddings = reader.readTensor(name: "bert/embeddings/position_embeddings")
-        embeddingLayerNorm.offset = reader.readTensor(name: "bert/embeddings/LayerNorm/beta")
-        embeddingLayerNorm.scale = reader.readTensor(name: "bert/embeddings/LayerNorm/gamma")
+        switch variant {
+        case .bert, .albert, .roberta:    
+            tokenEmbedding.embeddings =
+                reader.readTensor(name: "bert/embeddings/word_embeddings")
+            positionEmbedding.embeddings =
+                reader.readTensor(name: "bert/embeddings/position_embeddings")
+            embeddingLayerNorm.offset =
+                reader.readTensor(name: "bert/embeddings/LayerNorm/beta")
+            embeddingLayerNorm.scale =
+                reader.readTensor(name: "bert/embeddings/LayerNorm/gamma")
+        case .electra:
+            tokenEmbedding.embeddings =
+                reader.readTensor(name: "electra/embeddings/word_embeddings")
+            positionEmbedding.embeddings =
+                reader.readTensor(name: "electra/embeddings/position_embeddings")
+            embeddingLayerNorm.offset =
+                reader.readTensor(name: "electra/embeddings/LayerNorm/beta")
+            embeddingLayerNorm.scale =
+                reader.readTensor(name: "electra/embeddings/LayerNorm/gamma")
+        }
         switch variant {
         case .bert, .albert:
             tokenTypeEmbedding.embeddings =
                 reader.readTensor(name: "bert/embeddings/token_type_embeddings")
         case .roberta: ()
+        case .electra:
+            tokenTypeEmbedding.embeddings =
+                reader.readTensor(name: "electra/embeddings/token_type_embeddings")    
         }
         switch variant {
         case .bert, .roberta:
@@ -781,6 +831,42 @@ extension BERT {
             for layerIndex in encoderLayers.indices {
                 let prefix = "bert/encoder/transformer/group_\(layerIndex)/inner_group_0"
                 encoderLayers[layerIndex].load(albert: reader, prefix: prefix)
+            }
+        case .electra:
+            for layerIndex in encoderLayers.indices {
+                let prefix = "electra/encoder/layer_\(layerIndex)"
+                encoderLayers[layerIndex].multiHeadAttention.queryWeight =
+                    reader.readTensor(name:  "\(prefix)/attention/self/query/kernel")
+                encoderLayers[layerIndex].multiHeadAttention.queryBias =
+                    reader.readTensor(name:  "\(prefix)/attention/self/query/bias")
+                encoderLayers[layerIndex].multiHeadAttention.keyWeight =
+                    reader.readTensor(name:  "\(prefix)/attention/self/key/kernel")
+                encoderLayers[layerIndex].multiHeadAttention.keyBias =
+                    reader.readTensor(name:  "\(prefix)/attention/self/key/bias")
+                encoderLayers[layerIndex].multiHeadAttention.valueWeight =
+                    reader.readTensor(name:  "\(prefix)/attention/self/value/kernel")
+                encoderLayers[layerIndex].multiHeadAttention.valueBias =
+                    reader.readTensor(name:  "\(prefix)/attention/self/value/bias")
+                encoderLayers[layerIndex].attentionWeight =
+                    reader.readTensor(name:  "\(prefix)/attention/output/dense/kernel")
+                encoderLayers[layerIndex].attentionBias =
+                    reader.readTensor(name:  "\(prefix)/attention/output/dense/bias")
+                encoderLayers[layerIndex].attentionLayerNorm.offset =
+                    reader.readTensor(name:  "\(prefix)/attention/output/LayerNorm/beta")
+                encoderLayers[layerIndex].attentionLayerNorm.scale =
+                    reader.readTensor(name:  "\(prefix)/attention/output/LayerNorm/gamma")
+                encoderLayers[layerIndex].intermediateWeight =
+                    reader.readTensor(name:  "\(prefix)/intermediate/dense/kernel")
+                encoderLayers[layerIndex].intermediateBias =
+                    reader.readTensor(name:  "\(prefix)/intermediate/dense/bias")
+                encoderLayers[layerIndex].outputWeight =
+                    reader.readTensor(name:  "\(prefix)/output/dense/kernel")
+                encoderLayers[layerIndex].outputBias =
+                    reader.readTensor(name:  "\(prefix)/output/dense/bias")
+                encoderLayers[layerIndex].outputLayerNorm.offset =
+                    reader.readTensor(name:  "\(prefix)/output/LayerNorm/beta")
+                encoderLayers[layerIndex].outputLayerNorm.scale =
+                    reader.readTensor(name:  "\(prefix)/output/LayerNorm/gamma")
             }
         }
     }

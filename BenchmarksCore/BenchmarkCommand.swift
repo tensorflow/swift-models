@@ -14,11 +14,17 @@
 
 import ArgumentParser
 
-internal struct BenchmarkCommand: ParsableCommand {
+public struct BenchmarkCommand: ParsableCommand {
   @OptionGroup()
-  var arguments: BenchmarkArguments
+  public var arguments: BenchmarkArguments
+  
+  public init() {}
 
-  mutating func validate() throws {
+  public init(arguments: BenchmarkArguments) {
+    self.arguments = arguments
+  }
+
+  public mutating func validate() throws {
     try arguments.validate()
   }
 }
