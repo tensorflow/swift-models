@@ -90,14 +90,11 @@ ExternalProject_Add(libjpeg-turbo
     -D CMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
     -D ENABLE_SHARED=NO
   INSTALL_COMMAND
-    ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/ImageLoader/libjpeg-turbo/module.modulemap <SOURCE_DIR>
+    ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/ImageLoader/libjpeg-turbo/module.modulemap ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
   BUILD_BYPRODUCTS
     <BINARY_DIR>/${CMAKE_STATIC_LIBRARY_PREFIX}turbojpeg${CMAKE_STATIC_LIBRARY_SUFFIX}
   STEP_TARGETS
     build)
-
-ExternalProject_Get_Property(libjpeg-turbo BINARY_DIR)
-ExternalProject_Get_Property(libjpeg-turbo SOURCE_DIR)
 
 add_library(turbojpeg STATIC IMPORTED)
 add_library(SwiftProtobuf SHARED IMPORTED)
@@ -107,6 +104,9 @@ set_target_properties(SwiftProtobuf PROPERTIES
   IMPORTED_IMPLIB ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_IMPORT_LIBRARY_PREFIX}SwiftProtobuf${CMAKE_IMPORT_LIBRARY_SUFFIX}
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
 add_dependencies(SwiftProtobuf swift-protobuf-install)
+
+ExternalProject_Get_Property(libjpeg-turbo BINARY_DIR)
+ExternalProject_Get_Property(libjpeg-turbo SOURCE_DIR)
 
 set_target_properties(turbojpeg PROPERTIES
   IMPORTED_LOCATION ${BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}turbojpeg${CMAKE_STATIC_LIBRARY_SUFFIX}
