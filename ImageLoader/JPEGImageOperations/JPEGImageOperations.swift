@@ -2,18 +2,18 @@ import Foundation
 import TurboJPEG
  
 #if os(iOS) || os(macOS) || os(tvOS) || os(watchOS)
-import Darwin
+    import Darwin
 #elseif os(Android) || os(Linux)
-import Glibc
+    import Glibc
 #elseif os(Windows)
-import ucrt
+    import ucrt
 #else
-#error ("C library not known for the target OS")
+    #error("C library not known for the target OS")
 #endif
- 
+
 public enum pixelFormats: Int32 {
-    case RGB888 = 0   // TJPF_RGB
-    case BGR888 = 1   // TJPF_BGR
+    case RGB888 = 0 // TJPF_RGB
+    case BGR888 = 1 // TJPF_BGR
     case RGBA8888 = 2 // TJPF_RGBA
     case BGRA8888 = 3 // TJPF_BGRA
     case ARGB8888 = 4 // TJPF_ARGB
@@ -22,8 +22,8 @@ public enum pixelFormats: Int32 {
     case BGRA8880 = 7 // TJPF_BGRX
     case ARGB0888 = 8 // TJPF_XRGB
     case ABGR0888 = 9 // TJPF_XBGR
-    case YUV400 = 10  // TJPF_GREY
-    
+    case YUV400 = 10 // TJPF_GREY
+
     var channelCount: Int32 {
         switch self {
         case .RGB888:
@@ -51,87 +51,82 @@ public enum pixelFormats: Int32 {
         }
     }
 }
- 
+
 public struct ImageData {
-    var height: Int32
-    var width: Int32
-    var data: UnsafeMutablePointer<UInt8>
-    var formatProperties: pixelFormats
- 
+    let height: Int32
+    let width: Int32
+    let data: UnsafeMutablePointer<UInt8>
+    let formatProperties: pixelFormats
+
     init(height: Int32, width: Int32, data: UnsafeMutablePointer<UInt8>, imageFormat: pixelFormats) {
         self.height = height
         self.width = width
         self.data = data
-        self.formatProperties = imageFormat
+        formatProperties = imageFormat
     }
 }
- 
-func LoadJPEG(atPath path: String, imageFormat: pixelFormats) -> ImageData? {
-    
+
+func LoadJPEG(atPath path: String, imageFormat: pixelFormats) throws -> ImageData? {
     var width: Int32 = 0
     var height: Int32 = 0
-    
-    let data: Data
-    
-    if FileManager.default.fileExists(atPath: path) {
-        data = FileManager.default.contents(atPath: path)!
-    } else {
-        // File not present
-        fatalError("File does not exist at: \(path).")
+
+    guard FileManager.default.fileExists(atPath: path) else {
+        throw ("File does not exist at \(path).")
     }
-    
+
+    let data: Data = FileManager.default.contents(atPath: path)!
     let jpegSize: UInt = UInt(data.count)
-    let baseAddress: UnsafeRawPointer = data.withUnsafeBytes { return $0.baseAddress! }
-    let finPointer = UnsafeMutablePointer<UInt8>(mutating: baseAddress.assumingMemoryBound(to: UInt8.self))
-    
-    var decompressor = tjInitDecompress()
-    /* Initializes `width` and `height` variables */
-    tjDecompressHeader(decompressor, finPointer , jpegSize, &width, &height)
-    
-    let imgBuf = tjAlloc(imageFormat.channelCount * width * height)
-    
-    /* Decompresses the JPEG Image from `jpegBuf` into `imgBuf` buffer
-     - Decompresses `jpegBuf` which has image data
-     - uses `jpegSize` as size of image in bytes
-     - Image gets decompressed into `imgBuf` buffer
-     - `width` = width of Image
-     - pitch = 0
-     - `height` = height of image
-     - pixelFormat = 0 which denotes TJPF_RGB Pixel Format to which image is being decompressed.
-     - flags = 0
-     */
-    tjDecompress2(decompressor, finPointer, UInt(jpegSize), imgBuf, width, 0, height, imageFormat.rawValue, 0)
-    
-    /* Free/Destroy instances and buffers */
-    tjDestroy(decompressor)
-    decompressor = nil
-    
-    let res = ImageData.init(height: height, width: width, data: imgBuf!, imageFormat: imageFormat)
-    return res
-    
+
+    return data.withUnsafeBytes {
+        let finPointer: UnsafeMutablePointer<UInt8> = UnsafeMutablePointer<UInt8>(mutating: $0.baseAddress!.assumingMemoryBound(to: UInt8.self))
+
+        let decompressor = tjInitDecompress()
+        defer { tjDestroy(decompressor) }
+
+        /* Initializes `width` and `height` variables */
+        tjDecompressHeader(decompressor, finPointer, jpegSize, &width, &height)
+
+        let buffer = tjAlloc(imageFormat.channelCount * width * height)
+
+        /* Decompresses the JPEG Image from `data` into `buffer` buffer
+         - Decompresses `finPointer` which has image data
+         - uses `jpegSize` as size of image in bytes
+         - Image gets decompressed into `buffer` buffer
+         - `width` = width of Image
+         - pitch = 0
+         - `height` = height of image
+         - pixelFormat = imageFormat.rawValue which denotes Pixel Format to which image is being decompressed.
+         - flags = 0
+         */
+        tjDecompress2(decompressor, finPointer, UInt(jpegSize), buffer, width, 0, height, imageFormat.rawValue, 0)
+
+        return ImageData(height: height, width: width, data: buffer!, imageFormat: imageFormat)
+    }
 }
- 
-func SaveJPEG(atPath path : String, image: ImageData) -> Int32 {
-    
+
+func SaveJPEG(atPath path: String, image: ImageData) throws -> Int32 {
     do {
         try FileManager.default.removeItem(atPath: path)
     } catch {
         // File not present
     }
-    
+
     var jpegBuf: UnsafeMutablePointer<UInt8>?
-    
-    var retVal: Int32 = -1
+    defer { tjFree(jpegBuf) }
+
+    var retVal: Int32 = 0
     let outQual: Int32 = 95
     var jpegSize: UInt = 0
-    
-    var compressor = tjInitCompress()
-    /* Compress the Image Data from `buffer` into `jpegBuf`
+
+    let compressor = tjInitCompress()
+    defer { tjDestroy(compressor) }
+
+    /* Compress the Image Data from `image.data` into `jpegBuf`
      - Compresses image.data
      - `width` = width of Image
      - pitch = 0
      - `height` = height of image
-     - `pixelFormat` = 0
+     - `pixelFormat` = image.formatProperties.rawValue which denotes Pixel Format to which image is being compressed.
      - Image gets compressed into `jpegBuf` buffer
      - initializes `jpegSize` as size of image in bytes
      - `outSubsamp` = 0
@@ -139,23 +134,18 @@ func SaveJPEG(atPath path : String, image: ImageData) -> Int32 {
      - `flags` = 0
      */
     tjCompress2(compressor, image.data, image.width, 0, image.height, image.formatProperties.rawValue, &jpegBuf, &jpegSize, 0, outQual, 0)
- 
-    let bufferPointer  = UnsafeMutableBufferPointer.init(start: jpegBuf, count: Int(jpegSize))
-    let jpegData = Data.init(buffer: bufferPointer)
-    
-    do {
-        FileManager.default.createFile(atPath: path, contents: jpegData)
-        retVal = 0
-    } catch {
-        // File not created
-        fatalError("Error during image saving: \(error)")
+
+    let bufferPointer = UnsafeMutableBufferPointer(start: jpegBuf, count: Int(jpegSize))
+    let jpegData = Data(buffer: bufferPointer)
+
+    guard FileManager.default.createFile(atPath: path, contents: jpegData) else {
+        retVal = -1
+        throw ("Error during image saving")
     }
-    
-    /* Free/Destroy instances and buffers */
-    tjDestroy(compressor)
-    compressor = nil
-    tjFree(jpegBuf)
-    jpegBuf = nil
-    
+
     return retVal
+}
+
+extension String: LocalizedError {
+    public var errorDescription: String? { return self }
 }
