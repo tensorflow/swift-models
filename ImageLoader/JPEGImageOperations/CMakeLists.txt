@@ -17,4 +17,3 @@ install(TARGETS JPEGImageOperations
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
   COMPONENT lib)
-  

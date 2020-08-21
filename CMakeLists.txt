@@ -90,7 +90,7 @@ ExternalProject_Add(libjpeg-turbo
     -D CMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
     -D ENABLE_SHARED=NO
   INSTALL_COMMAND
-    ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/ImageLoader/libjpeg-turbo/module.modulemap ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
+    ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/ImageLoader/libjpeg-turbo/module.modulemap <SOURCE_DIR>
   BUILD_BYPRODUCTS
     <BINARY_DIR>/${CMAKE_STATIC_LIBRARY_PREFIX}turbojpeg${CMAKE_STATIC_LIBRARY_SUFFIX}
   STEP_TARGETS
