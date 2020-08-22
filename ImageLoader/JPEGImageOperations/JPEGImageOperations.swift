@@ -52,17 +52,21 @@ public enum pixelFormats: Int32 {
     }
 }
 
-public struct ImageData {
+public class ImageData {
     let height: Int32
     let width: Int32
-    let data: UnsafeMutablePointer<UInt8>
+    let buffer: UnsafeMutablePointer<UInt8>
     let formatProperties: pixelFormats
 
-    init(height: Int32, width: Int32, data: UnsafeMutablePointer<UInt8>, imageFormat: pixelFormats) {
+    init(height: Int32, width: Int32, imageFormat: pixelFormats) {
         self.height = height
         self.width = width
-        self.data = data
         formatProperties = imageFormat
+        buffer = tjAlloc(imageFormat.channelCount * width * height)
+    }
+
+    deinit {
+        tjFree(self.buffer)
     }
 }
 
@@ -86,7 +90,7 @@ func LoadJPEG(atPath path: String, imageFormat: pixelFormats) throws -> ImageDat
         /* Initializes `width` and `height` variables */
         tjDecompressHeader(decompressor, finPointer, jpegSize, &width, &height)
 
-        let buffer = tjAlloc(imageFormat.channelCount * width * height)
+        let imageData = ImageData(height: height, width: width, imageFormat: imageFormat)
 
         /* Decompresses the JPEG Image from `data` into `buffer` buffer
          - Decompresses `finPointer` which has image data
@@ -98,9 +102,9 @@ func LoadJPEG(atPath path: String, imageFormat: pixelFormats) throws -> ImageDat
          - pixelFormat = imageFormat.rawValue which denotes Pixel Format to which image is being decompressed.
          - flags = 0
          */
-        tjDecompress2(decompressor, finPointer, UInt(jpegSize), buffer, width, 0, height, imageFormat.rawValue, 0)
+        tjDecompress2(decompressor, finPointer, UInt(jpegSize), imageData.buffer, imageData.width, 0, imageData.height, imageFormat.rawValue, 0)
 
-        return ImageData(height: height, width: width, data: buffer!, imageFormat: imageFormat)
+        return imageData
     }
 }
 
@@ -133,7 +137,7 @@ func SaveJPEG(atPath path: String, image: ImageData) throws -> Int32 {
      - `outQual` = the image quality of the generated JPEG image (1 = worst, 100 = best), 95 taken as default
      - `flags` = 0
      */
-    tjCompress2(compressor, image.data, image.width, 0, image.height, image.formatProperties.rawValue, &jpegBuf, &jpegSize, 0, outQual, 0)
+    tjCompress2(compressor, image.buffer, image.width, 0, image.height, image.formatProperties.rawValue, &jpegBuf, &jpegSize, 0, outQual, 0)
 
     let bufferPointer = UnsafeMutableBufferPointer(start: jpegBuf, count: Int(jpegSize))
     let jpegData = Data(buffer: bufferPointer)
