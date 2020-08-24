@@ -35,7 +35,7 @@ public class GPT2 {
     private var states: [AttentionContext]
     private let endOfText = "<|endoftext|>"
     private var endOfTextId = 0
-    private var storage: URL
+    internal var storage: URL
 
     public init(checkpoint: URL = GPT2.remoteCheckpoint) throws {
         var parameters = TransformerLMConfig(
