@@ -23,7 +23,6 @@ protocol ImageClassificationModel: Layer where Input == Tensor<Float>, Output ==
   static var outputLabels: Int { get }
 }
 
-// TODO: Ease the tight restriction on Batcher data sources to allow for lazy datasets.
 func runImageClassificationInference<Model, ClassificationDataset>(
   model modelType: Model.Type,
   dataset realDatasetType: ClassificationDataset.Type,

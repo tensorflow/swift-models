@@ -43,7 +43,7 @@ let ResNetImageNet = BenchmarkSuite(
   suite.benchmark("inference", settings: Backend(.eager), function: inference)
   suite.benchmark("inference_x10", settings: Backend(.x10), function: inference)
   suite.benchmark("training", settings: Backend(.eager), function: training)
-  suite.benchmark("training_x10", settings: Backend(.eager), function: training)
+  suite.benchmark("training_x10", settings: Backend(.x10), function: training)
 }
 
 struct ResNet50: Layer {

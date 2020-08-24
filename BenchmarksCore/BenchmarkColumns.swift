@@ -14,7 +14,7 @@
 
 import Benchmark
 
-func registerCustomColumns() {
+public func registerCustomColumns() {
   BenchmarkColumn.register(
     BenchmarkColumn(
       name: "avg_exp_per_second",

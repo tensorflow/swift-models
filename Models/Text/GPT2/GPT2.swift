@@ -35,6 +35,7 @@ public class GPT2 {
     private var states: [AttentionContext]
     private let endOfText = "<|endoftext|>"
     private var endOfTextId = 0
+    private var storage: URL
 
     public init(checkpoint: URL = GPT2.remoteCheckpoint) throws {
         var parameters = TransformerLMConfig(
@@ -58,7 +59,7 @@ public class GPT2 {
             // TODO(michellecasbon): expose this.
             reader.isCRCVerificationEnabled = false
 
-            let storage: URL = reader.localCheckpointLocation.deletingLastPathComponent()
+            storage = reader.localCheckpointLocation.deletingLastPathComponent()
             
             // Load model configuration.
             let hparamsFile: URL = storage.appendingPathComponent("hparams.json")

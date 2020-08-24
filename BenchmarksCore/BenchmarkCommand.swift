@@ -12,12 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Benchmark
-import BenchmarksCore
+import ArgumentParser
 
-registerCustomColumns()
-let command = BenchmarkCommand.parseOrExit()
-Benchmark.main(
-  suites,
-  settings: command.arguments.settings,
-  customDefaults: BenchmarksCore.defaultSettings)
+public struct BenchmarkCommand: ParsableCommand {
+  @OptionGroup()
+  public var arguments: BenchmarkArguments
+  
+  public init() {}
+
+  public init(arguments: BenchmarkArguments) {
+    self.arguments = arguments
+  }
+
+  public mutating func validate() throws {
+    try arguments.validate()
+  }
+}

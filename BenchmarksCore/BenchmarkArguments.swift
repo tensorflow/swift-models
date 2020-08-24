@@ -19,22 +19,51 @@ public struct BenchmarkArguments: ParsableArguments {
   @OptionGroup()
   var arguments: Benchmark.BenchmarkArguments
 
-  @Option(name: .customLong("batchSize"), help: "Size of a single batch.")
+  @Option(help: "Size of a single batch.")
   var batchSize: Int?
 
   @Flag(help: "Use eager backend.")
-  var eager: Bool
+  var eager: Bool = false
 
   @Flag(help: "Use X10 backend.")
-  var x10: Bool
+  var x10: Bool = false
+
+  @Flag(help: "Use CPU platform.")
+  var cpu: Bool = false
+
+  @Flag(help: "Use GPU platform.")
+  var gpu: Bool = false
+
+  @Flag(help: "Use TPU platform.")
+  var tpu: Bool = false
 
   @Flag(help: "Use synthetic data.")
-  var synthetic: Bool
+  var synthetic: Bool = false
 
   @Flag(help: "Use real data.")
-  var real: Bool
+  var real: Bool = false
+
+  @Option(help: "File path for dataset loading.")
+  var datasetFilePath: String?
 
   public init() {}
+
+  public init(
+    arguments: Benchmark.BenchmarkArguments, batchSize: Int?, eager: Bool, x10: Bool,
+    cpu: Bool, gpu: Bool, tpu: Bool, synthetic: Bool, real: Bool,
+    datasetFilePath: String?
+  ) {
+    self.arguments = arguments
+    self.batchSize = batchSize
+    self.eager = eager
+    self.x10 = x10
+    self.cpu = cpu
+    self.gpu = gpu
+    self.tpu = tpu
+    self.synthetic = synthetic
+    self.real = real
+    self.datasetFilePath = datasetFilePath
+  }
 
   public mutating func validate() throws {
     try arguments.validate()
@@ -47,6 +76,11 @@ public struct BenchmarkArguments: ParsableArguments {
     guard !(eager && x10) else {
       throw ValidationError(
         "Can't specify both --eager and --x10 backends.")
+    }
+
+    guard !(cpu && gpu) || !(cpu && tpu) || !(gpu && tpu) else {
+      throw ValidationError(
+        "Can't specify multiple platforms.")
     }
   }
 
@@ -62,11 +96,23 @@ public struct BenchmarkArguments: ParsableArguments {
     if eager {
       settings.append(Backend(.eager))
     }
+    if cpu {
+      settings.append(Platform(.cpu))
+    }
+    if gpu {
+      settings.append(Platform(.gpu))
+    }
+    if tpu {
+      settings.append(Platform(.tpu))
+    }
     if synthetic {
       settings.append(Synthetic(true))
     }
     if real {
       settings.append(Synthetic(false))
+    }
+    if let value = datasetFilePath {
+      settings.append(DatasetFilePath(value))
     }
 
     return settings

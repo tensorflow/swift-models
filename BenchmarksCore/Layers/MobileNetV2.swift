@@ -12,13 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import ArgumentParser
+import ImageClassificationModels
 
-internal struct BenchmarkCommand: ParsableCommand {
-  @OptionGroup()
-  var arguments: BenchmarkArguments
-
-  mutating func validate() throws {
-    try arguments.validate()
-  }
-}
+let MobileNetV2Suites = [
+  makeLayerSuite(
+    name: "MobileNetV2",
+    inputDimensions: cifarInput,
+    outputDimensions: cifarOutput
+  ) {
+    MobileNetV2(classCount: 10)
+  },
+  makeLayerSuite(
+    name: "MobileNetV2",
+    inputDimensions: imageNetInput,
+    outputDimensions: imageNetOutput
+  ) {
+    MobileNetV2(classCount: 1000)
+  },
+]

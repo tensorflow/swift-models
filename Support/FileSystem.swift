@@ -26,6 +26,12 @@ public protocol FileSystem {
   /// - Parameters:
   ///   - path: The path of the file to be opened.
   func open(_ path: String) -> File
+    
+  /// Copies a file
+  /// - Parameters
+  /// - source: file to be copied
+  /// - dest: destination  for copy
+  func copy(source: URL, dest: URL) throws
 }
 
 public protocol File {

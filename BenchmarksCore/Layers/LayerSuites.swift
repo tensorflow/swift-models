@@ -12,12 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Benchmark
-import BenchmarksCore
-
-registerCustomColumns()
-let command = BenchmarkCommand.parseOrExit()
-Benchmark.main(
-  suites,
-  settings: command.arguments.settings,
-  customDefaults: BenchmarksCore.defaultSettings)
+let layerSuites = Array(
+  [
+    DenseNetSuites,
+    EfficientNetSuites,
+    LeNetSuites,
+    MobileNetV1Suites,
+    MobileNetV2Suites,
+    MobileNetV3Suites,
+    ResNetSuites,
+    ResNetV2Suites,
+    ShuffleNetV2Suites,
+    SqueezeNetSuites,
+    VGGSuites,
+    WideResNetSuites,
+  ].joined())

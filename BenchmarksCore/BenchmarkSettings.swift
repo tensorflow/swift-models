@@ -15,48 +15,68 @@
 import Benchmark
 import TensorFlow
 
-struct BatchSize: BenchmarkSetting {
+public struct BatchSize: BenchmarkSetting {
   var value: Int
   init(_ value: Int) {
     self.value = value
   }
 }
 
-struct Length: BenchmarkSetting {
+public struct Length: BenchmarkSetting {
   var value: Int
   init(_ value: Int) {
     self.value = value
   }
 }
 
-struct Synthetic: BenchmarkSetting {
+public struct Synthetic: BenchmarkSetting {
   var value: Bool
   init(_ value: Bool) {
     self.value = value
   }
 }
 
-struct Backend: BenchmarkSetting {
+public struct Backend: BenchmarkSetting {
   var value: Value
   init(_ value: Value) {
     self.value = value
   }
-  enum Value {
+  public enum Value {
     case x10
     case eager
   }
 }
 
+public struct Platform: BenchmarkSetting {
+  var value: Value
+  init(_ value: Value) {
+    self.value = value
+  }
+  public enum Value {
+    case `default`
+    case cpu
+    case gpu
+    case tpu
+  }
+}
+
+public struct DatasetFilePath: BenchmarkSetting {
+  var value: String
+  init(_ value: String) {
+    self.value = value
+  }
+}
+
 extension BenchmarkSettings {
-  var batchSize: Int? {
+  public var batchSize: Int? {
     return self[BatchSize.self]?.value
   }
 
-  var length: Int? {
+  public var length: Int? {
     return self[Length.self]?.value
   }
 
-  var synthetic: Bool {
+  public var synthetic: Bool {
     if let value = self[Synthetic.self]?.value {
       return value
     } else {
@@ -64,7 +84,7 @@ extension BenchmarkSettings {
     }
   }
 
-  var backend: Backend.Value {
+  public var backend: Backend.Value {
     if let value = self[Backend.self]?.value {
       return value
     } else {
@@ -72,23 +92,48 @@ extension BenchmarkSettings {
     }
   }
 
-  var device: Device {
+  public var platform: Platform.Value {
+    if let value = self[Platform.self]?.value {
+      return value
+    } else {
+      fatalError("Platform setting must have a default.")
+    }
+  }
+
+  public var device: Device {
     // Note: The line is needed, or all GPU memory
     // will be exhausted on initial allocation of the model.
     // TODO: Remove the following tensor workaround when above is fixed.
     let _ = _ExecutionContext.global
 
     switch backend {
-    case .eager: return Device.defaultTFEager
-    case .x10: return Device.defaultXLA
+    case .eager:
+      switch platform {
+      case .default: return Device.defaultTFEager
+      case .cpu: return Device(kind: .CPU, ordinal: 0, backend: .TF_EAGER)
+      case .gpu: return Device(kind: .GPU, ordinal: 0, backend: .TF_EAGER)
+      case .tpu: fatalError("TFEager is unsupported on TPU.")
+      }
+    case .x10:
+      switch platform {
+      case .default: return Device.defaultXLA
+      case .cpu: return Device(kind: .CPU, ordinal: 0, backend: .XLA)
+      case .gpu: return Device(kind: .GPU, ordinal: 0, backend: .XLA)
+      case .tpu: return (Device.allDevices.filter { $0.kind == .TPU }).first!
+      }
     }
+  }
+
+  public var datasetFilePath: String? {
+    return self[DatasetFilePath.self]?.value
   }
 }
 
-let defaultSettings: [BenchmarkSetting] = [
+public let defaultSettings: [BenchmarkSetting] = [
   TimeUnit(.s),
   InverseTimeUnit(.s),
   Backend(.eager),
+  Platform(.default),
   Synthetic(false),
   Columns([
     "name",

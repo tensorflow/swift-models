@@ -12,12 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Benchmark
-import BenchmarksCore
+import ImageClassificationModels
 
-registerCustomColumns()
-let command = BenchmarkCommand.parseOrExit()
-Benchmark.main(
-  suites,
-  settings: command.arguments.settings,
-  customDefaults: BenchmarksCore.defaultSettings)
+let LeNetSuites = [
+  makeLayerSuite(
+    name: "LeNet",
+    inputDimensions: mnistInput,
+    outputDimensions: mnistOutput
+  ) {
+    LeNet()
+  }
+]

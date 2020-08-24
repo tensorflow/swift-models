@@ -23,10 +23,10 @@ struct WordSegCommand: ParsableCommand {
   )
 
   @Flag(help: "Use eager backend (default).")
-  var eager: Bool
+  var eager: Bool = false
 
   @Flag(help: "Use X10 backend.")
-  var x10: Bool
+  var x10: Bool = false
 
   @Option(help: "Path to training data.")
   var trainingPath: String?
@@ -37,29 +37,29 @@ struct WordSegCommand: ParsableCommand {
   @Option(help: "Path to test data.")
   var testPath: String?
 
-  @Option(default: 1000, help: "Maximum number of training epochs.")
-  var maxEpochs: Int
+  @Option(help: "Maximum number of training epochs.")
+  var maxEpochs: Int = 1000
 
-  @Option(default: 512, help: "Size of hidden layers.")
-  var hiddenSize: Int
+  @Option(help: "Size of hidden layers.")
+  var hiddenSize: Int = 512
 
-  @Option(default: 0.5, help: "Dropout rate.")
-  var dropoutProbability: Double
+  @Option(help: "Dropout rate.")
+  var dropoutProbability: Double = 0.5
 
-  @Option(default: 5, help: "Power of the length penalty.")
-  var order: Int
+  @Option(help: "Power of the length penalty.")
+  var order: Int = 5
 
-  @Option(default: 0.001, help: "Initial learning rate.")
-  var learningRate: Float
+  @Option(help: "Initial learning rate.")
+  var learningRate: Float = 0.001
 
-  @Option(default: 0.00075, help: "Weight of the length penalty.")
-  var lambd: Float
+  @Option(help: "Weight of the length penalty.")
+  var lambd: Float = 0.00075
 
-  @Option(default: 10, help: "Maximum length of a word.")
-  var maxLength: Int
+  @Option(help: "Maximum length of a word.")
+  var maxLength: Int = 10
 
-  @Option(default: 10, help: "Minimum frequency of a word.")
-  var minFrequency: Int
+  @Option(help: "Minimum frequency of a word.")
+  var minFrequency: Int = 10 
 
   func validate() throws {
     guard !(eager && x10) else {

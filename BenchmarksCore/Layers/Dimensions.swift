@@ -12,12 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Benchmark
-import BenchmarksCore
+let mnistInput = [28, 28, 1]
+let mnistOutput = [10]
 
-registerCustomColumns()
-let command = BenchmarkCommand.parseOrExit()
-Benchmark.main(
-  suites,
-  settings: command.arguments.settings,
-  customDefaults: BenchmarksCore.defaultSettings)
+let cifarInput = [32, 32, 3]
+let cifarOutput = [10]
+
+let imageNetInput = [224, 224, 3]
+let imageNetOutput = [1000]

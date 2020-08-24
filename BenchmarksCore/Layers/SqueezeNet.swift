@@ -12,12 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import Benchmark
-import BenchmarksCore
+import ImageClassificationModels
 
-registerCustomColumns()
-let command = BenchmarkCommand.parseOrExit()
-Benchmark.main(
-  suites,
-  settings: command.arguments.settings,
-  customDefaults: BenchmarksCore.defaultSettings)
+let SqueezeNetSuites = [
+  makeLayerSuite(
+    name: "SqueezeNetV1_0",
+    inputDimensions: imageNetInput,
+    outputDimensions: imageNetOutput
+  ) {
+    SqueezeNetV1_0(classCount: 1000)
+  },
+  makeLayerSuite(
+    name: "SqueezeNetV1_1",
+    inputDimensions: imageNetInput,
+    outputDimensions: imageNetOutput
+  ) {
+    SqueezeNetV1_1(classCount: 1000)
+  },
+]

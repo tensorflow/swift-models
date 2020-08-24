@@ -4,12 +4,11 @@
 import PackageDescription
 
 let package = Package(
-    name: "TensorFlowModels",
+    name: "swift-models",
     platforms: [
         .macOS(.v10_13),
     ],
     products: [
-        .library(name: "Batcher", targets: ["Batcher"]),
         .library(name: "Checkpoints", targets: ["Checkpoints"]),
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
@@ -20,14 +19,14 @@ let package = Package(
         .library(name: "FastStyleTransfer", targets: ["FastStyleTransfer"]),
         .library(name: "MiniGo", targets: ["MiniGo"]),
         .library(name: "TrainingLoop", targets: ["TrainingLoop"]),
+        .library(name: "BenchmarksCore", targets: ["BenchmarksCore"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.9.0"),
-        .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.0.1")),
-        .package(url: "https://github.com/google/swift-benchmark", .branch("master")),
+        .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.10.0"),
+        .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.2.0")),
+        .package(url: "https://github.com/google/swift-benchmark", .revision("f70bf472b00aeaa05e2374373568c2fe459c11c7")),
     ],
     targets: [
-        .target(name: "Batcher", path: "Batcher"),
         .target(
             name: "Checkpoints", dependencies: ["SwiftProtobuf", "ModelSupport"],
             path: "Checkpoints"),
@@ -54,6 +53,7 @@ let package = Package(
         .target(name: "Gym-FrozenLake", path: "Gym/FrozenLake"),
         .target(name: "Gym-CartPole", path: "Gym/CartPole"),
         .target(name: "Gym-Blackjack", path: "Gym/Blackjack"),
+        .target(name: "Gym-DQN", path: "Gym/DQN"),
         .target(
             name: "VGG-Imagewoof",
             dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
@@ -112,12 +112,13 @@ let package = Package(
             path: "FastStyleTransfer/Demo"),
         .testTarget(name: "FastStyleTransferTests", dependencies: ["FastStyleTransfer"]),
         .target(
-            name: "Benchmarks",
+            name: "BenchmarksCore",
             dependencies: [
                 "Datasets", "ModelSupport", "ImageClassificationModels", "ArgumentParser",
                 "TextModels", "Benchmark"
             ],
-            path: "Benchmarks"),
+            path: "BenchmarksCore"),
+        .target(name: "Benchmarks", dependencies: ["BenchmarksCore"], path: "Benchmarks"),
         .testTarget(
             name: "CheckpointTests", dependencies: ["Checkpoints", "ImageClassificationModels"]),
         .target(
