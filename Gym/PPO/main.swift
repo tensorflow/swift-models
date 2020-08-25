@@ -85,7 +85,7 @@ for episodeIndex in 1..<maxEpisodes+1 {
         let (newState, reward, isDone, _) = env.step(action).tuple4
 
         memory.append(
-            state: Array(numpy: tfState.makeNumpyArray().flatten())!,
+            state: Array(state)!,
             action: action,
             reward: Float(reward)!,
             logProb: logProb,
