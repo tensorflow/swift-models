@@ -85,29 +85,19 @@ var episodeReturns: [Float] = []
 var maxEpisodeReturn: Float = -1
 for episodeIndex in 1..<maxEpisodes+1 {
     var state = env.reset()
+    var isDone: Bool
+    var reward: Float
     for _ in 0..<maxTimesteps {
         timestep += 1
-        let tfState: Tensor<Float> = Tensor<Float>(numpy: np.array(state, dtype: np.float32))!
-        let dist: Categorical<Int32> = agent.oldActorCritic(tfState)
-        let action: Int32 = dist.sample().scalarized()
-        let logProb: Float = dist.logProbabilities[Int(action)].scalarized()
-        let (newState, reward, isDone, _) = env.step(action).tuple4
-
-        agent.memory.append(
-            state: Array(state)!,
-            action: action,
-            reward: Float(reward)!,
-            logProb: logProb,
-            isDone: Bool(isDone)!
-        )
+        (state, isDone, reward) = agent.step(env: env, state: state)
 
         if timestep % updateTimestep == 0 {
             agent.update()
             timestep = 0
         }
 
-        episodeReturn += Float(reward)!
-        if Bool(isDone)! {
+        episodeReturn += reward
+        if isDone {
             episodeReturns.append(episodeReturn)
             if maxEpisodeReturn < episodeReturn {
                 maxEpisodeReturn = episodeReturn
@@ -116,8 +106,6 @@ for episodeIndex in 1..<maxEpisodes+1 {
             episodeReturn = 0
             break
         }
-
-        state = newState
     }
 
     // Break when CartPole is solved for 10 consecutive episodes

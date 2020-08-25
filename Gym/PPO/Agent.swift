@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import PythonKit
 import TensorFlow
 
 /// Agent that uses the Proximal Policy Optimization (PPO).
@@ -66,6 +67,23 @@ class PPOAgent {
         self.oldActorCritic = self.actorCritic
         self.actorOptimizer = Adam(for: actorCritic.actorNetwork, learningRate: learningRate)
         self.criticOptimizer = Adam(for: actorCritic.criticNetwork, learningRate: learningRate)
+    }
+
+    func step(env: PythonObject, state: PythonObject) -> (PythonObject, Bool, Float) {
+        let tfState: Tensor<Float> = Tensor<Float>(numpy: np.array(state, dtype: np.float32))!
+        let dist: Categorical<Int32> = oldActorCritic(tfState)
+        let action: Int32 = dist.sample().scalarized()
+        let (newState, reward, isDone, _) = env.step(action).tuple4
+
+        memory.append(
+            state: Array(state)!,
+            action: action,
+            reward: Float(reward)!,
+            logProb: dist.logProbabilities[Int(action)].scalarized(),
+            isDone: Bool(isDone)!
+        )
+
+        return (newState, Bool(isDone)!, Float(reward)!)
     }
 
     func update() {
