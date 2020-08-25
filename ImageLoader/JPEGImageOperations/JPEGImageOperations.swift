@@ -70,7 +70,7 @@ public class ImageData {
     }
 }
 
-func LoadJPEG(atPath path: String, imageFormat: pixelFormats) throws -> ImageData? {
+func loadJPEG(atPath path: String, imageFormat: pixelFormats) throws -> ImageData? {
     var width: Int32 = 0
     var height: Int32 = 0
 
@@ -108,7 +108,7 @@ func LoadJPEG(atPath path: String, imageFormat: pixelFormats) throws -> ImageDat
     }
 }
 
-func SaveJPEG(atPath path: String, image: ImageData) throws -> Int32 {
+func saveJPEG(atPath path: String, image: ImageData) {
     do {
         try FileManager.default.removeItem(atPath: path)
     } catch {
@@ -118,7 +118,6 @@ func SaveJPEG(atPath path: String, image: ImageData) throws -> Int32 {
     var jpegBuf: UnsafeMutablePointer<UInt8>?
     defer { tjFree(jpegBuf) }
 
-    var retVal: Int32 = 0
     let outQual: Int32 = 95
     var jpegSize: UInt = 0
 
@@ -143,11 +142,8 @@ func SaveJPEG(atPath path: String, image: ImageData) throws -> Int32 {
     let jpegData = Data(buffer: bufferPointer)
 
     guard FileManager.default.createFile(atPath: path, contents: jpegData) else {
-        retVal = -1
         throw ("Error during image saving")
     }
-
-    return retVal
 }
 
 extension String: LocalizedError {
