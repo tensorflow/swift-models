@@ -14,6 +14,8 @@
 
 import TensorFlow
 
+// Below code comes from eaplatanios/swift-rl:
+// https://github.com/eaplatanios/swift-rl/blob/master/Sources/ReinforcementLearning/Utilities/Protocols.swift
 public protocol Batchable {
   func flattenedBatch(outerDimCount: Int) -> Self
   func unflattenedBatch(outerDims: [Int]) -> Self
@@ -69,6 +71,8 @@ extension Tensor: DifferentiableBatchable where Scalar: TensorFlowFloatingPoint 
   }
 }
 
+// Below code comes from eaplatanios/swift-rl:
+// https://github.com/eaplatanios/swift-rl/blob/master/Sources/ReinforcementLearning/Distributions/Distribution.swift
 public protocol Distribution {
   associatedtype Value
 
@@ -83,6 +87,8 @@ public protocol DifferentiableDistribution: Distribution, Differentiable {
   func entropy() -> Tensor<Float>
 }
 
+// Below code comes from eaplatanios/swift-rl:
+// https://github.com/eaplatanios/swift-rl/blob/master/Sources/ReinforcementLearning/Distributions/Categorical.swift
 public struct Categorical<Scalar: TensorFlowIndex>: DifferentiableDistribution, KeyPathIterable {
   /// Log-probabilities of this categorical distribution.
   public var logProbabilities: Tensor<Float>
