@@ -67,7 +67,6 @@ let maxTimesteps: Int = 200
 /// The length of the trajectory segment. Denoted T in the PPO paper.
 let updateTimestep: Int = 1000
 
-var memory: PPOMemory = PPOMemory()
 var agent: PPOAgent = PPOAgent(
     observationSize: observationSize,
     hiddenSize: hiddenSize,
@@ -94,7 +93,7 @@ for episodeIndex in 1..<maxEpisodes+1 {
         let logProb: Float = dist.logProbabilities[Int(action)].scalarized()
         let (newState, reward, isDone, _) = env.step(action).tuple4
 
-        memory.append(
+        agent.memory.append(
             state: Array(state)!,
             action: action,
             reward: Float(reward)!,
@@ -103,8 +102,7 @@ for episodeIndex in 1..<maxEpisodes+1 {
         )
 
         if timestep % updateTimestep == 0 {
-            agent.update(memory: &memory)
-            memory.removeAll()
+            agent.update()
             timestep = 0
         }
 

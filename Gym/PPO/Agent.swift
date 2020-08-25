@@ -21,6 +21,8 @@ import TensorFlow
 /// update equation from its predecessor Trust Region Policy Optimization (TRPO). For more
 /// information, check Proximal Policy Optimization Algorithms (Schulman et al., 2017).
 class PPOAgent {
+    // Cache for trajectory segments for minibatch updates.
+    var memory: PPOMemory
     /// The learning rate for both the actor and the critic.
     let learningRate: Float
     /// The discount factor that measures how much to weight to give to future
@@ -54,6 +56,8 @@ class PPOAgent {
         self.clipEpsilon = clipEpsilon
         self.entropyCoefficient = entropyCoefficient
 
+        self.memory = PPOMemory()
+
         self.actorCritic = ActorCritic(
             observationSize: observationSize,
             hiddenSize: hiddenSize,
@@ -62,10 +66,9 @@ class PPOAgent {
         self.oldActorCritic = self.actorCritic
         self.actorOptimizer = Adam(for: actorCritic.actorNetwork, learningRate: learningRate)
         self.criticOptimizer = Adam(for: actorCritic.criticNetwork, learningRate: learningRate)
-
     }
 
-    func update(memory: inout PPOMemory) {
+    func update() {
         // Discount rewards for advantage estimation
         var rewards: [Float] = []
         var discountedReward: Float = 0
@@ -122,5 +125,6 @@ class PPOAgent {
             criticLosses.append(criticLoss.scalarized())
         }
         self.oldActorCritic = self.actorCritic
+        memory.removeAll()
     }
 }
