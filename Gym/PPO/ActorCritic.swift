@@ -108,7 +108,7 @@ class ActorCritic {
         )
     }
 
-    func act(state: Tensor<Float>, memory: PPOMemory) -> Int32 {
+    func act(state: Tensor<Float>) -> (Int32, Float) {
         // Input to the network needs to be 2D (BATCH_SIZE x STATE_SIZE)
         let state = Tensor<Float>([state])
         let actionProbs = self.actorNetwork(state).flattened()
@@ -116,11 +116,6 @@ class ActorCritic {
         let action = dist.sample().scalarized()
         let logProb = dist.logProbabilities.makeNumpyArray()[action]
 
-        let convertedStates: [Float] = Array(numpy: state.makeNumpyArray().flatten())!
-        memory.states.append(convertedStates)
-        memory.actions.append(action)
-        memory.logProbs.append(Float(logProb)!)
-
-        return action
+        return (action, Float(logProb)!)
     }
 }

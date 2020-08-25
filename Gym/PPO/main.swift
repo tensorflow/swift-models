@@ -79,8 +79,13 @@ for episodeIndex in 1..<maxEpisodes+1 {
     for _ in 0..<maxTimesteps {
         timestep += 1
         let tfState = Tensor<Float>(numpy: np.array(state, dtype: np.float32))!
-        let action: Int32 = agent.oldActorCritic.act(state: tfState, memory: memory)
+        let (action, logProb) = agent.oldActorCritic.act(state: tfState)
         let (newState, reward, done, _) = env.step(action).tuple4
+
+        let convertedStates: [Float] = Array(numpy: tfState.makeNumpyArray().flatten())!
+        memory.states.append(convertedStates)
+        memory.actions.append(action)
+        memory.logProbs.append(logProb)
         memory.rewards.append(Float(reward)!)
         memory.isDones.append(Bool(done)!)
 
