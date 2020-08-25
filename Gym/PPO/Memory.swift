@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-class PPOMemory {
+struct PPOMemory {
     var states: [[Float]] = []
     var actions: [Int32] = []
     var rewards: [Float] = []
@@ -21,7 +21,7 @@ class PPOMemory {
 
     init() {}
 
-    func append(state: [Float], action: Int32, reward: Float, logProb: Float, isDone: Bool) {
+    mutating func append(state: [Float], action: Int32, reward: Float, logProb: Float, isDone: Bool) {
         states.append(state)
         actions.append(action)
         logProbs.append(logProb)
@@ -29,7 +29,7 @@ class PPOMemory {
         isDones.append(isDone)
     }
 
-    func removeAll() {
+    mutating func removeAll() {
         states.removeAll()
         actions.removeAll()
         rewards.removeAll()

@@ -76,7 +76,7 @@ class PPOAgent {
         self.oldActorCritic.actorNetwork.l3.bias = self.actorCritic.actorNetwork.l3.bias
     }
 
-    func update(memory: PPOMemory) {
+    func update(memory: inout PPOMemory) {
         // Discount rewards for advantage estimation
         var rewards: [Float] = []
         var discountedReward: Float = 0

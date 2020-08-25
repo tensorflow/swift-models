@@ -93,7 +93,7 @@ for episodeIndex in 1..<maxEpisodes+1 {
         )
 
         if timestep % updateTimestep == 0 {
-            agent.update(memory: memory)
+            agent.update(memory: &memory)
             memory.removeAll()
             timestep = 0
         }
