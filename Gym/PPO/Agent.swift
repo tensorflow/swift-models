@@ -59,31 +59,10 @@ class PPOAgent {
             hiddenSize: hiddenSize,
             actionCount: actionCount
         )
-        self.oldActorCritic = ActorCritic(
-            observationSize: observationSize,
-            hiddenSize: hiddenSize,
-            actionCount: actionCount
-        )
+        self.oldActorCritic = self.actorCritic
         self.actorOptimizer = Adam(for: actorCritic.actorNetwork, learningRate: learningRate)
         self.criticOptimizer = Adam(for: actorCritic.criticNetwork, learningRate: learningRate)
 
-        // Copy actorCritic to oldActorCritic
-        self.updateOldActorCritic()
-    }
-
-    func updateOldActorCritic() {
-        self.oldActorCritic.criticNetwork.l1.weight = self.actorCritic.criticNetwork.l1.weight
-        self.oldActorCritic.criticNetwork.l1.bias = self.actorCritic.criticNetwork.l1.bias
-        self.oldActorCritic.criticNetwork.l2.weight = self.actorCritic.criticNetwork.l2.weight
-        self.oldActorCritic.criticNetwork.l2.bias = self.actorCritic.criticNetwork.l2.bias
-        self.oldActorCritic.criticNetwork.l3.weight = self.actorCritic.criticNetwork.l3.weight
-        self.oldActorCritic.criticNetwork.l3.bias = self.actorCritic.criticNetwork.l3.bias
-        self.oldActorCritic.actorNetwork.l1.weight = self.actorCritic.actorNetwork.l1.weight
-        self.oldActorCritic.actorNetwork.l1.bias = self.actorCritic.actorNetwork.l1.bias
-        self.oldActorCritic.actorNetwork.l2.weight = self.actorCritic.actorNetwork.l2.weight
-        self.oldActorCritic.actorNetwork.l2.bias = self.actorCritic.actorNetwork.l2.bias
-        self.oldActorCritic.actorNetwork.l3.weight = self.actorCritic.actorNetwork.l3.weight
-        self.oldActorCritic.actorNetwork.l3.bias = self.actorCritic.actorNetwork.l3.bias
     }
 
     func update(memory: inout PPOMemory) {
@@ -142,6 +121,6 @@ class PPOAgent {
             self.criticOptimizer.update(&self.actorCritic.criticNetwork, along: criticGradients)
             criticLosses.append(criticLoss.scalarized())
         }
-        self.updateOldActorCritic()
+        self.oldActorCritic = self.actorCritic
     }
 }
