@@ -92,7 +92,7 @@ struct CriticNetwork: Layer {
 ///
 /// Weight are often shared between the actor network and the critic network, but in this example,
 /// they are separated networks.
-class ActorCritic {
+struct ActorCritic: Layer {
     var actorNetwork: ActorNetwork
     var criticNetwork: CriticNetwork
 
@@ -108,14 +108,13 @@ class ActorCritic {
         )
     }
 
-    func act(state: Tensor<Float>) -> (Int32, Float) {
+    @differentiable
+    func callAsFunction(_ state: Tensor<Float>) -> Categorical<Int32> {
         // Input to the network needs to be 2D (BATCH_SIZE x STATE_SIZE)
         let state = Tensor<Float>([state])
         let actionProbs = self.actorNetwork(state).flattened()
         let dist = Categorical<Int32>(probabilities: actionProbs)
-        let action = dist.sample().scalarized()
-        let logProb = dist.logProbabilities.makeNumpyArray()[action]
 
-        return (action, Float(logProb)!)
+        return dist
     }
 }

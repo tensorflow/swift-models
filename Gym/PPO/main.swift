@@ -78,8 +78,10 @@ for episodeIndex in 1..<maxEpisodes+1 {
     var state = env.reset()
     for _ in 0..<maxTimesteps {
         timestep += 1
-        let tfState = Tensor<Float>(numpy: np.array(state, dtype: np.float32))!
-        let (action, logProb) = agent.oldActorCritic.act(state: tfState)
+        let tfState: Tensor<Float> = Tensor<Float>(numpy: np.array(state, dtype: np.float32))!
+        let dist: Categorical<Int32> = agent.oldActorCritic(tfState)
+        let action: Int32 = dist.sample().scalarized()
+        let logProb: Float = Float(dist.logProbabilities.makeNumpyArray()[action])!
         let (newState, reward, done, _) = env.step(action).tuple4
 
         let convertedStates: [Float] = Array(numpy: tfState.makeNumpyArray().flatten())!
