@@ -114,7 +114,6 @@ struct ActorCritic: Layer {
         let state = Tensor<Float>([state])
         let actionProbs = self.actorNetwork(state).flattened()
         let dist = Categorical<Int32>(probabilities: actionProbs)
-
         return dist
     }
 }

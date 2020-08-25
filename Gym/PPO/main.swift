@@ -91,7 +91,7 @@ for episodeIndex in 1..<maxEpisodes+1 {
         let tfState: Tensor<Float> = Tensor<Float>(numpy: np.array(state, dtype: np.float32))!
         let dist: Categorical<Int32> = agent.oldActorCritic(tfState)
         let action: Int32 = dist.sample().scalarized()
-        let logProb: Float = Float(dist.logProbabilities.makeNumpyArray()[action])!
+        let logProb: Float = dist.logProbabilities[Int(action)].scalarized()
         let (newState, reward, isDone, _) = env.step(action).tuple4
 
         memory.append(
@@ -109,7 +109,7 @@ for episodeIndex in 1..<maxEpisodes+1 {
         }
 
         episodeReturn += Float(reward)!
-        if Bool(isDone)! == true {
+        if Bool(isDone)! {
             episodeReturns.append(episodeReturn)
             if maxEpisodeReturn < episodeReturn {
                 maxEpisodeReturn = episodeReturn
