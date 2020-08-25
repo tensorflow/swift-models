@@ -72,81 +72,31 @@ extension Tensor: DifferentiableBatchable where Scalar: TensorFlowFloatingPoint 
 public protocol Distribution {
   associatedtype Value
 
-  func logProbability(of value: Value) -> Tensor<Float>
   func entropy() -> Tensor<Float>
-
-  /// Returns the mode of this distribution. If the distribution has multiple modes, then one of
-  /// them is sampled randomly (and uniformly) and returned.
-  func mode() -> Value
 
   /// Returns a random sample drawn from this distribution.
   func sample() -> Value
 }
 
-public extension Distribution {
-  func probability(of value: Value) -> Tensor<Float> {
-    exp(logProbability(of: value))
-  }
-}
-
 public protocol DifferentiableDistribution: Distribution, Differentiable {
   @differentiable(wrt: self)
-  func logProbability(of value: Value) -> Tensor<Float>
-
-  @differentiable(wrt: self)
   func entropy() -> Tensor<Float>
-}
-
-extension DifferentiableDistribution {
-  @inlinable
-  @differentiable(wrt: self)
-  public func probability(of value: Value) -> Tensor<Float> {
-    exp(logProbability(of: value))
-  }
 }
 
 public struct Categorical<Scalar: TensorFlowIndex>: DifferentiableDistribution, KeyPathIterable {
   /// Log-probabilities of this categorical distribution.
   public var logProbabilities: Tensor<Float>
 
-  @inlinable
-  @differentiable(wrt: logProbabilities)
-  public init(logProbabilities: Tensor<Float>) {
-    self.logProbabilities = logProbabilities
-  }
-
-  @inlinable
-  
+  @inlinable  
   @differentiable(wrt: probabilities)
   public init(probabilities: Tensor<Float>) {
     self.logProbabilities = log(probabilities)
   }
 
   @inlinable
-  @differentiable(wrt: logits)
-  public init(logits: Tensor<Float>) {
-    self.logProbabilities = logSoftmax(logits)
-  }
-
-  @inlinable
-  @differentiable(wrt: self)
-  public func logProbability(of value: Tensor<Scalar>) -> Tensor<Float> {
-    let outerDimCount = logProbabilities.rank - 1
-    return -softmaxCrossEntropy(
-      logits: logProbabilities.flattenedBatch(outerDimCount: outerDimCount),
-      labels: Tensor<Int32>(value).flattenedBatch(outerDimCount: outerDimCount)
-    ).unflattenedBatch(outerDims: [Int](logProbabilities.shape.dimensions[0..<outerDimCount]))
-  }
-
-  @inlinable
   @differentiable(wrt: self)
   public func entropy() -> Tensor<Float> {
     -(logProbabilities * exp(logProbabilities)).sum(squeezingAxes: -1)
-  }
-
-  @inlinable
-  public func mode() -> Tensor<Scalar> {
-    Tensor<Scalar>(logProbabilities.argmax(squeezingAxis: 1))
   }
 
   @inlinable
