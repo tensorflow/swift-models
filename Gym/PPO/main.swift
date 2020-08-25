@@ -73,7 +73,7 @@ var agent: PPOAgent = PPOAgent(
 var timestep: Int = 0
 var episodeReturn: Float = 0
 var episodeReturns: [Float] = []
-var averageReturn: Float = 0
+var maxEpisodeReturn: Float = -1
 for episodeIndex in 1..<maxEpisodes+1 {
     var state = env.reset()
     for _ in 0..<maxTimesteps {
@@ -97,10 +97,13 @@ for episodeIndex in 1..<maxEpisodes+1 {
             timestep = 0
         }
 
-        averageReturn += Float(reward)!
         episodeReturn += Float(reward)!
         if Bool(done)! == true {
             episodeReturns.append(episodeReturn)
+            if maxEpisodeReturn < episodeReturn {
+                maxEpisodeReturn = episodeReturn
+                print(String(format: "Episode: %4d | Return: %6.2f", episodeIndex, episodeReturn))
+            }
             episodeReturn = 0
             break
         }
@@ -108,12 +111,9 @@ for episodeIndex in 1..<maxEpisodes+1 {
         state = newState
     }
 
-    if episodeIndex % logInterval == 0 {
-        averageReturn = Float(averageReturn) / Float(logInterval)
-        print(String(format: "Episode: %4d | Average Return: %6.2f", episodeIndex, averageReturn))
-    }
-
-    if Float(averageReturn) > (Float(logInterval) * Float(solvedReward)) {
+    // Break when CartPole is solved for 10 consecutive episodes
+    if episodeReturns.suffix(10).reduce(0, +) == 200 * 10 {
+        print(String(format: "Solved in %d episodes!", episodeIndex))
         break
     }
 }
@@ -123,5 +123,6 @@ plt.plot(episodeReturns)
 plt.title("Proximal Policy Optimization on CartPole-v0")
 plt.xlabel("Episode")
 plt.ylabel("Episode Return")
+// TODO: Save figure to /tmp/
 plt.savefig("ppoEpisodeReturns.png")
 plt.clf()
