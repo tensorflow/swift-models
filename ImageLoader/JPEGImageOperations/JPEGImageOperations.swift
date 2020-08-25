@@ -11,7 +11,7 @@ import TurboJPEG
     #error("C library not known for the target OS")
 #endif
 
-public enum pixelFormats: Int32 {
+public enum pixelFormat: Int32 {
     case RGB888 = 0 // TJPF_RGB
     case BGR888 = 1 // TJPF_BGR
     case RGBA8888 = 2 // TJPF_RGBA
@@ -56,9 +56,9 @@ public class ImageData {
     let height: Int32
     let width: Int32
     let buffer: UnsafeMutablePointer<UInt8>
-    let formatProperties: pixelFormats
+    let formatProperties: pixelFormat
 
-    init(height: Int32, width: Int32, imageFormat: pixelFormats) {
+    init(height: Int32, width: Int32, imageFormat: pixelFormat) {
         self.height = height
         self.width = width
         formatProperties = imageFormat
@@ -70,7 +70,7 @@ public class ImageData {
     }
 }
 
-func loadJPEG(atPath path: String, imageFormat: pixelFormats) throws -> ImageData? {
+func loadJPEG(atPath path: String, imageFormat: pixelFormat) throws -> ImageData {
     var width: Int32 = 0
     var height: Int32 = 0
 
@@ -108,7 +108,7 @@ func loadJPEG(atPath path: String, imageFormat: pixelFormats) throws -> ImageDat
     }
 }
 
-func saveJPEG(atPath path: String, image: ImageData) {
+func saveJPEG(atPath path: String, image: ImageData) throws {
     do {
         try FileManager.default.removeItem(atPath: path)
     } catch {
