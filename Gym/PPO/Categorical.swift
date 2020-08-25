@@ -53,13 +53,9 @@ extension Tensor: DifferentiableBatchable where Scalar: TensorFlowFloatingPoint 
     if outerDimCount == 1 {
       return self
     }
-    // TODO: Remove this hack once the S4TF auto-diff memory leak is fixed.
-    let newShape = Swift.withoutDerivative(at: self.shape) { shape -> [Int] in 
-      var newShape = [-1]
-      for i in outerDimCount..<shape.count {
-        newShape.append(shape[i])
-      }
-      return newShape
+    var newShape = [-1]
+    for i in outerDimCount..<rank {
+      newShape.append(shape[i])
     }
     return reshaped(to: TensorShape(newShape))
   }
