@@ -38,23 +38,34 @@ let observationSize: Int = Int(env.observation_space.shape[0])!
 let actionCount: Int = Int(env.action_space.n)!
 
 // Hyperparameters
-// Network HP
+/// The size of the hidden layer of the 2-layer actor network and critic network. The actor network
+/// has the shape observationSize - hiddenSize - actionCount, and the critic network has the same
+/// shape but with a single output node.
 let hiddenSize: Int = 128
-// Optimizer HP
+/// The learning rate for both the actor and the critic.
 let learningRate: Float = 0.0003
-// TODO(seungjaeryanlee): Not used
-let betas: [Float] = [0.9, 0.999]
+/// The discount factor. This measures how much to "discount" the future rewards
+/// that the agent will receive. The discount factor must be from 0 to 1
+/// (inclusive). Discount factor of 0 means that the agent only considers the
+/// immediate reward and disregards all future rewards. Discount factor of 1
+/// means that the agent values all rewards equally, no matter how distant
+/// in the future they may be. Denoted gamma in the PPO paper.
 let discount: Float = 0.99
+/// Number of epochs to run minibatch updates once enough trajectory segments are collected. Denoted
+/// K in the PPO paper.
 let epochs: Int = 10
+/// Parameter to clip the probability ratio. The ratio is clipped to [1-clipEpsilon, 1+clipEpsilon].
+/// Denoted epsilon in the PPO paper.
 let clipEpsilon: Float = 0.1
+/// Coefficient for the entropy bonus added to the objective. Denoted c_2 in the PPO paper.
 let entropyCoefficient: Float = 0.0001
-// Interaction
+/// Maximum number of episodes to train the agent. The training is terminated
+/// early if maximum score is achieved consecutively 10 times.
 let maxEpisodes: Int = 1000
+/// Maximum timestep per episode.
 let maxTimesteps: Int = 200
+/// The length of the trajectory segment. Denoted T in the PPO paper.
 let updateTimestep: Int = 1000
-// Log
-let logInterval: Int = 20
-let solvedReward: Float = 199
 
 var memory: PPOMemory = PPOMemory()
 var agent: PPOAgent = PPOAgent(
@@ -62,8 +73,7 @@ var agent: PPOAgent = PPOAgent(
     hiddenSize: hiddenSize,
     actionCount: actionCount,
     learningRate: learningRate,
-    betas: betas,
-    gamma: gamma,
+    discount: discount,
     epochs: epochs,
     clipEpsilon: clipEpsilon,
     entropyCoefficient: entropyCoefficient

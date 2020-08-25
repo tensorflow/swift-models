@@ -23,8 +23,6 @@ import TensorFlow
 class PPOAgent {
     /// The learning rate for both the actor and the critic.
     let learningRate: Float
-    // TODO: Remove since we don't have KL penalty
-    let betas: [Float]
     /// The discount factor that measures how much to weight to give to future
     /// rewards when calculating the action value.
     let discount: Float
@@ -45,14 +43,12 @@ class PPOAgent {
         hiddenSize: Int,
         actionCount: Int,
         learningRate: Float,
-        betas: [Float],
         discount: Float,
         epochs: Int,
         clipEpsilon: Float,
         entropyCoefficient: Float
     ) {
         self.learningRate = learningRate
-        self.betas = betas
         self.discount = discount
         self.epochs = epochs
         self.clipEpsilon = clipEpsilon
@@ -98,7 +94,7 @@ class PPOAgent {
             if memory.isDones[i] {
                 discountedReward = 0
             }
-            discountedReward = memory.rewards[i] + (gamma * discountedReward)
+            discountedReward = memory.rewards[i] + (discount * discountedReward)
             rewards.insert(discountedReward, at: 0)
         }
         var tfRewards = Tensor<Float>(rewards)
