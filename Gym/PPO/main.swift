@@ -44,7 +44,7 @@ let hiddenSize: Int = 128
 let learningRate: Float = 0.0003
 // TODO(seungjaeryanlee): Not used
 let betas: [Float] = [0.9, 0.999]
-let gamma: Float = 0.99
+let discount: Float = 0.99
 let epochs: Int = 10
 let clipEpsilon: Float = 0.1
 let entropyCoefficient: Float = 0.0001

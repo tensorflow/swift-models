@@ -14,13 +14,27 @@
 
 import TensorFlow
 
+/// Agent that uses the Proximal Policy Optimization (PPO).
+///
+/// Proximal Policy Optimization is an algorithm that trains an actor (policy) and a critic (value
+/// function) using a clipped objective function. The clipped objective function simplifies the
+/// update equation from its predecessor Trust Region Policy Optimization (TRPO). For more
+/// information, check Proximal Policy Optimization Algorithms (Schulman et al., 2017).
 class PPOAgent {
+    /// The learning rate for both the actor and the critic.
     let learningRate: Float
+    // TODO: Remove since we don't have KL penalty
     let betas: [Float]
-    let gamma: Float
+    /// The discount factor that measures how much to weight to give to future
+    /// rewards when calculating the action value.
+    let discount: Float
+    /// Number of epochs to run minibatch updates once enough trajectory segments are collected.
     let epochs: Int
+    /// Parameter to clip the probability ratio.
     let clipEpsilon: Float
+    /// Coefficient for the entropy bonus added to the objective.
     let entropyCoefficient: Float
+
     var actorCritic: ActorCritic
     var oldActorCritic: ActorCritic
     var actorOptimizer: Adam<ActorNetwork>
@@ -32,14 +46,14 @@ class PPOAgent {
         actionCount: Int,
         learningRate: Float,
         betas: [Float],
-        gamma: Float,
+        discount: Float,
         epochs: Int,
         clipEpsilon: Float,
         entropyCoefficient: Float
     ) {
         self.learningRate = learningRate
         self.betas = betas
-        self.gamma = gamma
+        self.discount = discount
         self.epochs = epochs
         self.clipEpsilon = clipEpsilon
         self.entropyCoefficient = entropyCoefficient
