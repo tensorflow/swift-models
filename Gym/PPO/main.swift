@@ -134,6 +134,5 @@ plt.plot(episodeReturns)
 plt.title("Proximal Policy Optimization on CartPole-v0")
 plt.xlabel("Episode")
 plt.ylabel("Episode Return")
-// TODO: Save figure to /tmp/
-plt.savefig("ppoEpisodeReturns.png")
+plt.savefig("/tmp/ppoEpisodeReturns.png")
 plt.clf()
