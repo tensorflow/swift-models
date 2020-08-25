@@ -21,7 +21,15 @@ class PPOMemory {
 
     init() {}
 
-    func clear_memory() {
+    func append(state: [Float], action: Int32, reward: Float, logProb: Float, isDone: Bool) {
+        states.append(state)
+        actions.append(action)
+        logProbs.append(logProb)
+        rewards.append(reward)
+        isDones.append(isDone)
+    }
+
+    func removeAll() {
         states.removeAll()
         actions.removeAll()
         rewards.removeAll()
