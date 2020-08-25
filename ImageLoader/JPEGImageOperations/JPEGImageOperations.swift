@@ -11,7 +11,7 @@ import TurboJPEG
     #error("C library not known for the target OS")
 #endif
 
-public enum pixelFormat: Int32 {
+public enum pixelFormat: Int {
     case RGB888 = 0 // TJPF_RGB
     case BGR888 = 1 // TJPF_BGR
     case RGBA8888 = 2 // TJPF_RGBA
@@ -24,7 +24,7 @@ public enum pixelFormat: Int32 {
     case ABGR0888 = 9 // TJPF_XBGR
     case YUV400 = 10 // TJPF_GREY
 
-    var channelCount: Int32 {
+    var channelCount: Int {
         switch self {
         case .RGB888:
             return 3
@@ -53,8 +53,8 @@ public enum pixelFormat: Int32 {
 }
 
 public class ImageData {
-    let height: Int32
-    let width: Int32
+    let height: CInt
+    let width: CInt
     let buffer: UnsafeMutablePointer<UInt8>
     let formatProperties: pixelFormat
 
@@ -62,7 +62,7 @@ public class ImageData {
         self.height = height
         self.width = width
         formatProperties = imageFormat
-        buffer = tjAlloc(imageFormat.channelCount * width * height)
+        buffer = tjAlloc(Int32(imageFormat.channelCount) * width * height)
     }
 
     deinit {
@@ -71,8 +71,8 @@ public class ImageData {
 }
 
 func loadJPEG(atPath path: String, imageFormat: pixelFormat) throws -> ImageData {
-    var width: Int32 = 0
-    var height: Int32 = 0
+    var width: CInt = 0
+    var height: CInt = 0
 
     guard FileManager.default.fileExists(atPath: path) else {
         throw ("File does not exist at \(path).")
@@ -102,7 +102,7 @@ func loadJPEG(atPath path: String, imageFormat: pixelFormat) throws -> ImageData
          - pixelFormat = imageFormat.rawValue which denotes Pixel Format to which image is being decompressed.
          - flags = 0
          */
-        tjDecompress2(decompressor, finPointer, UInt(jpegSize), imageData.buffer, imageData.width, 0, imageData.height, imageFormat.rawValue, 0)
+        tjDecompress2(decompressor, finPointer, UInt(jpegSize), imageData.buffer, imageData.width, 0, imageData.height, Int32(imageFormat.rawValue), 0)
 
         return imageData
     }
@@ -118,7 +118,7 @@ func saveJPEG(atPath path: String, image: ImageData) throws {
     var jpegBuf: UnsafeMutablePointer<UInt8>?
     defer { tjFree(jpegBuf) }
 
-    let outQual: Int32 = 95
+    let outQual: CInt = 95
     var jpegSize: UInt = 0
 
     let compressor = tjInitCompress()
@@ -136,7 +136,7 @@ func saveJPEG(atPath path: String, image: ImageData) throws {
      - `outQual` = the image quality of the generated JPEG image (1 = worst, 100 = best), 95 taken as default
      - `flags` = 0
      */
-    tjCompress2(compressor, image.buffer, image.width, 0, image.height, image.formatProperties.rawValue, &jpegBuf, &jpegSize, 0, outQual, 0)
+    tjCompress2(compressor, image.buffer, image.width, 0, image.height, Int32(image.formatProperties.rawValue), &jpegBuf, &jpegSize, 0, outQual, 0)
 
     let bufferPointer = UnsafeMutableBufferPointer(start: jpegBuf, count: Int(jpegSize))
     let jpegData = Data(buffer: bufferPointer)
