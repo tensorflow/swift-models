@@ -70,7 +70,7 @@ class PPOAgent {
     }
 
     func step(env: PythonObject, state: PythonObject) -> (PythonObject, Bool, Float) {
-        let tfState: Tensor<Float> = Tensor<Float>(numpy: np.array(state, dtype: np.float32))!
+        let tfState: Tensor<Float> = Tensor<Float>(numpy: np.array([state], dtype: np.float32))!
         let dist: Categorical<Int32> = oldActorCritic(tfState)
         let action: Int32 = dist.sample().scalarized()
         let (newState, reward, isDone, _) = env.step(action).tuple4

@@ -110,8 +110,7 @@ struct ActorCritic: Layer {
 
     @differentiable
     func callAsFunction(_ state: Tensor<Float>) -> Categorical<Int32> {
-        // Input to the network needs to be 2D (BATCH_SIZE x STATE_SIZE)
-        let state = Tensor<Float>([state])
+        precondition(state.rank == 2, "The input must be 2-D ([batch size, state size]).")
         let actionProbs = self.actorNetwork(state).flattened()
         let dist = Categorical<Int32>(probabilities: actionProbs)
         return dist
