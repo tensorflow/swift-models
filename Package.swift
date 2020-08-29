@@ -143,6 +143,11 @@ let package = Package(
            name: "Fractals",
            dependencies: ["ArgumentParser", "ModelSupport"],
            path: "Examples/Fractals"
+       ),
+       .target(
+           name: "GrowingNeuralCellularAutomata",
+           dependencies: ["ArgumentParser", "ModelSupport"],
+           path: "Examples/GrowingNeuralCellularAutomata"
        )
     ]
 )
