@@ -10,17 +10,21 @@ cells to grow from a single cell into the shape and colors of the target image. 
 channel of the input image determines the shape of the image, and any cells with an alpha
 less than 0.1 are considered "dead".
 
+During inference, a single cell at the center of the image is seeded with a 1.0 alpha channel,
+with all other values set to 0.0. Images are captured at multiple steps to observe the evolution
+of the environment.
+
 ## Setup
 
 To begin, you'll need the [latest version of Swift for
 TensorFlow](https://github.com/tensorflow/swift/blob/master/Installation.md)
 installed. Make sure you've added the correct version of `swift` to your path.
 
-To train the model, run:
+To train the cell update rule, run:
 
 ```sh
 cd swift-models
-swift run -c release GrowingNeuralCellularAutomata --image images/lizard.png
+swift run -c release GrowingNeuralCellularAutomata --image examples/GrowingNeuralCellularAutomata/images/lizard.png
 ```
 
 Parameters:
@@ -33,3 +37,4 @@ Parameters:
 - `--batch-size`: The batch size during training (default: 8).
 - `--cell-fire-rate`: The fraction of cells to fire at each update (default: 0.5).
 - `--pool-size`: The pool size during training (default: 1024). 
+- `--iterations`: The number of training iterations (default: 8000). 

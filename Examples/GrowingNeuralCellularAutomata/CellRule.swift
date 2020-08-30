@@ -14,21 +14,28 @@
 
 import TensorFlow
 
-struct CellRules: Layer {
+struct CellRule: Layer {
+  @noDerivative var horizontalSobelFilter: Tensor<Float>
+  @noDerivative var verticalSobelFilter: Tensor<Float>
+
   var conv1: Conv2D<Float>
   var conv2: Conv2D<Float>
   
   init(stateChannels: Int) {
-    conv1 = Conv2D<Float>(filterShape: (1, 1, 4, 128))
-    
-    // TODO: Initialize last layer with all zeros
-    conv2 = Conv2D<Float>(filterShape: (1, 1, 128, stateChannels))
+    let horizontalSobelKernel = Tensor<Float>(shape: [3, 3, 1, 1], scalars: [-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0])
+    horizontalSobelFilter = horizontalSobelKernel.broadcasted(to: [3, 3, stateChannels, 1])
+    let verticalSobelKernel = Tensor<Float>(shape: [3, 3, 1, 1], scalars: [-1.0, -2.0, -1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 1.0])
+    verticalSobelFilter = verticalSobelKernel.broadcasted(to: [3, 3, stateChannels, 1])
+
+    conv1 = Conv2D<Float>(filterShape: (1, 1, stateChannels * 3, 128))
+    conv2 = Conv2D<Float>(filterShape: (1, 1, 128, stateChannels), filterInitializer: zeros())
   }
 
   @differentiable
   func perceive(_ input: Tensor<Float>) -> Tensor<Float> {
-    // TODO: Sobel kernels here
-    return input
+    let horizontalSobel = depthwiseConv2D(input, filter: horizontalSobelFilter, strides: (1, 1, 1, 1), padding: .same)
+    let verticalSobel = depthwiseConv2D(input, filter: verticalSobelFilter, strides: (1, 1, 1, 1), padding: .same)
+    return Tensor(concatenating: [horizontalSobel, verticalSobel, input], alongAxis: 3)
   }
 
   @differentiable

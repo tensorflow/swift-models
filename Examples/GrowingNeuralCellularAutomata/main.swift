@@ -47,6 +47,18 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
   @Option(help: "The pool size during training.")
   var poolSize = 1024
 
+  @Option(help: "The number of training iterations.")
+  var iterations = 8000
+
+  @Option(help: "The minimum number of steps.")
+  var minimumSteps = 64
+
+  @Option(help: "The maximum number of steps.")
+  var maximumSteps = 96
+
+  @Option(help: "The number of steps to run through during inference.")
+  var inferenceSteps = 96
+
   @Option(help: "The image to use as a target.")
   var image: String
 
@@ -77,24 +89,55 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     // Load and pad the target image to evolve towards.
     let hostInputImage = Image(jpeg: URL(fileURLWithPath: image)).resized(to: (imageSize, imageSize)).tensor
     let inputImage = Tensor(copying: hostInputImage, to: device)
-    print("Input image: \(inputImage.shape)")
     let paddedImage = inputImage.padded(forSizes: [(before: padding, after: padding), (before: padding, after: padding), (before: 0, after: 0)])
-    print("Padded image: \(paddedImage.shape)")
+    let paddedImageBatch = paddedImage.broadcasted(to: [batchSize, paddedImage.shape[0], paddedImage.shape[1], paddedImage.shape[2]])
     
-    var cellRules = CellRules(stateChannels: stateChannels)
+    // Initialize model, optimizer, and initial state.
+    var initialState = Tensor(zerosLike: paddedImage).padded(forSizes: [(before: 0, after: 0), (before: 0, after: 0), (before: 0, after: stateChannels - 4)])
+    initialState[initialState.shape[0] / 2][initialState.shape[1] / 2][3] = Tensor<Float>(1.0)
     
-    // Start training loop
+//    print("Initial state: \(initialState.scalars)")
     
-    // Seed initial image
-    // Run for 64-96 steps
-    // Perform loss
-    // Calculate and apply gradient via Adam
-    // LR = 2e-3
-    // Piecewise constant LR decay (2000, [lr, lr*0.1])
+    let initialBatch = initialState.broadcasted(to: [batchSize, initialState.shape[0], initialState.shape[1], initialState.shape[2]])
+//    print("Initial batch: \(initialBatch.scalars)")
+    var cellRule = CellRule(stateChannels: stateChannels)
+    cellRule.move(to: device)
+    var optimizer = Adam(for: cellRule, learningRate: 2e-3)
+    optimizer = Adam(copying: optimizer, to: device)
+
+    for iteration in 0..<iterations {
+      let steps = Int.random(in: minimumSteps...maximumSteps)
+      let (loss, ruleGradient) = valueWithGradient(at: cellRule) { cellRules -> Tensor<Float> in
+        var state = initialBatch
+        for _ in 0..<steps {
+          state = cellRule(state)
+        }
+        // TODO: L2 normalization to parameter gradients.
+        let rgbaComponents = state.slice(lowerBounds: [0, 0, 0, 0], sizes: [state.shape[0], state.shape[1], state.shape[2], 4])
+        print("RGBA: \(rgbaComponents.shape), batch: \(paddedImageBatch.shape)")
+        return meanSquaredError(predicted: rgbaComponents, expected: paddedImageBatch)
+      }
+      print("Rule gradient: \(ruleGradient)")
+      optimizer.update(&cellRule, along: ruleGradient)
+      LazyTensorBarrier()
+
+      print("Iteration: \(iteration), loss: \(loss)")
+      
+      if (iteration % 2000) == 0 {
+        optimizer.learningRate = optimizer.learningRate * 0.1
+      }
+    }
     
-    // Seed inference image
-    // Perform inference
-    // Capture images at various stages
+    // Perform inference and record the results.
+    var state = initialState
+    for step in 0..<inferenceSteps {
+      state = cellRule(state)
+      // TODO: Finish the color saving here.
+      let colorComponents = state.slice(lowerBounds: [0, 0, 0], sizes: [state.shape[0], state.shape[1], 4])
+      // TODO: Add RGBA saving with PNG format here.
+      let filename = String(format: "step%03d", step)
+      try saveImage(colorComponents, shape: (colorComponents.shape[0], colorComponents.shape[1]), format: .rgb, directory: "output", name: filename)
+    }
   }
 }
 
