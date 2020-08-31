@@ -19,8 +19,10 @@ let progressBarLength = 30
 /// A progress bar that displays to the console as a model trains, and as validation is performed.
 /// It hooks into a TrainingLoop via a callback method.
 public class TrainingProgress {
+  public var accuracies: [Float]
+  public var losses: [Float]
   var statistics: TrainingStatistics?
-  public let metrics: Set<TrainingMetrics>
+  let metrics: Set<TrainingMetrics>
   let liveStatistics: Bool
 
   /// Initializes the progress bar with the metrics to be displayed (if any), and whether to
@@ -34,6 +36,8 @@ public class TrainingProgress {
   ///     This has an impact on performance, due to materialization of tensors, and updating values
   ///     on every batch can reduce training speed by up to 30%.
   public init(metrics: Set<TrainingMetrics> = [.accuracy, .loss], liveStatistics: Bool = true) {
+    self.accuracies = []
+    self.losses = []
     self.metrics = metrics
     self.liveStatistics = liveStatistics
     if !metrics.isEmpty {
@@ -68,6 +72,15 @@ public class TrainingProgress {
     return result
   }
 
+  func updateMetrics() {
+      if metrics.contains(.loss) {
+          losses.append(statistics!.averageLoss())
+      }
+      if metrics.contains(.accuracy) {
+          accuracies.append(statistics!.accuracy())
+      }
+  }
+
   /// The callback used to hook into the TrainingLoop. This is updated once per event.
   ///
   /// - Parameters:
@@ -92,6 +105,7 @@ public class TrainingProgress {
       let metricDescriptionComponent: String
       if liveStatistics || (batchCount == (batchIndex + 1)) {
         metricDescriptionComponent = metricDescription()
+        updateMetrics()
       } else {
         metricDescriptionComponent = ""
       }
@@ -107,4 +121,13 @@ public class TrainingProgress {
     default: break
     }
   }
+}
+public extension TrainingProgress {
+  func trainAcc() -> [Float] {
+      return self.accuracies
+  }
+  func trainLoss() -> [Float] {
+      return self.losses
+  }
+
 }
