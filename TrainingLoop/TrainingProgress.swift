@@ -19,8 +19,8 @@ let progressBarLength = 30
 /// A progress bar that displays to the console as a model trains, and as validation is performed.
 /// It hooks into a TrainingLoop via a callback method.
 public class TrainingProgress {
-  public var accuracies: [Float]
-  public var losses: [Float]
+  public var accuracies: [Float] // accessible list of accuracies values
+  public var losses: [Float]     // acceessible list of loss values
   var statistics: TrainingStatistics?
   let metrics: Set<TrainingMetrics>
   let liveStatistics: Bool
@@ -121,13 +121,4 @@ public class TrainingProgress {
     default: break
     }
   }
-}
-public extension TrainingProgress {
-  func trainAcc() -> [Float] {
-      return self.accuracies
-  }
-  func trainLoss() -> [Float] {
-      return self.losses
-  }
-
 }
