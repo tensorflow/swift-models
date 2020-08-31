@@ -20,7 +20,7 @@ let progressBarLength = 30
 /// It hooks into a TrainingLoop via a callback method.
 public class TrainingProgress {
   var statistics: TrainingStatistics?
-  let metrics: Set<TrainingMetrics>
+  public let metrics: Set<TrainingMetrics>
   let liveStatistics: Bool
 
   /// Initializes the progress bar with the metrics to be displayed (if any), and whether to
