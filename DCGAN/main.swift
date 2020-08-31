@@ -153,7 +153,7 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
     // Render images.
     let generatedImage = generator(noise)
     try saveImage(
-        generatedImage, shape: (28, 28), format: .grayscale, directory: outputFolder,
+        generatedImage, shape: (28, 28), colorspace: .grayscale, directory: outputFolder,
         name: "\(epoch)")
 
     // Print loss.
@@ -165,5 +165,5 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
 let noise1 = Tensor<Float>(randomNormal: TensorShape(1, 100))
 let generatedImage = generator(noise1)
 try saveImage(
-    generatedImage, shape: (28, 28), format: .grayscale, directory: outputFolder,
+    generatedImage, shape: (28, 28), colorspace: .grayscale, directory: outputFolder,
     name: "final")

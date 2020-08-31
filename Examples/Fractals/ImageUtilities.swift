@@ -44,7 +44,8 @@ fileprivate func prismColor(_ value: Float, iterations: Int) -> [Float] {
   let red = (0.75 * sinf((normalizedValue * 20.9 + 0.25) * Float.pi) + 0.67) * 255
   let green = (0.75 * sinf((normalizedValue * 20.9 - 0.25) * Float.pi) + 0.33) * 255
   let blue = (-1.1 * sinf((normalizedValue * 20.9) * Float.pi)) * 255
-  return [red, green, blue]
+  let alpha: Float = 255.0
+  return [red, green, blue, alpha]
 }
 
 func saveFractalImage(_ divergenceGrid: Tensor<Float>, iterations: Int, fileName: String) throws {
@@ -54,10 +55,10 @@ func saveFractalImage(_ divergenceGrid: Tensor<Float>, iterations: Int, fileName
     $0 += prismColor($1, iterations: iterations)
   }
   let colorImage = Tensor<Float>(
-    shape: [gridShape[0], gridShape[1], 3], scalars: colorValues, on: divergenceGrid.device)
+    shape: [gridShape[0], gridShape[1], 4], scalars: colorValues, on: divergenceGrid.device)
 
   try saveImage(
     colorImage, shape: (gridShape[0], gridShape[1]),
-    format: .rgb, directory: "./", name: fileName,
-    quality: 95)
+    colorspace: .rgb, directory: "./", name: fileName,
+    format: .png)
 }
