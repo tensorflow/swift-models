@@ -130,19 +130,23 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     var optimizer = Adam(for: cellRule, learningRate: 2e-3)
     optimizer = Adam(copying: optimizer, to: device)
 
+    // Train the cell rule.
     for iteration in 0..<iterations {
       let steps = Int.random(in: minimumSteps...maximumSteps)
-      var state = initialBatch
       let (loss, ruleGradient) = valueWithGradient(at: cellRule) { cellRules -> Tensor<Float> in
+        var state = initialBatch
         for _ in 0..<steps {
           state = cellRule(state)
+          LazyTensorBarrier()
         }
 
         // TODO: L2 normalization to parameter gradients.
         let rgbaComponents = state.slice(
           lowerBounds: [0, 0, 0, 0], sizes: [state.shape[0], state.shape[1], state.shape[2], 4])
         print("RGBA: \(rgbaComponents.shape), batch: \(paddedImageBatch.shape)")
-        return meanSquaredError(predicted: rgbaComponents, expected: paddedImageBatch)
+        let batchLoss = (rgbaComponents - paddedImageBatch).squared().mean(alongAxes: [0, 1, 2])
+        return batchLoss.mean()
+//        return meanSquaredError(predicted: rgbaComponents, expected: paddedImageBatch)
       }
       print("Rule gradient: \(ruleGradient)")
       optimizer.update(&cellRule, along: ruleGradient)
