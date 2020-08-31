@@ -44,6 +44,7 @@ struct CellRule: Layer {
     // TODO: Get output living mask using fire rate
     let perception = perceive(input)
     // TODO: Apply living mask to output
-    return conv2(relu(conv1(perception)))
+    let dx = conv2(relu(conv1(perception)))
+    return input + dx
   }
 }

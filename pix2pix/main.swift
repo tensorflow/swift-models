@@ -105,7 +105,7 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
             let fakeSample = generator(validationImage) * 0.5 + 0.5
 
             let fakeSampleImage = Image(tensor: fakeSample[0] * 255)
-            fakeSampleImage.save(to: validationImageURL, format: .rgb)
+            fakeSampleImage.save(to: validationImageURL, colorspace: .rgb)
         }
         
         discriminatorCount += 1
@@ -132,7 +132,7 @@ for batch in dataset.testing {
 
     let image = Image(tensor: (tensorImage * 255)[0])
     let saveURL = resultsFolder.appendingPathComponent("\(count).jpg", isDirectory: false)
-    image.save(to: saveURL, format: .rgb)
+    image.save(to: saveURL, colorspace: .rgb)
 
     let ganLoss = sigmoidCrossEntropy(logits: fakeImages,
                                       labels: Tensor.one.broadcasted(to: fakeImages.shape))

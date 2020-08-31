@@ -87,19 +87,29 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     }
     
     // Load and pad the target image to evolve towards.
-    let hostInputImage = Image(jpeg: URL(fileURLWithPath: image)).resized(to: (imageSize, imageSize)).tensor
-    let inputImage = Tensor(copying: hostInputImage, to: device)
+    // TODO: Premultiply alpha
+    let hostInputImage = Image(jpeg: URL(fileURLWithPath: image))
+    try dumpImageToStringDebugFile(hostInputImage.tensor, directory: "output", name: "hostInputImage")
+    try saveImage(hostInputImage.tensor, colorspace: .rgb, directory: "output", name: "hostInputImage", format: .png)
+
+    let resizedHostInputImage = hostInputImage.resized(to: (imageSize, imageSize))
+    let inputImage = Tensor(copying: resizedHostInputImage.tensor, to: device) / 255.0
     let paddedImage = inputImage.padded(forSizes: [(before: padding, after: padding), (before: padding, after: padding), (before: 0, after: 0)])
     let paddedImageBatch = paddedImage.broadcasted(to: [batchSize, paddedImage.shape[0], paddedImage.shape[1], paddedImage.shape[2]])
     
+    try saveImage(inputImage * 255.0, colorspace: .rgb, directory: "output", name: "inputimage", format: .png)
+    try saveImage(paddedImage * 255.0, colorspace: .rgb, directory: "output", name: "paddedimage", format: .png)
+
     // Initialize model, optimizer, and initial state.
     var initialState = Tensor(zerosLike: paddedImage).padded(forSizes: [(before: 0, after: 0), (before: 0, after: 0), (before: 0, after: stateChannels - 4)])
     initialState[initialState.shape[0] / 2][initialState.shape[1] / 2][3] = Tensor<Float>(1.0)
     
-//    print("Initial state: \(initialState.scalars)")
-    
+    let colorInitialState = initialState.slice(lowerBounds: [0, 0, 0], sizes: [initialState.shape[0], initialState.shape[1], 4])
+
+    try saveImage(colorInitialState * 255.0, colorspace: .rgb, directory: "output", name: "initialstate", format: .png)
+
     let initialBatch = initialState.broadcasted(to: [batchSize, initialState.shape[0], initialState.shape[1], initialState.shape[2]])
-//    print("Initial batch: \(initialBatch.scalars)")
+    print("Batchzeroes: \(initialBatch.nonZeroIndices())")
     var cellRule = CellRule(stateChannels: stateChannels)
     cellRule.move(to: device)
     var optimizer = Adam(for: cellRule, learningRate: 2e-3)
@@ -112,6 +122,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
         for _ in 0..<steps {
           state = cellRule(state)
         }
+        
         // TODO: L2 normalization to parameter gradients.
         let rgbaComponents = state.slice(lowerBounds: [0, 0, 0, 0], sizes: [state.shape[0], state.shape[1], state.shape[2], 4])
         print("RGBA: \(rgbaComponents.shape), batch: \(paddedImageBatch.shape)")
@@ -135,8 +146,8 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
       // TODO: Finish the color saving here.
       let colorComponents = state.slice(lowerBounds: [0, 0, 0], sizes: [state.shape[0], state.shape[1], 4])
       // TODO: Add RGBA saving with PNG format here.
-      let filename = String(format: "step%03d", step)
-      try saveImage(colorComponents, shape: (colorComponents.shape[0], colorComponents.shape[1]), format: .rgb, directory: "output", name: filename)
+      let filename = String(format: "step%03.3f", step)
+      try saveImage(colorComponents * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png)
     }
   }
 }

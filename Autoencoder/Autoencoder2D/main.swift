@@ -83,10 +83,10 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
 
         do {
             try saveImage(
-                sampleImages[0..<1], shape: (imageWidth, imageHeight), format: .grayscale,
+                sampleImages[0..<1], shape: (imageWidth, imageHeight), colorspace: .grayscale,
                 directory: outputFolder, name: "epoch-\(epoch)-input")
             try saveImage(
-                testImages[0..<1], shape: (imageWidth, imageHeight), format: .grayscale,
+                testImages[0..<1], shape: (imageWidth, imageHeight), colorspace: .grayscale,
                 directory: outputFolder, name: "epoch-\(epoch)-output")
         } catch {
             print("Could not save image with error: \(error)")

@@ -153,7 +153,7 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
             let fakeSample = generatorG(validationImage) * 0.5 + 0.5
 
             let fakeSampleImage = Image(tensor: fakeSample[0] * 255)
-            fakeSampleImage.save(to: validationImageURL, format: .rgb)
+            fakeSampleImage.save(to: validationImageURL, colorspace: .rgb)
 
             print("GeneratorG loss: \(gLoss.scalars[0])")
             print("GeneratorF loss: \(fLoss.scalars[0])")
@@ -187,9 +187,9 @@ for testBatch in dataset.testing {
     let imageY = Image(tensor: resultY[0] * 255)
 
     imageX.save(to: aResultsFolder.appendingPathComponent("\(String(testStep)).jpg", isDirectory: false),
-                format: .rgb)
+                colorspace: .rgb)
     imageY.save(to: bResultsFolder.appendingPathComponent("\(String(testStep)).jpg", isDirectory: false),
-                format: .rgb)
+                colorspace: .rgb)
 
     testStep += 1
 }
