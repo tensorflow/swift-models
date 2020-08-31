@@ -22,19 +22,19 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     commandName: "GrowingNeuralCellularAutomata",
     abstract: "Neural cellular automata with rules trained to grow in the shape of images.",
     subcommands: [])
-  
+
   @Flag(help: "Use eager backend.")
   var eager = false
 
   @Flag(help: "Use X10 backend.")
   var x10 = false
-  
+
   @Option(help: "The height and width to use when resizing the input image.")
   var imageSize = 40
 
   @Option(help: "The padding to add around the input image after resizing.")
   var padding = 16
-  
+
   @Option(help: "The number of state channels for each cell.")
   var stateChannels = 16
 
@@ -67,17 +67,17 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
       throw ValidationError(
         "Can't specify both --eager and --x10 backends.")
     }
-    
+
     guard stateChannels > 4 else {
       throw ValidationError(
         "Must have at least 4 channels to support RGBA values.")
     }
   }
-  
+
   func run() throws {
     // TODO: Remove this workaround to prevent excessive TF memory growth when fixed upstream.
     let _ = _ExecutionContext.global
-    
+
     // Set up the backend.
     let device: Device
     if x10 {
@@ -85,30 +85,45 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     } else {
       device = Device.defaultTFEager
     }
-    
+
     // Load and pad the target image to evolve towards.
     // TODO: Premultiply alpha
     let hostInputImage = Image(jpeg: URL(fileURLWithPath: image))
-//    try dumpImageToStringDebugFile(hostInputImage.tensor, directory: "output", name: "hostInputImage")
-    try saveImage(hostInputImage.tensor, colorspace: .rgb, directory: "output", name: "hostInputImage", format: .png)
+    //    try dumpImageToStringDebugFile(hostInputImage.tensor, directory: "output", name: "hostInputImage")
+    try saveImage(
+      hostInputImage.tensor, colorspace: .rgb, directory: "output", name: "hostInputImage",
+      format: .png)
 
     let resizedHostInputImage = hostInputImage.resized(to: (imageSize, imageSize))
     let inputImage = Tensor(copying: resizedHostInputImage.tensor, to: device) / 255.0
-    let paddedImage = inputImage.padded(forSizes: [(before: padding, after: padding), (before: padding, after: padding), (before: 0, after: 0)])
-    let paddedImageBatch = paddedImage.broadcasted(to: [batchSize, paddedImage.shape[0], paddedImage.shape[1], paddedImage.shape[2]])
-    
-    try saveImage(inputImage * 255.0, colorspace: .rgb, directory: "output", name: "inputimage", format: .png)
-    try saveImage(paddedImage * 255.0, colorspace: .rgb, directory: "output", name: "paddedimage", format: .png)
+    let paddedImage = inputImage.padded(forSizes: [
+      (before: padding, after: padding), (before: padding, after: padding), (before: 0, after: 0),
+    ])
+    let paddedImageBatch = paddedImage.broadcasted(to: [
+      batchSize, paddedImage.shape[0], paddedImage.shape[1], paddedImage.shape[2],
+    ])
+
+    try saveImage(
+      inputImage * 255.0, colorspace: .rgb, directory: "output", name: "inputimage", format: .png)
+    try saveImage(
+      paddedImage * 255.0, colorspace: .rgb, directory: "output", name: "paddedimage", format: .png)
 
     // Initialize model, optimizer, and initial state.
-    var initialState = Tensor(zerosLike: paddedImage).padded(forSizes: [(before: 0, after: 0), (before: 0, after: 0), (before: 0, after: stateChannels - 4)])
+    var initialState = Tensor(zerosLike: paddedImage).padded(forSizes: [
+      (before: 0, after: 0), (before: 0, after: 0), (before: 0, after: stateChannels - 4),
+    ])
     initialState[initialState.shape[0] / 2][initialState.shape[1] / 2][3] = Tensor<Float>(1.0)
-    
-    let colorInitialState = initialState.slice(lowerBounds: [0, 0, 0], sizes: [initialState.shape[0], initialState.shape[1], 4])
 
-    try saveImage(colorInitialState * 255.0, colorspace: .rgb, directory: "output", name: "initialstate", format: .png)
+    let colorInitialState = initialState.slice(
+      lowerBounds: [0, 0, 0], sizes: [initialState.shape[0], initialState.shape[1], 4])
 
-    let initialBatch = initialState.broadcasted(to: [batchSize, initialState.shape[0], initialState.shape[1], initialState.shape[2]])
+    try saveImage(
+      colorInitialState * 255.0, colorspace: .rgb, directory: "output", name: "initialstate",
+      format: .png)
+
+    let initialBatch = initialState.broadcasted(to: [
+      batchSize, initialState.shape[0], initialState.shape[1], initialState.shape[2],
+    ])
     print("Starting case ones: \(initialBatch.nonZeroIndices())")
     var cellRule = CellRule(stateChannels: stateChannels, fireRate: cellFireRate)
     cellRule.move(to: device)
@@ -124,7 +139,8 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
         }
 
         // TODO: L2 normalization to parameter gradients.
-        let rgbaComponents = state.slice(lowerBounds: [0, 0, 0, 0], sizes: [state.shape[0], state.shape[1], state.shape[2], 4])
+        let rgbaComponents = state.slice(
+          lowerBounds: [0, 0, 0, 0], sizes: [state.shape[0], state.shape[1], state.shape[2], 4])
         print("RGBA: \(rgbaComponents.shape), batch: \(paddedImageBatch.shape)")
         return meanSquaredError(predicted: rgbaComponents, expected: paddedImageBatch)
       }
@@ -133,19 +149,22 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
       LazyTensorBarrier()
 
       print("Iteration: \(iteration), loss: \(loss)")
-      
+
       if (iteration % 2000) == 0 {
         optimizer.learningRate = optimizer.learningRate * 0.1
       }
     }
-    
+
     // Perform inference and record the results.
     var state = initialState
     for step in 0..<inferenceSteps {
       state = cellRule(state)
-      let colorComponents = state.slice(lowerBounds: [0, 0, 0], sizes: [state.shape[0], state.shape[1], 4])
+      let colorComponents = state.slice(
+        lowerBounds: [0, 0, 0], sizes: [state.shape[0], state.shape[1], 4])
       let filename = String(format: "step%03.3f", step)
-      try saveImage(colorComponents * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png)
+      try saveImage(
+        colorComponents * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
+      )
     }
   }
 }
