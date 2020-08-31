@@ -17,11 +17,14 @@ import TensorFlow
 struct CellRule: Layer {
   @noDerivative var horizontalSobelFilter: Tensor<Float>
   @noDerivative var verticalSobelFilter: Tensor<Float>
+  @noDerivative let fireRate: Float
 
   var conv1: Conv2D<Float>
   var conv2: Conv2D<Float>
   
-  init(stateChannels: Int) {
+  init(stateChannels: Int, fireRate: Float) {
+    self.fireRate = fireRate
+    
     let horizontalSobelKernel = Tensor<Float>(shape: [3, 3, 1, 1], scalars: [-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0])
     horizontalSobelFilter = horizontalSobelKernel.broadcasted(to: [3, 3, stateChannels, 1])
     let verticalSobelKernel = Tensor<Float>(shape: [3, 3, 1, 1], scalars: [-1.0, -2.0, -1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 1.0])
@@ -32,6 +35,13 @@ struct CellRule: Layer {
   }
 
   @differentiable
+  func livingMask(_ input: Tensor<Float>) -> Tensor<Float> {
+    let alphaChannel = input.slice(lowerBounds: [0, 0, 0, 3], sizes: [input.shape[0], input.shape[1], input.shape[2], 1])
+    let offset = maxPool2D(alphaChannel, filterSize: (1, 1, 1, 1), strides: (1, 1, 1, 1), padding: .same) - 0.1
+    return max(0.0, sign(offset))
+  }
+  
+  @differentiable
   func perceive(_ input: Tensor<Float>) -> Tensor<Float> {
     let horizontalSobel = depthwiseConv2D(input, filter: horizontalSobelFilter, strides: (1, 1, 1, 1), padding: .same)
     let verticalSobel = depthwiseConv2D(input, filter: verticalSobelFilter, strides: (1, 1, 1, 1), padding: .same)
@@ -40,11 +50,17 @@ struct CellRule: Layer {
 
   @differentiable
   func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-    // TODO: Get input living mask
-    // TODO: Get output living mask using fire rate
+    let livingMaskBefore = livingMask(input)
+
     let perception = perceive(input)
-    // TODO: Apply living mask to output
     let dx = conv2(relu(conv1(perception)))
-    return input + dx
+    
+    let updateFireRate = Tensor<Float>(randomUniform: [input.shape[0], input.shape[1], input.shape[2], 1]) - fireRate
+    let updateMask = max(0.0, sign(updateFireRate))
+
+    let livingMaskAfter = livingMask(input)
+    let combinedLivingMask = max(livingMaskBefore, livingMaskAfter)
+    
+    return (input + (dx * updateMask)) * combinedLivingMask
   }
 }

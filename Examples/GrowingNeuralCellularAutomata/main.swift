@@ -89,7 +89,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     // Load and pad the target image to evolve towards.
     // TODO: Premultiply alpha
     let hostInputImage = Image(jpeg: URL(fileURLWithPath: image))
-    try dumpImageToStringDebugFile(hostInputImage.tensor, directory: "output", name: "hostInputImage")
+//    try dumpImageToStringDebugFile(hostInputImage.tensor, directory: "output", name: "hostInputImage")
     try saveImage(hostInputImage.tensor, colorspace: .rgb, directory: "output", name: "hostInputImage", format: .png)
 
     let resizedHostInputImage = hostInputImage.resized(to: (imageSize, imageSize))
@@ -109,20 +109,20 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     try saveImage(colorInitialState * 255.0, colorspace: .rgb, directory: "output", name: "initialstate", format: .png)
 
     let initialBatch = initialState.broadcasted(to: [batchSize, initialState.shape[0], initialState.shape[1], initialState.shape[2]])
-    print("Batchzeroes: \(initialBatch.nonZeroIndices())")
-    var cellRule = CellRule(stateChannels: stateChannels)
+    print("Starting case ones: \(initialBatch.nonZeroIndices())")
+    var cellRule = CellRule(stateChannels: stateChannels, fireRate: cellFireRate)
     cellRule.move(to: device)
     var optimizer = Adam(for: cellRule, learningRate: 2e-3)
     optimizer = Adam(copying: optimizer, to: device)
 
     for iteration in 0..<iterations {
       let steps = Int.random(in: minimumSteps...maximumSteps)
+      var state = initialBatch
       let (loss, ruleGradient) = valueWithGradient(at: cellRule) { cellRules -> Tensor<Float> in
-        var state = initialBatch
         for _ in 0..<steps {
           state = cellRule(state)
         }
-        
+
         // TODO: L2 normalization to parameter gradients.
         let rgbaComponents = state.slice(lowerBounds: [0, 0, 0, 0], sizes: [state.shape[0], state.shape[1], state.shape[2], 4])
         print("RGBA: \(rgbaComponents.shape), batch: \(paddedImageBatch.shape)")
@@ -143,9 +143,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     var state = initialState
     for step in 0..<inferenceSteps {
       state = cellRule(state)
-      // TODO: Finish the color saving here.
       let colorComponents = state.slice(lowerBounds: [0, 0, 0], sizes: [state.shape[0], state.shape[1], 4])
-      // TODO: Add RGBA saving with PNG format here.
       let filename = String(format: "step%03.3f", step)
       try saveImage(colorComponents * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png)
     }
