@@ -139,13 +139,14 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
       LazyTensorBarrier()
 
       print("Iteration: \(iteration), loss: \(loss)")
-
-      let filename = String(format: "iteration%03d", iteration)
-      let colorComponents = loggingState.slice(
-        lowerBounds: [0, 0, 0], sizes: [loggingState.shape[0], loggingState.shape[1], 4])
-      try saveImage(
-        colorComponents * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
-      )
+      if (iteration % 10) == 0 {
+        let filename = String(format: "iteration%03d", iteration)
+        let colorComponents = loggingState.slice(
+          lowerBounds: [0, 0, 0], sizes: [loggingState.shape[0], loggingState.shape[1], 4])
+        try saveImage(
+          colorComponents * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
+        )
+      }
 
       if (iteration % 2000) == 0 {
         optimizer.learningRate = optimizer.learningRate * 0.1
@@ -153,11 +154,12 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     }
 
     // Perform inference and record the results.
-    var state = initialState
+    var state = initialBatch
     for step in 0..<inferenceSteps {
       state = cellRule(state)
-      let colorComponents = state.slice(
-        lowerBounds: [0, 0, 0], sizes: [state.shape[0], state.shape[1], 4])
+      let sampledState = state[0]
+      let colorComponents = sampledState.slice(
+        lowerBounds: [0, 0, 0], sizes: [sampledState.shape[0], sampledState.shape[1], 4])
       let filename = String(format: "step%03d", step)
       try saveImage(
         colorComponents * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
