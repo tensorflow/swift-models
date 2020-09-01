@@ -72,3 +72,13 @@ struct CellRule: Layer {
     return updatedState * combinedLivingMask
   }
 }
+
+func normalizeGradient(_ gradient: CellRule.TangentVector) -> CellRule.TangentVector {
+  var outputGradient = gradient
+  for kp in gradient.recursivelyAllWritableKeyPaths(to: Tensor<Float>.self) {
+    let norm = sqrt(gradient[keyPath: kp].squared().sum())
+    outputGradient[keyPath: kp] = gradient[keyPath: kp] / (norm + 1e-8)
+  }
+  
+  return outputGradient
+}

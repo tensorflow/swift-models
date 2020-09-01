@@ -135,7 +135,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
           lowerBounds: [0, 0, 0, 0], sizes: [state.shape[0], state.shape[1], state.shape[2], 4])
         return meanSquaredError(predicted: rgbaComponents, expected: paddedImageBatch)
       }
-      optimizer.update(&cellRule, along: ruleGradient)
+      optimizer.update(&cellRule, along: normalizeGradient(ruleGradient))
       LazyTensorBarrier()
 
       print("Iteration: \(iteration), loss: \(loss)")
