@@ -127,7 +127,6 @@ public struct Image {
                     fatalError("Unable to save image to: \(url.path).")
                 }
             case .png:
-              print("Svaing: \(url.path), \(width), \(height), \(bpp)")
                 let status = stbi_write_png(
                     url.path, width, height, bpp, bytes.baseAddress!, 0)
                 guard status != 0 else {

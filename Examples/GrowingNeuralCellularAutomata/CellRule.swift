@@ -41,7 +41,7 @@ struct CellRule: Layer {
     let alphaChannel = input.slice(
       lowerBounds: [0, 0, 0, 3], sizes: [input.shape[0], input.shape[1], input.shape[2], 1])
     let offset =
-      maxPool2D(alphaChannel, filterSize: (1, 1, 1, 1), strides: (1, 1, 1, 1), padding: .same) - 0.1
+      maxPool2D(alphaChannel, filterSize: (1, 3, 3, 1), strides: (1, 1, 1, 1), padding: .same) - 0.1
     return max(0.0, sign(offset))
   }
 
@@ -65,9 +65,10 @@ struct CellRule: Layer {
       Tensor<Float>(randomUniform: [input.shape[0], input.shape[1], input.shape[2], 1]) - fireRate
     let updateMask = max(0.0, sign(updateFireRate))
 
-    let livingMaskAfter = livingMask(input)
-    let combinedLivingMask = max(livingMaskBefore, livingMaskAfter)
+    let updatedState = input + (dx * updateMask)
+    let livingMaskAfter = livingMask(updatedState)
+    let combinedLivingMask = livingMaskBefore * livingMaskAfter
 
-    return (input + (dx * updateMask)) * combinedLivingMask
+    return updatedState * combinedLivingMask
   }
 }
