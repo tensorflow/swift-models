@@ -89,11 +89,6 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     // Load and pad the target image to evolve towards.
     // TODO: Premultiply alpha
     let hostInputImage = Image(jpeg: URL(fileURLWithPath: image))
-    //    try dumpImageToStringDebugFile(hostInputImage.tensor, directory: "output", name: "hostInputImage")
-    try saveImage(
-      hostInputImage.tensor, colorspace: .rgb, directory: "output", name: "hostInputImage",
-      format: .png)
-
     let resizedHostInputImage = hostInputImage.resized(to: (imageSize, imageSize))
     let inputImage = Tensor(copying: resizedHostInputImage.tensor, to: device) / 255.0
     let paddedImage = inputImage.padded(forSizes: [
@@ -104,9 +99,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     ])
 
     try saveImage(
-      inputImage * 255.0, colorspace: .rgb, directory: "output", name: "inputimage", format: .png)
-    try saveImage(
-      paddedImage * 255.0, colorspace: .rgb, directory: "output", name: "paddedimage", format: .png)
+      paddedImage * 255.0, colorspace: .rgb, directory: "output", name: "targetimage", format: .png)
 
     // Initialize model, optimizer, and initial state.
     var initialState = Tensor(zerosLike: paddedImage).padded(forSizes: [
@@ -117,14 +110,9 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     let colorInitialState = initialState.slice(
       lowerBounds: [0, 0, 0], sizes: [initialState.shape[0], initialState.shape[1], 4])
 
-    try saveImage(
-      colorInitialState * 255.0, colorspace: .rgb, directory: "output", name: "initialstate",
-      format: .png)
-
     let initialBatch = initialState.broadcasted(to: [
       batchSize, initialState.shape[0], initialState.shape[1], initialState.shape[2],
     ])
-    print("Starting case ones: \(initialBatch.nonZeroIndices())")
     var cellRule = CellRule(stateChannels: stateChannels, fireRate: cellFireRate)
     cellRule.move(to: device)
     var optimizer = Adam(for: cellRule, learningRate: 2e-3)
@@ -133,26 +121,31 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     // Train the cell rule.
     for iteration in 0..<iterations {
       let steps = Int.random(in: minimumSteps...maximumSteps)
-      let (loss, ruleGradient) = valueWithGradient(at: cellRule) { cellRules -> Tensor<Float> in
+      var loggingState = initialState
+      let (loss, ruleGradient) = valueWithGradient(at: cellRule) { model -> Tensor<Float> in
         var state = initialBatch
         for _ in 0..<steps {
-          state = cellRule(state)
+          state = model(state)
           LazyTensorBarrier()
         }
 
+        loggingState = state[0]
         // TODO: L2 normalization to parameter gradients.
         let rgbaComponents = state.slice(
           lowerBounds: [0, 0, 0, 0], sizes: [state.shape[0], state.shape[1], state.shape[2], 4])
-        print("RGBA: \(rgbaComponents.shape), batch: \(paddedImageBatch.shape)")
-        let batchLoss = (rgbaComponents - paddedImageBatch).squared().mean(alongAxes: [0, 1, 2])
-        return batchLoss.mean()
-//        return meanSquaredError(predicted: rgbaComponents, expected: paddedImageBatch)
+        return meanSquaredError(predicted: rgbaComponents, expected: paddedImageBatch)
       }
-      print("Rule gradient: \(ruleGradient)")
       optimizer.update(&cellRule, along: ruleGradient)
       LazyTensorBarrier()
 
       print("Iteration: \(iteration), loss: \(loss)")
+
+      let filename = String(format: "iteration%03d", iteration)
+      let colorComponents = loggingState.slice(
+        lowerBounds: [0, 0, 0], sizes: [loggingState.shape[0], loggingState.shape[1], 4])
+      try saveImage(
+        colorComponents * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
+      )
 
       if (iteration % 2000) == 0 {
         optimizer.learningRate = optimizer.learningRate * 0.1
@@ -165,7 +158,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
       state = cellRule(state)
       let colorComponents = state.slice(
         lowerBounds: [0, 0, 0], sizes: [state.shape[0], state.shape[1], 4])
-      let filename = String(format: "step%03.3f", step)
+      let filename = String(format: "step%03d", step)
       try saveImage(
         colorComponents * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
       )
