@@ -27,6 +27,7 @@ public struct Image {
 
     public enum Colorspace {
         case rgb
+        case rgba
         case grayscale
     }
   
@@ -102,12 +103,14 @@ public struct Image {
                 outputImageData = Tensor<UInt8>(adjustedData)
             }
         case .rgb:
-          // TODO: Support RGBA / RGB for PNG.
-            switch format {
-            case .jpeg: bpp = 3
-            case .png: bpp = 4
+            bpp = 3
+            switch self.imageData {
+            case let .uint8(data): outputImageData = data
+            case let .float(data):
+                outputImageData = Tensor<UInt8>(data.clipped(min: 0, max: 255))
             }
-            
+        case .rgba:
+            bpp = 4
             switch self.imageData {
             case let .uint8(data): outputImageData = data
             case let .float(data):
@@ -157,10 +160,10 @@ public func saveImage(
     try createDirectoryIfMissing(at: directory)
 
     let channels: Int
-    switch (colorspace, format) {
-    case (.rgb, .jpeg): channels = 3
-    case (.rgb, .png): channels = 4
-    case (.grayscale, _): channels = 1
+    switch colorspace {
+    case .rgb: channels = 3
+    case .rgba: channels = 4
+    case .grayscale: channels = 1
     }
   
     let reshapedTensor: Tensor<Float>
@@ -170,7 +173,16 @@ public func saveImage(
         guard tensor.shape.rank == 3 else {
             fatalError("Input tensor must be of rank 3 (was \(tensor.shape.rank), or a shape must be specified.)")
         }
-        reshapedTensor = tensor
+        if tensor.shape[2] > channels {
+            // Need to premultiply alpha channel before saving as RGB.
+            let alphaChannel = tensor.slice(
+                lowerBounds: [0, 0, 3], sizes: [tensor.shape[0], tensor.shape[1], 1])
+            let colorComponents = tensor.slice(
+                lowerBounds: [0, 0, 0], sizes: [tensor.shape[0], tensor.shape[1], 3])
+            reshapedTensor = (255.0 - alphaChannel) + colorComponents
+        } else {
+            reshapedTensor = tensor
+        }
     }
     let image = Image(tensor: reshapedTensor)
 
@@ -182,35 +194,6 @@ public func saveImage(
     let resizedImage = size != nil ? image.resized(to: (size!.0, size!.1)) : image
     let outputURL = URL(fileURLWithPath: "\(directory)/\(name).\(fileExtension)")
     resizedImage.save(to: outputURL, colorspace: colorspace, format: format)
-}
-
-public func dumpImageToStringDebugFile(
-  _ tensor: Tensor<Float>, directory: String, name: String
-) throws {
-  try createDirectoryIfMissing(at: directory)
-  let height = tensor.shape[0]
-  let width = tensor.shape[1]
-  let channels = tensor.shape[2]
-  let rawValues = tensor.scalars
-  
-  var debugString = ""
-  var index = 0
-  for _ in 0..<height {
-    for _ in 0..<width {
-      if channels == 3 {
-        debugString += String(format: "%03.3f,%03.3f,%03.3f ", rawValues[index], rawValues[index + 1], rawValues[index + 2])
-        index += 3
-      } else {
-        debugString += String(format: "%.0f,%.0f,%.0f,%.0f ", rawValues[index], rawValues[index + 1], rawValues[index + 2], rawValues[index + 3])
-//        debugString += String(format: "%03.3f,%03.3f,%03.3f,%03.3f ", rawValues[index], rawValues[index + 1], rawValues[index + 2], rawValues[index + 3])
-        index += 4
-      }
-    }
-    debugString += "\n"
-  }
-  
-  let outputURL = URL(fileURLWithPath: "\(directory)/\(name).txt")
-  try debugString.write(to: outputURL, atomically: true, encoding: .utf8)
 }
 
 public typealias Point = (x: Int, y: Int)
