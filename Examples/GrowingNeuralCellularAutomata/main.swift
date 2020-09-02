@@ -87,7 +87,6 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     }
 
     // Load and pad the target image to evolve towards.
-    // TODO: Premultiply alpha
     let hostInputImage = Image(jpeg: URL(fileURLWithPath: image))
     let resizedHostInputImage = hostInputImage.resized(to: (imageSize, imageSize))
     let inputImage = Tensor(copying: resizedHostInputImage.tensor, to: device) / 255.0
@@ -99,20 +98,17 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     ])
 
     try saveImage(
-      paddedImage * 255.0, colorspace: .rgb, directory: "output", name: "targetimage", format: .png)
+      paddedImage * 255.0, colorspace: .rgba, directory: "output", name: "targetimage", format: .png)
 
     // Initialize model, optimizer, and initial state.
     var initialState = Tensor(zerosLike: paddedImage).padded(forSizes: [
       (before: 0, after: 0), (before: 0, after: 0), (before: 0, after: stateChannels - 4),
     ])
     initialState[initialState.shape[0] / 2][initialState.shape[1] / 2][3] = Tensor<Float>(1.0)
-
-    let colorInitialState = initialState.slice(
-      lowerBounds: [0, 0, 0], sizes: [initialState.shape[0], initialState.shape[1], 4])
-
     let initialBatch = initialState.broadcasted(to: [
       batchSize, initialState.shape[0], initialState.shape[1], initialState.shape[2],
     ])
+    
     var cellRule = CellRule(stateChannels: stateChannels, fireRate: cellFireRate)
     cellRule.move(to: device)
     var optimizer = Adam(for: cellRule, learningRate: 2e-3)
@@ -130,15 +126,17 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
         }
 
         loggingState = state[0]
-        // TODO: L2 normalization to parameter gradients.
         let rgbaComponents = state.slice(
           lowerBounds: [0, 0, 0, 0], sizes: [state.shape[0], state.shape[1], state.shape[2], 4])
-        return meanSquaredError(predicted: rgbaComponents, expected: paddedImageBatch)
+        
+        let batchLoss = (rgbaComponents - paddedImageBatch).squared().mean(alongAxes: [-2, -3, -1])
+        return batchLoss.mean()
+//        return meanSquaredError(predicted: rgbaComponents, expected: paddedImageBatch)
       }
       optimizer.update(&cellRule, along: normalizeGradient(ruleGradient))
       LazyTensorBarrier()
 
-      print("Iteration: \(iteration), loss: \(loss)")
+      print("Iteration: \(iteration), loss: \(loss), log loss: \(log10(loss))")
       if (iteration % 10) == 0 {
         let filename = String(format: "iteration%03d", iteration)
         let colorComponents = loggingState.slice(

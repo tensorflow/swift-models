@@ -26,10 +26,10 @@ struct CellRule: Layer {
     self.fireRate = fireRate
 
     let horizontalSobelKernel = Tensor<Float>(
-      shape: [3, 3, 1, 1], scalars: [-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0]) / 8.0
+      shape: [3, 3, 1, 1], scalars: [-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0])
     horizontalSobelFilter = horizontalSobelKernel.broadcasted(to: [3, 3, stateChannels, 1])
     let verticalSobelKernel = Tensor<Float>(
-      shape: [3, 3, 1, 1], scalars: [-1.0, -2.0, -1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 1.0]) / 8.0
+      shape: [3, 3, 1, 1], scalars: [-1.0, -2.0, -1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 1.0])
     verticalSobelFilter = verticalSobelKernel.broadcasted(to: [3, 3, stateChannels, 1])
 
     conv1 = Conv2D<Float>(filterShape: (1, 1, stateChannels * 3, 128))
