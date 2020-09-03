@@ -66,7 +66,7 @@ var cola = try CoLA(
   batchSize: batchSize,
   entropy: SystemRandomNumberGenerator(),
   on: device
-) { (example: CoLAExample) -> CoLA.LabeledTextBatch in
+) { example in
   // In this closure, both the input and output text batches must be eager
   // since the text is not padded and x10 requires stable shapes.
   let textBatch = bertClassifier.bert.preprocess(
