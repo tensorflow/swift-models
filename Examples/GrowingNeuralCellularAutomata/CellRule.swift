@@ -26,10 +26,10 @@ struct CellRule: Layer {
     self.fireRate = fireRate
 
     let horizontalSobelKernel = Tensor<Float>(
-      shape: [3, 3, 1, 1], scalars: [-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0])
+      shape: [3, 3, 1, 1], scalars: [-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0]) / 8.0
     horizontalSobelFilter = horizontalSobelKernel.broadcasted(to: [3, 3, stateChannels, 1])
     let verticalSobelKernel = Tensor<Float>(
-      shape: [3, 3, 1, 1], scalars: [-1.0, -2.0, -1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 1.0])
+      shape: [3, 3, 1, 1], scalars: [-1.0, -2.0, -1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 1.0]) / 8.0
     verticalSobelFilter = verticalSobelKernel.broadcasted(to: [3, 3, stateChannels, 1])
 
     conv1 = Conv2D<Float>(filterShape: (1, 1, stateChannels * 3, 128))
@@ -62,7 +62,7 @@ struct CellRule: Layer {
     let dx = conv2(relu(conv1(perception)))
 
     let updateFireRate =
-      Tensor<Float>(randomUniform: [input.shape[0], input.shape[1], input.shape[2], 1]) - fireRate
+      Tensor<Float>(randomUniform: [input.shape[0], input.shape[1], input.shape[2], 1], on: input.device) - fireRate
     let updateMask = max(0.0, sign(updateFireRate))
 
     let updatedState = input + (dx * updateMask)
@@ -81,4 +81,16 @@ func normalizeGradient(_ gradient: CellRule.TangentVector) -> CellRule.TangentVe
   }
   
   return outputGradient
+}
+
+@differentiable
+func colorComponents(_ state: Tensor<Float>) -> Tensor<Float> {
+  precondition(state.rank == 3 || state.rank == 4)
+  if state.rank == 3 {
+    return state.slice(
+      lowerBounds: [0, 0, 0], sizes: [state.shape[0], state.shape[1], 4])
+  } else {
+    return state.slice(
+      lowerBounds: [0, 0, 0, 0], sizes: [state.shape[0], state.shape[1], state.shape[2], 4])
+  }
 }

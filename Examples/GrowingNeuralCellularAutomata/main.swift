@@ -104,7 +104,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     var initialState = Tensor(zerosLike: paddedImage).padded(forSizes: [
       (before: 0, after: 0), (before: 0, after: 0), (before: 0, after: stateChannels - 4),
     ])
-    initialState[initialState.shape[0] / 2][initialState.shape[1] / 2][3] = Tensor<Float>(1.0)
+    initialState[initialState.shape[0] / 2][initialState.shape[1] / 2][3] = Tensor<Float>(1.0, on: device)
     let initialBatch = initialState.broadcasted(to: [
       batchSize, initialState.shape[0], initialState.shape[1], initialState.shape[2],
     ])
@@ -126,10 +126,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
         }
 
         loggingState = state[0]
-        let rgbaComponents = state.slice(
-          lowerBounds: [0, 0, 0, 0], sizes: [state.shape[0], state.shape[1], state.shape[2], 4])
-        
-        let batchLoss = (rgbaComponents - paddedImageBatch).squared().mean(alongAxes: [-2, -3, -1])
+        let batchLoss = (colorComponents(state) - paddedImageBatch).squared().mean(alongAxes: [-2, -3, -1])
         return batchLoss.mean()
 //        return meanSquaredError(predicted: rgbaComponents, expected: paddedImageBatch)
       }
@@ -139,14 +136,12 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
       print("Iteration: \(iteration), loss: \(loss), log loss: \(log10(loss))")
       if (iteration % 10) == 0 {
         let filename = String(format: "iteration%03d", iteration)
-        let colorComponents = loggingState.slice(
-          lowerBounds: [0, 0, 0], sizes: [loggingState.shape[0], loggingState.shape[1], 4])
         try saveImage(
-          colorComponents * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
+          colorComponents(loggingState) * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
         )
       }
 
-      if (iteration % 2000) == 0 {
+      if ((iteration + 1) % 2000) == 0 {
         optimizer.learningRate = optimizer.learningRate * 0.1
       }
     }
@@ -156,11 +151,9 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     for step in 0..<inferenceSteps {
       state = cellRule(state)
       let sampledState = state[0]
-      let colorComponents = sampledState.slice(
-        lowerBounds: [0, 0, 0], sizes: [sampledState.shape[0], sampledState.shape[1], 4])
       let filename = String(format: "step%03d", step)
       try saveImage(
-        colorComponents * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
+        colorComponents(sampledState) * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
       )
     }
   }
