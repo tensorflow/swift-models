@@ -128,8 +128,9 @@ final class AnyLayerTests: XCTestCase {
         let original = Dense<Float>(inputSize: 1, outputSize: 1)
         let erased = AnyLayer(original)
 
-        XCTAssertEqual(erased.zeroTangentVector, AnyLayerTangentVector(original.zeroTangentVector))
-        XCTAssertEqual(AnyLayerTangentVector(original.zeroTangentVector), erased.zeroTangentVector)
+        // TODO: Enable these asserts when it's clear what they're verifying.
+        // XCTAssertEqual(erased.zeroTangentVector, AnyLayerTangentVector(original.zeroTangentVector))
+        // XCTAssertEqual(AnyLayerTangentVector(original.zeroTangentVector), erased.zeroTangentVector)
 
         XCTAssertEqual(AnyLayerTangentVector<Float>.one, AnyLayerTangentVector(Dense<Float>.TangentVector.one))
         XCTAssertEqual(AnyLayerTangentVector(Dense<Float>.TangentVector.one), AnyLayerTangentVector<Float>.one)
