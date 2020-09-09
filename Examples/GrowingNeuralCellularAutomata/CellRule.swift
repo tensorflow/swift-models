@@ -15,8 +15,7 @@
 import TensorFlow
 
 struct CellRule: Layer {
-  @noDerivative var horizontalSobelFilter: Tensor<Float>
-  @noDerivative var verticalSobelFilter: Tensor<Float>
+  @noDerivative var perceptionFilter: Tensor<Float>
   @noDerivative let fireRate: Float
 
   var conv1: Conv2D<Float>
@@ -27,10 +26,15 @@ struct CellRule: Layer {
 
     let horizontalSobelKernel = Tensor<Float>(
       shape: [3, 3, 1, 1], scalars: [-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0]) / 8.0
-    horizontalSobelFilter = horizontalSobelKernel.broadcasted(to: [3, 3, stateChannels, 1])
+    let horizontalSobelFilter = horizontalSobelKernel.broadcasted(to: [3, 3, stateChannels, 1])
     let verticalSobelKernel = Tensor<Float>(
       shape: [3, 3, 1, 1], scalars: [-1.0, -2.0, -1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 1.0]) / 8.0
-    verticalSobelFilter = verticalSobelKernel.broadcasted(to: [3, 3, stateChannels, 1])
+    let verticalSobelFilter = verticalSobelKernel.broadcasted(to: [3, 3, stateChannels, 1])
+    let identityKernel = Tensor<Float>(
+      shape: [3, 3, 1, 1], scalars: [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0])
+    let identityFilter = identityKernel.broadcasted(to: [3, 3, stateChannels, 1])
+    perceptionFilter = Tensor(
+      concatenating: [horizontalSobelFilter, verticalSobelFilter, identityFilter], alongAxis: 3)
 
     conv1 = Conv2D<Float>(filterShape: (1, 1, stateChannels * 3, 128))
     conv2 = Conv2D<Float>(filterShape: (1, 1, 128, stateChannels), filterInitializer: zeros())
@@ -42,16 +46,14 @@ struct CellRule: Layer {
       lowerBounds: [0, 0, 0, 3], sizes: [input.shape[0], input.shape[1], input.shape[2], 1])
     let offset =
       maxPool2D(alphaChannel, filterSize: (1, 3, 3, 1), strides: (1, 1, 1, 1), padding: .same) - 0.1
-    return max(0.0, sign(offset))
+    let zeros = withoutDerivative(at: input) { _ in Tensor(zerosLike: input) }
+    return max(zeros, sign(offset))
   }
 
   @differentiable
   func perceive(_ input: Tensor<Float>) -> Tensor<Float> {
-    let horizontalSobel = depthwiseConv2D(
-      input, filter: horizontalSobelFilter, strides: (1, 1, 1, 1), padding: .same)
-    let verticalSobel = depthwiseConv2D(
-      input, filter: verticalSobelFilter, strides: (1, 1, 1, 1), padding: .same)
-    return Tensor(concatenating: [horizontalSobel, verticalSobel, input], alongAxis: 3)
+    return depthwiseConv2D(
+      input, filter: perceptionFilter, strides: (1, 1, 1, 1), padding: .same)
   }
 
   @differentiable
@@ -93,4 +95,24 @@ func colorComponents(_ state: Tensor<Float>) -> Tensor<Float> {
     return state.slice(
       lowerBounds: [0, 0, 0, 0], sizes: [state.shape[0], state.shape[1], state.shape[2], 4])
   }
+}
+
+// Note: the following is an identity function that serves to cut the backward trace into
+// smaller identical traces, to improve X10 performance.
+@inlinable
+@differentiable
+func clipBackwardsTrace(_ input: Tensor<Float>) -> Tensor<Float> {
+  return input
+}
+
+@inlinable
+@derivative(of: clipBackwardsTrace)
+func _vjpClipBackwardsTrace(
+  _ input: Tensor<Float>
+) -> (value: Tensor<Float>, pullback: (Tensor<Float>) -> Tensor<Float>) {
+  return (input, { 
+    LazyTensorBarrier()
+    return $0
+    }
+  )
 }

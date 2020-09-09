@@ -113,27 +113,32 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     cellRule.move(to: device)
     var optimizer = Adam(for: cellRule, learningRate: 2e-3)
     optimizer = Adam(copying: optimizer, to: device)
+    LazyTensorBarrier()
 
     // Train the cell rule.
     for iteration in 0..<iterations {
+      let startTime = Date()
       let steps = Int.random(in: minimumSteps...maximumSteps)
       var loggingState = initialState
       let (loss, ruleGradient) = valueWithGradient(at: cellRule) { model -> Tensor<Float> in
         var state = initialBatch
         for _ in 0..<steps {
+          // Note: the following clips the X10 backward trace and is a no-op otherwise.
+          state = clipBackwardsTrace(state)
           state = model(state)
           LazyTensorBarrier()
         }
 
         loggingState = state[0]
-        let batchLoss = (colorComponents(state) - paddedImageBatch).squared().mean(alongAxes: [-2, -3, -1])
-        return batchLoss.mean()
-//        return meanSquaredError(predicted: rgbaComponents, expected: paddedImageBatch)
+        return meanSquaredError(predicted: colorComponents(state), expected: paddedImageBatch)
       }
       optimizer.update(&cellRule, along: normalizeGradient(ruleGradient))
       LazyTensorBarrier()
 
-      print("Iteration: \(iteration), loss: \(loss), log loss: \(log10(loss))")
+      let lossScalar = loss.scalarized()
+      print(
+        "Iteration: \(iteration), loss: \(lossScalar), log loss: \(log10(lossScalar)), time: \(Date().timeIntervalSince(startTime)) s")
+
       if (iteration % 10) == 0 {
         let filename = String(format: "iteration%03d", iteration)
         try saveImage(
@@ -148,9 +153,11 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
 
     // Perform inference and record the results.
     var state = initialBatch
+    LazyTensorBarrier()
     for step in 0..<inferenceSteps {
       state = cellRule(state)
       let sampledState = state[0]
+      LazyTensorBarrier()
       let filename = String(format: "step%03d", step)
       try saveImage(
         colorComponents(sampledState) * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
