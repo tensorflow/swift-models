@@ -14,6 +14,9 @@ During inference, a single cell at the center of the image is seeded with a 1.0 
 with all other values set to 0.0. Images are captured at multiple steps to observe the evolution
 of the environment.
 
+Representative images of the final state will be written into `output/`, with names like `iteration[step].png`.
+Inference will write out one `step[number].png` frame into `output/` for each time step.
+
 ## Setup
 
 To begin, you'll need the [latest version of Swift for
