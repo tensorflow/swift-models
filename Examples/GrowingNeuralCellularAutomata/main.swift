@@ -141,6 +141,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
 
       if (iteration % 10) == 0 {
         let filename = String(format: "iteration%03d", iteration)
+        LazyTensorBarrier()
         try saveImage(
           colorComponents(loggingState) * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
         )

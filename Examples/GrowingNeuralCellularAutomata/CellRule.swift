@@ -44,10 +44,13 @@ struct CellRule: Layer {
   func livingMask(_ input: Tensor<Float>) -> Tensor<Float> {
     let alphaChannel = input.slice(
       lowerBounds: [0, 0, 0, 3], sizes: [input.shape[0], input.shape[1], input.shape[2], 1])
-    let offset =
-      maxPool2D(alphaChannel, filterSize: (1, 3, 3, 1), strides: (1, 1, 1, 1), padding: .same) - 0.1
-    let zeros = withoutDerivative(at: input) { _ in Tensor(zerosLike: input) }
-    return max(zeros, sign(offset))
+    let localMaximum =
+      maxPool2D(alphaChannel, filterSize: (1, 3, 3, 1), strides: (1, 1, 1, 1), padding: .same)
+    return withoutDerivative(at: input) { _ in
+      let livingCells = localMaximum .> 0.1
+      return Tensor(zerosLike: alphaChannel)
+        .replacing(with: Tensor(onesLike: alphaChannel), where: livingCells).broadcasted(to: input.shape)
+    }
   }
 
   @differentiable
@@ -63,9 +66,13 @@ struct CellRule: Layer {
     let perception = perceive(input)
     let dx = conv2(relu(conv1(perception)))
 
-    let updateFireRate =
-      Tensor<Float>(randomUniform: [input.shape[0], input.shape[1], input.shape[2], 1], on: input.device) - fireRate
-    let updateMask = max(0.0, sign(updateFireRate))
+    let updateMask = withoutDerivative(at: input) { _ -> Tensor<Float> in
+      let updateDistribution =
+        Tensor<Float>(randomUniform: [input.shape[0], input.shape[1], input.shape[2], 1], on: input.device)
+      let firingCells = updateDistribution .< fireRate
+      return Tensor(zerosLike: updateDistribution)
+        .replacing(with: Tensor(onesLike: updateDistribution), where: firingCells)
+    }
 
     let updatedState = input + (dx * updateMask)
     let livingMaskAfter = livingMask(updatedState)
