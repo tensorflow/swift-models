@@ -108,9 +108,17 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
       (before: 0, after: 0), (before: 0, after: 0), (before: 0, after: stateChannels - 4),
     ])
     initialState[initialState.shape[0] / 2][initialState.shape[1] / 2][3] = Tensor<Float>(1.0, on: device)
-    let initialBatch = initialState.broadcasted(to: [
+    var initialBatch = initialState.broadcasted(to: [
       batchSize, initialState.shape[0], initialState.shape[1], initialState.shape[2],
     ])
+    
+    // TODO: Make this optional when we can differentiate through optionals.
+    var samplePool: SamplePool
+    if useSamplePool {
+      samplePool = SamplePool(initialState: initialState, size: poolSize)
+    } else {
+      samplePool = SamplePool(initialState: initialState, size: 0)
+    }
     
     var cellRule = CellRule(stateChannels: stateChannels, fireRate: cellFireRate)
     cellRule.move(to: device)
@@ -123,6 +131,10 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
       let startTime = Date()
       let steps = Int.random(in: minimumSteps...maximumSteps)
       var loggingState = initialState
+      if useSamplePool {
+        initialBatch = samplePool.sample(batchSize: batchSize)
+      }
+      
       let (loss, ruleGradient) = valueWithGradient(at: cellRule) { model -> Tensor<Float> in
         var state = initialBatch
         for _ in 0..<steps {
@@ -133,6 +145,9 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
         }
 
         loggingState = state[0]
+        if useSamplePool {
+          withoutDerivative(at: cellRule) { _ in samplePool.replace(samples: state) }
+        }
         return meanSquaredError(predicted: colorComponents(state), expected: paddedImageBatch)
       }
       optimizer.update(&cellRule, along: normalizeGradient(ruleGradient))
