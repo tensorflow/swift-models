@@ -29,8 +29,17 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
   @Flag(help: "Use X10 backend.")
   var x10 = false
 
+  @Option(help: "The image to use as a target.")
+  var image: String
+
   @Option(help: "The height and width to use when resizing the input image.")
   var imageSize = 40
+
+  @Option(help: "The number of training iterations.")
+  var iterations = 8000
+
+  @Option(help: "The number of steps to run through during inference.")
+  var inferenceSteps = 96
 
   @Option(help: "The padding to add around the input image after resizing.")
   var padding = 16
@@ -44,23 +53,17 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
   @Option(help: "The fraction of cells to fire at each update.")
   var cellFireRate: Float = 0.5
 
-  @Option(help: "The pool size during training.")
-  var poolSize = 1024
-
-  @Option(help: "The number of training iterations.")
-  var iterations = 8000
-
   @Option(help: "The minimum number of steps.")
   var minimumSteps = 64
 
   @Option(help: "The maximum number of steps.")
   var maximumSteps = 96
 
-  @Option(help: "The number of steps to run through during inference.")
-  var inferenceSteps = 96
+  @Flag(help: "Whether to use a sample pool.")
+  var useSamplePool = false
 
-  @Option(help: "The image to use as a target.")
-  var image: String
+  @Option(help: "The pool size during training.")
+  var poolSize = 1024
 
   func validate() throws {
     guard !(eager && x10) else {
