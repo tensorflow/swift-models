@@ -46,11 +46,7 @@ struct CellRule: Layer {
       lowerBounds: [0, 0, 0, 3], sizes: [input.shape[0], input.shape[1], input.shape[2], 1])
     let localMaximum =
       maxPool2D(alphaChannel, filterSize: (1, 3, 3, 1), strides: (1, 1, 1, 1), padding: .same)
-    return withoutDerivative(at: input) { _ in
-      let livingCells = localMaximum .> 0.1
-      return Tensor(zerosLike: alphaChannel)
-        .replacing(with: Tensor(onesLike: alphaChannel), where: livingCells).broadcasted(to: input.shape)
-    }
+    return withoutDerivative(at: input) { _ in localMaximum.mask { $0 .> 0.1} }
   }
 
   @differentiable
@@ -66,13 +62,9 @@ struct CellRule: Layer {
     let perception = perceive(input)
     let dx = conv2(relu(conv1(perception)))
 
-    let updateMask = withoutDerivative(at: input) { _ -> Tensor<Float> in
-      let updateDistribution =
-        Tensor<Float>(randomUniform: [input.shape[0], input.shape[1], input.shape[2], 1], on: input.device)
-      let firingCells = updateDistribution .< fireRate
-      return Tensor(zerosLike: updateDistribution)
-        .replacing(with: Tensor(onesLike: updateDistribution), where: firingCells)
-    }
+    let updateDistribution =
+      Tensor<Float>(randomUniform: [input.shape[0], input.shape[1], input.shape[2], 1], on: input.device)
+    let updateMask = withoutDerivative(at: input) { _ in updateDistribution.mask { $0 .< fireRate } }
 
     let updatedState = input + (dx * updateMask)
     let livingMaskAfter = livingMask(updatedState)
@@ -92,15 +84,23 @@ func normalizeGradient(_ gradient: CellRule.TangentVector) -> CellRule.TangentVe
   return outputGradient
 }
 
-@differentiable
-func colorComponents(_ state: Tensor<Float>) -> Tensor<Float> {
-  precondition(state.rank == 3 || state.rank == 4)
-  if state.rank == 3 {
-    return state.slice(
-      lowerBounds: [0, 0, 0], sizes: [state.shape[0], state.shape[1], 4])
-  } else {
-    return state.slice(
-      lowerBounds: [0, 0, 0, 0], sizes: [state.shape[0], state.shape[1], state.shape[2], 4])
+extension Tensor where Scalar: Numeric {
+  @differentiable(where Scalar: TensorFlowFloatingPoint)
+  var colorComponents: Tensor {
+    precondition(self.rank == 3 || self.rank == 4)
+    if self.rank == 3 {
+      return self.slice(
+        lowerBounds: [0, 0, 0], sizes: [self.shape[0], self.shape[1], 4])
+    } else {
+      return self.slice(
+        lowerBounds: [0, 0, 0, 0], sizes: [self.shape[0], self.shape[1], self.shape[2], 4])
+    }
+  }
+
+  func mask(condition: (Tensor) -> Tensor<Bool>) -> Tensor {
+    let satisfied = condition(self)
+    return Tensor(zerosLike: self)
+      .replacing(with: Tensor(onesLike: self), where: satisfied)
   }
 }
 
