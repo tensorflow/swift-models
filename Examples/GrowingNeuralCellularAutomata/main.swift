@@ -65,6 +65,9 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
   @Option(help: "The pool size during training.")
   var poolSize = 1024
 
+  @Option(help: "The number of samples to damage in each batch.")
+  var damagedSamples = 0
+
   func validate() throws {
     guard !(eager && x10) else {
       throw ValidationError(
@@ -132,7 +135,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
       let steps = Int.random(in: minimumSteps...maximumSteps)
       var loggingState = initialState
       if useSamplePool {
-        initialBatch = samplePool.sample(batchSize: batchSize)
+        initialBatch = samplePool.sample(batchSize: batchSize, damaged: damagedSamples)
       }
       
       let (loss, ruleGradient) = valueWithGradient(at: cellRule) { model -> Tensor<Float> in
@@ -148,7 +151,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
         if useSamplePool {
           withoutDerivative(at: cellRule) { _ in samplePool.replace(samples: state) }
         }
-        return meanSquaredError(predicted: colorComponents(state), expected: paddedImageBatch)
+        return meanSquaredError(predicted: state.colorComponents, expected: paddedImageBatch)
       }
       optimizer.update(&cellRule, along: normalizeGradient(ruleGradient))
       LazyTensorBarrier()
@@ -161,7 +164,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
         let filename = String(format: "iteration%03d", iteration)
         LazyTensorBarrier()
         try saveImage(
-          colorComponents(loggingState) * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
+          loggingState.colorComponents * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
         )
       }
 
@@ -170,8 +173,8 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
       }
     }
 
-    // Perform inference and record the results.
-    var state = initialBatch
+    // Perform growth using the trained model and record the results.
+    var state = initialState.expandingShape(at: 0)
     LazyTensorBarrier()
     for step in 0..<inferenceSteps {
       state = cellRule(state)
@@ -179,7 +182,20 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
       LazyTensorBarrier()
       let filename = String(format: "step%03d", step)
       try saveImage(
-        colorComponents(sampledState) * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
+        sampledState.colorComponents * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
+      )
+    }
+
+    // Perform regeneration using the trained model and record the results.
+    state = state.damageRightSide()
+    LazyTensorBarrier()
+    for step in 0..<inferenceSteps {
+      state = cellRule(state)
+      let sampledState = state[0]
+      LazyTensorBarrier()
+      let filename = String(format: "step_regen%03d", step)
+      try saveImage(
+        sampledState.colorComponents * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
       )
     }
   }
