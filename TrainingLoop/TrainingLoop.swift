@@ -68,30 +68,43 @@ public protocol TrainingLoopProtocol {
   var optimizer: Opt { get set }
   /// The loss function.
   var lossFunction: LossFunction { get set }
+  /// The metrics
+  var metrics: [TrainingMetrics] { get set}
 
   // Callbacks
   /// The callbacks used to customize the training loop.
   var callbacks: [TrainingLoopCallback<Self>] { get set }
 
   // Temporary data
+
+  // MARK: - Step-level data
+
   /// The last input fed to the model.
-  var lastInput: Input? { get set }
+  var lastStepInput: Input? { get set }
   /// The last target.
-  var lastTarget: Target? { get set }
+  var lastStepTarget: Target? { get set }
   /// The last predictions of the model.
-  var lastOutput: Output? { get set }
+  var lastStepOutput: Output? { get set }
   /// The last gradients computed.
-  var lastGradient: Model.TangentVector? { get set }
+  var lastStepGradient: Model.TangentVector? { get set }
   /// The last loss.
-  var lastLoss: Tensor<Float>? { get set }
-  /// The number of epochs we are currently fitting for.
-  var epochCount: Int? { get set }
-  /// The index of the current epoch.
-  var epochIndex: Int? { get set }
+  var lastStepLoss: Tensor<Float>? { get set }
   /// The number of batches in the current collection of batches.
   var batchCount: Int? { get set }
   /// The index of the current batch.
   var batchIndex: Int? { get set }
+
+  // MARK: - Epoch-level data
+
+  /// The number of epochs we are currently fitting for.
+  var epochCount: Int? { get set }
+  /// The index of the current epoch.
+  var epochIndex: Int? { get set }
+  
+  // MARK: - Others
+
+  /// The log for last statistics
+  var lastStatsLog: [(String, Float)]? { get set }
 }
 
 /// The events that occur during a call to `fit` in the `TrainingLoop`
@@ -167,30 +180,47 @@ where
   public var optimizer: Opt
   /// The loss function
   public var lossFunction: LossFunction
+  /// The metrics
+  public var metrics: [TrainingMetrics]
 
   // Callbacks
   /// The callbacks used to customize the training loop.
   public var callbacks: [TrainingLoopCallback<Self>] = []
 
   // Temporary data
+
+  // MARK: - Step-level data
+
   /// The last input fed to the model.
-  public var lastInput: Input? = nil
+  public var lastStepInput: Input? = nil
   /// The last target.
-  public var lastTarget: Target? = nil
+  public var lastStepTarget: Target? = nil
   /// The last predictions of the model.
-  public var lastOutput: Output? = nil
+  public var lastStepOutput: Output? = nil
   /// The last gradients computed.
-  public var lastGradient: Model.TangentVector? = nil
+  public var lastStepGradient: Model.TangentVector? = nil
   /// The last loss.
-  public var lastLoss: Tensor<Float>? = nil
-  /// The number of epochs we are currently fitting for.
-  public var epochCount: Int? = nil
-  /// The index of the current epoch.
-  public var epochIndex: Int? = nil
+  public var lastStepLoss: Tensor<Float>? = nil
   /// The number of batches in the current collection of batches.
   public var batchCount: Int? = nil
   /// The index of the current batch.
   public var batchIndex: Int? = nil
+
+  // MARK: - Epoch-level data
+  
+  /// The number of epochs we are currently fitting for.
+  public var epochCount: Int? = nil
+  /// The index of the current epoch.
+  public var epochIndex: Int? = nil
+
+  // MARK: - Others
+
+  /// The log for last statistics
+  public var lastStatsLog: [(String, Float)]? = nil
+
+  /// Default callback objects
+  public let statisticsRecorder: StatisticsRecorder
+  public let progressPrinter: ProgressPrinter
 
   /// Creates an instance from `training` and `validation` data, a `model`, an `optimizer` and a
   /// `lossFunction`.
@@ -198,35 +228,45 @@ where
   /// Parameter callbacks: Callbacks that the `TrainingLoop` will use in every call to fit.
   public init(
     training: Training, validation: Validation, optimizer: Opt,
-    lossFunction: @escaping LossFunction.F, callbacks: [TrainingLoopCallback<Self>] = []
+    lossFunction: @escaping LossFunction.F, 
+    metrics: [TrainingMetrics] = [],
+    callbacks: [TrainingLoopCallback<Self>] = []
   ) {
     self.training = training
     self.validation = validation
     self.optimizer = optimizer
     self.lossFunction = LossFunction(lossFunction)
-    self.callbacks = callbacks
+    self.metrics = metrics
+    let statisticsRecorder = StatisticsRecorder(liveStatistics: true, metrics: [.loss] + metrics)
+    let progressPrinter = ProgressPrinter(liveStatistics: true)
+    self.statisticsRecorder = statisticsRecorder
+    self.progressPrinter = progressPrinter
+    self.callbacks = [
+      statisticsRecorder.record, 
+      progressPrinter.print
+    ] + callbacks
   }
 }
 
 extension TrainingLoop {
   /// The default differentiable step.
   public mutating func differentiableStep(model: Model) throws {
-    guard let data = lastInput else { return }
-    guard let target = lastTarget else { return }
-    (lastLoss, lastGradient) = valueWithGradient(at: model) { (model: Model) -> Tensor<Float> in
+    guard let data = lastStepInput else { return }
+    guard let target = lastStepTarget else { return }
+    (lastStepLoss, lastStepGradient) = valueWithGradient(at: model) { (model: Model) -> Tensor<Float> in
       let predictions = model(data)
-      lastOutput = predictions
+      lastStepOutput = predictions
       return lossFunction.f(predictions, target)
     }
   }
 
   /// The step used for inference.
   public mutating func inferenceStep(model: Model) throws {
-    guard let data = lastInput else { return }
-    lastOutput = model(data)
-    guard let target = lastTarget else { return }
+    guard let data = lastStepInput else { return }
+    lastStepOutput = model(data)
+    guard let target = lastStepTarget else { return }
     try handleEvent(.inferencePredictionEnd)
-    lastLoss = lossFunction.f(lastOutput!, target)
+    lastStepLoss = lossFunction.f(lastStepOutput!, target)
   }
 
   /// The step used for training.
@@ -235,7 +275,7 @@ extension TrainingLoop {
   ) throws {
     try differentiableStep(model, &self)
     try handleEvent(.updateStart)
-    optimizer.update(&model, along: lastGradient!)
+    optimizer.update(&model, along: lastStepGradient!)
   }
 }
 
@@ -272,7 +312,7 @@ extension TrainingLoop {
     batchCount = batches.count
     for (i, batch) in batches.enumerated() {
       batchIndex = i
-      (lastInput, lastTarget) = (batch.data, batch.label)
+      (lastStepInput, lastStepTarget) = (batch.data, batch.label)
       do {
         try handleEvent(.batchStart)
         try step(&self)
