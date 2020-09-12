@@ -11,23 +11,29 @@ cells to grow from a single cell into the shape and colors of the target image. 
 channel of the input image determines the shape of the image, and any cells with an alpha
 less than 0.1 are considered "dead".
 
-This is an example of results of Experiment 1, where the cells grow into the target image (a lizard emoji, in this case)
-and then continue growing in an unbounded manner:
-
-<img src="images/lizard-growth.gif" height="72" width="72" align="left">
-
-In Experiment 2, the cells are trained to stabilize at the final image:
-
-<img src="images/lizard-persistence.gif" height="72" width="72" align="left">
-
-In Experiment 3, the cells are trained to regenerate portions of the image that have been damaged:
-
-<img src="images/lizard-regrowth.gif" height="72" width="72" align="left">
-
 During the growing phase of inference, a single cell at the center of the image is seeded with a
 1.0 alpha channel, with all other values set to 0.0. Images are captured at multiple steps to
 observe the evolution of the environment. During the regrowth phase, half of the image is cut away
 and the steps are recorded as the cells attempt to regenerate the missing portion.
+
+This is an example of results of Experiment 1, where the cells grow into the target image (a lizard emoji, in this case)
+and then continue growing in an unbounded manner:
+
+<p align="center">
+<img src="images/lizard-growth.gif" height="144" width="144">
+</p>
+
+In Experiment 2, the cells are trained to stabilize at the final image:
+
+<p align="center">
+<img src="images/lizard-persistence.gif" height="144" width="144">
+</p>
+
+In Experiment 3, the cells are trained to regenerate portions of the image that have been damaged:
+
+<p align="center">
+<img src="images/lizard-regrowth.gif" height="144" width="144">
+</p>
 
 Representative images of the final state will be written into `output/`, with names
 like `iteration[step].png`. Inference will write out one `step[number].png` frame into `output/`
