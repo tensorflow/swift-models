@@ -50,15 +50,15 @@ public struct Image {
         }
     }
 
-    public init(tensor: Tensor<UInt8>) {
+    public init(_ tensor: Tensor<UInt8>) {
         self.imageData = .uint8(data: tensor)
     }
 
-    public init(tensor: Tensor<Float>) {
+    public init(_ tensor: Tensor<Float>) {
         self.imageData = .float(data: tensor)
     }
 
-    public init(jpeg url: URL, byteOrdering: ByteOrdering = .rgb) {
+    public init(contentsOf url: URL, byteOrdering: ByteOrdering = .rgb) {
         if byteOrdering == .bgr {
             // TODO: Add BGR byte reordering.
             fatalError("BGR byte ordering is currently unsupported.")
@@ -144,10 +144,10 @@ public struct Image {
         switch self.imageData {
         case let .uint8(data):
             let resizedImage = resize(images: Tensor<Float>(data), size: size, method: .bilinear)
-            return Image(tensor: Tensor<UInt8>(resizedImage))
+            return Image(Tensor<UInt8>(resizedImage))
         case let .float(data):
             let resizedImage = resize(images: data, size: size, method: .bilinear)
-            return Image(tensor: resizedImage)
+            return Image(resizedImage)
         }
     }
 }
@@ -184,7 +184,7 @@ public func saveImage(
             reshapedTensor = tensor
         }
     }
-    let image = Image(tensor: reshapedTensor)
+    let image = Image(reshapedTensor)
 
     let fileExtension: String
     switch format {
