@@ -41,7 +41,7 @@ guard FileManager.default.fileExists(atPath: image) else {
     exit(1)
 }
 
-let imageTensor = Image(jpeg: URL(fileURLWithPath: image)).tensor / 255.0
+let imageTensor = Image(contentsOf: URL(fileURLWithPath: image)).tensor / 255.0
 
 // Init the model.
 var style = TransformerNet()
@@ -56,7 +56,7 @@ do {
 // Apply the model to image.
 let out = style(imageTensor.expandingShape(at: 0))
 
-let outputImage = Image(tensor: out.squeezingShape(at: 0))
+let outputImage = Image(out.squeezingShape(at: 0))
 outputImage.save(to: URL(fileURLWithPath: output), colorspace: .rgb)
 
 print("Writing output to \(output).")

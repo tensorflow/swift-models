@@ -29,7 +29,7 @@ public struct LazyImage {
 
     public func tensor() -> Tensor<Float>? {
         if url != nil {
-            return Image(jpeg: url!).tensor
+            return Image(contentsOf: url!).tensor
         } else {
             return nil
         }

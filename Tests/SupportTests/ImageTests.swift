@@ -43,7 +43,7 @@ final class ImageTests: XCTestCase {
 
     func testImageLoading() {
         let imageLocation = resourceBaseLocation.appendingPathComponent("testimage.jpg")
-        let rgbImage = Image(jpeg: imageLocation, byteOrdering: .rgb)
+        let rgbImage = Image(contentsOf: imageLocation, byteOrdering: .rgb)
         let imageTensor = rgbImage.tensor
         XCTAssertEqual(imageTensor.shape, [20, 60, 3])
         // Note: JPEG compression artifacts lead to these values being slightly off pure colors.
@@ -71,22 +71,22 @@ final class ImageTests: XCTestCase {
         let imageDestination = temporaryDirectory.appendingPathComponent("testimage.jpg")
 
         let rgbTensor = Tensor<Float>(ones: [15, 20, 3])
-        let rgbImage = Image(tensor: rgbTensor)
+        let rgbImage = Image(rgbTensor)
         rgbImage.save(to: imageDestination, colorspace: .rgb, format: .jpeg(quality: 95))
-        let reloadedRGBImage = Image(jpeg: imageDestination, byteOrdering: .rgb)
+        let reloadedRGBImage = Image(contentsOf: imageDestination, byteOrdering: .rgb)
         XCTAssertEqual(reloadedRGBImage.tensor.shape, [15, 20, 3])
 
         let grayscaleTensor = Tensor<Float>(ones: [15, 20, 1])
-        let grayscaleImage = Image(tensor: grayscaleTensor)
+        let grayscaleImage = Image(grayscaleTensor)
         grayscaleImage.save(to: imageDestination, colorspace: .grayscale, format: .jpeg(quality: 95))
-        let reloadedGrayscaleImage = Image(jpeg: imageDestination, byteOrdering: .rgb)
+        let reloadedGrayscaleImage = Image(contentsOf: imageDestination, byteOrdering: .rgb)
         XCTAssertEqual(reloadedGrayscaleImage.tensor.shape, [15, 20, 3])
         
         let imageSource = resourceBaseLocation.appendingPathComponent("testimage.jpg")
         let imageDestination2 = temporaryDirectory.appendingPathComponent("testimage.jpg")
-        let loadedRGBImage = Image(jpeg: imageSource, byteOrdering: .rgb)
+        let loadedRGBImage = Image(contentsOf: imageSource, byteOrdering: .rgb)
         loadedRGBImage.save(to: imageDestination2, colorspace: .rgb, format: .jpeg(quality: 95))
-        let reloadedRGBImage2 = Image(jpeg: imageDestination2, byteOrdering: .rgb)
+        let reloadedRGBImage2 = Image(contentsOf: imageDestination2, byteOrdering: .rgb)
         XCTAssertEqual(reloadedRGBImage2.tensor.shape, [20, 60, 3])
     }
     

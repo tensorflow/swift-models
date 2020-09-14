@@ -104,7 +104,7 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
             
             let fakeSample = generator(validationImage) * 0.5 + 0.5
 
-            let fakeSampleImage = Image(tensor: fakeSample[0] * 255)
+            let fakeSampleImage = Image(fakeSample[0] * 255)
             fakeSampleImage.save(to: validationImageURL, colorspace: .rgb)
         }
         
@@ -130,7 +130,7 @@ for batch in dataset.testing {
                            .concatenated(with: fakeImages,
                                          alongAxis: 2) / 2.0 + 0.5
 
-    let image = Image(tensor: (tensorImage * 255)[0])
+    let image = Image((tensorImage * 255)[0])
     let saveURL = resultsFolder.appendingPathComponent("\(count).jpg", isDirectory: false)
     image.save(to: saveURL, colorspace: .rgb)
 
