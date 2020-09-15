@@ -165,9 +165,7 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
   public func decode(_ candidates: [CharacterSequence], _ state: Tensor<Float>, device: Device)
     -> Tensor<Float>
   {
-    // TODO(TF-433): Remove closure workaround when autodiff supports non-active rethrowing
-    // functions (`Array.map`).
-    let maxLen = { candidates.map { $0.count }.max()! + 1 }()
+    let maxLen = candidates.map { $0.count }.max()! + 1
     var xBatch: [Int32] = []
     var yBatch: [Int32] = []
     for candidate in candidates {
@@ -261,13 +259,9 @@ public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
           CharacterSequence(
             alphabet: parameters.alphabet,
             characters: sentence[pos..<pos + span])
-        // TODO(TF-433): Use `Bool.&&` instead of nested if statements when autodiff supports
-        // non-active rethrowing functions (`Bool.&&`).
-        if candidate.count != 1 {
-          if candidate.last == parameters.alphabet.eos {
-            // Prohibit strings such as ["t", "h", "e", "</s>"]
-            continue
-          }
+        if candidate.count != 1 && candidate.last == parameters.alphabet.eos {
+          // Prohibit strings such as ["t", "h", "e", "</s>"]
+          continue
         }
         candidates.append(candidate)
       }
