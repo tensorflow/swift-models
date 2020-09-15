@@ -49,7 +49,7 @@ var trainingLoop = TrainingLoop(
   optimizer: optimizer,
   lossFunction: softmaxCrossEntropy,
   metrics: [.accuracy],
-  callbacks: [CVSLogger(liveStatistics: false).log])
+  callbacks: [CSVLogger(liveStatistics: false).log])
 trainingLoop.statisticsRecorder.liveStatistics = false
 trainingLoop.progressPrinter.liveStatistics = false
 

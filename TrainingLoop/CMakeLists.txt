@@ -3,7 +3,7 @@ add_library(TrainingLoop
   Metrics.swift
   TrainingLoop.swift
   Callbacks/StatisticsRecorder.swift
-  Callbacks/ProgressPrinter.swift,
+  Callbacks/ProgressPrinter.swift
   Callbacks/CSVLogger.swift)
 target_link_libraries(TrainingLoop PUBLIC
   ModelSupport)

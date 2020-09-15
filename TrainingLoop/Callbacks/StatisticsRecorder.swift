@@ -49,10 +49,12 @@ public class StatisticsRecorder {
     case .trainingStart, .validationStart:
       resetMetricMeasurers()
     case .batchEnd:
-      if let loss = loop.lastStepLoss, let output = loop.lastStepOutput, let target = loop.lastStepTarget {
+      if let loss = loop.lastStepLoss, let output = loop.lastStepOutput,
+        let target = loop.lastStepTarget
+      {
         accumulateMetrics(loss: loss, predictions: output, labels: target)
       }
-      
+
       if let batchIndex = loop.batchIndex, let batchCount = loop.batchCount {
         if liveStatistics || (batchCount == (batchIndex + 1)) {
           loop.lastStatsLog = computeMetrics()
@@ -71,7 +73,7 @@ public class StatisticsRecorder {
 
   func accumulateMetrics<Output, Target>(loss: Tensor<Float>, predictions: Output, labels: Target) {
     for index in metricMeasurers.indices {
-      metricMeasurers[index].accumulate(loss: loss, predictions: predictions, labels: labels) 
+      metricMeasurers[index].accumulate(loss: loss, predictions: predictions, labels: labels)
     }
   }
 

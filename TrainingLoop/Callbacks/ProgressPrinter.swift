@@ -68,7 +68,7 @@ public class ProgressPrinter {
       Swift.print("")
     case .validationStart:
       Swift.print("")
-    default: 
+    default:
       return
     }
   }
