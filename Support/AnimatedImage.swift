@@ -16,8 +16,8 @@ import Foundation
 import TensorFlow
 
 struct AnimatedImage {
-  let frames:  [Tensor<Float>]
-  
+  let frames: [Tensor<Float>]
+
   public init(_ frames: [Tensor<Float>]) {
     guard frames.count > 0 else { fatalError("No frames were provided to animated image.") }
     guard frames[0].rank == 3 else {
@@ -25,11 +25,11 @@ struct AnimatedImage {
     }
     self.frames = frames
   }
-  
-  func quantize(_ frames: [Tensor<Float>]) -> (quantizedFrames: [[UInt8]], palette: [UInt8] ) {
+
+  func quantize(_ frames: [Tensor<Float>]) -> (quantizedFrames: [[UInt8]], palette: [UInt8]) {
     // TODO: Adapt the following to the colors in the input image.
     let palette: [UInt8] = GIF.defaultPalette
-    
+
     let colorComponents = frames.first!.shape[2]
     var quantizedFrames: [[UInt8]] = []
     for frame in frames {
@@ -60,7 +60,7 @@ struct AnimatedImage {
     }
     return (quantizedFrames: quantizedFrames, palette: palette)
   }
-  
+
   public func save(to url: URL, delay: Int, loop: Bool = true) throws {
     let width = frames[0].shape[1]
     let height = frames[0].shape[0]
@@ -71,12 +71,11 @@ struct AnimatedImage {
     for frame in quantizedFrames {
       gif.append(frame: frame, delay: delay)
     }
-    
+
     gif.close()
     try gif.bytes.write(to: url)
   }
 }
-
 
 public func saveAnimatedImage(
   _ frames: [Tensor<Float>], delay: Int, directory: String, name: String, loop: Bool = true
@@ -88,4 +87,3 @@ public func saveAnimatedImage(
   let outputURL = URL(fileURLWithPath: "\(directory)/\(name).gif")
   try image.save(to: outputURL, delay: delay, loop: loop)
 }
-

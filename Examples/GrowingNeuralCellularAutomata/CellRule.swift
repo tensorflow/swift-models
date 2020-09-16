@@ -24,11 +24,13 @@ struct CellRule: Layer {
   init(stateChannels: Int, fireRate: Float) {
     self.fireRate = fireRate
 
-    let horizontalSobelKernel = Tensor<Float>(
-      shape: [3, 3, 1, 1], scalars: [-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0]) / 8.0
+    let horizontalSobelKernel =
+      Tensor<Float>(
+        shape: [3, 3, 1, 1], scalars: [-1.0, 0.0, 1.0, -2.0, 0.0, 2.0, -1.0, 0.0, 1.0]) / 8.0
     let horizontalSobelFilter = horizontalSobelKernel.broadcasted(to: [3, 3, stateChannels, 1])
-    let verticalSobelKernel = Tensor<Float>(
-      shape: [3, 3, 1, 1], scalars: [-1.0, -2.0, -1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 1.0]) / 8.0
+    let verticalSobelKernel =
+      Tensor<Float>(
+        shape: [3, 3, 1, 1], scalars: [-1.0, -2.0, -1.0, 0.0, 0.0, 0.0, 1.0, 2.0, 1.0]) / 8.0
     let verticalSobelFilter = verticalSobelKernel.broadcasted(to: [3, 3, stateChannels, 1])
     let identityKernel = Tensor<Float>(
       shape: [3, 3, 1, 1], scalars: [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0])
@@ -46,7 +48,7 @@ struct CellRule: Layer {
       lowerBounds: [0, 0, 0, 3], sizes: [input.shape[0], input.shape[1], input.shape[2], 1])
     let localMaximum =
       maxPool2D(alphaChannel, filterSize: (1, 3, 3, 1), strides: (1, 1, 1, 1), padding: .same)
-    return withoutDerivative(at: input) { _ in localMaximum.mask { $0 .> 0.1} }
+    return withoutDerivative(at: input) { _ in localMaximum.mask { $0 .> 0.1 } }
   }
 
   @differentiable
@@ -63,8 +65,10 @@ struct CellRule: Layer {
     let dx = conv2(relu(conv1(perception)))
 
     let updateDistribution =
-      Tensor<Float>(randomUniform: [input.shape[0], input.shape[1], input.shape[2], 1], on: input.device)
-    let updateMask = withoutDerivative(at: input) { _ in updateDistribution.mask { $0 .< fireRate } }
+      Tensor<Float>(
+        randomUniform: [input.shape[0], input.shape[1], input.shape[2], 1], on: input.device)
+    let updateMask = withoutDerivative(at: input) { _ in updateDistribution.mask { $0 .< fireRate }
+    }
 
     let updatedState = input + (dx * updateMask)
     let livingMaskAfter = livingMask(updatedState)
@@ -80,7 +84,7 @@ func normalizeGradient(_ gradient: CellRule.TangentVector) -> CellRule.TangentVe
     let norm = sqrt(gradient[keyPath: kp].squared().sum())
     outputGradient[keyPath: kp] = gradient[keyPath: kp] / (norm + 1e-8)
   }
-  
+
   return outputGradient
 }
 
@@ -117,9 +121,11 @@ func clipBackwardsTrace(_ input: Tensor<Float>) -> Tensor<Float> {
 func _vjpClipBackwardsTrace(
   _ input: Tensor<Float>
 ) -> (value: Tensor<Float>, pullback: (Tensor<Float>) -> Tensor<Float>) {
-  return (input, { 
-    LazyTensorBarrier()
-    return $0
+  return (
+    input,
+    {
+      LazyTensorBarrier()
+      return $0
     }
   )
 }

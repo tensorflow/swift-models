@@ -119,17 +119,19 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     ])
 
     try saveImage(
-      paddedImage * 255.0, colorspace: .rgba, directory: "output", name: "targetimage", format: .png)
+      paddedImage * 255.0, colorspace: .rgba, directory: "output", name: "targetimage", format: .png
+    )
 
     // Initialize model, optimizer, and initial state.
     var initialState = Tensor(zerosLike: paddedImage).padded(forSizes: [
       (before: 0, after: 0), (before: 0, after: 0), (before: 0, after: stateChannels - 4),
     ])
-    initialState[initialState.shape[0] / 2][initialState.shape[1] / 2][3] = Tensor<Float>(1.0, on: device)
+    initialState[initialState.shape[0] / 2][initialState.shape[1] / 2][3] = Tensor<Float>(
+      1.0, on: device)
     var initialBatch = initialState.broadcasted(to: [
       batchSize, initialState.shape[0], initialState.shape[1], initialState.shape[2],
     ])
-    
+
     // TODO: Make this optional when we can differentiate through optionals.
     var samplePool: SamplePool
     if useSamplePool {
@@ -137,7 +139,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     } else {
       samplePool = SamplePool(initialState: initialState, size: 0)
     }
-    
+
     var cellRule = CellRule(stateChannels: stateChannels, fireRate: cellFireRate)
     cellRule.move(to: device)
     var optimizer = Adam(for: cellRule, learningRate: 2e-3)
@@ -152,7 +154,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
       if useSamplePool {
         initialBatch = samplePool.sample(batchSize: batchSize, damaged: damagedSamples)
       }
-      
+
       let (loss, ruleGradient) = valueWithGradient(at: cellRule) { model -> Tensor<Float> in
         var state = initialBatch
         for _ in 0..<steps {
@@ -173,17 +175,20 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
 
       let lossScalar = loss.scalarized()
       print(
-        "Iteration: \(iteration), loss: \(lossScalar), log loss: \(log10(lossScalar)), time: \(Date().timeIntervalSince(startTime)) s")
+        "Iteration: \(iteration), loss: \(lossScalar), log loss: \(log10(lossScalar)), time: \(Date().timeIntervalSince(startTime)) s"
+      )
 
       if (iteration % 10) == 0 {
         LazyTensorBarrier()
         let filename = String(format: "iteration%03d", iteration)
         var state = initialState.expandingShape(at: 0)
         state = try recordGrowth(
-          seed: state, rule: cellRule, steps: inferenceSteps, directory: "output", filename: filename)
+          seed: state, rule: cellRule, steps: inferenceSteps, directory: "output",
+          filename: filename)
 
         try saveImage(
-          loggingState.colorComponents * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
+          loggingState.colorComponents * 255.0, colorspace: .rgb, directory: "output",
+          name: filename, format: .png
         )
       }
 
@@ -191,12 +196,12 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
         optimizer.learningRate = optimizer.learningRate * 0.1
       }
     }
-    
+
     // Perform growth using the trained model and record the results.
     var state = initialState.expandingShape(at: 0)
     state = try recordGrowth(
       seed: state, rule: cellRule, steps: inferenceSteps, directory: "output", filename: "growth")
-    
+
     // Perform regeneration using the trained model and record the results.
     state = state.damageRightSide()
     _ = try recordGrowth(

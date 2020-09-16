@@ -19,11 +19,11 @@ import Foundation
 class Node {
   let key: Int
   var children: [UInt8: Node] = [:]
-  
+
   init(key: Int) {
     self.key = key
   }
-  
+
   static func trie(degree: Int, keys: inout Int) -> Node {
     let root = Node(key: 0)
     for key in 0..<degree {
@@ -44,7 +44,7 @@ struct GIF {
   var partial: UInt = 0
   var offset: Int = 0
   var buffer: [UInt8]
-  
+
   static let vga: [UInt8] = [
     0x00, 0x00, 0x00,
     0xAA, 0x00, 0x00,
@@ -77,10 +77,10 @@ struct GIF {
       let greyValue = UInt8(grey * 0xFF / 25)
       palette.append(contentsOf: [greyValue, greyValue, greyValue])
     }
-    
+
     return palette
   }
-  
+
   init(width: Int, height: Int, depth: Int = 8, palette: [UInt8]? = nil, loop: Bool = true) {
     self.width = width
     self.height = height
@@ -89,16 +89,16 @@ struct GIF {
     self.bytes = Data()
     self.loop = loop
     self.buffer = [UInt8](repeating: 0, count: 255)
-    
+
     addHeader()
   }
-  
+
   mutating func addHeader() {
     bytes.append(string: "GIF89a")
     bytes.append(littleEndian: width)
     bytes.append(littleEndian: height)
     bytes.append(contentsOf: [0xF0 | (UInt8(depth) - 1), 0x00, 0x00])
-    
+
     if let providedPalette = palette {
       bytes.append(contentsOf: providedPalette)
     } else if depth <= 4 {
@@ -110,18 +110,18 @@ struct GIF {
       putLoop()
     }
   }
-  
+
   mutating func append(frame: [UInt8], delay: Int) {
     append(delay: delay)
     // TODO: Optimize bounding box to only provided updated part.
-    
+
     bytes.append(string: ",")
-    bytes.append(littleEndian: 0) // X
-    bytes.append(littleEndian: 0) // Y
+    bytes.append(littleEndian: 0)  // X
+    bytes.append(littleEndian: 0)  // Y
     bytes.append(littleEndian: width)
     bytes.append(littleEndian: height)
     bytes.append(contentsOf: [0x00, UInt8(depth)])
-    
+
     var keySize = depth + 1
     let degree = 1 << depth
     putKey(degree, size: keySize)
@@ -151,29 +151,29 @@ struct GIF {
         }
       }
     }
-    
+
     putKey(node.key, size: keySize)
     putKey(degree + 1, size: keySize)
     endKey()
   }
-  
+
   mutating func append(delay: Int) {
     bytes.append(string: "!")
     bytes.append(contentsOf: [0xF9, 0x04, 0x04])
     bytes.append(littleEndian: delay)
     bytes.append(string: "\0\0")
   }
-  
+
   mutating func putKey(_ key: Int, size: Int) {
     var byteOffset = offset / 8
     let bitOffset = offset % 8
     partial |= UInt(key) << bitOffset
     var bitsToWrite = bitOffset + size
-    while (bitsToWrite >= 8) {
+    while bitsToWrite >= 8 {
       buffer[byteOffset] = UInt8(partial & 0xFF)
       byteOffset += 1
-      if (byteOffset == 0xFF) {
-        bytes.append(0xFF) // "\xFF"
+      if byteOffset == 0xFF {
+        bytes.append(0xFF)  // "\xFF"
         bytes.append(contentsOf: buffer)
         byteOffset = 0
       }
@@ -185,7 +185,7 @@ struct GIF {
 
   mutating func endKey() {
     var byteOffset = offset / 8
-    if ((offset % 8) > 1) {
+    if (offset % 8) > 1 {
       buffer[byteOffset] = UInt8(partial & 0xFF)
       byteOffset += 1
     }
@@ -205,7 +205,7 @@ struct GIF {
     bytes.append(littleEndian: 0)
     bytes.append(string: "\0")
   }
-  
+
   mutating func close() {
     bytes.append(string: ";")
   }
@@ -216,7 +216,7 @@ extension Data {
     self.append(UInt8(value & 0xff))
     self.append(UInt8(value >> 8))
   }
-  
+
   mutating func append(string: String) {
     self.append(string.data(using: String.Encoding.utf8, allowLossyConversion: true)!)
   }
