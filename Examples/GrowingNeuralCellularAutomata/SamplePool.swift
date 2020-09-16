@@ -17,12 +17,12 @@ import TensorFlow
 struct SamplePool {
   var samples: [Tensor<Float>]
   let initialState: Tensor<Float>
-  
+
   init(initialState: Tensor<Float>, size: Int) {
     samples = [Tensor<Float>](repeating: initialState, count: size)
     self.initialState = initialState
   }
-  
+
   // This rearranges the pool to place the randomly sampled batch upfront, for easy replacement later.
   mutating func sample(batchSize: Int, damaged: Int = 0) -> Tensor<Float> {
     for index in 0..<batchSize {
@@ -31,7 +31,7 @@ struct SamplePool {
         samples.swapAt(index, choice)
       }
     }
-    
+
     // TODO: Have this sorted by loss.
     samples[0] = initialState
     if damaged > 0 {
@@ -42,7 +42,7 @@ struct SamplePool {
 
     return Tensor(stacking: Array(samples[0..<batchSize]))
   }
-  
+
   mutating func replace(samples: Tensor<Float>) {
     let samplesToInsert = samples.unstacked()
     self.samples.replaceSubrange(0..<samplesToInsert.count, with: samplesToInsert)
