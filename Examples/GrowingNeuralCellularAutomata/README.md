@@ -36,8 +36,9 @@ In Experiment 3, the cells are trained to regenerate portions of the image that 
 </p>
 
 Representative images of the final state will be written into `output/`, with names
-like `iteration[step].png`. Inference will write out one `step[number].png` frame into `output/`
-for each time step, followed by `step_regen[number].png` for the regrowth phase.
+like `iteration[step].png`. An animated GIF of each step will accompany that. Inference
+will write out an animated GIF named `growth.gif`, followed by `regen.gif` for the
+regrowth phase.
 
 ## Setup
 

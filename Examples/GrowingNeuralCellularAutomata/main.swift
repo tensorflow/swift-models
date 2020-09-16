@@ -79,6 +79,21 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
         "Must have at least 4 channels to support RGBA values.")
     }
   }
+  func recordGrowth(
+    seed: Tensor<Float>, rule: CellRule, steps: Int, directory: String, filename: String
+  ) throws -> Tensor<Float> {
+    var state = seed
+    var states: [Tensor<Float>] = []
+    LazyTensorBarrier()
+    for _ in 0..<steps {
+      state = rule(state)
+      let sampledState = state[0]
+      LazyTensorBarrier()
+      states.append(sampledState.colorComponents)
+    }
+    try saveAnimatedImage(states, delay: 1, directory: directory, name: filename)
+    return state
+  }
 
   func run() throws {
     // TODO: Remove this workaround to prevent excessive TF memory growth when fixed upstream.
@@ -161,8 +176,12 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
         "Iteration: \(iteration), loss: \(lossScalar), log loss: \(log10(lossScalar)), time: \(Date().timeIntervalSince(startTime)) s")
 
       if (iteration % 10) == 0 {
-        let filename = String(format: "iteration%03d", iteration)
         LazyTensorBarrier()
+        let filename = String(format: "iteration%03d", iteration)
+        var state = initialState.expandingShape(at: 0)
+        state = try recordGrowth(
+          seed: state, rule: cellRule, steps: inferenceSteps, directory: "output", filename: filename)
+
         try saveImage(
           loggingState.colorComponents * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
         )
@@ -172,32 +191,16 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
         optimizer.learningRate = optimizer.learningRate * 0.1
       }
     }
-
+    
     // Perform growth using the trained model and record the results.
     var state = initialState.expandingShape(at: 0)
-    LazyTensorBarrier()
-    for step in 0..<inferenceSteps {
-      state = cellRule(state)
-      let sampledState = state[0]
-      LazyTensorBarrier()
-      let filename = String(format: "step%03d", step)
-      try saveImage(
-        sampledState.colorComponents * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
-      )
-    }
-
+    state = try recordGrowth(
+      seed: state, rule: cellRule, steps: inferenceSteps, directory: "output", filename: "growth")
+    
     // Perform regeneration using the trained model and record the results.
     state = state.damageRightSide()
-    LazyTensorBarrier()
-    for step in 0..<inferenceSteps {
-      state = cellRule(state)
-      let sampledState = state[0]
-      LazyTensorBarrier()
-      let filename = String(format: "step_regen%03d", step)
-      try saveImage(
-        sampledState.colorComponents * 255.0, colorspace: .rgb, directory: "output", name: filename, format: .png
-      )
-    }
+    _ = try recordGrowth(
+      seed: state, rule: cellRule, steps: inferenceSteps, directory: "output", filename: "regen")
   }
 }
 
