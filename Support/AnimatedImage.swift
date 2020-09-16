@@ -42,13 +42,13 @@ struct AnimatedImage {
         if colorComponents == 4 {
           // I'm placing values with an alpha channel on a white background.
           let alpha = scalars[index + 3]
-          red = UInt8(min(round(scalars[index] + (255.0 - alpha)), 255.0))
-          green = UInt8(min(round(scalars[index + 1] + (255.0 - alpha)), 255.0))
-          blue = UInt8(min(round(scalars[index + 2] + (255.0 - alpha)), 255.0))
+          red = UInt8(max(min(round(scalars[index] + (255.0 - alpha)), 255.0), 0.0))
+          green = UInt8(max(min(round(scalars[index + 1] + (255.0 - alpha)), 255.0), 0.0))
+          blue = UInt8(max(min(round(scalars[index + 2] + (255.0 - alpha)), 255.0), 0.0))
         } else {
-          red = UInt8(scalars[index])
-          green = UInt8(scalars[index + 1])
-          blue = UInt8(scalars[index + 2])
+          red = UInt8(max(min(scalars[index], 255.0), 0.0))
+          green = UInt8(max(min(scalars[index + 1], 255.0), 0.0))
+          blue = UInt8(max(min(scalars[index + 2], 255.0), 0.0))
         }
         let redQuantized = red / 51
         let greenQuantized = green / 51

@@ -89,7 +89,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
       state = rule(state)
       let sampledState = state[0]
       LazyTensorBarrier()
-      states.append(sampledState.colorComponents)
+      states.append(sampledState.colorComponents * 255.0)
     }
     try saveAnimatedImage(states, delay: 1, directory: directory, name: filename)
     return state
