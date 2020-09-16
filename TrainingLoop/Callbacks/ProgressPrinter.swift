@@ -18,15 +18,10 @@ let progressBarLength = 30
 
 /// A callback-based handler for printing the training or validation progress. 
 public class ProgressPrinter {
-  public var liveStatistics: Bool
 
   /// Create an instance that prints progress during the training loop.
   /// The progress contains a dynamic progress bar followed by statistics of metrics.
-  ///
-  /// - Parameters:
-  ///   - liveStatistics: whether or not show the statistics lively on each batch.
-  public init(liveStatistics: Bool = true) {
-    self.liveStatistics = liveStatistics
+  public init() {
   }
 
   /// The callback used to hook into the TrainingLoop for printing progress.
@@ -55,8 +50,8 @@ public class ProgressPrinter {
       let progressBar = formatProgressBar(
         progress: Float(batchIndex + 1) / Float(batchCount), length: progressBarLength)
       var stats: String = ""
-      if liveStatistics || (batchCount == (batchIndex + 1)) {
-        stats = formatStats(loop.lastStatsLog)
+      if let lastStatsLog = loop.lastStatsLog {
+        stats = formatStats(lastStatsLog)
       }
 
       Swift.print(
@@ -88,12 +83,10 @@ public class ProgressPrinter {
     return "[\(leading)\(separator)\(trailing)]"
   }
 
-  func formatStats(_ stats: [(String, Float)]?) -> String {
+  func formatStats(_ stats: [(String, Float)]) -> String {
     var result = ""
-    if let stats = stats {
-      for stat in stats {
-        result += " - \(stat.0): \(String(format: "%.4f", stat.1))"
-      }
+    for stat in stats {
+      result += " - \(stat.0): \(String(format: "%.4f", stat.1))"
     }
     return result
   }

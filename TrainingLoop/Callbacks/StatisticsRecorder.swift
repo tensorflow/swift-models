@@ -17,7 +17,23 @@ import TensorFlow
 ///
 /// Data produced by this handler can be used by ProgressPrinter, CVSLogger, etc.
 public class StatisticsRecorder {
-  public var liveStatistics: Bool
+  public var shouldReset:
+    (
+      _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
+      _ event: TrainingLoopEvent
+    ) -> Bool
+
+  public var shouldAccumulate:
+    (
+      _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
+      _ event: TrainingLoopEvent
+    ) -> Bool
+
+  public var shouldCompute:
+    (
+      _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
+      _ event: TrainingLoopEvent
+    ) -> Bool
 
   var metricMeasurers: [MetricsMeasurer]
 
@@ -27,13 +43,33 @@ public class StatisticsRecorder {
   /// only when last batch ends when 'liveStatistics' is set to false.
   ///
   /// - Parameters:
-  ///   - liveStatistics: whether or not record lively on each batch.
-  ///     This has an impact on performance, due to materialization of tensors, updating values
-  ///     on every batch can reduce training speed by up to 30%.
   ///   - metrics: an array of TrainingMetrics to record.
-  public init(liveStatistics: Bool = true, metrics: [TrainingMetrics]) {
-    self.liveStatistics = liveStatistics
+  public init(metrics: [TrainingMetrics]) {
     metricMeasurers = metrics.map { $0.measurer }
+
+    shouldReset = {
+      (
+        _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
+        _ event: TrainingLoopEvent
+      ) -> Bool in
+      return event == .trainingStart || event == .validationStart
+    }
+
+    shouldAccumulate = {
+      (
+        _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
+        _ event: TrainingLoopEvent
+      ) -> Bool in
+      return event == .batchEnd
+    }
+
+    shouldCompute = {
+      (
+        _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
+        _ event: TrainingLoopEvent
+      ) -> Bool in
+      return event == .batchEnd
+    }
   }
 
   /// The callback used to hook into the TrainingLoop for recording statistics.
@@ -45,23 +81,28 @@ public class StatisticsRecorder {
   ///   - loop: The TrainingLoop where an event has occurred. 
   ///   - event: The training or validation event that this callback is responding to.
   public func record<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
-    switch event {
-    case .trainingStart, .validationStart:
-      resetMetricMeasurers()
-    case .batchEnd:
-      if let loss = loop.lastStepLoss, let output = loop.lastStepOutput,
-        let target = loop.lastStepTarget
-      {
-        accumulateMetrics(loss: loss, predictions: output, labels: target)
-      }
-
-      if let batchIndex = loop.batchIndex, let batchCount = loop.batchCount {
-        if liveStatistics || (batchCount == (batchIndex + 1)) {
-          loop.lastStatsLog = computeMetrics()
-        }
-      }
-    default:
+    guard let batchIndex = loop.batchIndex,
+      let batchCount = loop.batchCount,
+      let epochIndex = loop.batchIndex,
+      let epochCount = loop.epochCount,
+      let loss = loop.lastStepLoss,
+      let output = loop.lastStepOutput,
+      let target = loop.lastStepTarget
+    else {
       return
+    }
+
+    if shouldReset(batchIndex, batchCount, epochIndex, epochCount, event) {
+      resetMetricMeasurers()
+      loop.lastStatsLog = nil
+    }
+
+    if shouldAccumulate(batchIndex, batchCount, epochIndex, epochCount, event) {
+      accumulateMetrics(loss: loss, predictions: output, labels: target)
+    }
+
+    if shouldCompute(batchIndex, batchCount, epochIndex, epochCount, event) {
+      loop.lastStatsLog = computeMetrics()
     }
   }
 

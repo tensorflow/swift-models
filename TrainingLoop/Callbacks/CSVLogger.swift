@@ -4,18 +4,13 @@ import ModelSupport
 /// A callback-based handler for logging the statistics to CSV file.
 public class CSVLogger {
   public var path: String
-  public var liveStatistics: Bool
 
   let foundationFS: FoundationFileSystem
   let foundationFile: FoundationFile
 
   /// Create an instance that log statistics during the training loop.
-  ///
-  /// - Parameters:
-  ///   - liveStatistics: whether or not log the statistics lively on each batch.
-  public init(withPath path: String = "run/log.csv", liveStatistics: Bool = true) {
+  public init(withPath path: String = "run/log.csv") {
     self.path = path
-    self.liveStatistics = liveStatistics
     self.foundationFS = FoundationFileSystem()
     self.foundationFile = FoundationFile(path: path)
   }
@@ -31,15 +26,11 @@ public class CSVLogger {
       guard let epochIndex = loop.epochIndex, let epochCount = loop.epochCount,
         let batchIndex = loop.batchIndex, let batchCount = loop.batchCount
       else {
-        break
-      }
-
-      if !liveStatistics && (batchIndex + 1 != batchCount) {
-        break
+        return
       }
 
       guard let stats = loop.lastStatsLog else {
-        break
+        return
       }
 
       if !FileManager.default.fileExists(atPath: path) {
@@ -51,7 +42,7 @@ public class CSVLogger {
         batch: "\(batchIndex + 1)/\(batchCount)",
         stats: stats)
     default:
-      break
+      return
     }
   }
 

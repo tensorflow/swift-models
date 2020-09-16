@@ -218,11 +218,19 @@ where
   /// The metrics
   public var metrics: [TrainingMetrics]
 
-  // Callbacks
-  /// The callbacks used to customize the training loop.
-  public var callbacks: [TrainingLoopCallback<Self>] = []
+  /// Callbacks
 
-  // Temporary data
+  // MARK: - The callbacks used to customize the training loop.
+
+  public var callbacks: [TrainingLoopCallback<Self>]
+
+  // MARK: - Default callback objects
+
+  public var statisticsRecorder: StatisticsRecorder? = nil
+
+  public var progressPrinter: ProgressPrinter? = nil
+
+  /// Temporary data
 
   // MARK: - Step-level data
 
@@ -260,11 +268,6 @@ where
   /// The log for last statistics
   public var lastStatsLog: [(String, Float)]? = nil
 
-  /// Default callback objects
-  public let statisticsRecorder: StatisticsRecorder
-
-  public let progressPrinter: ProgressPrinter
-
   /// Creates an instance from `training` and `validation` data, a `model`, an `optimizer` and a
   /// `lossFunction`.
   ///
@@ -273,21 +276,27 @@ where
     training: Training, validation: Validation, optimizer: Opt,
     lossFunction: @escaping LossFunction.F,
     metrics: [TrainingMetrics] = [],
-    callbacks: [TrainingLoopCallback<Self>] = []
+    callbacks: [TrainingLoopCallback<Self>] = [],
+    includeDefaultCallbacks: Bool = true
   ) {
     self.training = training
     self.validation = validation
     self.optimizer = optimizer
     self.lossFunction = LossFunction(lossFunction)
     self.metrics = metrics
-    let statisticsRecorder = StatisticsRecorder(liveStatistics: true, metrics: [.loss] + metrics)
-    let progressPrinter = ProgressPrinter(liveStatistics: true)
-    self.statisticsRecorder = statisticsRecorder
-    self.progressPrinter = progressPrinter
-    self.callbacks = [
-      statisticsRecorder.record,
-      progressPrinter.print,
-    ] + callbacks
+
+    if includeDefaultCallbacks {
+      let statisticsRecorder = StatisticsRecorder(metrics: [.loss] + metrics)
+      let progressPrinter = ProgressPrinter()
+      self.statisticsRecorder = statisticsRecorder
+      self.progressPrinter = progressPrinter
+      self.callbacks = [
+        statisticsRecorder.record,
+        progressPrinter.print,
+      ] + callbacks
+    } else {
+      self.callbacks = callbacks
+    }
   }
 }
 
