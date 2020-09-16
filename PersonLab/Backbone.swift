@@ -18,12 +18,6 @@ import TensorFlow
 public struct DepthwiseSeparableConvBlock: Layer {
   var dConv: DepthwiseConv2D<Float>
   var conv: Conv2D<Float>
-  var depthWiseFilter: Tensor<Float>
-  var depthWiseBias: Tensor<Float>
-  var pointWiseFilter: Tensor<Float>
-  var pointWiseBias: Tensor<Float>
-
-  @noDerivative let strides: (Int, Int)
 
   public init(
     depthWiseFilter: Tensor<Float>,
@@ -32,11 +26,6 @@ public struct DepthwiseSeparableConvBlock: Layer {
     pointWiseBias: Tensor<Float>,
     strides: (Int, Int)
   ) {
-    self.depthWiseFilter = depthWiseFilter
-    self.depthWiseBias = depthWiseBias
-    self.pointWiseFilter = pointWiseFilter
-    self.pointWiseBias = pointWiseBias
-    self.strides = strides
 
     dConv = DepthwiseConv2D<Float>(
       filter: depthWiseFilter,
