@@ -215,3 +215,44 @@ public func saveImage(
     let outputURL = URL(fileURLWithPath: "\(directory)/\(name).\(fileExtension)")
     resizedImage.save(to: outputURL, colorspace: colorspace, format: format)
 }
+
+public typealias Point = (x: Int, y: Int)
+
+/// Draw line using Bresenham's line drawing algorithm
+public func drawLine(
+  on imageTensor: inout Tensor<Float>,
+  from pt1: Point,
+  to pt2: Point,
+  color: (r: Float, g: Float, b: Float) = (255.0, 255.0, 255.0)
+) {
+  var pt1 = pt1
+  var pt2 = pt2
+  let colorTensor = Tensor<Float>([color.r, color.g, color.b])
+
+  // Rearrange points for current octant
+  let steep = abs(pt2.y - pt1.y) > abs(pt2.x - pt1.x)
+  if steep {
+      pt1 = Point(x: pt1.y, y: pt1.x)
+      pt2 = Point(x: pt2.y, y: pt2.x)
+  }
+  if pt2.x < pt1.x {
+      (pt1, pt2) = (pt2, pt1)
+  }
+
+  // Handle rearranged points
+  let dX = pt2.x - pt1.x
+  let dY = pt2.y - pt1.y
+  let slope = abs(Float(dY) / Float(dX))
+  let yStep = dY >= 0 ? 1 : -1
+
+  var error: Float = 0
+  var currentY = pt1.y
+  for currentX in pt1.x...pt2.x {
+    imageTensor[steep ? currentX : currentY, steep ? currentY : currentX] = colorTensor
+    error += slope
+    if error >= 0.5 {
+        currentY += yStep
+        error -= 1
+    }
+  }
+}
