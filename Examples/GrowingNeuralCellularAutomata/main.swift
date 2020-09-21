@@ -108,7 +108,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
     }
 
     // Load and pad the target image to evolve towards.
-    let hostInputImage = Image(contentsOf: URL(fileURLWithPath: image))
+    let hostInputImage = Image(contentsOf: URL(fileURLWithPath: image)).premultipliedAlpha()
     let resizedHostInputImage = hostInputImage.resized(to: (imageSize, imageSize))
     let inputImage = Tensor(copying: resizedHostInputImage.tensor, to: device) / 255.0
     let paddedImage = inputImage.padded(forSizes: [

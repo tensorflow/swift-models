@@ -150,6 +150,26 @@ public struct Image {
             return Image(resizedImage)
         }
     }
+  
+    func premultiply(_ input: Tensor<Float>) -> Tensor<Float> {
+        let alphaChannel = input.slice(
+            lowerBounds: [0, 0, 3], sizes: [input.shape[0], input.shape[1], 1])
+        let colorComponents = input.slice(
+            lowerBounds: [0, 0, 0], sizes: [input.shape[0], input.shape[1], 3])
+        let adjustedColorComponents = colorComponents * alphaChannel / 255.0
+        return Tensor(concatenating: [adjustedColorComponents, alphaChannel], alongAxis: 2)
+    }
+    
+    public func premultipliedAlpha() -> Image {
+        switch self.imageData {
+        case let .uint8(data):
+            guard data.shape[2] == 4  else { return self }
+            return Image(premultiply(Tensor<Float>(data)))
+        case let .float(data):
+            guard data.shape[2] == 4  else { return self }
+            return Image(premultiply(data))
+        }
+    }
 }
 
 public func saveImage(
