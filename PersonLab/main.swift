@@ -32,7 +32,7 @@ struct Inference: ParsableCommand {
   var checkpointPath: String?
 
   @Flag(name: .shortAndLong, help: "Print profiling data")
-  var profiling: Bool
+  var profiling = false
 
   func run() {
     Context.local.learningPhase = .inference
@@ -47,7 +47,7 @@ struct Inference: ParsableCommand {
       print("No image found at path: \(imagePath)")
       return
     }
-    let image = Image(jpeg: URL(fileURLWithPath: imagePath))
+    let image = Image(contentsOf: URL(fileURLWithPath: imagePath))
 
     var poses = [Pose]()
     if profiling {
@@ -63,7 +63,7 @@ struct Inference: ParsableCommand {
     for pose in poses {
       draw(pose, on: &drawnTensor)
     }
-    Image(tensor: drawnTensor).save(to: URL(fileURLWithPath: "out.jpg"))
+    Image(drawnTensor).save(to: URL(fileURLWithPath: "out.jpg"))
     print("Output image saved to 'out.jpg'")
   }
 }
