@@ -102,7 +102,7 @@ let package = Package(
             exclude: ["UI/Windows/main.swift", "UI/macOS/main.swift"]),
         .target(
             name: "GPT2-WikiText2",
-            dependencies: ["Datasets", "TextModels"],
+            dependencies: ["Datasets", "TextModels", "TrainingLoop"],
             path: "Examples/GPT2-WikiText2",
             exclude: ["UI/Windows/main.swift"]),
         .testTarget(name: "TextTests", dependencies: ["TextModels"]),
