@@ -1,12 +1,16 @@
 import Foundation
 import ModelSupport
 
+public enum CSVLoggerError: Error {
+  case InvalidPath
+}
+
 /// A handler for logging training and validation statistics to a CSV file.
 public class CSVLogger {
   /// The path of the file that statistics are logged to.
   public var path: String
 
-  // The boolean variable indicating if header of the CSV file has been written or not.
+  // True iff the header of the CSV file has been written.
   fileprivate var headerWritten: Bool
 
   /// Creates an instance that logs to a file with the given path.
@@ -15,11 +19,13 @@ public class CSVLogger {
   public init(path: String = "run/log.csv") throws {
     self.path = path
 
-    // Create the containing directory if it is missing.
-    let containingDir = String(path[..<path.lastIndex(of: "/")!])
-    if containingDir != "" {
-      try FoundationFileSystem().createDirectoryIfMissing(at: containingDir)
+    // Validate the path.
+    let url = URL(fileURLWithPath: path)
+    if url.pathExtension != "csv" {
+      throw CSVLoggerError.InvalidPath
     }
+    // Create the containing directory if it is missing.
+    try FoundationFileSystem().createDirectoryIfMissing(at: url.deletingLastPathComponent().path)
     // Initialize the file with empty string.
     try FoundationFile(path: path).write(Data())
 
@@ -29,7 +35,7 @@ public class CSVLogger {
   /// Logs the statistics for the 'loop' when 'batchEnd' event happens; 
   /// ignoring other events.
   ///
-  /// Throws: File systel errors.
+  /// Throws: File system errors.
   public func log<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
     switch event {
     case .batchEnd:
@@ -56,12 +62,12 @@ public class CSVLogger {
   }
 
   func writeHeader(stats: [(name: String, value: Float)]) throws {
-    let header: String = (["epoch", "batch"] + stats.map { $0.name }).joined(separator: ", ") + "\n"
+    let header = (["epoch", "batch"] + stats.lazy.map { $0.name }).joined(separator: ", ") + "\n"
     try FoundationFile(path: path).append(header.data(using: .utf8)!)
   }
 
   func writeDataRow(epoch: String, batch: String, stats: [(name: String, value: Float)]) throws {
-    let dataRow: String = ([epoch, batch] + stats.map { String($0.value) }).joined(separator: ", ")
+    let dataRow = ([epoch, batch] + stats.lazy.map { String($0.value) }).joined(separator: ", ")
       + "\n"
     try FoundationFile(path: path).append(dataRow.data(using: .utf8)!)
   }
