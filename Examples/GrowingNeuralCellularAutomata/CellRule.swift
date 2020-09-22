@@ -21,7 +21,7 @@ struct CellRule: Layer {
   var conv1: Conv2D<Float>
   var conv2: Conv2D<Float>
 
-  init(stateChannels: Int, fireRate: Float) {
+  init(stateChannels: Int, fireRate: Float, useBias: Bool) {
     self.fireRate = fireRate
 
     let horizontalSobelKernel =
@@ -39,7 +39,8 @@ struct CellRule: Layer {
       concatenating: [horizontalSobelFilter, verticalSobelFilter, identityFilter], alongAxis: 3)
 
     conv1 = Conv2D<Float>(filterShape: (1, 1, stateChannels * 3, 128))
-    conv2 = Conv2D<Float>(filterShape: (1, 1, 128, stateChannels), filterInitializer: zeros())
+    conv2 = Conv2D<Float>(
+      filterShape: (1, 1, 128, stateChannels), useBias: useBias, filterInitializer: zeros())
   }
 
   @differentiable
