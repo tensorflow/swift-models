@@ -144,7 +144,9 @@ struct ShallowWaterPDE: ParsableCommand {
       case .optimization:
         runOptimization()
       case .benchmark:
-        Benchmark.main([splashBenchmarks])
+        var runner = BenchmarkRunner(
+          suites: [splashBenchmarks], settings: [TimeUnit(.ms)], customDefaults: [])
+        try runner.run()
       }
     }
   }
