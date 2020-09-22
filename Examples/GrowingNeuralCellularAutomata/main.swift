@@ -68,6 +68,9 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
   @Option(help: "The number of samples to damage in each batch.")
   var damagedSamples = 0
 
+  @Flag(help: "Whether to deactivate the use of bias within the last convolutional layer.")
+  var disableBias = false
+
   func validate() throws {
     guard !(eager && x10) else {
       throw ValidationError(
@@ -79,6 +82,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
         "Must have at least 4 channels to support RGBA values.")
     }
   }
+
   func recordGrowth(
     seed: Tensor<Float>, rule: CellRule, steps: Int, directory: String, filename: String
   ) throws -> Tensor<Float> {
@@ -140,7 +144,8 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
       samplePool = SamplePool(initialState: initialState, size: 0)
     }
 
-    var cellRule = CellRule(stateChannels: stateChannels, fireRate: cellFireRate)
+    var cellRule = CellRule(
+      stateChannels: stateChannels, fireRate: cellFireRate, useBias: !disableBias)
     cellRule.move(to: device)
     var optimizer = Adam(for: cellRule, learningRate: 2e-3)
     optimizer = Adam(copying: optimizer, to: device)
@@ -158,7 +163,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
       let (loss, ruleGradient) = valueWithGradient(at: cellRule) { model -> Tensor<Float> in
         var state = initialBatch
         for _ in 0..<steps {
-          // Note: the following clips the X10 backward trace and is a no-op otherwise.
+          // Note: the next line clips the X10 backward trace and is a no-op otherwise.
           state = clipBackwardsTrace(state)
           state = model(state)
           LazyTensorBarrier()
