@@ -13,73 +13,67 @@
 // limitations under the License.
 import TensorFlow
 
-/// A callback-based handler for recording statistics.
+/// A handler for recording training and validation statistics.
 ///
 /// Data produced by this handler can be used by ProgressPrinter, CVSLogger, etc.
 public class StatisticsRecorder {
+  /// A Closure that returns if should call 'reset' on metricMeasurers.
   public var shouldReset:
     (
       _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
       _ event: TrainingLoopEvent
     ) -> Bool
 
+  /// A Closure that returns if should call 'accumulate' on metricMeasurers.
   public var shouldAccumulate:
     (
       _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
       _ event: TrainingLoopEvent
     ) -> Bool
 
+  /// A Closure that returns if should call 'compute' on metricMeasurers.
   public var shouldCompute:
     (
       _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
       _ event: TrainingLoopEvent
     ) -> Bool
 
-  var metricMeasurers: [MetricsMeasurer]
+  /// Instances of MetricsMeasurers.
+  fileprivate var metricMeasurers: [MetricsMeasurer]
 
   /// Create an instance that records 'metrics' during the training loop.
-  /// 
-  /// Recording happens every batch by default or
-  /// only when last batch ends when 'liveStatistics' is set to false.
-  ///
-  /// - Parameters:
-  ///   - metrics: an array of TrainingMetrics to record.
   public init(metrics: [TrainingMetrics]) {
     metricMeasurers = metrics.map { $0.measurer }
 
     shouldReset = {
-      (
-        _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
-        _ event: TrainingLoopEvent
-      ) -> Bool in
-      return event == .trainingStart || event == .validationStart
-    }
+        (
+          _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
+          _ event: TrainingLoopEvent
+        ) -> Bool in
+        return event == .trainingStart || event == .validationStart
+      }
 
     shouldAccumulate = {
-      (
-        _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
-        _ event: TrainingLoopEvent
-      ) -> Bool in
-      return event == .batchEnd
-    }
+        (
+          _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
+          _ event: TrainingLoopEvent
+        ) -> Bool in
+        return event == .batchEnd
+      }
 
     shouldCompute = {
-      (
-        _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
-        _ event: TrainingLoopEvent
-      ) -> Bool in
-      return event == .batchEnd
-    }
+        (
+          _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
+          _ event: TrainingLoopEvent
+        ) -> Bool in
+        return event == .batchEnd
+      }
   }
 
-  /// The callback used to hook into the TrainingLoop for recording statistics.
+  /// Recording statistics in response of the 'event'.
   ///
-  /// It will record the statistics into lastStatsLog in the loop where other 
+  /// It will record the statistics into 'lastStatsLog' in the loop where other 
   /// callbacks can consume from.
-  ///
-  /// - Parameters:
-  ///   - loop: The TrainingLoop where an event has occurred. 
-  ///   - event: The training or validation event that this callback is responding to.
   public func record<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
     guard let batchIndex = loop.batchIndex,
       let batchCount = loop.batchCount,
@@ -89,6 +83,7 @@ public class StatisticsRecorder {
       let output = loop.lastStepOutput,
       let target = loop.lastStepTarget
     else {
+      // No-Op if trainingLoop doesn't set the required values for stats recording.
       return
     }
 
@@ -121,7 +116,7 @@ public class StatisticsRecorder {
   func computeMetrics() -> [(String, Float)] {
     var result: [(String, Float)] = []
     for measurer in metricMeasurers {
-      result.append((measurer.name, measurer.measure()))
+      result.append((name: measurer.name, value: measurer.measure()))
     }
     return result
   }

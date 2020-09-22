@@ -121,7 +121,7 @@ public protocol TrainingLoopProtocol {
   // MARK: - Others
 
   /// The log for last statistics
-  var lastStatsLog: [(String, Float)]? { get set }
+  var lastStatsLog: [(name: String, value: Float)]? { get set }
 }
 
 /// The events that occur during a call to `fit` in the `TrainingLoop`
@@ -266,7 +266,7 @@ where
   // MARK: - Others
 
   /// The log for last statistics
-  public var lastStatsLog: [(String, Float)]? = nil
+  public var lastStatsLog: [(name: String, value: Float)]? = nil
 
   /// Creates an instance from `training` and `validation` data, a `model`, an `optimizer` and a
   /// `lossFunction`.

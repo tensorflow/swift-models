@@ -49,10 +49,10 @@ var trainingLoop = TrainingLoop(
   optimizer: optimizer,
   lossFunction: softmaxCrossEntropy,
   metrics: [.accuracy],
-  callbacks: [CSVLogger().log])
+  callbacks: [try! CSVLogger().log])
 
 // Compute statistics only when last batch ends.
-(trainingLoop.statisticsRecorder!).shouldCompute = {
+trainingLoop.statisticsRecorder!.shouldCompute = {
   (
     _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
     _ event: TrainingLoopEvent

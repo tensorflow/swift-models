@@ -16,34 +16,26 @@ import Foundation
 
 let progressBarLength = 30
 
-/// A callback-based handler for printing the training or validation progress. 
+/// A handler for printing the training and validation progress. 
 public class ProgressPrinter {
-
-  /// Create an instance that prints progress during the training loop.
-  /// The progress contains a dynamic progress bar followed by statistics of metrics.
-  public init() {
-  }
-
-  /// The callback used to hook into the TrainingLoop for printing progress.
+  /// Print training or validation progress in response of the 'event'.
   /// 
   /// An example of the progress would be:
   /// Epoch 1/12
   /// 468/468 [==============================] - loss: 0.4819 - accuracy: 0.8513
   /// 79/79 [==============================] - loss: 0.1520 - accuracy: 0.9521
-  ///
-  /// - Parameters:
-  ///   - loop: The TrainingLoop where an event has occurred. 
-  ///   - event: The training or validation event that this callback is responding to.
   public func print<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
     switch event {
     case .epochStart:
       guard let epochIndex = loop.epochIndex, let epochCount = loop.epochCount else {
+        // No-Op if trainingLoop doesn't set the required values for progress printing.
         return
       }
 
       Swift.print("Epoch \(epochIndex + 1)/\(epochCount)")
     case .batchEnd:
       guard let batchIndex = loop.batchIndex, let batchCount = loop.batchCount else {
+        // No-Op if trainingLoop doesn't set the required values for progress printing.
         return
       }
 

@@ -59,6 +59,9 @@ public struct FoundationFile: File {
     try value.write(to: location)
   }
 
+  /// Append data to the file.
+  ///
+  /// Parameter value: data to be appended at the end.
   public func append(_ value: Data) throws {
     let fileHandler = try FileHandle(forUpdating: location)
     try fileHandler.seekToEnd()
