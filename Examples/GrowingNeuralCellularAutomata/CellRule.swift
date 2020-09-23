@@ -60,21 +60,17 @@ struct CellRule: Layer {
 
   @differentiable
   func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-    let livingMaskBefore = livingMask(input)
-
     let perception = perceive(input)
     let dx = conv2(relu(conv1(perception)))
 
-    let updateDistribution =
-      Tensor<Float>(
+    let updateDistribution = Tensor<Float>(
         randomUniform: [input.shape[0], input.shape[1], input.shape[2], 1], on: input.device)
-    let updateMask = withoutDerivative(at: input) { _ in updateDistribution.mask { $0 .< fireRate }
+    let updateMask = withoutDerivative(at: input) { _ in
+      updateDistribution.mask { $0 .< fireRate }
     }
 
     let updatedState = input + (dx * updateMask)
-    let livingMaskAfter = livingMask(updatedState)
-    let combinedLivingMask = livingMaskBefore * livingMaskAfter
-
+    let combinedLivingMask = livingMask(input) * livingMask(updatedState)
     return updatedState * combinedLivingMask
   }
 }
@@ -85,7 +81,6 @@ func normalizeGradient(_ gradient: CellRule.TangentVector) -> CellRule.TangentVe
     let norm = sqrt(gradient[keyPath: kp].squared().sum())
     outputGradient[keyPath: kp] = gradient[keyPath: kp] / (norm + 1e-8)
   }
-
   return outputGradient
 }
 
