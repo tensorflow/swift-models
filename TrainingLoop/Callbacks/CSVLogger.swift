@@ -7,13 +7,13 @@ public enum CSVLoggerError: Error {
 
 /// A handler for logging training and validation statistics to a CSV file.
 public class CSVLogger {
-  /// The path of the file that statistics are logged to.
+  /// The path of the file to which statistics are logged.
   public var path: String
 
   // True iff the header of the CSV file has been written.
   fileprivate var headerWritten: Bool
 
-  /// Creates an instance that logs to a file with the given path.
+  /// Creates an instance that logs to a file with the given `path`.
   ///
   /// Throws: File system errors.
   public init(path: String = "run/log.csv") throws {
@@ -32,7 +32,7 @@ public class CSVLogger {
     self.headerWritten = false
   }
 
-  /// Logs the statistics for the 'loop' when 'batchEnd' event happens; 
+  /// Logs the statistics for the `loop` when `batchEnd` event happens; 
   /// ignoring other events.
   ///
   /// Throws: File system errors.
@@ -43,7 +43,6 @@ public class CSVLogger {
         let batchIndex = loop.batchIndex, let batchCount = loop.batchCount,
         let stats = loop.lastStatsLog
       else {
-        // No-Op if trainingLoop doesn't set the required values for stats logging.
         return
       }
 
@@ -53,21 +52,27 @@ public class CSVLogger {
       }
 
       try writeDataRow(
-        epoch: "\(epochIndex + 1)/\(epochCount)",
-        batch: "\(batchIndex + 1)/\(batchCount)",
+        epochData: "\(epochIndex + 1)/\(epochCount)",
+        batchData: "\(batchIndex + 1)/\(batchCount)",
         stats: stats)
     default:
       return
     }
   }
 
+  /// Writes column names to file header.
+  /// 
+  /// Column names include "epoch", "batch" and `stats` `name`s.
   func writeHeader(stats: [(name: String, value: Float)]) throws {
     let header = (["epoch", "batch"] + stats.lazy.map { $0.name }).joined(separator: ", ") + "\n"
     try FoundationFile(path: path).append(header.data(using: .utf8)!)
   }
 
-  func writeDataRow(epoch: String, batch: String, stats: [(name: String, value: Float)]) throws {
-    let dataRow = ([epoch, batch] + stats.lazy.map { String($0.value) }).joined(separator: ", ")
+  /// Appends a row of statistics log to file with the given value `epochData` for 
+  /// "epoch" column, `batchData` for "batch" column, and `value`s of `stats` for corresponding 
+  /// columns indicated by `stats` `name`s.
+  func writeDataRow(epochData: String, batchData: String, stats: [(name: String, value: Float)]) throws {
+    let dataRow = ([epochData, batchData] + stats.lazy.map { String($0.value) }).joined(separator: ", ")
       + "\n"
     try FoundationFile(path: path).append(dataRow.data(using: .utf8)!)
   }

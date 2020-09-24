@@ -78,7 +78,7 @@ public protocol TrainingLoopProtocol {
   /// The loss function.
   var lossFunction: LossFunction { get set }
 
-  /// The metrics
+  /// The metrics on which training is measured.
   var metrics: [TrainingMetrics] { get set }
 
   // Callbacks
@@ -220,14 +220,15 @@ where
 
   /// Callbacks
 
-  // MARK: - The callbacks used to customize the training loop.
-
+  /// The callbacks used to customize the training loop.
   public var callbacks: [TrainingLoopCallback<Self>]
 
   // MARK: - Default callback objects
 
+  /// The callback that records the training statistics.
   public var statisticsRecorder: StatisticsRecorder? = nil
 
+  /// The callback that prints the training progress.
   public var progressPrinter: ProgressPrinter? = nil
 
   /// Temporary data
@@ -292,7 +293,7 @@ where
       self.progressPrinter = progressPrinter
       self.callbacks = [
         statisticsRecorder.record,
-        progressPrinter.print,
+        progressPrinter.printProgress,
       ] + callbacks
     } else {
       self.callbacks = callbacks
