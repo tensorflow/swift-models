@@ -109,6 +109,14 @@ struct ShallowWaterPDE: ParsableCommand {
     _ = [TensorSliceSolution](evolve: initialSolution, for: duration)
   }
 
+  private func runSplashTensorConvBenchmark(on device: Device) {
+    var initialWaterLevel = Tensor<Float>(zeros: [n, n], on: device)
+    initialWaterLevel[n / 2][n / 2] = Tensor<Float>(100, on: device)
+
+    let initialSolution = TensorConvSolution(waterLevel: initialWaterLevel)
+    _ = [TensorConvSolution](evolve: initialSolution, for: duration)
+  }
+
   /// Benchmark suite that exercises the 3 different solver implementations on a simple problem without back-propagation.
   public var splashBenchmarks: BenchmarkSuite {
     BenchmarkSuite(
@@ -132,6 +140,13 @@ struct ShallowWaterPDE: ParsableCommand {
       }
       suite.benchmark("Tensor Slice (XLA)") {
         runSplashTensorSliceBenchmark(on: Device.defaultXLA)
+      }
+
+      suite.benchmark("Tensor Conv") {
+        runSplashTensorConvBenchmark(on: Device.default)
+      }
+      suite.benchmark("Tensor Conv (XLA)") {
+        runSplashTensorConvBenchmark(on: Device.defaultXLA)
       }
     }
   }

@@ -47,43 +47,41 @@ rm Images/Optimization-*.jpg
 ```
 
 
-## Benchmark of 3 Solver Implementations
+## Benchmark of 4 Solver Implementations
 
 Solution of the shallow water hyperbolic PDE is calculated with finite-difference discretization on unit square. Time-stepping uses semi implicit Euler's schema. Time step itself is limited to stay below the Courant–Friedrichs–Lewy numerical stability limit. Values around the edges of the domain are subject to trivial Dirichlet boundary conditions - i.e. they're equal to zero with an arbitrary normal derivative.
 
 The bread and butter of the solver is the Laplace operator. Its evaluation is the bulk of the execution time. This particular implementation approximates the laplacian with five-point stencil finite-differencing.
 
-The example application contains 3 different implementations of the algorithm described above. The key difference is the underlying data storage of the discretized Laplace operator.
+The example application contains 4 different implementations of the algorithm described above. The key difference is the underlying data storage of the discretized Laplace operator.
 
 - **A** - [`ArrayLoopSolution.swift`](ArrayLoopSolution.swift): Uses `[[Float]]` for storage. Calculations are done in a tight 2D loop.
 - **B** - [`TensorLoopSolution.swift`](TensorLoopSolution.swift): Uses `Tensor` for storage. Calculations are done in a tight 2D loop.
 - **C** - [`TensorSliceSolution.swift`](TensorSliceSolution.swift): Uses arithmetic operations on slices of `Tensor` and no loops.
+- **D** - [`TensorConvSolution.swift`](TensorConvSolution.swift): Uses 2D convolution with a fixed kernel for calculations, `Tensor`  and no loops.
 
 **A** and **B** are written in an imperative style that is very close to DiffTaichi. These are therefore the two most representative candidates for benchmarking. **C** was written more or less out of desperation from bugs encountered while working on **A** and **B**. It uses arithmetics on tensor slices in place of the 2D loops.
 
-From the perspective of computer vision, the discretized Laplace operator can be viewed as a convolution or also a special type of a Gaussian blur operation. It uses a fixed 3x3 single channel weight matrix and operates on a 2D greyscale image. Shades of gray in this case represent the height of the water surface.
+The discretized Laplace operator can be viewed as a convolution or also a special type of a Gaussian blur operation. **D** uses a fixed 3x3 single channel weight matrix and runs convolution on a 2D greyscale image. Shades of gray in this case represent the height of the water surface.
 
 In some sense, solutions **A** and **B**  reimplement convolution from scratch using loops. From the performance perspective, this is a very bad idea. The problem here is that not all discretizations of the laplacian can be written as a convolution. So this benchmark has some relevance for these alternative discretizations that operate on unstructured meshes. Typical examples of this is FVM (finite volume method) or FEM (finite element method).
 
-The following code is the result of running the benchmark.
+The following code is the result of running the benchmark on macOS with S4TF toolchain `DEVELOPMENT-2020-09-16-a`.
 
 ```sh
 # Build and run the example app with the benchmark flag
 swift run -c release Shallow-Water-PDE --benchmark
-```
-```
-running Shallow Water PDE Solver: Array Loop... done! (56600.83 ms)
-running Shallow Water PDE Solver: Tensor Slice... done! (984.77 ms)
-running Shallow Water PDE Solver: Tensor Slice (XLA)... done! (2348.76 ms)
 
-name                                             time              std        iterations warmup       
----------------------------------------------------------------------------------------------------
-Shallow Water PDE Solver.Array Loop             4703759125 ns ±   0.23 %         10 9527037330 ns
-Shallow Water PDE Solver.Tensor Slice             78721300 ns ±   8.86 %         10  164568993 ns
-Shallow Water PDE Solver.Tensor Slice (XLA)      145653698 ns ±   4.02 %         10  882607424 ns
+name                                        time         std        iterations warmup      
+-------------------------------------------------------------------------------------------
+Shallow Water PDE Solver.Array Loop          634.245 ms ±   1.33 %         10  1288.619 ms
+Shallow Water PDE Solver.Tensor Slice        542.592 ms ±   3.47 %         10  1119.995 ms
+Shallow Water PDE Solver.Tensor Slice (XLA)  649.727 ms ±   0.59 %         10  1552.227 ms
+Shallow Water PDE Solver.Tensor Conv        7639.892 ms ±   1.98 %         10 14917.600 ms
+Shallow Water PDE Solver.Tensor Conv (XLA)  1207.543 ms ±   5.87 %         10  2613.061 ms
 ```
 
-As of S4TF toolchain 0.10 there's **no conclusion** from the benchmarks yet. The plan is to revisit the project again when the differentiability of coroutines is working. In particular, at the moment it's not possible to differentiate through indexed assignments like `anArray[i] = someVal`. Progress on these issues is tracked under the following links:
+There's **no conclusion** from the benchmarks yet. The plan is to revisit the project again when the differentiability of coroutines is working. In particular, at the moment it's not possible to differentiate through indexed assignments like `anArray[i] = someVal`. Progress on these issues is tracked under the following links:
 
 - [`https://bugs.swift.org/browse/TF-1078`](https://bugs.swift.org/browse/TF-1078)
 - [`https://bugs.swift.org/browse/TF-1080`](https://bugs.swift.org/browse/TF-1080)
