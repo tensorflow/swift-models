@@ -56,7 +56,7 @@ struct ArrayLoopSolution: ShallowWaterEquationSolution {
   /// Speed of sound
   @noDerivative private let c: Float = 340.0
   /// Dispersion coefficient
-  @noDerivative private let α: Float = 0.001
+  @noDerivative private let α: Float = 0.00001
   /// Number of spatial grid points
   @noDerivative private let resolution: Int = 256
   /// Spatial discretization step
