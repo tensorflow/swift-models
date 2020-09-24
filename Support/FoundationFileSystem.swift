@@ -58,4 +58,14 @@ public struct FoundationFile: File {
     // TODO: Incorporate file offset.
     try value.write(to: location)
   }
+
+  /// Append data to the file.
+  ///
+  /// Parameter value: data to be appended at the end.
+  public func append(_ value: Data) throws {
+    let fileHandler = try FileHandle(forUpdating: location)
+    try fileHandler.seekToEnd()
+    try fileHandler.write(contentsOf: value)
+    try fileHandler.close()
+  }
 }

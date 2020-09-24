@@ -29,12 +29,11 @@ let dataset = Imagenette(batchSize: 64, inputSize: .resized320, outputSize: 224,
 var model = MobileNetV2(classCount: 10)
 let optimizer = SGD(for: model, learningRate: 0.002, momentum: 0.9)
 
-let trainingProgress = TrainingProgress()
 var trainingLoop = TrainingLoop(
   training: dataset.training,
   validation: dataset.validation,
   optimizer: optimizer,
   lossFunction: softmaxCrossEntropy,
-  callbacks: [trainingProgress.update])
+  metrics: [.accuracy])
 
 try! trainingLoop.fit(&model, epochs: 10, on: device)
