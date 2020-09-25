@@ -59,7 +59,7 @@ public struct FoundationFile: File {
     try value.write(to: location)
   }
 
-  /// Appends the bytes in 'value' to the file.
+  /// Appends the bytes in `value` to the file.
   public func append(_ value: Data) throws {
     let fileHandler = try FileHandle(forUpdating: location)
     try fileHandler.seekToEnd()

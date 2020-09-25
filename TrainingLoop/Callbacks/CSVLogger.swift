@@ -52,8 +52,8 @@ public class CSVLogger {
       }
 
       try writeDataRow(
-        epochData: "\(epochIndex + 1)/\(epochCount)",
-        batchData: "\(batchIndex + 1)/\(batchCount)",
+        epoch: "\(epochIndex + 1)/\(epochCount)",
+        batch: "\(batchIndex + 1)/\(batchCount)",
         stats: stats)
     default:
       return
@@ -68,11 +68,11 @@ public class CSVLogger {
     try FoundationFile(path: path).append(header.data(using: .utf8)!)
   }
 
-  /// Appends a row of statistics log to file with the given value `epochData` for 
-  /// "epoch" column, `batchData` for "batch" column, and `value`s of `stats` for corresponding 
+  /// Appends a row of statistics log to file with the given value `epoch` for 
+  /// "epoch" column, `batch` for "batch" column, and `value`s of `stats` for corresponding 
   /// columns indicated by `stats` `name`s.
-  func writeDataRow(epochData: String, batchData: String, stats: [(name: String, value: Float)]) throws {
-    let dataRow = ([epochData, batchData] + stats.lazy.map { String($0.value) }).joined(separator: ", ")
+  func writeDataRow(epoch: String, batch: String, stats: [(name: String, value: Float)]) throws {
+    let dataRow = ([epoch, batch] + stats.lazy.map { String($0.value) }).joined(separator: ", ")
       + "\n"
     try FoundationFile(path: path).append(dataRow.data(using: .utf8)!)
   }
