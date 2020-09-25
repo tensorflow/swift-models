@@ -121,3 +121,27 @@ public class StatisticsRecorder {
     return result
   }
 }
+
+extension StatisticsRecorder {
+  /// Computes statistics every batch iff `live` is true,
+  /// otherwise computes only when last batch ends.
+  public func goLive(_ live: Bool) {
+    if live {
+      shouldCompute = {
+          (
+            _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
+            _ event: TrainingLoopEvent
+          ) -> Bool in
+          return event == .batchEnd
+        }
+    } else {
+      shouldCompute = {
+          (
+            _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
+            _ event: TrainingLoopEvent
+          ) -> Bool in
+          return event == .batchEnd && batchIndex + 1 == batchCount
+        }
+    }
+  }
+}

@@ -52,12 +52,6 @@ var trainingLoop = TrainingLoop(
   callbacks: [try! CSVLogger().log])
 
 // Compute statistics only when last batch ends.
-trainingLoop.statisticsRecorder!.shouldCompute = {
-  (
-    _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
-    _ event: TrainingLoopEvent
-  ) -> Bool in
-  return event == .batchEnd && batchIndex + 1 == batchCount
-}
+trainingLoop.statisticsRecorder!.goLive(false)
 
 try! trainingLoop.fit(&classifier, epochs: epochCount, on: device)
