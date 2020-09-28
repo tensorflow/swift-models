@@ -17,6 +17,9 @@ import TensorFlow
 import TextModels
 import TrainingLoop
 
+// Avoid the eager mode runtime from taking all memory 
+// and leaving none to X10 when run on the GPU.
+_ = _ExecutionContext.global
 // Until https://github.com/tensorflow/swift-apis/issues/993 is fixed, default to the eager-mode
 // device on macOS instead of X10.
 #if os(macOS)
