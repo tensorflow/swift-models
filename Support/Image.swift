@@ -181,7 +181,12 @@ public func drawLine(
   var error: Float = 0
   var currentY = pt1.y
   for currentX in pt1.x...pt2.x {
-    imageTensor[steep ? currentX : currentY, steep ? currentY : currentX] = colorTensor
+    let xIndex = steep ? currentY : currentX
+    let yIndex = steep ? currentX : currentY
+    if xIndex >= imageTensor.shape[1] || yIndex >= imageTensor.shape[0] {
+      break
+    }
+    imageTensor[yIndex, xIndex] = colorTensor
     error += slope
     if error >= 0.5 {
         currentY += yStep
