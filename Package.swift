@@ -70,6 +70,10 @@ let package = Package(
             dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
             path: "Examples/ResNet-CIFAR10"),
         .target(
+            name: "Shallow-Water-PDE",
+            dependencies: ["ArgumentParser", "Benchmark", "ModelSupport"],
+            path: "Examples/Shallow-Water-PDE"),
+        .target(
             name: "LeNet-MNIST",
             dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
             path: "Examples/LeNet-MNIST"),
