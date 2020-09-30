@@ -32,7 +32,7 @@ public class CSVLogger {
     self.headerWritten = false
   }
 
-  /// Logs the statistics for the `loop` when `batchEnd` event happens; 
+  /// Logs the statistics for `loop` when a `batchEnd` event happens; 
   /// ignoring other events.
   ///
   /// Throws: File system errors.
@@ -60,9 +60,10 @@ public class CSVLogger {
     }
   }
 
-  /// Writes column names to file header.
+  /// Writes a row of column names to the file.
   /// 
-  /// Column names include "epoch", "batch" and `stats` `name`s.
+  /// Column names are "epoch", "batch" and the `name` of each element of `stats`, 
+  /// in that order.
   func writeHeader(stats: [(name: String, value: Float)]) throws {
     let header = (["epoch", "batch"] + stats.lazy.map { $0.name }).joined(separator: ", ") + "\n"
     try FoundationFile(path: path).append(header.data(using: .utf8)!)

@@ -59,11 +59,11 @@ public struct FoundationFile: File {
     try value.write(to: location)
   }
 
-  /// Appends the bytes in `value` to the file.
-  public func append(_ value: Data) throws {
+  /// Appends the bytes in `suffix` to the file.
+  public func append(_ suffix: Data) throws {
     let fileHandler = try FileHandle(forUpdating: location)
     try fileHandler.seekToEnd()
-    try fileHandler.write(contentsOf: value)
+    try fileHandler.write(contentsOf: suffix)
     try fileHandler.close()
   }
 }
