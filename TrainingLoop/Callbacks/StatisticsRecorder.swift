@@ -121,3 +121,34 @@ public class StatisticsRecorder {
     return result
   }
 }
+
+extension StatisticsRecorder {
+  /// The events on which statistics will be reported for training and validation phases.
+  public enum ReportTrigger {
+    /// Report statistics at end of training and validation, once per epoch.
+    case endOfEpoch
+    /// Report statistics at end of training and validation, once per batch.
+    case endOfBatch
+  }
+
+  /// Updates `self` to report statistics when `trigger` is encountered.
+  public func setReportTrigger(_ trigger: ReportTrigger) {
+    if trigger == .endOfBatch {
+      shouldCompute = {
+          (
+            _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
+            _ event: TrainingLoopEvent
+          ) -> Bool in
+          return event == .batchEnd
+        }
+    } else {
+      shouldCompute = {
+          (
+            _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
+            _ event: TrainingLoopEvent
+          ) -> Bool in
+          return event == .batchEnd && batchIndex + 1 == batchCount
+        }
+    }
+  }
+}
