@@ -123,10 +123,17 @@ public class StatisticsRecorder {
 }
 
 extension StatisticsRecorder {
-  /// Computes statistics every batch iff `live` is true,
-  /// otherwise computes only when last batch ends.
-  public func goLive(_ live: Bool) {
-    if live {
+  /// The events on which statistics will be reported for training and validation phases.
+  public enum ReportTrigger {
+    /// Report statistics at end of training and validation, once per epoch.
+    case endOfEpoch
+    /// Report statistics at end of training and validation, once per batch.
+    case endOfBatch
+  }
+
+  /// Set the StatisticsRecorder to report statistics when `trigger` is triggered.
+  public func setReportTrigger(_ trigger: ReportTrigger) {
+    if trigger == .endOfBatch {
       shouldCompute = {
           (
             _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
