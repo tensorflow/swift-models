@@ -131,7 +131,7 @@ extension StatisticsRecorder {
     case endOfBatch
   }
 
-  /// Set the StatisticsRecorder to report statistics when `trigger` is triggered.
+  /// Updates `self` to report statistics when `trigger` is encountered.
   public func setReportTrigger(_ trigger: ReportTrigger) {
     if trigger == .endOfBatch {
       shouldCompute = {
