@@ -163,7 +163,7 @@ public struct Image {
     public func premultipliedAlpha() -> Image {
         switch self.imageData {
         case let .uint8(data):
-            guard data.shape[2] == 4  else { return self }
+            guard data.shape[2] == 4 else { return self }
             return Image(premultiply(Tensor<Float>(data)))
         case let .float(data):
             guard data.shape[2] == 4  else { return self }
