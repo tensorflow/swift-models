@@ -22,3 +22,10 @@ public func softmaxCrossEntropy<Scalar>(logits: Tensor<Scalar>, labels: Tensor<I
 > where Scalar: TensorFlowFloatingPoint {
   return softmaxCrossEntropy(logits: logits, labels: labels, reduction: _mean)
 }
+
+// @differentiable
+// public func meanSquaredError<Scalar>(predicted: Tensor<Scalar>, expected: Tensor<Scalar>) -> Tensor<
+//   Scalar
+// > where Scalar: TensorFlowFloatingPoint {
+//   return meanSquaredError(predicted: predicted, expected: expected)
+// }

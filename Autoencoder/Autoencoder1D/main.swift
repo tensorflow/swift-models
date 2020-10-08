@@ -15,6 +15,7 @@
 import Datasets
 import Foundation
 import ModelSupport
+import TrainingLoop
 import TensorFlow
 
 let epochCount = 10
@@ -40,44 +41,52 @@ var autoencoder = Sequential {
 }
 let optimizer = RMSProp(for: autoencoder)
 
+var trainingLoop = TrainingLoop(
+  training: dataset.training.map { $0.map { LabeledData(data: $0.data, label: $0.data) }},
+  validation: dataset.validation.map { LabeledData(data: $0.data, label: $0.data) },
+  optimizer: optimizer,
+  lossFunction: meanSquaredError)
 
-// Training loop
-for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
-    for batch in epochBatches {
-        let x = batch.data
+try! trainingLoop.fit(&autoencoder, epochs: epochCount, on: Device.default)
 
-        let 𝛁model = TensorFlow.gradient(at: autoencoder) { autoencoder -> Tensor<Float> in
-            let image = autoencoder(x)
-            return meanSquaredError(predicted: image, expected: x)
-        }
 
-        optimizer.update(&autoencoder, along: 𝛁model)
-    }
+// // Training loop
+// for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
+//     for batch in epochBatches {
+//         let x = batch.data
 
-    var testLossSum: Float = 0
-    var testBatchCount = 0
-    for batch in dataset.validation {
-        let sampleImages = batch.data
-        let testImages = autoencoder(sampleImages)
+//         let 𝛁model = TensorFlow.gradient(at: autoencoder) { autoencoder -> Tensor<Float> in
+//             let image = autoencoder(x)
+//             return meanSquaredError(predicted: image, expected: x)
+//         }
 
-        do {
-            try saveImage(
-                sampleImages[0..<1], shape: (imageWidth, imageHeight), format: .grayscale,
-                directory: outputFolder, name: "epoch-\(epoch)-input")
-            try saveImage(
-                testImages[0..<1], shape: (imageWidth, imageHeight), format: .grayscale,
-                directory: outputFolder, name: "epoch-\(epoch)-output")
-        } catch {
-            print("Could not save image with error: \(error)")
-        }
+//         optimizer.update(&autoencoder, along: 𝛁model)
+//     }
 
-        testLossSum += meanSquaredError(predicted: testImages, expected: sampleImages).scalarized()
-        testBatchCount += 1
-    }
-    print(
-        """
-        [Epoch \(epoch)] \
-        Loss: \(testLossSum / Float(testBatchCount))
-        """
-    )
-}
+//     var testLossSum: Float = 0
+//     var testBatchCount = 0
+//     for batch in dataset.validation {
+//         let sampleImages = batch.data
+//         let testImages = autoencoder(sampleImages)
+
+//         do {
+//             try saveImage(
+//                 sampleImages[0..<1], shape: (imageWidth, imageHeight), format: .grayscale,
+//                 directory: outputFolder, name: "epoch-\(epoch)-input")
+//             try saveImage(
+//                 testImages[0..<1], shape: (imageWidth, imageHeight), format: .grayscale,
+//                 directory: outputFolder, name: "epoch-\(epoch)-output")
+//         } catch {
+//             print("Could not save image with error: \(error)")
+//         }
+
+//         testLossSum += meanSquaredError(predicted: testImages, expected: sampleImages).scalarized()
+//         testBatchCount += 1
+//     }
+//     print(
+//         """
+//         [Epoch \(epoch)] \
+//         Loss: \(testLossSum / Float(testBatchCount))
+//         """
+//     )
+// }
