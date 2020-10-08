@@ -166,7 +166,7 @@ public struct Image {
             guard data.shape[2] == 4 else { return self }
             return Image(premultiply(Tensor<Float>(data)))
         case let .float(data):
-            guard data.shape[2] == 4  else { return self }
+            guard data.shape[2] == 4 else { return self }
             return Image(premultiply(data))
         }
     }
