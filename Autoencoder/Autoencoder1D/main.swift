@@ -43,8 +43,10 @@ var autoencoder = Sequential {
 
 let optimizer = RMSProp(for: autoencoder)
 
-/// Saves an input and an output image locally in validation phase once per epoch.
-///
+/// Saves a validation input and an output image once per epoch;
+/// it's ensured that each epoch will save different images as long as 
+/// count of epochs is less or equal than count of images.
+/// 
 /// It's defined as a callback registered into TrainingLoop.
 func saveImage<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
   if event != .inferencePredictionEnd { return }
@@ -59,14 +61,21 @@ func saveImage<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEven
     return
   }
 
-  if batchIndex + 1 != batchCount { return }
+  let imageCount = batchCount * batchSize
+  let selectedImageGlobalIndex = epochIndex * (imageCount / epochCount)
+  let selectedBatchIndex = selectedImageGlobalIndex / batchSize
+
+  if batchIndex != selectedBatchIndex { return }
 
   let outputFolder = "./output/"
+  let selectedImageBatchLocalIndex = selectedImageGlobalIndex % batchSize
   try saveImage(
-    (input as! Tensor<Float>)[0..<1], shape: (imageWidth, imageHeight), format: .grayscale,
+    (input as! Tensor<Float>)[selectedImageBatchLocalIndex..<selectedImageBatchLocalIndex+1],
+    shape: (imageWidth, imageHeight), format: .grayscale,
     directory: outputFolder, name: "epoch-\(epochIndex + 1)-of-\(epochCount)-input")
   try saveImage(
-    (output as! Tensor<Float>)[0..<1], shape: (imageWidth, imageHeight), format: .grayscale,
+    (output as! Tensor<Float>)[selectedImageBatchLocalIndex..<selectedImageBatchLocalIndex+1],
+    shape: (imageWidth, imageHeight), format: .grayscale,
     directory: outputFolder, name: "epoch-\(epochIndex + 1)-of-\(epochCount)-output")
 }
 
