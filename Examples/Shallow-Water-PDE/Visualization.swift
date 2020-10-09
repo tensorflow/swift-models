@@ -26,7 +26,7 @@ struct SolutionVisualization<Solution: ShallowWaterEquationSolution> {
     let square = TensorShape([solution.waterLevel.count, solution.waterLevel.count])
     let waterLevel = Tensor(shape: square, scalars: solution.waterLevel.flatMap { $0 })
     let normalizedWaterLevel = waterLevel.normalized(min: -1, max: +1)
-    return Image(tensor: normalizedWaterLevel)
+    return Image(normalizedWaterLevel)
   }
 }
 
