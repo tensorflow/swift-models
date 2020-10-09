@@ -39,4 +39,5 @@ public protocol File {
   func read(position: Int, count: Int) throws -> Data
   func write(_ value: Data) throws
   func write(_ value: Data, position: Int) throws
+  func append(_ value: Data) throws
 }

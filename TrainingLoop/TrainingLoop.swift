@@ -18,7 +18,7 @@ import TensorFlow
 // Workaround https://bugs.swift.org/browse/TF-1122 that prevents us from registering a
 // loss function inside our TrainingLoop struct
 public final class LossFunctionWrapper<Output: Differentiable, Target> {
-  public typealias F = @differentiable (Output, @noDerivative Target) -> Tensor<Float>
+  public typealias F = @differentiable(Output, @noDerivative Target) -> Tensor<Float>
   public var f: F
   init(_ f: @escaping F) { self.f = f }
 }
@@ -34,25 +34,32 @@ public protocol TrainingLoopProtocol {
   where
     Training: Sequence, Training.Element: Collection,
     Training.Element.Element == LabeledData<Opt.Model.Input, Target>
+
   /// The type of the collection of batches for the validation data.
   associatedtype Validation
   where
     Validation: Collection,
     Validation.Element == LabeledData<Opt.Model.Input, Target>
+
   /// The type of the target of our model.
   associatedtype Target
+
   /// The type of the optimizer used.
   associatedtype Opt: Optimizer where Opt.Model: Module
 
   // Typealiases
   /// The type of the model.
   typealias Model = Opt.Model
+
   /// The type of the input of the model.
   typealias Input = Opt.Model.Input
+
   /// The type of the output of the model.
   typealias Output = Opt.Model.Output
+
   /// The type of a batch.
   typealias Batch = LabeledData<Input, Target>
+
   // In a wrapper for now because of TF-1122.
   /// The type of the loss function.
   typealias LossFunction = LossFunctionWrapper<Output, Target>
@@ -60,38 +67,61 @@ public protocol TrainingLoopProtocol {
   // Data
   /// The training epochs.
   var training: Training { get }
+
   /// The validation batches.
   var validation: Validation { get }
 
   // Optimizer and loss function
   /// The optimizer.
   var optimizer: Opt { get set }
+
   /// The loss function.
   var lossFunction: LossFunction { get set }
+
+  /// The metrics
+  var metrics: [TrainingMetrics] { get set }
 
   // Callbacks
   /// The callbacks used to customize the training loop.
   var callbacks: [TrainingLoopCallback<Self>] { get set }
 
   // Temporary data
+
+  // MARK: - Step-level data
+
   /// The last input fed to the model.
-  var lastInput: Input? { get set }
+  var lastStepInput: Input? { get set }
+
   /// The last target.
-  var lastTarget: Target? { get set }
+  var lastStepTarget: Target? { get set }
+
   /// The last predictions of the model.
-  var lastOutput: Output? { get set }
+  var lastStepOutput: Output? { get set }
+
   /// The last gradients computed.
-  var lastGradient: Model.TangentVector? { get set }
+  var lastStepGradient: Model.TangentVector? { get set }
+
   /// The last loss.
-  var lastLoss: Tensor<Float>? { get set }
-  /// The number of epochs we are currently fitting for.
-  var epochCount: Int? { get set }
-  /// The index of the current epoch.
-  var epochIndex: Int? { get set }
+  var lastStepLoss: Tensor<Float>? { get set }
+
   /// The number of batches in the current collection of batches.
   var batchCount: Int? { get set }
+
   /// The index of the current batch.
   var batchIndex: Int? { get set }
+
+  // MARK: - Epoch-level data
+
+  /// The number of epochs we are currently fitting for.
+  var epochCount: Int? { get set }
+
+  /// The index of the current epoch.
+  var epochIndex: Int? { get set }
+
+  // MARK: - Others
+
+  /// The log for last statistics
+  var lastStatsLog: [(name: String, value: Float)]? { get set }
 }
 
 /// The events that occur during a call to `fit` in the `TrainingLoop`
@@ -101,26 +131,37 @@ public protocol TrainingLoopProtocol {
 public enum TrainingLoopEvent {
   /// The start of a fit.
   case fitStart
+
   /// The end of a fit.
   case fitEnd
+
   /// The start of one epoch (training + validation).
   case epochStart
+
   /// The start of one epoch (training + validation).
   case epochEnd
+
   /// The start of a training phase.
   case trainingStart
+
   /// The end of a training phase.
   case trainingEnd
+
   /// The start of a validation phase.
   case validationStart
+
   /// The end of a validation phase.
   case validationEnd
+
   /// The start of a training or inference step on a batch.
   case batchStart
+
   /// The end of a training or inference step on a batch.
   case batchEnd
+
   /// At the start of the optimizer update, just after the differentiable step.
   case updateStart
+
   /// Just after the model prediction at inference, before computing the loss.
   case inferencePredictionEnd
 }
@@ -146,12 +187,16 @@ where
   // Typealiases
   /// The type of the model.
   public typealias Model = Opt.Model
+
   /// The type of the input of the model.
   public typealias Input = Opt.Model.Input
+
   /// The type of the output of the model.
   public typealias Output = Opt.Model.Output
+
   /// The type of a batch.
   public typealias Batch = LabeledData<Input, Target>
+
   // In a wrapper for now because of TF-1122.
   /// The type of the loss function.
   public typealias LossFunction = LossFunctionWrapper<Output, Target>
@@ -159,38 +204,69 @@ where
   // Data
   /// The training epochs.
   public let training: Training
+
   /// The validation batches.
   public let validation: Validation
 
   // Optimizer and loss function
   /// The optimizer.
   public var optimizer: Opt
+
   /// The loss function
   public var lossFunction: LossFunction
 
-  // Callbacks
-  /// The callbacks used to customize the training loop.
-  public var callbacks: [TrainingLoopCallback<Self>] = []
+  /// The metrics
+  public var metrics: [TrainingMetrics]
 
-  // Temporary data
+  /// Callbacks
+
+  // MARK: - The callbacks used to customize the training loop.
+
+  public var callbacks: [TrainingLoopCallback<Self>]
+
+  // MARK: - Default callback objects
+
+  public var statisticsRecorder: StatisticsRecorder? = nil
+
+  public var progressPrinter: ProgressPrinter? = nil
+
+  /// Temporary data
+
+  // MARK: - Step-level data
+
   /// The last input fed to the model.
-  public var lastInput: Input? = nil
+  public var lastStepInput: Input? = nil
+
   /// The last target.
-  public var lastTarget: Target? = nil
+  public var lastStepTarget: Target? = nil
+
   /// The last predictions of the model.
-  public var lastOutput: Output? = nil
+  public var lastStepOutput: Output? = nil
+
   /// The last gradients computed.
-  public var lastGradient: Model.TangentVector? = nil
+  public var lastStepGradient: Model.TangentVector? = nil
+
   /// The last loss.
-  public var lastLoss: Tensor<Float>? = nil
-  /// The number of epochs we are currently fitting for.
-  public var epochCount: Int? = nil
-  /// The index of the current epoch.
-  public var epochIndex: Int? = nil
+  public var lastStepLoss: Tensor<Float>? = nil
+
   /// The number of batches in the current collection of batches.
   public var batchCount: Int? = nil
+
   /// The index of the current batch.
   public var batchIndex: Int? = nil
+
+  // MARK: - Epoch-level data
+
+  /// The number of epochs we are currently fitting for.
+  public var epochCount: Int? = nil
+
+  /// The index of the current epoch.
+  public var epochIndex: Int? = nil
+
+  // MARK: - Others
+
+  /// The log for last statistics
+  public var lastStatsLog: [(name: String, value: Float)]? = nil
 
   /// Creates an instance from `training` and `validation` data, a `model`, an `optimizer` and a
   /// `lossFunction`.
@@ -198,35 +274,52 @@ where
   /// Parameter callbacks: Callbacks that the `TrainingLoop` will use in every call to fit.
   public init(
     training: Training, validation: Validation, optimizer: Opt,
-    lossFunction: @escaping LossFunction.F, callbacks: [TrainingLoopCallback<Self>] = []
+    lossFunction: @escaping LossFunction.F,
+    metrics: [TrainingMetrics] = [],
+    callbacks: [TrainingLoopCallback<Self>] = [],
+    includeDefaultCallbacks: Bool = true
   ) {
     self.training = training
     self.validation = validation
     self.optimizer = optimizer
     self.lossFunction = LossFunction(lossFunction)
-    self.callbacks = callbacks
+    self.metrics = metrics
+
+    if includeDefaultCallbacks {
+      let statisticsRecorder = StatisticsRecorder(metrics: [.loss] + metrics)
+      let progressPrinter = ProgressPrinter()
+      self.statisticsRecorder = statisticsRecorder
+      self.progressPrinter = progressPrinter
+      self.callbacks = [
+        statisticsRecorder.record,
+        progressPrinter.print,
+      ] + callbacks
+    } else {
+      self.callbacks = callbacks
+    }
   }
 }
 
 extension TrainingLoop {
   /// The default differentiable step.
   public mutating func differentiableStep(model: Model) throws {
-    guard let data = lastInput else { return }
-    guard let target = lastTarget else { return }
-    (lastLoss, lastGradient) = valueWithGradient(at: model) { (model: Model) -> Tensor<Float> in
+    guard let data = lastStepInput else { return }
+    guard let target = lastStepTarget else { return }
+    (lastStepLoss, lastStepGradient) = valueWithGradient(at: model) {
+      (model: Model) -> Tensor<Float> in
       let predictions = model(data)
-      lastOutput = predictions
+      lastStepOutput = predictions
       return lossFunction.f(predictions, target)
     }
   }
 
   /// The step used for inference.
   public mutating func inferenceStep(model: Model) throws {
-    guard let data = lastInput else { return }
-    lastOutput = model(data)
-    guard let target = lastTarget else { return }
+    guard let data = lastStepInput else { return }
+    lastStepOutput = model(data)
+    guard let target = lastStepTarget else { return }
     try handleEvent(.inferencePredictionEnd)
-    lastLoss = lossFunction.f(lastOutput!, target)
+    lastStepLoss = lossFunction.f(lastStepOutput!, target)
   }
 
   /// The step used for training.
@@ -235,7 +328,7 @@ extension TrainingLoop {
   ) throws {
     try differentiableStep(model, &self)
     try handleEvent(.updateStart)
-    optimizer.update(&model, along: lastGradient!)
+    optimizer.update(&model, along: lastStepGradient!)
   }
 }
 
@@ -245,12 +338,16 @@ extension TrainingLoop {
 public enum TrainingLoopAction: Error {
   /// Abort actions in the current training/inference step and goes to the next batch.
   case cancelBatch
+
   /// Abort actions in the current training phase and goes to the validation phase.
   case cancelTraining
+
   /// Abort actions in the current validation phase and goes to the next epoch.
   case cancelValidation
+
   /// Abort actions in the current epoch and goes to the next epoch.
   case cancelEpoch
+
   /// Abort actions in the current fit and ends fitting.
   case cancelFit
 }
@@ -272,7 +369,7 @@ extension TrainingLoop {
     batchCount = batches.count
     for (i, batch) in batches.enumerated() {
       batchIndex = i
-      (lastInput, lastTarget) = (batch.data, batch.label)
+      (lastStepInput, lastStepTarget) = (batch.data, batch.label)
       do {
         try handleEvent(.batchStart)
         try step(&self)
@@ -294,7 +391,9 @@ extension TrainingLoop {
   public mutating func fit(
     _ model: inout Model, epochs: Int, callbacks: [TrainingLoopCallback<Self>] = [],
     on device: Device = Device.default,
-    differentiableStep: (Model, inout Self) throws -> Void = { try $1.differentiableStep(model: $0) }
+    differentiableStep: (Model, inout Self) throws -> Void = {
+      try $1.differentiableStep(model: $0)
+    }
   ) throws {
     let callbacksCount = self.callbacks.count
     self.callbacks += callbacks
