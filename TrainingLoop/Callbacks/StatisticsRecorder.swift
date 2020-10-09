@@ -77,7 +77,7 @@ public class StatisticsRecorder {
   public func record<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
     guard let batchIndex = loop.batchIndex,
       let batchCount = loop.batchCount,
-      let epochIndex = loop.batchIndex,
+      let epochIndex = loop.epochIndex,
       let epochCount = loop.epochCount,
       let loss = loop.lastStepLoss,
       let output = loop.lastStepOutput,
