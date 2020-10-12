@@ -16,24 +16,6 @@
 
 import Foundation
 
-class Node {
-  let key: Int
-  var children: [UInt8: Node] = [:]
-
-  init(key: Int) {
-    self.key = key
-  }
-
-  static func trie(degree: Int, keys: inout Int) -> Node {
-    let root = Node(key: 0)
-    for key in 0..<degree {
-      root.children[UInt8(key)] = Node(key: key)
-    }
-    keys = degree + 2
-    return root
-  }
-}
-
 struct GIF {
   let width: Int
   let height: Int
@@ -112,6 +94,24 @@ struct GIF {
   }
 
   mutating func append(frame: [UInt8], delay: Int) {
+    class Node {
+      let key: Int
+      var children: [UInt8: Node] = [:]
+
+      init(key: Int) {
+        self.key = key
+      }
+
+      static func trie(degree: Int, keys: inout Int) -> Node {
+        let root = Node(key: 0)
+        for key in 0..<degree {
+          root.children[UInt8(key)] = Node(key: key)
+        }
+        keys = degree + 2
+        return root
+      }
+    }
+
     append(delay: delay)
     // TODO: Optimize bounding box to only provided updated part.
 
