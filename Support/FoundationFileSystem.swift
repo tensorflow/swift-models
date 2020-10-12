@@ -64,8 +64,16 @@ public struct FoundationFile: File {
   /// Parameter value: data to be appended at the end.
   public func append(_ value: Data) throws {
     let fileHandler = try FileHandle(forUpdating: location)
+    #if os(macOS)
+    // The following are needed in order to build on macOS 10.15 (Catalina). They can be removed
+    // once macOS 10.16 (Big Sur) is prevalent enough as a build environment.
+    fileHandler.seekToEndOfFile()
+    fileHandler.write(value)
+    fileHandler.closeFile()
+    #else
     try fileHandler.seekToEnd()
     try fileHandler.write(contentsOf: value)
     try fileHandler.close()
+    #endif
   }
 }
