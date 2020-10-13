@@ -41,7 +41,7 @@ let package = Package(
         .target(name: "RecommendationModels", path: "Models/Recommendation"),
         .target(name: "TrainingLoop", dependencies: ["ModelSupport"], path: "TrainingLoop"),
         .target(
-            name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport"],
+            name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport", "TrainingLoop"],
             path: "Autoencoder/Autoencoder1D"),
         .target(
             name: "Autoencoder2D", dependencies: ["Datasets", "ModelSupport"],
