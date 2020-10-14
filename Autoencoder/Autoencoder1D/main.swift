@@ -16,68 +16,74 @@ import Datasets
 import Foundation
 import ModelSupport
 import TensorFlow
+import TrainingLoop
 
 let epochCount = 10
 let batchSize = 100
 let imageHeight = 28
 let imageWidth = 28
 
-let outputFolder = "./output/"
-let dataset = FashionMNIST(batchSize: batchSize, device: Device.default, 
-    entropy: SystemRandomNumberGenerator(), flattening: true)
+let dataset = FashionMNIST(
+  batchSize: batchSize, device: Device.default,
+  entropy: SystemRandomNumberGenerator(), flattening: true)
+
 // An autoencoder.
 var autoencoder = Sequential {
-    // The encoder.
-    Dense<Float>(inputSize: imageHeight * imageWidth, outputSize: 128, activation: relu)
-    Dense<Float>(inputSize: 128, outputSize: 64, activation: relu)
-    Dense<Float>(inputSize: 64, outputSize: 12, activation: relu)
-    Dense<Float>(inputSize: 12, outputSize: 3, activation: relu)
-    // The decoder.
-    Dense<Float>(inputSize: 3, outputSize: 12, activation: relu)
-    Dense<Float>(inputSize: 12, outputSize: 64, activation: relu)
-    Dense<Float>(inputSize: 64, outputSize: 128, activation: relu)
-    Dense<Float>(inputSize: 128, outputSize: imageHeight * imageWidth, activation: tanh)
+  // The encoder.
+  Dense<Float>(inputSize: imageHeight * imageWidth, outputSize: 128, activation: relu)
+  Dense<Float>(inputSize: 128, outputSize: 64, activation: relu)
+  Dense<Float>(inputSize: 64, outputSize: 12, activation: relu)
+  Dense<Float>(inputSize: 12, outputSize: 3, activation: relu)
+  // The decoder.
+  Dense<Float>(inputSize: 3, outputSize: 12, activation: relu)
+  Dense<Float>(inputSize: 12, outputSize: 64, activation: relu)
+  Dense<Float>(inputSize: 64, outputSize: 128, activation: relu)
+  Dense<Float>(inputSize: 128, outputSize: imageHeight * imageWidth, activation: tanh)
 }
+
 let optimizer = RMSProp(for: autoencoder)
 
+/// Saves a validation input and an output image once per epoch;
+/// it's ensured that each epoch will save different images as long as 
+/// count of epochs is less or equal than count of images.
+/// 
+/// It's defined as a callback registered into TrainingLoop.
+func saveImage<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
+  if event != .inferencePredictionEnd { return }
 
-// Training loop
-for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
-    for batch in epochBatches {
-        let x = batch.data
+  guard let batchIndex = loop.batchIndex,
+    let batchCount = loop.batchCount,
+    let epochIndex = loop.epochIndex,
+    let epochCount = loop.epochCount,
+    let input = loop.lastStepInput,
+    let output = loop.lastStepOutput
+  else {
+    return
+  }
 
-        let 𝛁model = TensorFlow.gradient(at: autoencoder) { autoencoder -> Tensor<Float> in
-            let image = autoencoder(x)
-            return meanSquaredError(predicted: image, expected: x)
-        }
+  let imageCount = batchCount * batchSize
+  let selectedImageGlobalIndex = epochIndex * (imageCount / epochCount)
+  let selectedBatchIndex = selectedImageGlobalIndex / batchSize
 
-        optimizer.update(&autoencoder, along: 𝛁model)
-    }
+  if batchIndex != selectedBatchIndex { return }
 
-    var testLossSum: Float = 0
-    var testBatchCount = 0
-    for batch in dataset.validation {
-        let sampleImages = batch.data
-        let testImages = autoencoder(sampleImages)
-
-        do {
-            try saveImage(
-                sampleImages[0..<1], shape: (imageWidth, imageHeight), colorspace: .grayscale,
-                directory: outputFolder, name: "epoch-\(epoch)-input")
-            try saveImage(
-                testImages[0..<1], shape: (imageWidth, imageHeight), colorspace: .grayscale,
-                directory: outputFolder, name: "epoch-\(epoch)-output")
-        } catch {
-            print("Could not save image with error: \(error)")
-        }
-
-        testLossSum += meanSquaredError(predicted: testImages, expected: sampleImages).scalarized()
-        testBatchCount += 1
-    }
-    print(
-        """
-        [Epoch \(epoch)] \
-        Loss: \(testLossSum / Float(testBatchCount))
-        """
-    )
+  let outputFolder = "./output/"
+  let selectedImageBatchLocalIndex = selectedImageGlobalIndex % batchSize
+  try saveImage(
+    (input as! Tensor<Float>)[selectedImageBatchLocalIndex..<selectedImageBatchLocalIndex+1],
+    shape: (imageWidth, imageHeight), format: .grayscale,
+    directory: outputFolder, name: "epoch-\(epochIndex + 1)-of-\(epochCount)-input")
+  try saveImage(
+    (output as! Tensor<Float>)[selectedImageBatchLocalIndex..<selectedImageBatchLocalIndex+1],
+    shape: (imageWidth, imageHeight), format: .grayscale,
+    directory: outputFolder, name: "epoch-\(epochIndex + 1)-of-\(epochCount)-output")
 }
+
+var trainingLoop = TrainingLoop(
+  training: dataset.training.map { $0.map { LabeledData(data: $0.data, label: $0.data) } },
+  validation: dataset.validation.map { LabeledData(data: $0.data, label: $0.data) },
+  optimizer: optimizer,
+  lossFunction: meanSquaredError,
+  callbacks: [saveImage])
+
+try! trainingLoop.fit(&autoencoder, epochs: epochCount, on: Device.default)
