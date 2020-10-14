@@ -53,7 +53,6 @@ let package = Package(
         .target(name: "Gym-FrozenLake", path: "Gym/FrozenLake"),
         .target(name: "Gym-CartPole", path: "Gym/CartPole"),
         .target(name: "Gym-Blackjack", path: "Gym/Blackjack"),
-        .target(name: "Gym-DQN", path: "Gym/DQN"),
         .target(
             name: "VGG-Imagewoof",
             dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
@@ -130,7 +129,7 @@ let package = Package(
         ),
         .target(
             name: "pix2pix",
-            dependencies: ["ArgumentParser", "ModelSupport", "Datasets"],
+            dependencies: ["ArgumentParser", "ModelSupport", "Datasets", "Checkpoints"],
             path: "pix2pix"
         ),
         .target(

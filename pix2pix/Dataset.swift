@@ -11,7 +11,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 import Foundation
 import ModelSupport
 import Datasets
@@ -19,12 +18,16 @@ import TensorFlow
 
 public enum Pix2PixDatasetVariant: String {
     case facades
+    case maps
 
     public var url: URL {
         switch self {
         case .facades:
-            return URL(string: 
+            return URL(string:
                 "https://people.eecs.berkeley.edu/~taesung_park/CycleGAN/datasets/facades.zip")!
+        case .maps:
+            return URL(string:
+                "https://people.eecs.berkeley.edu/~taesung_park/CycleGAN/datasets/maps.zip")!
         }
     }
 }
@@ -34,11 +37,11 @@ public struct Pix2PixDataset<Entropy: RandomNumberGenerator> {
     public typealias Batches = Slices<Sampling<Samples, ArraySlice<Int>>>
     public typealias PairedImageBatch = (source: Tensor<Float>, target: Tensor<Float>)
     public typealias Training = LazyMapSequence<
-        TrainingEpochs<Samples, Entropy>, 
+        TrainingEpochs<Samples, Entropy>,
         LazyMapSequence<Batches, PairedImageBatch>
       >
     public typealias Testing = LazyMapSequence<
-        Slices<Samples>, 
+        Slices<Samples>,
         PairedImageBatch
     >
 
@@ -49,13 +52,13 @@ public struct Pix2PixDataset<Entropy: RandomNumberGenerator> {
 
     public init(
         from rootDirPath: String? = nil,
-        variant: Pix2PixDatasetVariant? = nil, 
+        variant: Pix2PixDatasetVariant? = nil,
         trainBatchSize: Int = 1,
         testBatchSize: Int = 1,
         entropy: Entropy) throws {
         
         let rootDirPath = rootDirPath ?? Pix2PixDataset.downloadIfNotPresent(
-            variant: variant ?? .facades,
+            variant: variant ?? .maps,
             to: DatasetUtilities.defaultDirectory.appendingPathComponent("pix2pix", isDirectory: true))
         let rootDirURL = URL(fileURLWithPath: rootDirPath, isDirectory: true)
         
@@ -63,27 +66,25 @@ public struct Pix2PixDataset<Entropy: RandomNumberGenerator> {
             try Pix2PixDataset.loadSortedSamples(
                   from: rootDirURL.appendingPathComponent("trainA"),
                   fileIndexRetriever: "_"
-                ), 
+                ),
             try Pix2PixDataset.loadSortedSamples(
                   from: rootDirURL.appendingPathComponent("trainB"),
                   fileIndexRetriever: "_"
                 )
         ))
-        
         testSamples = Array(zip(
             try Pix2PixDataset.loadSortedSamples(
                   from: rootDirURL.appendingPathComponent("testA"),
-                  fileIndexRetriever: "."
-                ), 
+                  fileIndexRetriever: "_"
+                ),
             try Pix2PixDataset.loadSortedSamples(
                   from: rootDirURL.appendingPathComponent("testB"),
-                  fileIndexRetriever: "."
+                  fileIndexRetriever: "_"
                 )
         ))
-
         training = TrainingEpochs(
-            samples: trainSamples, 
-            batchSize: trainBatchSize, 
+            samples: trainSamples,
+            batchSize: trainBatchSize,
             entropy: entropy
         ).lazy.map { (batches: Batches) -> LazyMapSequence<Batches, PairedImageBatch> in
             batches.lazy.map {
@@ -114,9 +115,9 @@ public struct Pix2PixDataset<Entropy: RandomNumberGenerator> {
         guard !directoryExists || directoryEmpty else { return rootDirPath }
 
         let _ = DatasetUtilities.downloadResource(
-            filename: variant.rawValue, 
+            filename: variant.rawValue,
             fileExtension: "zip",
-            remoteRoot: variant.url.deletingLastPathComponent(), 
+            remoteRoot: variant.url.deletingLastPathComponent(),
             localStorageDirectory: directory)
         print("\(rootDirPath) downloaded.")
 
@@ -124,7 +125,7 @@ public struct Pix2PixDataset<Entropy: RandomNumberGenerator> {
     }
 
     private static func loadSortedSamples(
-        from directory: URL, 
+        from directory: URL,
         fileIndexRetriever: String
     ) throws -> [Tensor<Float>] {
         return try FileManager.default
@@ -138,7 +139,10 @@ public struct Pix2PixDataset<Entropy: RandomNumberGenerator> {
                 Int($1.lastPathComponent.components(separatedBy: fileIndexRetriever)[0])!
             }
             .map {
-                Image(jpeg: $0).tensor / 127.5 - 1.0
+                var image = Image(jpeg: $0)
+                image = image.resized(to: (256,256))
+                let imageScaled = image.tensor / 127.5 - 1.0
+                return imageScaled
             }
     }
 }
@@ -146,7 +150,7 @@ public struct Pix2PixDataset<Entropy: RandomNumberGenerator> {
 extension Pix2PixDataset where Entropy == SystemRandomNumberGenerator {
     public init(
         from rootDirPath: String? = nil,
-        variant: Pix2PixDatasetVariant? = nil, 
+        variant: Pix2PixDatasetVariant? = nil,
         trainBatchSize: Int = 1,
         testBatchSize: Int = 1
     ) throws {
@@ -157,5 +161,5 @@ extension Pix2PixDataset where Entropy == SystemRandomNumberGenerator {
             testBatchSize: testBatchSize,
             entropy: SystemRandomNumberGenerator()
         )
-  }
+    }
 }

@@ -13,12 +13,18 @@
 // limitations under the License.
 
 import TensorFlow
+import Checkpoints
+import Foundation
+import ModelSupport
+
 
 public struct NetG: Layer {
     
+    public static let remoteCheckpoint: URL =
+        URL(string: "https://storage.googleapis.com/gpt-2/models/117M/model.ckpt")!
+//    @noDerivative private var storage: URL?
+
     var module: UNetSkipConnectionOutermost<UNetSkipConnection<UNetSkipConnection<UNetSkipConnection<UNetSkipConnection<UNetSkipConnection<UNetSkipConnection<UNetSkipConnectionInnermost>>>>>>>
-
-
     public init(inputChannels: Int, outputChannels: Int, ngf: Int, useDropout: Bool = false) {
         let firstBlock = UNetSkipConnectionInnermost(inChannels: ngf * 8, innerChannels: ngf * 8, outChannels: ngf * 8)
         
@@ -40,8 +46,79 @@ public struct NetG: Layer {
                                                   submodule: module6)
     }
 
+    public init(checkpoint: URL = NetG.remoteCheckpoint) throws {
+        let parameters = NetGConfig(
+            inChannels: 3, outChannels: 3, ngf: 64,
+            useDropout: false, lastConvFilters: 64,
+            learningRate: 0.0002, beta: 0.5, padding: 1,
+            kernelSize: 4)
+
+        // Try loading from the given checkpoint.
+        do {
+            let auxiliary: [String] = [
+                  "checkpoint",
+                  "hparams.json"
+            ]
+
+            let reader: CheckpointReader = try CheckpointReader(
+                checkpointLocation: checkpoint,
+                modelName: "NetG-\(checkpoint.pathComponents.dropLast().last ?? "")",
+                additionalFiles: auxiliary)
+            // TODO(michellecasbon): expose this.
+            reader.isCRCVerificationEnabled = false
+
+            // Initialize a model with the given config.
+            let gen = NetG(reader: reader, config: parameters, scope: "model")
+            module = gen.module
+            print("generator loaded from checkpoint successfully.")
+        } catch {
+            // If checkpoint is invalid, throw the error and exit.
+            print("Fail to load generator from checkpoint. \(error)")
+            throw error
+        }
+
+        print("Generator init complete.")
+
+    }
+    
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         return self.module(input)
+    }
+}
+
+
+extension NetG {
+    func writeCheckpoint(to location: URL, name: String) throws {
+        var tensors = [String: Tensor<Float>]()
+        recursivelyObtainTensors(self, scope: "model", tensors: &tensors, separator: "/")
+        let writer = CheckpointWriter(tensors: tensors)
+        try writer.write(to: location, name: name)
+        
+        // TODO: Copy auxiliary files if they need to be in different location than current
+        // local storage.
+//        if location != storage {
+//            try writeAuxiliary(to: location)
+//        }
+    }
+    
+//    public func writeAuxiliary(to location: URL) throws {
+//        let fileSystem = FoundationFileSystem()
+//        let vocabularyFileURL: URL = storage.appendingPathComponent("encoder.json")
+//        let mergesFileURL: URL = storage.appendingPathComponent("vocab.bpe")
+//        let hparamsFileURL: URL = storage!.appendingPathComponent("hparams.json")
+////        let destinationEncoderURL: URL = location.appendingPathComponent("encoder.json")
+//        let destinationMergesURL: URL = location.appendingPathComponent("vocab.bpe")
+//        let destinationHparamsURL: URL = location.appendingPathComponent("hparams.json")
+
+//        try fileSystem.copy(source: vocabularyFileURL, dest: destinationEncoderURL)
+//        try fileSystem.copy(source: mergesFileURL, dest: destinationMergesURL)
+//        try fileSystem.copy(source: hparamsFileURL, dest: destinationHparamsURL)
+//    }
+}
+
+extension NetG: Equatable {
+    public static func == (left: NetG, right: NetG) -> Bool {
+        return left.module == right.module
     }
 }
