@@ -163,6 +163,7 @@ extension TransposedConv2D: InitializableFromPythonCheckpoint2 {
     init(reader: CheckpointReader, config: NetGConfig, scope: String) {
         let filter: Tensor<Scalar> = reader.readTensor(name: scope + "/fil")
         let bias: Tensor<Scalar> = reader.readTensor(name: scope + "/bias")
+        // TODO: write and read these from checkpoint file
 //        let activation: Tensor<Scalar> = reader.readTensor(name: scope + "/act")
 //        let strides: Tensor<Scalar> = reader.readTensor(name: scope + "/str")
 //        let padding: Tensor<Scalar> = reader.readTensor(name: scope + "/pad")
