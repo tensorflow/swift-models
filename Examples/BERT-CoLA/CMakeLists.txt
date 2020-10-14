@@ -2,7 +2,8 @@ add_executable(BERT-CoLA
   main.swift)
 target_link_libraries(BERT-CoLA PRIVATE
   TextModels
-  Datasets)
+  Datasets
+  TrainingLoop)
 
 
 install(TARGETS BERT-CoLA

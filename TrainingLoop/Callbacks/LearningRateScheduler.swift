@@ -1,22 +1,43 @@
-// Copyright 2019 The TensorFlow Authors. All Rights Reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 import TensorFlow
 
+public class LearningRateScheduler<SP: ScheduledParameter> {
+  public typealias ScheduledParameterGetter<SP> = (
+      _ step: Float, 
+      _ totalStepCount: Float
+    ) -> SP
+
+  public var scheduledParameterGetter: ScheduledParameterGetter<SP>
+  public var biasCorrectionBeta1: Float?
+  public var biasCorrectionBeta2: Float?
+
+  public init(scheduledParameterGetter: @escaping ScheduledParameterGetter<SP>,
+              biasCorrectionBeta1: Float? = nil,
+              biasCorrectionBeta2: Float? = nil) {
+    self.scheduledParameterGetter = scheduledParameterGetter
+    self.biasCorrectionBeta1 = biasCorrectionBeta1
+    self.biasCorrectionBeta2 = biasCorrectionBeta2
+  }
+
+  /// A callback that will change the learning rate according to `schedule`.
+  public func schedule<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
+    if event != .batchStart || Context.local.learningPhase == .inference { return }
+
+    let step = Float(loop.batchIndex! + loop.epochIndex! * loop.batchCount! + 1)
+    let totalStepCount = Float(loop.batchCount! * loop.epochCount!)
+
+    var scheduledLearningRate = scheduledParameterGetter(step, totalStepCount)(forStep: UInt64(step))
+    if let beta1 = biasCorrectionBeta1, let beta2 = biasCorrectionBeta2 {
+      scheduledLearningRate *= sqrtf(1 - powf(beta2, step)) / (1 - powf(beta1, step)) as! SP.Scalar
+    }
+
+    loop.optimizer.learningRate = scheduledLearningRate as! L.Opt.Scalar
+  }
+}
+
+
+
 /// Scheduled parameter that takes the current training step as input and returns the parameter
-/// value to be used for training. This can be used for scheduling the learning rate parameter,
-/// for example.
+/// value to be used for training. This will be used for scheduling the learning rate parameter.
 public protocol ScheduledParameter {
     associatedtype Scalar: FloatingPoint
 
