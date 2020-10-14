@@ -72,20 +72,20 @@ final class ImageTests: XCTestCase {
 
         let rgbTensor = Tensor<Float>(ones: [15, 20, 3])
         let rgbImage = Image(rgbTensor)
-        rgbImage.save(to: imageDestination, colorspace: .rgb, format: .jpeg(quality: 95))
+        rgbImage.save(to: imageDestination, format: .jpeg(quality: 95))
         let reloadedRGBImage = Image(contentsOf: imageDestination, byteOrdering: .rgb)
         XCTAssertEqual(reloadedRGBImage.tensor.shape, [15, 20, 3])
 
         let grayscaleTensor = Tensor<Float>(ones: [15, 20, 1])
         let grayscaleImage = Image(grayscaleTensor)
-        grayscaleImage.save(to: imageDestination, colorspace: .grayscale, format: .jpeg(quality: 95))
+        grayscaleImage.save(to: imageDestination, format: .jpeg(quality: 95))
         let reloadedGrayscaleImage = Image(contentsOf: imageDestination, byteOrdering: .rgb)
         XCTAssertEqual(reloadedGrayscaleImage.tensor.shape, [15, 20, 3])
         
         let imageSource = resourceBaseLocation.appendingPathComponent("testimage.jpg")
         let imageDestination2 = temporaryDirectory.appendingPathComponent("testimage.jpg")
         let loadedRGBImage = Image(contentsOf: imageSource, byteOrdering: .rgb)
-        loadedRGBImage.save(to: imageDestination2, colorspace: .rgb, format: .jpeg(quality: 95))
+        loadedRGBImage.save(to: imageDestination2, format: .jpeg(quality: 95))
         let reloadedRGBImage2 = Image(contentsOf: imageDestination2, byteOrdering: .rgb)
         XCTAssertEqual(reloadedRGBImage2.tensor.shape, [20, 60, 3])
     }

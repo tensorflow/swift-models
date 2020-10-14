@@ -69,14 +69,16 @@ func saveImage<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEven
 
   let outputFolder = "./output/"
   let selectedImageBatchLocalIndex = selectedImageGlobalIndex % batchSize
-  try saveImage(
-    (input as! Tensor<Float>)[selectedImageBatchLocalIndex..<selectedImageBatchLocalIndex+1],
-    shape: (imageWidth, imageHeight), format: .grayscale,
-    directory: outputFolder, name: "epoch-\(epochIndex + 1)-of-\(epochCount)-input")
-  try saveImage(
-    (output as! Tensor<Float>)[selectedImageBatchLocalIndex..<selectedImageBatchLocalIndex+1],
-    shape: (imageWidth, imageHeight), format: .grayscale,
-    directory: outputFolder, name: "epoch-\(epochIndex + 1)-of-\(epochCount)-output")
+  let inputExample =
+    (input as! Tensor<Float>)[selectedImageBatchLocalIndex..<selectedImageBatchLocalIndex+1]
+    .normalizedToGrayscale().reshaped(to: [imageWidth, imageHeight, 1])
+  try inputExample.saveImage(
+    directory: outputFolder, name: "epoch-\(epochIndex + 1)-of-\(epochCount)-input", format: .png)
+  let outputExample =
+    (output as! Tensor<Float>)[selectedImageBatchLocalIndex..<selectedImageBatchLocalIndex+1]
+    .normalizedToGrayscale().reshaped(to: [imageWidth, imageHeight, 1])
+  try outputExample.saveImage(
+    directory: outputFolder, name: "epoch-\(epochIndex + 1)-of-\(epochCount)-output", format: .png)
 }
 
 var trainingLoop = TrainingLoop(

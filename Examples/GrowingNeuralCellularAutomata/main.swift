@@ -95,7 +95,7 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
       LazyTensorBarrier()
       states.append(sampledState.colorComponents * 255.0)
     }
-    try saveAnimatedImage(states, delay: 1, directory: directory, name: filename)
+    try states.saveAnimatedImage(directory: directory, name: filename, delay: 1)
     return state
   }
 
@@ -122,9 +122,8 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
       batchSize, paddedImage.shape[0], paddedImage.shape[1], paddedImage.shape[2],
     ])
 
-    try saveImage(
-      paddedImage * 255.0, colorspace: .rgba, directory: "output", name: "targetimage", format: .png
-    )
+    try paddedImage.scaled(by: 255.0).overlaidOnWhite()
+      .saveImage(directory: "output", name: "targetimage", format: .png)
 
     // Initialize model, optimizer, and initial state.
     var initialState = Tensor(zerosLike: paddedImage).padded(forSizes: [
@@ -191,10 +190,8 @@ struct GrowingNeuralCellularAutomata: ParsableCommand {
           seed: state, rule: cellRule, steps: inferenceSteps, directory: "output",
           filename: filename)
 
-        try saveImage(
-          loggingState.colorComponents * 255.0, colorspace: .rgb, directory: "output",
-          name: filename, format: .png
-        )
+        try loggingState.colorComponents.scaled(by: 255.0).overlaidOnWhite()
+          .saveImage(directory: "output", name: filename, format: .png)
       }
 
       if ((iteration + 1) % 2000) == 0 {

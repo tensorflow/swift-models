@@ -211,7 +211,7 @@ struct GIF {
   }
 }
 
-extension Data {
+fileprivate extension Data {
   mutating func append(littleEndian value: Int) {
     self.append(UInt8(value & 0xff))
     self.append(UInt8(value >> 8))

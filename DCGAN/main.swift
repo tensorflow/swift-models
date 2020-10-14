@@ -151,10 +151,8 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
     Context.local.learningPhase = .inference
 
     // Render images.
-    let generatedImage = generator(noise)
-    try saveImage(
-        generatedImage, shape: (28, 28), colorspace: .grayscale, directory: outputFolder,
-        name: "\(epoch)")
+    let generatedImage = generator(noise).normalizedToGrayscale().reshaped(to: [28, 28, 1])
+    try generatedImage.saveImage(directory: outputFolder, name: "\(epoch)", format: .png)
 
     // Print loss.
     let generatorLoss_ = generatorLoss(fakeLabels: generatedImage)
@@ -163,7 +161,5 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
 
 // Generate another image.
 let noise1 = Tensor<Float>(randomNormal: TensorShape(1, 100))
-let generatedImage = generator(noise1)
-try saveImage(
-    generatedImage, shape: (28, 28), colorspace: .grayscale, directory: outputFolder,
-    name: "final")
+let generatedImage = generator(noise1).normalizedToGrayscale().reshaped(to: [28, 28, 1])
+try generatedImage.saveImage(directory: outputFolder, name: "final", format: .png)

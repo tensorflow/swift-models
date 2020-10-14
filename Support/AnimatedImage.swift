@@ -15,9 +15,17 @@
 import Foundation
 import TensorFlow
 
+/// A write-only representation of a GIF that animates between sequential frames, constructed from
+/// a stack of Tensors.
 struct AnimatedImage {
   let frames: [Tensor<Float>]
 
+  /// Creates an animated image representation from a stack of Tensors.
+  ///
+  /// - Parameters:
+  ///   - frames: A sequential array of Tensors that represent frames of animation within the image.
+  ///     The individual Tensors must be rank 3, ordered as [width, height, channels] and the
+  ///     channels are assumed to be in the range 0.0 - 255.0.
   public init(_ frames: [Tensor<Float>]) {
     guard frames.count > 0 else { fatalError("No frames were provided to animated image.") }
     guard frames[0].rank == 3 else {
@@ -61,6 +69,13 @@ struct AnimatedImage {
     return (quantizedFrames: quantizedFrames, palette: palette)
   }
 
+  /// Saves the animated GIF from the internal stack of Tensors. A default color quantization scheme
+  /// is applied to map input colors to an output color table.
+  ///
+  /// - Parameters:
+  ///   - url: The target location of the animated GIF file.
+  ///   - delay: The delay (in hundredths of a second) to insert between each frame.
+  ///   - loop: Whether the animation should loop indefinitely.
   public func save(to url: URL, delay: Int, loop: Bool = true) throws {
     let width = frames[0].shape[1]
     let height = frames[0].shape[0]
@@ -77,13 +92,22 @@ struct AnimatedImage {
   }
 }
 
-public func saveAnimatedImage(
-  _ frames: [Tensor<Float>], delay: Int, directory: String, name: String, loop: Bool = true
-) throws {
-  try createDirectoryIfMissing(at: directory)
+public extension Array where Element == Tensor<Float> {
+  /// Saves an array of Tensors as an animated GIF. The individual Tensors must be rank 3, ordered
+  /// as [width, height, channels] and the channels are assumed to be in the range 0.0 - 255.0.
+  ///
+  /// - Parameters:
+  ///   - directory: The target directory to host the animated GIF file. If it does not exist, it
+  ///     will be created.
+  ///   - name: The name of the resulting image file, without extension.
+  ///   - delay: The delay (in hundredths of a second) to insert between each frame.
+  ///   - loop: Whether the animation should loop indefinitely.
+  func saveAnimatedImage(directory: String, name: String, delay: Int, loop: Bool = true) throws {
+    try createDirectoryIfMissing(at: directory)
 
-  let image = AnimatedImage(frames)
+    let image = AnimatedImage(self)
 
-  let outputURL = URL(fileURLWithPath: "\(directory)/\(name).gif")
-  try image.save(to: outputURL, delay: delay, loop: loop)
+    let outputURL = URL(fileURLWithPath: "\(directory)/\(name).gif")
+    try image.save(to: outputURL, delay: delay, loop: loop)
+  }
 }

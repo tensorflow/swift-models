@@ -57,8 +57,5 @@ func saveFractalImage(_ divergenceGrid: Tensor<Float>, iterations: Int, fileName
   let colorImage = Tensor<Float>(
     shape: [gridShape[0], gridShape[1], 4], scalars: colorValues, on: divergenceGrid.device)
 
-  try saveImage(
-    colorImage, shape: (gridShape[0], gridShape[1]),
-    colorspace: .rgb, directory: "./", name: fileName,
-    format: .png)
+  try colorImage.saveImage(directory: "./", name: fileName, format: .png)
 }

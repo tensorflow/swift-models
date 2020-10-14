@@ -16,21 +16,16 @@ import Foundation
 @_implementationOnly import STBImage
 import TensorFlow
 
-// Image loading and saving is inspired by t-ae's Swim library: https://github.com/t-ae/swim
-// and uses the stb_image single-file C headers from https://github.com/nothings/stb .
-
+/// A high-level representation of an image, encapsulating common image saving, loading, and
+/// manipulation operations. The loading and saving functionality is inspired by
+/// [t-ae's Swim library](https://github.com/t-ae/swim) and uses
+/// [the stb_image single-file C headers](https://github.com/nothings/stb) .
 public struct Image {
     public enum ByteOrdering {
         case bgr
         case rgb
     }
 
-    public enum Colorspace {
-        case rgb
-        case rgba
-        case grayscale
-    }
-  
     public enum Format {
         case jpeg(quality: Float)
         case png
@@ -87,36 +82,15 @@ public struct Image {
         }
     }
 
-    public func save(to url: URL, colorspace: Colorspace = .rgb, format: Format = .jpeg(quality: 95)) {
+    public func save(to url: URL, format: Format = .jpeg(quality: 95)) {
         let outputImageData: Tensor<UInt8>
-        let bpp: Int32
-
-        switch colorspace {
-        case .grayscale:
-            bpp = 1
-            switch self.imageData {
-            case let .uint8(data): outputImageData = data
-            case let .float(data):
-                let lowerBound = data.min(alongAxes: [0, 1])
-                let upperBound = data.max(alongAxes: [0, 1])
-                let adjustedData = (data - lowerBound) * (255.0 / (upperBound - lowerBound))
-                outputImageData = Tensor<UInt8>(adjustedData)
-            }
-        case .rgb:
-            bpp = 3
-            switch self.imageData {
-            case let .uint8(data): outputImageData = data
-            case let .float(data):
-                outputImageData = Tensor<UInt8>(data.clipped(min: 0, max: 255))
-            }
-        case .rgba:
-            bpp = 4
-            switch self.imageData {
-            case let .uint8(data): outputImageData = data
-            case let .float(data):
-                outputImageData = Tensor<UInt8>(data.clipped(min: 0, max: 255))
-            }
+        switch self.imageData {
+        case let .uint8(data):
+            outputImageData = data
+        case let .float(data):
+            outputImageData = Tensor<UInt8>(data.clipped(min: 0, max: 255))
         }
+        let bpp: Int32 = Int32(outputImageData.shape[2])
         
         let height = Int32(outputImageData.shape[0])
         let width = Int32(outputImageData.shape[1])
@@ -172,48 +146,39 @@ public struct Image {
     }
 }
 
-public func saveImage(
-    _ tensor: Tensor<Float>, shape: (Int, Int)? = nil, size: (Int, Int)? = nil,
-    colorspace: Image.Colorspace = .rgb, directory: String, name: String,
-    format: Image.Format = .jpeg(quality: 95)
-) throws {
+public extension Tensor where Scalar == Float {
+  func saveImage(
+    directory: String, name: String, format: Image.Format = .jpeg(quality: 95)
+  ) throws {
+    precondition(self.rank == 3)
     try createDirectoryIfMissing(at: directory)
-
-    let channels: Int
-    switch colorspace {
-    case .rgb: channels = 3
-    case .rgba: channels = 4
-    case .grayscale: channels = 1
-    }
-  
-    let reshapedTensor: Tensor<Float>
-    if let shape = shape {
-        reshapedTensor = tensor.reshaped(to: [shape.0, shape.1, channels])
-    } else {
-        guard tensor.shape.rank == 3 else {
-            fatalError("Input tensor must be of rank 3 (was \(tensor.shape.rank), or a shape must be specified.)")
-        }
-        if tensor.shape[2] > channels {
-            // Need to premultiply alpha channel before saving as RGB.
-            let alphaChannel = tensor.slice(
-                lowerBounds: [0, 0, 3], sizes: [tensor.shape[0], tensor.shape[1], 1])
-            let colorComponents = tensor.slice(
-                lowerBounds: [0, 0, 0], sizes: [tensor.shape[0], tensor.shape[1], 3])
-            reshapedTensor = (255.0 - alphaChannel) + colorComponents
-        } else {
-            reshapedTensor = tensor
-        }
-    }
-    let image = Image(reshapedTensor)
-
+    
     let fileExtension: String
     switch format {
     case .jpeg: fileExtension = "jpg"
     case .png: fileExtension = "png"
     }
-    let resizedImage = size != nil ? image.resized(to: (size!.0, size!.1)) : image
+    
     let outputURL = URL(fileURLWithPath: "\(directory)/\(name).\(fileExtension)")
-    resizedImage.save(to: outputURL, colorspace: colorspace, format: format)
+    let image = Image(self)
+    image.save(to: outputURL, format: format)
+  }
+  
+  func overlaidOnWhite() -> Tensor {
+    precondition(self.rank == 3)
+    precondition(self.shape[2] == 4)
+    let alphaChannel = self.slice(
+        lowerBounds: [0, 0, 3], sizes: [self.shape[0], self.shape[1], 1])
+    let colorComponents = self.slice(
+        lowerBounds: [0, 0, 0], sizes: [self.shape[0], self.shape[1], 3])
+    return (255.0 - alphaChannel) + colorComponents
+  }
+  
+  func normalizedToGrayscale() -> Tensor {
+    let lowerBound = self.min(alongAxes: [0, 1])
+    let upperBound = self.max(alongAxes: [0, 1])
+    return (self - lowerBound) * (255.0 / (upperBound - lowerBound))
+  }
 }
 
 public typealias Point = (x: Int, y: Int)
