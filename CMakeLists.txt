@@ -118,7 +118,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Windows)
 endif()
 ExternalProject_Add(swift-argument-parser
   GIT_REPOSITORY git://github.com/apple/swift-argument-parser.git
-  GIT_TAG master
+  GIT_TAG main
   CMAKE_ARGS
     -DBUILD_SHARED_LIBS=YES
     -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}

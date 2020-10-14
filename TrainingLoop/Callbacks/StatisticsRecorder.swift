@@ -81,7 +81,7 @@ public class StatisticsRecorder {
   public func record<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
     guard let batchIndex = loop.batchIndex,
       let batchCount = loop.batchCount,
-      let epochIndex = loop.batchIndex,
+      let epochIndex = loop.epochIndex,
       let epochCount = loop.epochCount,
       let loss = loop.lastStepLoss,
       let output = loop.lastStepOutput,
@@ -126,5 +126,36 @@ public class StatisticsRecorder {
       result.append((name: measurer.name, value: measurer.measure()))
     }
     return result
+  }
+}
+
+extension StatisticsRecorder {
+  /// The events on which statistics will be reported for training and validation phases.
+  public enum ReportTrigger {
+    /// Report statistics at end of training and validation, once per epoch.
+    case endOfEpoch
+    /// Report statistics at end of training and validation, once per batch.
+    case endOfBatch
+  }
+
+  /// Updates `self` to report statistics when `trigger` is encountered.
+  public func setReportTrigger(_ trigger: ReportTrigger) {
+    if trigger == .endOfBatch {
+      shouldCompute = {
+          (
+            _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
+            _ event: TrainingLoopEvent
+          ) -> Bool in
+          return event == .batchEnd
+        }
+    } else {
+      shouldCompute = {
+          (
+            _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
+            _ event: TrainingLoopEvent
+          ) -> Bool in
+          return event == .batchEnd && batchIndex + 1 == batchCount
+        }
+    }
   }
 }

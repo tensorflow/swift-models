@@ -113,9 +113,9 @@ public struct AccuracyMeasurer: MetricsMeasurer {
         "For accuracy measurements, the model output must be Tensor<Float>, and the labels must be Tensor<Int>."
       )
     }
-    correctGuessCount += Tensor<Int32>(predictions.argmax(squeezingAxis: 1) .== labels).sum()
+    correctGuessCount += Tensor<Int32>(predictions.argmax(squeezingAxis: -1) .== labels).sum()
       .scalarized()
-    totalGuessCount += Int32(labels.shape[0])
+    totalGuessCount += Int32(labels.shape.reduce(1, *))
   }
 
   /// Computes accuracy as percentage of correct guesses.

@@ -41,7 +41,7 @@ let package = Package(
         .target(name: "RecommendationModels", path: "Models/Recommendation"),
         .target(name: "TrainingLoop", dependencies: ["ModelSupport"], path: "TrainingLoop"),
         .target(
-            name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport"],
+            name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport", "TrainingLoop"],
             path: "Autoencoder/Autoencoder1D"),
         .target(
             name: "Autoencoder2D", dependencies: ["Datasets", "ModelSupport"],
@@ -69,6 +69,10 @@ let package = Package(
             name: "ResNet-CIFAR10",
             dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
             path: "Examples/ResNet-CIFAR10"),
+        .target(
+            name: "Shallow-Water-PDE",
+            dependencies: ["ArgumentParser", "Benchmark", "ModelSupport"],
+            path: "Examples/Shallow-Water-PDE"),
         .target(
             name: "LeNet-MNIST",
             dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
@@ -102,7 +106,7 @@ let package = Package(
             exclude: ["UI/Windows/main.swift", "UI/macOS/main.swift"]),
         .target(
             name: "GPT2-WikiText2",
-            dependencies: ["Datasets", "TextModels"],
+            dependencies: ["Datasets", "TextModels", "TrainingLoop"],
             path: "Examples/GPT2-WikiText2",
             exclude: ["UI/Windows/main.swift"]),
         .testTarget(name: "TextTests", dependencies: ["TextModels"]),
