@@ -151,17 +151,6 @@ extension BatchNorm: InitializableFromPythonCheckpoint2 {
         let momentumVal = momentumVals[0]
         let epsilonVals = epsilon.array.scalars
         let epsilonVal = epsilonVals[0]
-
-//        if let axisVal = axis[0].scalar as? Int {
-//            print("good cast", axisVal)
-//        }
-//        if let momentumVal = momentum[0] as? Scalar {
-//            print("good cast of momementum", momentumVal)
-//        }
-//        if let epsilonVal = epsilon[0] as? Scalar {
-//            print("good cast of epsilon", epsilonVal)
-//        }
-
         let offset: Tensor<Scalar> = reader.readTensor(name: scope + "/off")
         let scale: Tensor<Scalar> = reader.readTensor(name: scope + "/sc")
         let runningMean: Tensor<Scalar> = reader.readTensor(name: scope + "/rmean")
