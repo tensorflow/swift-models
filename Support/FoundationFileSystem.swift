@@ -59,10 +59,8 @@ public struct FoundationFile: File {
     try value.write(to: location)
   }
 
-  /// Append data to the file.
-  ///
-  /// Parameter value: data to be appended at the end.
-  public func append(_ value: Data) throws {
+  /// Appends the bytes in `suffix` to the file.
+  public func append(_ suffix: Data) throws {
     let fileHandler = try FileHandle(forUpdating: location)
     #if os(macOS)
     // The following are needed in order to build on macOS 10.15 (Catalina). They can be removed
@@ -72,7 +70,7 @@ public struct FoundationFile: File {
     fileHandler.closeFile()
     #else
     try fileHandler.seekToEnd()
-    try fileHandler.write(contentsOf: value)
+    try fileHandler.write(contentsOf: suffix)
     try fileHandler.close()
     #endif
   }
