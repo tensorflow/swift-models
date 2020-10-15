@@ -14,28 +14,37 @@
 
 import Foundation
 
-let progressBarLength = 30
-
 /// A handler for printing the training and validation progress. 
+///
+/// The progress includes epoch and batch index the training is currently
+/// in, how many percentages of a full training/validation set has been done, 
+/// and metric statistics.
 public class ProgressPrinter {
-  /// Print training or validation progress in response of the 'event'.
+  /// Length of the complete progress bar measured in count of `=` signs.
+  public var progressBarLength: Int
+
+  /// Creates an instance that prints training progress with the complete
+  /// progress bar to be `progressBarLength` characters long.
+  public init(progressBarLength: Int = 30) {
+    self.progressBarLength = progressBarLength
+  }
+
+  /// Prints training or validation progress in response of the `event`.
   /// 
   /// An example of the progress would be:
   /// Epoch 1/12
   /// 468/468 [==============================] - loss: 0.4819 - accuracy: 0.8513
-  /// 79/79 [==============================] - loss: 0.1520 - accuracy: 0.9521
-  public func print<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
+  /// 58/79 [======================>.......] - loss: 0.1520 - accuracy: 0.9521
+  public func printProgress<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
     switch event {
     case .epochStart:
       guard let epochIndex = loop.epochIndex, let epochCount = loop.epochCount else {
-        // No-Op if trainingLoop doesn't set the required values for progress printing.
         return
       }
 
-      Swift.print("Epoch \(epochIndex + 1)/\(epochCount)")
+      print("Epoch \(epochIndex + 1)/\(epochCount)")
     case .batchEnd:
       guard let batchIndex = loop.batchIndex, let batchCount = loop.batchCount else {
-        // No-Op if trainingLoop doesn't set the required values for progress printing.
         return
       }
 
@@ -46,15 +55,15 @@ public class ProgressPrinter {
         stats = formatStats(lastStatsLog)
       }
 
-      Swift.print(
+      print(
         "\r\(batchIndex + 1)/\(batchCount) \(progressBar)\(stats)",
         terminator: ""
       )
       fflush(stdout)
     case .epochEnd:
-      Swift.print("")
+      print("")
     case .validationStart:
-      Swift.print("")
+      print("")
     default:
       return
     }

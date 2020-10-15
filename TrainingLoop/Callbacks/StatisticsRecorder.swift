@@ -17,31 +17,35 @@ import TensorFlow
 ///
 /// Data produced by this handler can be used by ProgressPrinter, CVSLogger, etc.
 public class StatisticsRecorder {
-  /// A Closure that returns if should call 'reset' on metricMeasurers.
+  /// A function that returns `true` iff recorder should call `reset` 
+  /// on `metricMeasurers`.
   public var shouldReset:
     (
       _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
       _ event: TrainingLoopEvent
     ) -> Bool
 
-  /// A Closure that returns if should call 'accumulate' on metricMeasurers.
+  /// A function that returns `true` iff recorder should call `accumulate` 
+  /// on `metricMeasurers`.
   public var shouldAccumulate:
     (
       _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
       _ event: TrainingLoopEvent
     ) -> Bool
 
-  /// A Closure that returns if should call 'compute' on metricMeasurers.
+  /// A function that returns `true` iff recorder should call `measure` 
+  /// on `metricMeasurers`.
   public var shouldCompute:
     (
       _ batchIndex: Int, _ batchCount: Int, _ epochIndex: Int, _ epochCount: Int,
       _ event: TrainingLoopEvent
     ) -> Bool
 
-  /// Instances of MetricsMeasurers.
+  /// Instances of MetricsMeasurers that you can reset accumulate and compute 
+  /// statistics periodically.
   fileprivate var metricMeasurers: [MetricsMeasurer]
 
-  /// Create an instance that records 'metrics' during the training loop.
+  /// Creates an instance that records `metrics` during the training loop.
   public init(metrics: [TrainingMetrics]) {
     metricMeasurers = metrics.map { $0.measurer }
 
@@ -70,9 +74,9 @@ public class StatisticsRecorder {
       }
   }
 
-  /// Recording statistics in response of the 'event'.
+  /// Records statistics in response of the `event`.
   ///
-  /// It will record the statistics into 'lastStatsLog' in the loop where other 
+  /// It will record the statistics into lastStatsLog property in the `loop` where other 
   /// callbacks can consume from.
   public func record<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
     guard let batchIndex = loop.batchIndex,
@@ -83,7 +87,6 @@ public class StatisticsRecorder {
       let output = loop.lastStepOutput,
       let target = loop.lastStepTarget
     else {
-      // No-Op if trainingLoop doesn't set the required values for stats recording.
       return
     }
 
@@ -101,18 +104,22 @@ public class StatisticsRecorder {
     }
   }
 
+  /// Resets each of the metricMeasurers.
   func resetMetricMeasurers() {
     for index in metricMeasurers.indices {
       metricMeasurers[index].reset()
     }
   }
 
+  /// Lets each of the metricMeasurers accumulate data from
+  /// `loss`, `predictions`, `labels`.
   func accumulateMetrics<Output, Target>(loss: Tensor<Float>, predictions: Output, labels: Target) {
     for index in metricMeasurers.indices {
       metricMeasurers[index].accumulate(loss: loss, predictions: predictions, labels: labels)
     }
   }
 
+  /// Lets each of the metricMeasurers compute metrics on cumulated data.
   func computeMetrics() -> [(String, Float)] {
     var result: [(String, Float)] = []
     for measurer in metricMeasurers {
