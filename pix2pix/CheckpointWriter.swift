@@ -124,6 +124,7 @@ public func recursivelyObtainTensors (
                 let newTensor = tensor.value
                 tensors[path!] = newTensor
             } else {
+                // TODO: need to add facility to read/write scalars
                 // not a tensor but still capture and convert to tensor
                 if child.value is Int {
                     guard let val = child.value as? Int else {

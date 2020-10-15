@@ -20,9 +20,9 @@ import ModelSupport
 
 public struct NetG: Layer {
     
+    // TODO: need to persist a sample generator and set this URL
     public static let remoteCheckpoint: URL =
-        URL(string: "https://storage.googleapis.com/gpt-2/models/117M/model.ckpt")!
-//    @noDerivative private var storage: URL?
+        URL(string: "")!
 
     var module: UNetSkipConnectionOutermost<UNetSkipConnection<UNetSkipConnection<UNetSkipConnection<UNetSkipConnection<UNetSkipConnection<UNetSkipConnection<UNetSkipConnectionInnermost>>>>>>>
     public init(inputChannels: Int, outputChannels: Int, ngf: Int, useDropout: Bool = false) {

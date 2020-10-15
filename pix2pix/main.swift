@@ -171,10 +171,3 @@ for batch in dataset.testing {
 
 let testLoss = totalLoss / Float(count)
 print("Generator test loss: \(testLoss.scalars[0])")
-
-// save and restore the models and then check restored generator loss vs orginal
-let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent("Transformer")
-try generator.writeCheckpoint(to: temporaryDirectory, name: "gen.ckpt")
-
-let recreatedmodel = try NetG(checkpoint: temporaryDirectory.appendingPathComponent("gen.ckpt"))
-
