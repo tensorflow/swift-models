@@ -25,7 +25,6 @@ let dataset = try! Pix2PixDataset(
     testBatchSize: 1)
 
 var validationImage = dataset.testSamples[0].source.expandingShape(at: 0)
-let validationImageURL = URL(string: FileManager.default.currentDirectoryPath)!.appendingPathComponent("sample.jpg")
 
 var generator = NetG(inputChannels: 3, outputChannels: 3, ngf: 64, useDropout: false)
 var discriminator = NetD(inChannels: 6, lastConvFilters: 64)
@@ -103,9 +102,7 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
             Context.local.learningPhase = .inference
             
             let fakeSample = generator(validationImage) * 0.5 + 0.5
-
-            let fakeSampleImage = Image(fakeSample[0] * 255)
-            fakeSampleImage.save(to: validationImageURL, colorspace: .rgb)
+            try fakeSample[0].scaled(by: 255).saveImage(directory: "output", name: "sample")
         }
         
         discriminatorCount += 1
@@ -130,9 +127,7 @@ for batch in dataset.testing {
                            .concatenated(with: fakeImages,
                                          alongAxis: 2) / 2.0 + 0.5
 
-    let image = Image((tensorImage * 255)[0])
-    let saveURL = resultsFolder.appendingPathComponent("\(count).jpg", isDirectory: false)
-    image.save(to: saveURL, colorspace: .rgb)
+    try tensorImage[0].scaled(by: 255).saveImage(directory: "output/results", name: "\(count)")
 
     let ganLoss = sigmoidCrossEntropy(logits: fakeImages,
                                       labels: Tensor.one.broadcasted(to: fakeImages.shape))

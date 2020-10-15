@@ -36,7 +36,7 @@ extension ImageSize: ExpressibleByArgument {
 }
 
 fileprivate func prismColor(_ value: Float, iterations: Int) -> [Float] {
-  guard value < Float(iterations) else { return [0.0, 0.0, 0.0] }
+  guard value < Float(iterations) else { return [0.0, 0.0, 0.0, 1.0] }
 
   let normalizedValue = value / Float(iterations)
 

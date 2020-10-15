@@ -57,6 +57,6 @@ do {
 let out = style(imageTensor.expandingShape(at: 0))
 
 let outputImage = Image(out.squeezingShape(at: 0))
-outputImage.save(to: URL(fileURLWithPath: output), colorspace: .rgb)
+outputImage.save(to: URL(fileURLWithPath: output))
 
 print("Writing output to \(output).")

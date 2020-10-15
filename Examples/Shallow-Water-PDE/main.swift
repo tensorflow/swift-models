@@ -48,7 +48,7 @@ struct ShallowWaterPDE: ParsableCommand {
     for (i, solution) in splashEvolution.enumerated() {
       let file = URL(fileURLWithPath: "Images/Splash-\(String(format: "%03d", i)).jpg")
       solution.visualization.waterLevel.save(
-        to: file, colorspace: .grayscale, format: .jpeg(quality: 100))
+        to: file, format: .jpeg(quality: 100))
     }
   }
 
@@ -83,7 +83,7 @@ struct ShallowWaterPDE: ParsableCommand {
     for (i, solution) in evolution.enumerated() {
       let file = URL(fileURLWithPath: "Images/Optimization-\(String(format: "%03d", i)).jpg")
       solution.visualization.waterLevel.save(
-        to: file, colorspace: .grayscale, format: .jpeg(quality: 100))
+        to: file, format: .jpeg(quality: 100))
     }
   }
 
