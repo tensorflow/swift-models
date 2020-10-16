@@ -38,6 +38,9 @@ public struct Image {
 
     let imageData: ImageTensor
 
+    /// Returns a floating-point tensor that represents the content of the image. Internally, images
+    /// can be represented by either floating-point values or bytes for efficiency, and this
+    /// provides a unified means of extracting a floating-point tensor from that storage.
     public var tensor: Tensor<Float> {
         switch self.imageData {
         case let .float(data): return data
@@ -45,14 +48,24 @@ public struct Image {
         }
     }
 
+    /// Initializes an image from a rank-3 tensor of bytes. The bytes are assumed to be in the range
+    /// of 0 - 255.
     public init(_ tensor: Tensor<UInt8>) {
+        precondition(tensor.rank == 3)
         self.imageData = .uint8(data: tensor)
     }
 
+    /// Initializes an image from a rank-3 tensor of floats. The floats are assumed to be in the
+    /// range of 0.0 - 255.0.
     public init(_ tensor: Tensor<Float>) {
+        precondition(tensor.rank == 3)
         self.imageData = .float(data: tensor)
     }
 
+    /// Loads an image from a local file, with the image format determined from the file extension.
+    /// - Parameters:
+    ///   - url: The location of the image file.
+    ///   - byteOrdering: Whether to treat the image as having RGB (default) or BGR channel ordering.
     public init(contentsOf url: URL, byteOrdering: ByteOrdering = .rgb) {
         if byteOrdering == .bgr {
             // TODO: Add BGR byte reordering.
@@ -82,6 +95,10 @@ public struct Image {
         }
     }
 
+    /// Saves an image to a local file.
+    /// - Parameters:
+    ///   - url: The destination for the image file.
+    ///   - format: The file format, with associated parameters. The default is a JPEG at 95% quality.
     public func save(to url: URL, format: Format = .jpeg(quality: 95)) {
         let outputImageData: Tensor<UInt8>
         switch self.imageData {
@@ -114,6 +131,9 @@ public struct Image {
         }
     }
 
+    /// Returns a resized image, resampled using bilinear filtering.
+    /// - Parameters:
+    ///   - size: A tuple representing the width, height of the resulting image.
     public func resized(to size: (Int, Int)) -> Image {
         switch self.imageData {
         case let .uint8(data):
@@ -134,6 +154,7 @@ public struct Image {
         return Tensor(concatenating: [adjustedColorComponents, alphaChannel], alongAxis: 2)
     }
     
+    /// Returns a version of this image with premultiplied alpha.
     public func premultipliedAlpha() -> Image {
         switch self.imageData {
         case let .uint8(data):
@@ -147,6 +168,13 @@ public struct Image {
 }
 
 public extension Tensor where Scalar == Float {
+  /// Saves the tensor as a still image file. This must be a rank-3 tensor, with channels in the
+  /// 0.0 - 255.0 range.
+  /// - Parameters:
+  ///   - directory: The target directory to host the image file. If it does not exist, it
+  ///     will be created.
+  ///   - name: The name of the resulting image file, without extension.
+  ///   - format: The file format, with associated parameters. The default is a JPEG at 95% quality.
   func saveImage(
     directory: String, name: String, format: Image.Format = .jpeg(quality: 95)
   ) throws {
@@ -164,6 +192,9 @@ public extension Tensor where Scalar == Float {
     image.save(to: outputURL, format: format)
   }
   
+  /// Treats the tensor as an image and overlays it on a white background. This must be a rank-3
+  /// tensor, with channels in the 0.0 - 255.0 range. Also, it assumes that the image uses
+  /// premultiplied alpha.
   func overlaidOnWhite() -> Tensor {
     precondition(self.rank == 3)
     precondition(self.shape[2] == 4)
@@ -174,6 +205,9 @@ public extension Tensor where Scalar == Float {
     return (255.0 - alphaChannel) + colorComponents
   }
   
+  /// Treats the tensor as a grayscale image and normalizes it to a 0.0 - 255.0 range. This must be
+  /// a rank-1 or rank-2 tensor. The minimum and maximum channel values are remapped to 0.0 and
+  /// 255.0, respectively, and all values rescaled to that range.
   func normalizedToGrayscale() -> Tensor {
     let lowerBound = self.min(alongAxes: [0, 1])
     let upperBound = self.max(alongAxes: [0, 1])

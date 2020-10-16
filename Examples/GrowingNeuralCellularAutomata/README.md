@@ -50,20 +50,20 @@ To train the cell update rule per Experiment 1 ("Learning to grow"), use the fol
 
 ```sh
 cd swift-models
-swift run -c release GrowingNeuralCellularAutomata --image examples/GrowingNeuralCellularAutomata/images/lizard.png
+swift run -c release GrowingNeuralCellularAutomata --image Examples/GrowingNeuralCellularAutomata/images/lizard.png
 ```
 
 For Experiment 2 ("What persists, exists"), a sample pool needs to be used:
 
 ```sh
-swift run -c release GrowingNeuralCellularAutomata --use-sample-pool --image examples/GrowingNeuralCellularAutomata/images/lizard.png
+swift run -c release GrowingNeuralCellularAutomata --use-sample-pool --image Examples/GrowingNeuralCellularAutomata/images/lizard.png
 ```
 
 For Experiment 3 ("Learning to regenerate"), both a sample pool and damage during training
 need to be applied:
 
 ```sh
-swift run -c release GrowingNeuralCellularAutomata --use-sample-pool --damaged-samples 3 --image examples/GrowingNeuralCellularAutomata/images/lizard.png
+swift run -c release GrowingNeuralCellularAutomata --use-sample-pool --damaged-samples 3 --image Examples/GrowingNeuralCellularAutomata/images/lizard.png
 ```
 
 Parameters:

@@ -119,7 +119,6 @@ Context.local.learningPhase = .inference
 var totalLoss = Tensor<Float>(0)
 var count = 0
 
-let resultsFolder = try createDirectoryIfNeeded(path: FileManager.default.currentDirectoryPath + "/results")
 for batch in dataset.testing {
     let fakeImages = generator(batch.source)
 

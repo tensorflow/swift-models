@@ -23,7 +23,7 @@ struct SolutionVisualization<Solution: ShallowWaterEquationSolution> {
 
   /// Returns a top-down mosaic of the water level colored by its height.
   var waterLevel: Image {
-    let square = TensorShape([solution.waterLevel.count, solution.waterLevel.count])
+    let square = TensorShape([solution.waterLevel.count, solution.waterLevel.count, 1])
     let waterLevel = Tensor(shape: square, scalars: solution.waterLevel.flatMap { $0 })
     let normalizedWaterLevel = waterLevel.normalized(min: -1, max: +1)
     return Image(normalizedWaterLevel)
