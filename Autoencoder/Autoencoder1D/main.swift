@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import AutoencoderCallback
 import Datasets
 import Foundation
 import ModelSupport
@@ -43,49 +44,13 @@ var autoencoder = Sequential {
 
 let optimizer = RMSProp(for: autoencoder)
 
-/// Saves a validation input and an output image once per epoch;
-/// it's ensured that each epoch will save different images as long as 
-/// count of epochs is less or equal than count of images.
-/// 
-/// It's defined as a callback registered into TrainingLoop.
-func saveImage<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
-  if event != .inferencePredictionEnd { return }
-
-  guard let batchIndex = loop.batchIndex,
-    let batchCount = loop.batchCount,
-    let epochIndex = loop.epochIndex,
-    let epochCount = loop.epochCount,
-    let input = loop.lastStepInput,
-    let output = loop.lastStepOutput
-  else {
-    return
-  }
-
-  let imageCount = batchCount * batchSize
-  let selectedImageGlobalIndex = epochIndex * (imageCount / epochCount)
-  let selectedBatchIndex = selectedImageGlobalIndex / batchSize
-
-  if batchIndex != selectedBatchIndex { return }
-
-  let outputFolder = "./output/"
-  let selectedImageBatchLocalIndex = selectedImageGlobalIndex % batchSize
-  let inputExample =
-    (input as! Tensor<Float>)[selectedImageBatchLocalIndex..<selectedImageBatchLocalIndex+1]
-    .normalizedToGrayscale().reshaped(to: [imageWidth, imageHeight, 1])
-  try inputExample.saveImage(
-    directory: outputFolder, name: "epoch-\(epochIndex + 1)-of-\(epochCount)-input", format: .png)
-  let outputExample =
-    (output as! Tensor<Float>)[selectedImageBatchLocalIndex..<selectedImageBatchLocalIndex+1]
-    .normalizedToGrayscale().reshaped(to: [imageWidth, imageHeight, 1])
-  try outputExample.saveImage(
-    directory: outputFolder, name: "epoch-\(epochIndex + 1)-of-\(epochCount)-output", format: .png)
-}
-
 var trainingLoop = TrainingLoop(
   training: dataset.training.map { $0.map { LabeledData(data: $0.data, label: $0.data) } },
   validation: dataset.validation.map { LabeledData(data: $0.data, label: $0.data) },
   optimizer: optimizer,
   lossFunction: meanSquaredError,
-  callbacks: [saveImage])
+  callbacks: [
+    makeSaveImageCallback(batchSize: batchSize, imageWidth: imageWidth, imageHeight: imageHeight)
+  ])
 
 try! trainingLoop.fit(&autoencoder, epochs: epochCount, on: Device.default)

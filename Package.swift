@@ -41,7 +41,7 @@ let package = Package(
         .target(name: "RecommendationModels", path: "Models/Recommendation"),
         .target(name: "TrainingLoop", dependencies: ["ModelSupport"], path: "TrainingLoop"),
         .target(
-            name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport", "TrainingLoop"],
+            name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport", "TrainingLoop", "AutoencoderCallback"],
             path: "Autoencoder/Autoencoder1D"),
         .target(
             name: "Autoencoder2D", dependencies: ["Datasets", "ModelSupport"],
@@ -49,6 +49,9 @@ let package = Package(
         .target(
             name: "VariationalAutoencoder1D", dependencies: ["Datasets", "ModelSupport"],
             path: "Autoencoder/VAE1D"),
+        .target(
+            name: "AutoencoderCallback", dependencies: ["ModelSupport", "TrainingLoop"],
+            path: "Autoencoder/Callback"),
         .target(name: "Catch", path: "Catch"),
         .target(name: "Gym-FrozenLake", path: "Gym/FrozenLake"),
         .target(name: "Gym-CartPole", path: "Gym/CartPole"),
