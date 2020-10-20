@@ -129,16 +129,11 @@ func saveImageGrid(_ testImage: Tensor<Float>, name: String) throws {
     // Transpose to create single image.
     gridImage = gridImage.transposed(permutation: [0, 2, 1, 3])
     gridImage = gridImage.reshaped(
-        to: [
-            (imageHeight + 2) * testImageGridSize,
-            (imageWidth + 2) * testImageGridSize,
-        ])
-    // Convert [-1, 1] range to [0, 1] range.
-    gridImage = (gridImage + 1) / 2
+        to: [(imageHeight + 2) * testImageGridSize, (imageWidth + 2) * testImageGridSize, 1])
+    // Convert [-1, 1] range to [0, 255] range.
+    gridImage = ((gridImage + 1) / 2) * 255
 
-    try saveImage(
-        gridImage, shape: (gridImage.shape[0], gridImage.shape[1]), format: .grayscale,
-        directory: outputFolder, name: name)
+    try gridImage.saveImage(directory: outputFolder, name: name, format: .png)
 }
 
 print("Start training...")

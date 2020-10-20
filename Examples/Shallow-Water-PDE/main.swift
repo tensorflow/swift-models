@@ -47,7 +47,8 @@ struct ShallowWaterPDE: ParsableCommand {
 
     for (i, solution) in splashEvolution.enumerated() {
       let file = URL(fileURLWithPath: "Images/Splash-\(String(format: "%03d", i)).jpg")
-      solution.visualization.waterLevel.save(to: file, format: .grayscale, quality: 100)
+      solution.visualization.waterLevel.save(
+        to: file, format: .jpeg(quality: 100))
     }
   }
 
@@ -56,7 +57,7 @@ struct ShallowWaterPDE: ParsableCommand {
     let α: Float = 500.0
     var initialWaterLevel = Tensor<Float>(zeros: [n, n])
 
-    let targetImage = Image(jpeg: URL(fileURLWithPath: "Images/Target.jpg"))
+    let targetImage = Image(contentsOf: URL(fileURLWithPath: "Images/Target.jpg"))
     var target = targetImage.tensor - Float(UInt8.max) / 2
     target = target.mean(squeezingAxes: 2) / Float(UInt8.max)
 
@@ -81,7 +82,8 @@ struct ShallowWaterPDE: ParsableCommand {
 
     for (i, solution) in evolution.enumerated() {
       let file = URL(fileURLWithPath: "Images/Optimization-\(String(format: "%03d", i)).jpg")
-      solution.visualization.waterLevel.save(to: file, format: .grayscale, quality: 100)
+      solution.visualization.waterLevel.save(
+        to: file, format: .jpeg(quality: 100))
     }
   }
 

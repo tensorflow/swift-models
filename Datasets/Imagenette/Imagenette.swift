@@ -215,7 +215,7 @@ func makeImagenetteBatch<BatchSamples: Collection>(
   device: Device
 ) -> LabeledImage where BatchSamples.Element == (file: URL, label: Int32) {
   let images = samples.map(\.file).map { url -> Tensor<Float> in
-    Image(jpeg: url).resized(to: (outputSize, outputSize)).tensor
+    Image(contentsOf: url).resized(to: (outputSize, outputSize)).tensor
   }
 
   var imageTensor = Tensor(stacking: images)
