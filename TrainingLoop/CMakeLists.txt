@@ -4,7 +4,8 @@ add_library(TrainingLoop
   TrainingLoop.swift
   Callbacks/StatisticsRecorder.swift
   Callbacks/ProgressPrinter.swift
-  Callbacks/CSVLogger.swift)
+  Callbacks/CSVLogger.swift
+  Callbacks/LearningRateScheduler.swift)
 target_link_libraries(TrainingLoop PUBLIC
   ModelSupport)
 set_target_properties(TrainingLoop PROPERTIES

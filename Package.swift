@@ -129,7 +129,7 @@ let package = Package(
         .target(name: "Benchmarks", dependencies: ["BenchmarksCore"], path: "Benchmarks"),
         .testTarget(name: "CheckpointTests", dependencies: ["Checkpoints"]),
         .target(
-            name: "BERT-CoLA", dependencies: ["TextModels", "Datasets"], path: "Examples/BERT-CoLA"),
+            name: "BERT-CoLA", dependencies: ["TextModels", "Datasets", "TrainingLoop"], path: "Examples/BERT-CoLA"),
         .testTarget(name: "SupportTests", dependencies: ["ModelSupport"]),
         .target(
             name: "CycleGAN",

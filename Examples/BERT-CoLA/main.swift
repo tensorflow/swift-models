@@ -17,23 +17,24 @@ import Foundation
 import ModelSupport
 import TensorFlow
 import TextModels
+import TrainingLoop
 import x10_optimizers_optimizer
 
 let device = Device.defaultXLA
 
 var bertPretrained: BERT.PreTrainedModel
 if CommandLine.arguments.count >= 2 {
-    if CommandLine.arguments[1].lowercased() == "albert" {
-        bertPretrained = BERT.PreTrainedModel.albertBase
-    } else if CommandLine.arguments[1].lowercased() == "roberta" {
-        bertPretrained = BERT.PreTrainedModel.robertaBase
-    } else if CommandLine.arguments[1].lowercased() == "electra" {
-        bertPretrained = BERT.PreTrainedModel.electraBase
-    } else {
-        bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
-    }
-} else {
+  if CommandLine.arguments[1].lowercased() == "albert" {
+    bertPretrained = BERT.PreTrainedModel.albertBase
+  } else if CommandLine.arguments[1].lowercased() == "roberta" {
+    bertPretrained = BERT.PreTrainedModel.robertaBase
+  } else if CommandLine.arguments[1].lowercased() == "electra" {
+    bertPretrained = BERT.PreTrainedModel.electraBase
+  } else {
     bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
+  }
+} else {
+  bertPretrained = BERT.PreTrainedModel.bertBase(cased: false, multilingual: false)
 }
 
 let bert = try bertPretrained.load()
@@ -54,11 +55,12 @@ bertClassifier.move(to: device)
 let maxSequenceLength = 128
 let batchSize = 1024
 let epochCount = 3
-let stepsPerEpoch = 1068 // function of training set size and batching configuration
+let stepsPerEpoch = 1068  // function of training set size and batching configuration
 let peakLearningRate: Float = 2e-5
 
-let workspaceURL = URL(fileURLWithPath: "bert_models", isDirectory: true,
-    relativeTo: URL(fileURLWithPath: NSTemporaryDirectory(),isDirectory: true))
+let workspaceURL = URL(
+  fileURLWithPath: "bert_models", isDirectory: true,
+  relativeTo: URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true))
 
 var cola = try CoLA(
   taskDirectoryURL: workspaceURL,
@@ -69,10 +71,11 @@ var cola = try CoLA(
 ) { example in
   // In this closure, both the input and output text batches must be eager
   // since the text is not padded and x10 requires stable shapes.
-  let textBatch = bertClassifier.bert.preprocess(
+  let classifier = bertClassifier
+  let textBatch = classifier.bert.preprocess(
     sequences: [example.sentence],
     maxSequenceLength: maxSequenceLength)
-  return (data: textBatch, label: Tensor<Int32>(example.isAcceptable! ? 1 : 0))
+  return LabeledData(data: textBatch, label: Tensor<Int32>(example.isAcceptable! ? 1 : 0))
 }
 
 print("Dataset acquired.")
@@ -82,91 +85,70 @@ let beta2: Float = 0.999
 let useBiasCorrection = true
 
 var optimizer = x10_optimizers_optimizer.GeneralOptimizer(
-    for: bertClassifier,
-    TensorVisitorPlan(bertClassifier.differentiableVectorView),
-    defaultOptimizer: makeWeightDecayedAdam(
-      learningRate: peakLearningRate,
-      beta1: beta1,
-      beta2: beta2
-    )
+  for: bertClassifier,
+  TensorVisitorPlan(bertClassifier.differentiableVectorView),
+  defaultOptimizer: makeWeightDecayedAdam(
+    learningRate: peakLearningRate,
+    beta1: beta1,
+    beta2: beta2
+  )
 )
 
-var scheduledLearningRate = LinearlyDecayedParameter(
-  baseParameter: LinearlyWarmedUpParameter(
+/// Computes sigmoidCrossEntropy loss from `logits` and `labels`.
+/// 
+/// This defines the loss function used in TrainingLoop; it's a wrapper of the 
+/// standard sigmoidCrossEntropy; it reshapes logits to required shape before
+/// calling the standard sigmoidCrossEntropy.
+@differentiable
+public func sigmoidCrossEntropyReshaped<Scalar>(logits: Tensor<Scalar>, labels: Tensor<Int32>)
+  -> Tensor<
+    Scalar
+  > where Scalar: TensorFlowFloatingPoint
+{
+  return sigmoidCrossEntropy(
+    logits: logits.squeezingShape(at: -1),
+    labels: Tensor<Scalar>(labels),
+    reduction: _mean)
+}
+
+/// Clips the gradients by global norm.
+///
+/// This's defined as a callback registered into TrainingLoop.
+func clipGradByGlobalNorm<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws
+{
+  if event == .updateStart {
+    var gradients = loop.lastStepGradient!
+    gradients.clipByGlobalNorm(clipNorm: 1)
+    loop.lastStepGradient = gradients
+  }
+}
+
+/// A function that returns a LinearlyDecayedParameter but with first 10 steps linearly warmed up;
+/// for remaining steps it decays at slope of -(peakLearningRate / `totalStepCount`).
+let scheduledParameterGetter = { (_ totalStepCount: Float) -> LinearlyDecayedParameter in
+  LinearlyDecayedParameter(
+    baseParameter: LinearlyWarmedUpParameter(
       baseParameter: FixedParameter<Float>(peakLearningRate),
       warmUpStepCount: 10,
       warmUpOffset: 0),
-  slope: -(peakLearningRate / Float(stepsPerEpoch * epochCount)),  // The LR decays linearly to zero.
-  startStep: 10
-)
+    slope: -(peakLearningRate / totalStepCount),  // The LR decays linearly to zero.
+    startStep: 10
+  )
+}
+
+var trainingLoop: TrainingLoop = TrainingLoop(
+  training: cola.trainingEpochs,
+  validation: cola.validationBatches,
+  optimizer: optimizer,
+  lossFunction: sigmoidCrossEntropyReshaped,
+  metrics: [.matthewsCorrelationCoefficient],
+  callbacks: [
+    clipGradByGlobalNorm,
+    LearningRateScheduler(
+      scheduledParameterGetter: scheduledParameterGetter,
+      biasCorrectionBeta1: beta1,
+      biasCorrectionBeta2: beta2).schedule
+  ])
 
 print("Training \(bertPretrained.name) for the CoLA task!")
-for (epoch, epochBatches) in cola.trainingEpochs.prefix(epochCount).enumerated() {
-    print("[Epoch \(epoch + 1)]")
-    Context.local.learningPhase = .training
-    var trainingLossSum: Float = 0
-    var trainingBatchCount = 0
-
-    for batch in epochBatches {
-        let (documents, labels) = (batch.data, Tensor<Float>(batch.label))
-        var (loss, gradients) = valueWithGradient(at: bertClassifier) { model -> Tensor<Float> in
-            let logits = model(documents)
-            return sigmoidCrossEntropy(
-                logits: logits.squeezingShape(at: -1),
-                labels: labels,
-                reduction: { $0.mean() })
-        }
-
-        trainingLossSum += loss.scalarized()
-        trainingBatchCount += 1
-        gradients.clipByGlobalNorm(clipNorm: 1)
-
-        let step = optimizer.step + 1 // for scheduled rates and bias correction, steps start at 1
-        optimizer.learningRate = scheduledLearningRate(forStep: UInt64(step))
-        if useBiasCorrection {
-          let step = Float(step)
-          optimizer.learningRate *= sqrtf(1 - powf(beta2, step)) / (1 - powf(beta1, step))
-        }
-
-        optimizer.update(&bertClassifier, along: gradients)
-        LazyTensorBarrier()
-
-        print(
-            """
-              Training loss: \(trainingLossSum / Float(trainingBatchCount))
-            """
-        )
-    }
-
-    Context.local.learningPhase = .inference
-    var devLossSum: Float = 0
-    var devBatchCount = 0
-    var devPredictedLabels = [Bool]()
-    var devGroundTruth = [Bool]()
-    for batch in cola.validationBatches {
-        let (documents, labels) = (batch.data, Tensor<Float>(batch.label))
-        let logits = bertClassifier(documents)
-        let loss = sigmoidCrossEntropy(
-            logits: logits.squeezingShape(at: -1),
-            labels: labels,
-            reduction: { $0.mean() }
-        )
-        devLossSum += loss.scalarized()
-        devBatchCount += 1
-
-        let predictedLabels = sigmoid(logits.squeezingShape(at: -1)) .>= 0.5
-        devPredictedLabels.append(contentsOf: predictedLabels.scalars)
-        devGroundTruth.append(contentsOf: labels.scalars.map { $0 == 1 })
-    }
-
-    let mcc = matthewsCorrelationCoefficient(
-        predictions: devPredictedLabels,
-        groundTruth: devGroundTruth)
-
-    print(
-        """
-          MCC: \(mcc)
-          Eval loss: \(devLossSum / Float(devBatchCount))
-        """
-    )
-}
+try! trainingLoop.fit(&bertClassifier, epochs: epochCount, on: device)
