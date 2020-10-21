@@ -1,16 +1,15 @@
 add_library(TextModels
-  Attention.swift
-  BERT.swift
-  BERTClassifier.swift
+  BERT/Attention.swift
+  BERT/BERT.swift
+  BERT/BERTClassifier.swift
   BERT/BERTCheckpointReader.swift
+  BERT/TransformerBERT.swift
+  BERT/Utilities.swift
   GPT2/CheckpointWriter.swift
   GPT2/GPT2.swift
   GPT2/TransformerLM.swift
   GPT2/Operators.swift
   GPT2/PythonCheckpointReader.swift
-  TransformerBERT.swift
-  Utilities.swift
-  WeightDecayedAdam.swift
   WordSeg/Lattice.swift
   WordSeg/Model.swift
   WordSeg/SemiRing.swift)

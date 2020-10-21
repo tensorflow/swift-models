@@ -87,7 +87,7 @@ let useBiasCorrection = true
 var optimizer = x10_optimizers_optimizer.GeneralOptimizer(
   for: bertClassifier,
   TensorVisitorPlan(bertClassifier.differentiableVectorView),
-  defaultOptimizer: makeWeightDecayedAdam(
+  defaultOptimizer: makeAdam(
     learningRate: peakLearningRate,
     beta1: beta1,
     beta2: beta2
