@@ -43,7 +43,9 @@ import TensorFlow
 ///
 struct ArrayLoopSolution: ShallowWaterEquationSolution {
   /// Water level height
-  var waterLevel: [[Float]] { u1 }
+  var waterLevel: Tensor<Float> {
+    Tensor<Float>(shape: TensorShape([resolution, resolution]), scalars: u1.flatMap{ $0 })
+  }
   /// Solution time
   var time: Float { t }
 

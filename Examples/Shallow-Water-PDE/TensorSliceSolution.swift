@@ -49,7 +49,7 @@ import TensorFlow
 ///
 struct TensorSliceSolution: ShallowWaterEquationSolution {
   /// Water level height
-  var waterLevel: [[Float]] { u1.array.map { $0.scalars } }
+  var waterLevel: Tensor<Float> { u1 }
   /// Solution time
   var time: Float { t }
 

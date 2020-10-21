@@ -45,11 +45,7 @@ struct ShallowWaterPDE: ParsableCommand {
     let initialSplash = TensorSliceSolution(waterLevel: initialSplashLevel)
     let splashEvolution = [TensorSliceSolution](evolve: initialSplash, for: duration)
 
-    for (i, solution) in splashEvolution.enumerated() {
-      let file = URL(fileURLWithPath: "Images/Splash-\(String(format: "%03d", i)).jpg")
-      solution.visualization.waterLevel.save(
-        to: file, format: .jpeg(quality: 100))
-    }
+    try! splashEvolution.saveAnimatedImage(directory: "Images", name: "Splash")
   }
 
   /// Runs an optimization through time-steps and updates the initial water height to obtain a specific wave patter at the end.
@@ -80,11 +76,7 @@ struct ShallowWaterPDE: ParsableCommand {
     let initialSolution = TensorSliceSolution(waterLevel: initialWaterLevel)
     let evolution = [TensorSliceSolution](evolve: initialSolution, for: duration)
 
-    for (i, solution) in evolution.enumerated() {
-      let file = URL(fileURLWithPath: "Images/Optimization-\(String(format: "%03d", i)).jpg")
-      solution.visualization.waterLevel.save(
-        to: file, format: .jpeg(quality: 100))
-    }
+    try! evolution.saveAnimatedImage(directory: "Images", name: "Optimization")
   }
 
   private func runSplashArrayLoopBenchmark() {
