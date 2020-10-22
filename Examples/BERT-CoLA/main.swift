@@ -123,19 +123,6 @@ func clipGradByGlobalNorm<L: TrainingLoopProtocol>(_ loop: inout L, event: Train
   }
 }
 
-/// A function that returns a LinearlyDecayedParameter but with first 10 steps linearly warmed up;
-/// for remaining steps it decays at slope of -(peakLearningRate / `totalStepCount`).
-let scheduledParameterGetter = { (_ totalStepCount: Float) -> LinearlyDecayedParameter in
-  LinearlyDecayedParameter(
-    baseParameter: LinearlyWarmedUpParameter(
-      baseParameter: FixedParameter<Float>(peakLearningRate),
-      warmUpStepCount: 10,
-      warmUpOffset: 0),
-    slope: -(peakLearningRate / totalStepCount),  // The LR decays linearly to zero.
-    startStep: 10
-  )
-}
-
 var trainingLoop: TrainingLoop = TrainingLoop(
   training: cola.trainingEpochs,
   validation: cola.validationBatches,
@@ -144,10 +131,14 @@ var trainingLoop: TrainingLoop = TrainingLoop(
   metrics: [.matthewsCorrelationCoefficient],
   callbacks: [
     clipGradByGlobalNorm,
-    LearningRateScheduler(
-      scheduledParameterGetter: scheduledParameterGetter,
-      biasCorrectionBeta1: beta1,
-      biasCorrectionBeta2: beta2).schedule
+    learningRateScheduler(
+      schedule: LinearDecayWithOptionalWarmupSchedule(
+        warmupSchedule: LinearWarmupSchedule(
+          steps: 10, endLearningRate: peakLearningRate),
+        endLearningRate: 0
+      ),
+      biasCorrectionBeta: (beta1, beta2)
+    ),
   ])
 
 print("Training \(bertPretrained.name) for the CoLA task!")
