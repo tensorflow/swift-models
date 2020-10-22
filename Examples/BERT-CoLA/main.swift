@@ -133,10 +133,11 @@ var trainingLoop: TrainingLoop = TrainingLoop(
     clipGradByGlobalNorm,
     learningRateScheduler(
       makeSchedule(
-        DecaySchedule(
+        decaySchedule: DecaySchedule(
           shape: .linear,
           warmupSchedule: WarmupSchedule(
             shape: .linear, endLearningRate: peakLearningRate, endStep: 10),
+          endLearningRate: 0
         ),
         biasCorrectionBeta: (beta1, beta2))),
   ])

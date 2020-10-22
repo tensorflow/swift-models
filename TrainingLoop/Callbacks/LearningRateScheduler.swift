@@ -11,20 +11,17 @@ public enum ScheduleShape {
 
 public struct WarmupSchedule {
   public var shape: ScheduleShape
-  public var endLearningRate: Float = 0
+  public var endLearningRate: Float
   public var endStep: Float
 
-  public func toScheduledParameter<WSP: ScheduledParameter>() -> WSP? {
-    let endParameter = FixedParameter<Float>(endLearningRate)
-    switch shape {
-    case .linear:
-      return LinearlyWarmedUpParameter(
-        baseParameter: endParameter,
-        warmUpStepCount: UInt64(endStep),
-        warmUpOffset: 0) as? WSP
-    default:
-      return nil
-    }
+  public init(shape: ScheduleShape, endLearningRate: Float, endStep: Float) {
+    self.shape = shape
+    self.endLearningRate = endLearningRate
+    self.endStep = endStep
+  }
+
+  public func toScheduledParameter() -> WarmupScheduledParameter {
+    return WarmupScheduledParameter(warmupSchedule: self)
   }
 }
 
@@ -32,28 +29,72 @@ public struct DecaySchedule {
   public var shape: ScheduleShape
   public var warmupSchedule: WarmupSchedule?
   public var startLearningRate: Float?
-  public var endLearningRate: Float = 0
+  public var endLearningRate: Float
 
-  public func toScheduledParameter<DSP: ScheduledParameter>(endStep: Float)
-    -> DSP?
-  {
+  public init(
+    shape: ScheduleShape, warmupSchedule: WarmupSchedule? = nil, startLearningRate: Float? = nil,
+    endLearningRate: Float
+  ) {
+    self.shape = shape
+    self.warmupSchedule = warmupSchedule
+    self.startLearningRate = startLearningRate
+    self.endLearningRate = endLearningRate
+  }
+
+  public func toScheduledParameter(endStep: Float) -> DecayScheduledParameter {
+    return DecayScheduledParameter(decaySchedule: self, endStep: endStep)
+  }
+}
+
+public struct WarmupScheduledParameter: ScheduledParameter {
+  public var warmupSchedule: WarmupSchedule
+
+  public func callAsFunction(forStep step: UInt64) -> Float {
+    let endParameter = FixedParameter<Float>(warmupSchedule.endLearningRate)
+
+    switch warmupSchedule.shape {
+    case .constant:
+      return endParameter(forStep: step)
+    case .linear:
+      return LinearlyWarmedUpParameter(
+        baseParameter: endParameter,
+        warmUpStepCount: UInt64(warmupSchedule.endStep),
+        warmUpOffset: 0)(forStep: step)
+    default:
+      fatalError("Unsupported shape.")
+    }
+  }
+}
+
+public struct DecayScheduledParameter: ScheduledParameter {
+  public var decaySchedule: DecaySchedule
+  public var endStep: Float
+
+  public func callAsFunction(forStep step: UInt64) -> Float {
+    let shape = decaySchedule.shape
+    let warmupSchedule = decaySchedule.warmupSchedule
+    let startLearningRate = decaySchedule.startLearningRate
+    let endLearningRate = decaySchedule.endLearningRate
+
     precondition(
       warmupSchedule != nil || startLearningRate != nil && !(
         warmupSchedule != nil && startLearningRate != nil
       ), "One of warmupSchedule and startLearningRate must be provided.")
 
-    var baseParameter: ScheduledParameter
+    var baseParameter: WarmupScheduledParameter
     var startStep: Float
     var startLR: Float
 
     if let warmupSchedule = warmupSchedule {
-      baseParameter = warmupSchedule.toScheduledParameter()
+      baseParameter = WarmupScheduledParameter(warmupSchedule: warmupSchedule)
       startStep = warmupSchedule.endStep
       startLR = baseParameter(forStep: UInt64(startStep))
-    } else if let startLearningRate = startLearningRate {
-      baseParameter = FixedParameter<Float>(startLearningRate)
+    } else {
+      baseParameter = WarmupScheduledParameter(
+        warmupSchedule: WarmupSchedule(
+          shape: .constant, endLearningRate: startLearningRate!, endStep: 0))
       startStep = 0
-      startLR = startLearningRate
+      startLR = startLearningRate!
     }
 
     switch shape {
@@ -63,25 +104,29 @@ public struct DecaySchedule {
         slope: (endLearningRate - startLR) / (
           endStep - startStep
         ),
-        startStep: UInt64(startStep)) as? DSP
+        startStep: UInt64(startStep))(forStep: step)
     default:
-      return nil
+      fatalError("Unsupported shape.")
     }
   }
 }
 
 public func makeSchedule(
-  _ decaySchedule: DecaySchedule,
+  decaySchedule: DecaySchedule,
   biasCorrectionBeta: (Float, Float)? = nil
 ) -> (Float, Float) -> Float {
+  var scheduledParameter: DecayScheduledParameter?
 
   return { (totalStepCount: Float, step: Float) -> Float in
-    let sp = decaySchedule.toScheduledParameter(endStep: totalStepCount)!
-    var learningRate = sp(forStep: UInt64(step))
-    if let beta = biasCorrectionBeta {
-      learningRate *= sqrtf(1 - powf(beta.1, step)) / (beta.0 - powf(beta.1, step)) as! SP.Scalar
+    if scheduledParameter == nil {
+      scheduledParameter = decaySchedule.toScheduledParameter(endStep: totalStepCount)
     }
-    return learningRate as! Float
+
+    var learningRate = scheduledParameter!(forStep: UInt64(step))
+    if let beta = biasCorrectionBeta {
+      learningRate *= sqrtf(1 - powf(beta.1, step)) / (beta.0 - powf(beta.1, step))
+    }
+    return learningRate
   }
 }
 
