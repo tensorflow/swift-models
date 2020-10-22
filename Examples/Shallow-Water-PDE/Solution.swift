@@ -45,25 +45,25 @@ extension Array where Array.Element: ShallowWaterEquationSolution {
     self.append(currentSolution)
   }
 
-  /// Saves the solutions as a GIF image with the specified `delay` and keeping every `keep` frames..
+  /// Saves the shallow water equation solutions as a GIF image with the specified `delay` and keeping every `keep` frames.
   func saveAnimatedImage(directory: String, name: String, delay: Int = 4, keep: Int = 8) throws {
-    let filtered = self.enumerated().filter { $0.offset % keep == 0 || $0.offset == (count - 1) }
-    let frames = filtered.map { $0.element.waterLevel.normalizedGrayscaleImage(min: -1, max: +1) }
-    try frames.saveAnimatedImage(directory: directory, name: name, delay: delay, loop: false)
+    let filtered = self.enumerated().filter { $0.offset % keep == 0 }.map { $0.element }
+    let frames = filtered.map { $0.waterLevel.normalizedGrayscaleImage(min: -1, max: +1) }
+    try frames.saveAnimatedImage(directory: directory, name: name, delay: delay)
   }
 }
 
 // MARK: - Utilities
 
 extension Tensor where Scalar == Float {
-  /// Returns a 2D tensor RGB stacked, clipped and normalized from `min`-`max` range.
-  func normalizedRGBImage(min: Scalar = -1, max: Scalar = +1) -> Tensor<Float> {
+  /// Returns a 3D grayscale image tensor clipped and normalized from `min`-`max` to 0-255  range.
+  func normalizedGrayscaleImage(min: Scalar = -1, max: Scalar = +1) -> Tensor<Float> {
     precondition(max > min)
     precondition(rank == 2)
 
     let clipped = self.clipped(min: min, max: max)
-    let normalized = (clipped - min) / (max - min) * Float(UInt8.max)
+    let normalized = (clipped - min) / (max - min) * Float(255.0)
     
-    return Tensor(stacking: Array(repeating: normalized, count: 3), alongAxis: rank)
+    return normalized.expandingShape(at: 2)
   }
 }

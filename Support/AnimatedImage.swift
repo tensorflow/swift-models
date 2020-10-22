@@ -31,10 +31,35 @@ struct AnimatedImage {
     guard frames[0].rank == 3 else {
       fatalError("Rank-3 tensors are needed, and rank \(frames[0].rank) frames were provided.")
     }
+    guard frames.allSatisfy({ $0.shape == frames[0].shape }) else {
+      fatalError("All animation frames need to have identical shape.")
+    }
     self.frames = frames
   }
 
   func quantize(_ frames: [Tensor<Float>]) -> (quantizedFrames: [[UInt8]], palette: [UInt8]) {
+    return (frames[0].shape[2] == 1) ? quantizeGrey(frames) : quantizeColor(frames)
+  }
+
+  func quantizeGrey(_ frames: [Tensor<Float>]) -> (quantizedFrames: [[UInt8]], palette: [UInt8]) {
+    let palette: [UInt8] = GIF.greyscale64Palette
+
+    var quantizedFrames: [[UInt8]] = []
+    for frame in frames {
+      let scalars = frame.scalars
+      var quantizedFrame: [UInt8] = []
+      for scalar in scalars {
+        let gray = UInt8(max(min(scalar, 255.0), 0.0))
+        let grayQuantized = gray / 4
+        let lookup = grayQuantized
+        quantizedFrame.append(lookup)
+      }
+      quantizedFrames.append(quantizedFrame)
+    }
+    return (quantizedFrames: quantizedFrames, palette: palette)
+  }
+    
+  func quantizeColor(_ frames: [Tensor<Float>]) -> (quantizedFrames: [[UInt8]], palette: [UInt8]) {
     // TODO: Adapt the following to the colors in the input image.
     let palette: [UInt8] = GIF.defaultPalette
 
