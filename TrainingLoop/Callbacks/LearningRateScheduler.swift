@@ -1,54 +1,106 @@
 import TensorFlow
 
-/// A handler for scheduling learningRate during training.
-public class LearningRateScheduler<SP: ScheduledParameter> {
-  /// A function type that returns a ScheduledParameter with given `totalStepCount`.
-  public typealias ScheduledParameterGetter<SP> = (
-    _ totalStepCount: Float
-  ) -> SP
+public enum ScheduleShape {
+  case constant
+  case linear
+  case exponential
+  case reciprocalSquare
+  case cosine
+  case cycleLinear10x
+}
 
-  /// A function that returns a ScheduledParameter.
-  public var scheduledParameterGetter: ScheduledParameterGetter<SP>
+public struct WarmupSchedule {
+  public var shape: ScheduleShape
+  public var endLearningRate: Float = 0
+  public var endStep: Float
 
-  public var biasCorrectionBeta1: Float?
-  public var biasCorrectionBeta2: Float?
-
-  /// Creates an instance that handles learningRate scheduling.
-  /// 
-  /// - Parameter scheduledParameterGetter: a function that returns a ScheduledParameter
-  ///   instance which will help scheduling learning rate with particular algorithm. 
-  /// - Parameter biasCorrectionBeta1: an optional coefficient for doing biasCorrection 
-  ///   on the learningRate.
-  /// - Parameter biasCorrectionBeta2: an optional coefficient for doing biasCorrection 
-  ///   on the learningRate.
-  public init(
-    scheduledParameterGetter: @escaping ScheduledParameterGetter<SP>,
-    biasCorrectionBeta1: Float? = nil,
-    biasCorrectionBeta2: Float? = nil
-  ) {
-    self.scheduledParameterGetter = scheduledParameterGetter
-    self.biasCorrectionBeta1 = biasCorrectionBeta1
-    self.biasCorrectionBeta2 = biasCorrectionBeta2
+  public func toScheduledParameter<WSP: ScheduledParameter>() -> WSP? {
+    let endParameter = FixedParameter<Float>(endLearningRate)
+    switch shape {
+    case .linear:
+      return LinearlyWarmedUpParameter(
+        baseParameter: endParameter,
+        warmUpStepCount: UInt64(endStep),
+        warmUpOffset: 0) as? WSP
+    default:
+      return nil
+    }
   }
+}
 
-  /// A callback that will change the learning rate for the given `loop`
-  /// in response of the `event`.
-  ///
-  /// Note: Learning rate is changed when a training step starts, and it's computed
-  /// from the ScheduledParameter that self.scheduledParameterGetter returns, applied
-  /// with biasCorrection if needed.
-  public func schedule<L: TrainingLoopProtocol>(_ loop: inout L, event: TrainingLoopEvent) throws {
-    if event != .batchStart || Context.local.learningPhase == .inference { return }
+public struct DecaySchedule {
+  public var shape: ScheduleShape
+  public var warmupSchedule: WarmupSchedule?
+  public var startLearningRate: Float?
+  public var endLearningRate: Float = 0
 
-    let step = Float(loop.batchIndex! + loop.epochIndex! * loop.batchCount! + 1)
-    let totalStepCount = Float(loop.batchCount! * loop.epochCount!)
+  public func toScheduledParameter<DSP: ScheduledParameter>(endStep: Float)
+    -> DSP?
+  {
+    precondition(
+      warmupSchedule != nil || startLearningRate != nil && !(
+        warmupSchedule != nil && startLearningRate != nil
+      ), "One of warmupSchedule and startLearningRate must be provided.")
 
-    var scheduledLearningRate = scheduledParameterGetter(totalStepCount)(forStep: UInt64(step))
-    if let beta1 = biasCorrectionBeta1, let beta2 = biasCorrectionBeta2 {
-      scheduledLearningRate *= sqrtf(1 - powf(beta2, step)) / (1 - powf(beta1, step)) as! SP.Scalar
+    var baseParameter: ScheduledParameter
+    var startStep: Float
+    var startLR: Float
+
+    if let warmupSchedule = warmupSchedule {
+      baseParameter = warmupSchedule.toScheduledParameter()
+      startStep = warmupSchedule.endStep
+      startLR = baseParameter(forStep: UInt64(startStep))
+    } else if let startLearningRate = startLearningRate {
+      baseParameter = FixedParameter<Float>(startLearningRate)
+      startStep = 0
+      startLR = startLearningRate
     }
 
-    loop.optimizer.learningRate = scheduledLearningRate as! L.Opt.Scalar
+    switch shape {
+    case .linear:
+      return LinearlyDecayedParameter(
+        baseParameter: baseParameter,
+        slope: (endLearningRate - startLR) / (
+          endStep - startStep
+        ),
+        startStep: UInt64(startStep)) as? DSP
+    default:
+      return nil
+    }
+  }
+}
+
+public func makeSchedule(
+  _ decaySchedule: DecaySchedule,
+  biasCorrectionBeta: (Float, Float)? = nil
+) -> (Float, Float) -> Float {
+
+  return { (totalStepCount: Float, step: Float) -> Float in
+    let sp = decaySchedule.toScheduledParameter(endStep: totalStepCount)!
+    var learningRate = sp(forStep: UInt64(step))
+    if let beta = biasCorrectionBeta {
+      learningRate *= sqrtf(1 - powf(beta.1, step)) / (beta.0 - powf(beta.1, step)) as! SP.Scalar
+    }
+    return learningRate as! Float
+  }
+}
+
+/// Returns a callback that will change the learning rate according to `schedule`.
+public func learningRateScheduler<L: TrainingLoopProtocol>(
+  _ schedule: @escaping (Float, Float) -> Float
+) -> TrainingLoopCallback<L> {
+  var totalStepCount: Float = 0
+
+  return { (loop, event) throws -> Void in
+    if event != .batchStart || Context.local.learningPhase == .inference { return }
+
+    if totalStepCount == 0 {
+      totalStepCount = Float(loop.batchCount! * loop.epochCount!)
+    }
+
+    let step = Float(loop.batchIndex! + loop.epochIndex! * loop.batchCount! + 1)
+
+    loop.optimizer.learningRate = schedule(totalStepCount, step) as! L.Opt.Scalar
   }
 }
 
