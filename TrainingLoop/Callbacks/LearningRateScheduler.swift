@@ -1,5 +1,6 @@
 import TensorFlow
 
+/// The shape of learning rate curve.
 public enum ScheduleShape {
   case constant
   case linear
@@ -9,28 +10,52 @@ public enum ScheduleShape {
   case cycleLinear10x
 }
 
+/// A higher level abstraction of settings of learning rate scheduling for 
+/// warmup steps during training.
 public struct WarmupSchedule {
+  /// The shape of learning rate curve.
   public var shape: ScheduleShape
+
+  /// The learning rate with which warmup ends.
   public var endLearningRate: Float
+
+  /// The step at which warmup ends.
   public var endStep: Float
 
+  /// Create an instance of WarmupSchedule with the curve in `shape` shape and
+  /// warmup ends with `endLearningRate` rate at `endStep` step.
   public init(shape: ScheduleShape, endLearningRate: Float, endStep: Float) {
     self.shape = shape
     self.endLearningRate = endLearningRate
     self.endStep = endStep
   }
 
+  /// Returns a WarmupScheduledParameter that will produce the learningRate for a 
+  /// given step according to its settings.
   public func toScheduledParameter() -> WarmupScheduledParameter {
     return WarmupScheduledParameter(warmupSchedule: self)
   }
 }
 
+/// A higher level abstraction of settings of decay-based learning rate scheduling 
+/// during training.
 public struct DecaySchedule {
+  /// The shape of learning rate curve.
   public var shape: ScheduleShape
+
+  /// The warmup schedule.
   public var warmupSchedule: WarmupSchedule?
+
+  /// The learning rate with which the decay starts.
   public var startLearningRate: Float?
+
+  /// The learning rate with which the decay ends.
   public var endLearningRate: Float
 
+  /// Create an instance of DecaySchedule with the decay curve in `shape` shape and
+  /// ends at `endLearningRate` rate; if `warmupSchedule` is provided the decay 
+  /// happens after the first warmup steps, or if `startLearningRate` the decay happens
+  /// from first step based on the `startLearningRate`.
   public init(
     shape: ScheduleShape, warmupSchedule: WarmupSchedule? = nil, startLearningRate: Float? = nil,
     endLearningRate: Float
@@ -41,14 +66,21 @@ public struct DecaySchedule {
     self.endLearningRate = endLearningRate
   }
 
+  /// Returns a DecayScheduledParameter who will produce the learning rate for a 
+  /// given step according to its settings.
   public func toScheduledParameter(endStep: Float) -> DecayScheduledParameter {
     return DecayScheduledParameter(decaySchedule: self, endStep: endStep)
   }
 }
 
+/// A ScheduledParameter that will return the learning rate for a given warmup
+/// step during training; based on the shape, it will pick up the right algorithm
+/// for computing and the algorithm is encapsulated specific ScheduledParameter.
 public struct WarmupScheduledParameter: ScheduledParameter {
+  /// Setting of the warmup schedule.
   public var warmupSchedule: WarmupSchedule
 
+  /// Returns the learningRate for `step`.
   public func callAsFunction(forStep step: UInt64) -> Float {
     let endParameter = FixedParameter<Float>(warmupSchedule.endLearningRate)
 
@@ -66,10 +98,17 @@ public struct WarmupScheduledParameter: ScheduledParameter {
   }
 }
 
+/// A decay-based ScheduledParameter that will return the learning rate for a given
+/// training step during training; based on the shape, it will pick up the right
+/// algorithm for computing and the algorithm is encapsulated specific ScheduledParameter.
 public struct DecayScheduledParameter: ScheduledParameter {
+  /// Setting of the decay-based schedule.
   public var decaySchedule: DecaySchedule
+
+  /// The step at which the decay ends.
   public var endStep: Float
 
+  /// Returns the learningRate for `step`.
   public func callAsFunction(forStep step: UInt64) -> Float {
     let shape = decaySchedule.shape
     let warmupSchedule = decaySchedule.warmupSchedule
@@ -111,6 +150,8 @@ public struct DecayScheduledParameter: ScheduledParameter {
   }
 }
 
+/// Returns a schedule using `decaySchedule` and applying `biasCorrectionBeta` if provided; the
+/// schedule is a function that returns learningRate for given `step` out of `totalStepCount`.
 public func makeSchedule(
   decaySchedule: DecaySchedule,
   biasCorrectionBeta: (Float, Float)? = nil
@@ -130,7 +171,7 @@ public func makeSchedule(
   }
 }
 
-/// Returns a callback that will change the learning rate according to `schedule`.
+/// Returns a TrainingLoop callback that will change the learning rate according to `schedule`.
 public func learningRateScheduler<L: TrainingLoopProtocol>(
   _ schedule: @escaping (Float, Float) -> Float
 ) -> TrainingLoopCallback<L> {
