@@ -22,42 +22,52 @@ import TensorFlow
 
 struct ShallowWaterPDE: ParsableCommand {
   static var configuration = CommandConfiguration(
-    discussion: "Solve shallow water PDE on a unit square."
+    commandName: "Shallow-Water-PDE",
+    abstract: "Solve shallow water PDE on a unit square.",
+    discussion: "Animations of the solution are saved in the 'output' directory."
   )
 
   enum Task: String, EnumerableFlag {
     case splash, optimization, benchmark
   }
-  enum CodingKeys: String, CodingKey {
-    case tasks
-  }
   @Flag(help: "Task to run.")
   var tasks: [Task] = [.splash]
 
-  let n = 256
-  let duration = 512
+  @Option(help: ArgumentHelp("Number of simulated values along X/Y directions.", valueName: "N"))
+  var resolution = 256
+    
+  @Option(help: ArgumentHelp("Number of simulated time-steps.", valueName: "T"))
+  var duration = 512
+    
+  @Option(help: ArgumentHelp("Image to use as an optimization target.", valueName: "image"))
+  var target: String = "Examples/Shallow-Water-PDE/Images/Target.jpg"
+
+  @Option(help: ArgumentHelp("Number of optimization iterations.", valueName: "I"))
+  var iterations = 200
+    
+  @Option(help: ArgumentHelp("Learning rate for optimization.", valueName: "α"))
+  var learningRate: Float = 500.0
 
   /// Runs a simple simulation in a rectangular bathtub initialized with Dirac delta function.
   public func runSplash() {
-    var initialSplashLevel = Tensor<Float>(zeros: [n, n])
-    initialSplashLevel[n / 2, n / 2] = Tensor(100)
+    var initialSplashLevel = Tensor<Float>(zeros: [resolution, resolution])
+    initialSplashLevel[resolution / 2, resolution / 2] = Tensor(100)
 
     let initialSplash = TensorSliceSolution(waterLevel: initialSplashLevel)
     let splashEvolution = [TensorSliceSolution](evolve: initialSplash, for: duration)
 
-    try! splashEvolution.saveAnimatedImage(directory: "Images", name: "Splash")
+    try! splashEvolution.saveAnimatedImage(directory: "output", name: "splash")
   }
 
   /// Runs an optimization through time-steps and updates the initial water height to obtain a specific wave patter at the end.
   public func runOptimization() {
-    let α: Float = 500.0
-    var initialWaterLevel = Tensor<Float>(zeros: [n, n])
+    var initialWaterLevel = Tensor<Float>(zeros: [resolution, resolution])
 
-    let targetImage = Image(contentsOf: URL(fileURLWithPath: "Images/Target.jpg"))
-    var target = targetImage.tensor - Float(UInt8.max) / 2
+    let targetImage = Image(contentsOf: URL(fileURLWithPath: self.target))
+    var target = targetImage.resized(to: (resolution, resolution)).tensor - Float(UInt8.max) / 2
     target = target.mean(squeezingAxes: 2) / Float(UInt8.max)
 
-    for opt in 1...200 {
+    for opt in 1...iterations {
 
       let (loss, 𝛁initialWaterLevel) = valueWithGradient(at: initialWaterLevel) {
         (initialWaterLevel) -> Float in
@@ -70,42 +80,43 @@ struct ShallowWaterPDE: ParsableCommand {
       }
 
       print("\(opt): \(loss)")
-      initialWaterLevel.move(along: 𝛁initialWaterLevel.scaled(by: -α))
+      initialWaterLevel.move(along: 𝛁initialWaterLevel.scaled(by: -learningRate))
     }
 
     let initialSolution = TensorSliceSolution(waterLevel: initialWaterLevel)
     let evolution = [TensorSliceSolution](evolve: initialSolution, for: duration)
 
-    try! evolution.saveAnimatedImage(directory: "Images", name: "Optimization")
+    try! evolution.saveAnimatedImage(directory: "output", name: "optimization")
   }
 
   private func runSplashArrayLoopBenchmark() {
-    var initialWaterLevel = [[Float]](repeating: [Float](repeating: 0.0, count: n), count: n)
-    initialWaterLevel[n / 2][n / 2] = 100
+    let waterLevelRow = [Float](repeating: 0.0, count: resolution)
+    var initialWaterLevel = [[Float]](repeating: waterLevelRow, count: resolution)
+    initialWaterLevel[resolution / 2][resolution / 2] = 100
 
     let initialSolution = ArrayLoopSolution(waterLevel: initialWaterLevel)
     _ = [ArrayLoopSolution](evolve: initialSolution, for: duration)
   }
 
   private func runSplashTensorLoopBenchmark(on device: Device) {
-    var initialWaterLevel = Tensor<Float>(zeros: [n, n], on: device)
-    initialWaterLevel[n / 2][n / 2] = Tensor<Float>(100, on: device)
+    var initialWaterLevel = Tensor<Float>(zeros: [resolution, resolution], on: device)
+    initialWaterLevel[resolution / 2][resolution / 2] = Tensor<Float>(100, on: device)
 
     let initialSolution = TensorLoopSolution(waterLevel: initialWaterLevel)
     _ = [TensorLoopSolution](evolve: initialSolution, for: duration)
   }
 
   private func runSplashTensorSliceBenchmark(on device: Device) {
-    var initialWaterLevel = Tensor<Float>(zeros: [n, n], on: device)
-    initialWaterLevel[n / 2][n / 2] = Tensor<Float>(100, on: device)
+    var initialWaterLevel = Tensor<Float>(zeros: [resolution, resolution], on: device)
+    initialWaterLevel[resolution / 2][resolution / 2] = Tensor<Float>(100, on: device)
 
     let initialSolution = TensorSliceSolution(waterLevel: initialWaterLevel)
     _ = [TensorSliceSolution](evolve: initialSolution, for: duration)
   }
 
   private func runSplashTensorConvBenchmark(on device: Device) {
-    var initialWaterLevel = Tensor<Float>(zeros: [n, n], on: device)
-    initialWaterLevel[n / 2][n / 2] = Tensor<Float>(100, on: device)
+    var initialWaterLevel = Tensor<Float>(zeros: [resolution, resolution], on: device)
+    initialWaterLevel[resolution / 2][resolution / 2] = Tensor<Float>(100, on: device)
 
     let initialSolution = TensorConvSolution(waterLevel: initialWaterLevel)
     _ = [TensorConvSolution](evolve: initialSolution, for: duration)

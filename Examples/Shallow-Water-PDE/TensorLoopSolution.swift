@@ -59,7 +59,7 @@ struct TensorLoopSolution: ShallowWaterEquationSolution {
   /// Dispersion coefficient
   @noDerivative private let α: Float = 0.00001
   /// Number of spatial grid points
-  @noDerivative private let resolution: Int = 256
+  @noDerivative private let resolution: Int
   /// Spatial discretization step
   @noDerivative private var Δx: Float { 1 / Float(resolution) }
   /// Time-step calculated to stay below the CFL stability limit
@@ -68,6 +68,7 @@ struct TensorLoopSolution: ShallowWaterEquationSolution {
   /// Creates initial solution with water level `u0` at time `t` using the specified TensorFlow `device`.
   @differentiable
   init(waterLevel u0: Tensor<Float>, time t: Float = 0.0) {
+    self.resolution = u0.shape[0]
     self.u0 = u0
     self.u1 = u0
     self.t = t
@@ -112,6 +113,7 @@ struct TensorLoopSolution: ShallowWaterEquationSolution {
   /// Constructs intermediate solution with previous water level `u0`, current water level `u1` and time `t`.
   @differentiable
   private init(u0: Tensor<Float>, u1: Tensor<Float>, t: Float) {
+    self.resolution = u0.shape[0]
     self.u0 = u0
     self.u1 = u1
     self.t = t

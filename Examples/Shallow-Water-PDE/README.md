@@ -14,12 +14,11 @@ The code is re-implemented from the [DiffTaichi paper](https://arxiv.org/abs/191
 The following code builds and runs a demo simulation of a water surface behavior in a rectangular bathtub. There's an initial "splash" at the beginning that drives the simulation. The splash generates surface gravity waves that propagate away from the center and reflect off the domain walls.
 
 ```sh
-# Make sure you run the example from this directory
-cd swift-models/Examples/Shallow-Water-PDE
-
 # Build and run the example app with the splash flag
 swift run -c release Shallow-Water-PDE --splash
 ```
+
+Animation of the solution is saved to ` output/splash.gif`.
 
 
 ## Optimization of Initial Water Level
@@ -31,12 +30,11 @@ The following example takes advantage of the end-to-end differentiability of the
 The goal is represented by a MSE cost function that measures difference between the terminal water level and a target picture. Optimization procedure itself is a simple gradient descent that adjust the initial water surface height to achieve smaller cost after every iteration.
 
 ```sh
-# Make sure you run the example from this directory
-cd swift-models/Examples/Shallow-Water-PDE
-
 # Build and run the example app with the optimization flag
 swift run -c release Shallow-Water-PDE --optimization
 ```
+
+Animation of the optimized solution is saved to `output/optimization.gif`.
 
 
 ## Benchmark of 4 Solver Implementations
