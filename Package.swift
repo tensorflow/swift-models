@@ -92,6 +92,10 @@ let package = Package(
             dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
             path: "Examples/MobileNetV2-Imagenette"),
         .target(
+            name: "ResNet50-Imagenet",
+            dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
+            path: "Examples/ResNet50-Imagenet"),
+        .target(
             name: "PersonLab", dependencies: ["Checkpoints", "ModelSupport", .product(name: "ArgumentParser", package: "swift-argument-parser")],
             path: "PersonLab"),
         .target(
