@@ -1,10 +1,10 @@
-add_executable(MobileNetV2-Imagenette
+add_executable(ResNet50-Imagenet
   main.swift)
-target_link_libraries(MobileNetV2-Imagenette PRIVATE
+target_link_libraries(ResNet50-Imagenet PRIVATE
   Datasets
   ImageClassificationModels
   TrainingLoop)
 
 
-install(TARGETS MobileNetV2-Imagenette
+install(TARGETS ResNet50-Imagenet
   DESTINATION bin)
