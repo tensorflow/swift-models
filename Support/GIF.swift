@@ -63,6 +63,17 @@ struct GIF {
     return palette
   }
 
+  static var greyscale64Palette: [UInt8] {
+    var palette: [UInt8] = []
+    for grey in stride(from: 0, through: 255, by: 4) {
+        palette.append(contentsOf: [UInt8(grey), UInt8(grey), UInt8(grey)])
+    }
+    // FIXME: Unless the palette length is 256xRGB the GIF is invalid for some reason...
+    palette.append(contentsOf: Array(repeating: UInt8.max, count: 256 * 3 - palette.count))
+
+    return palette
+  }
+
   init(width: Int, height: Int, depth: Int = 8, palette: [UInt8]? = nil, loop: Bool = true) {
     self.width = width
     self.height = height

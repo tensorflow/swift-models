@@ -9,42 +9,32 @@ The code is re-implemented from the [DiffTaichi paper](https://arxiv.org/abs/191
 
 ## Splash in a Bathtub
 
-The following code builds and runs a demo simulation of a water surface behavior in a rectangular bathtub. There's an initial "splash" at the beginning that drives the simulation. The splash generates surface gravity waves that propagate away from the center and reflect off the domain walls.
-
 <img alt="Simulation of a splash in bathtub" src="Images/Splash.gif" align="right">
 
-```sh
-# Make sure you run the example from this directory
-cd swift-models/Examples/Shallow-Water-PDE
+The following code builds and runs a demo simulation of a water surface behavior in a rectangular bathtub. There's an initial "splash" at the beginning that drives the simulation. The splash generates surface gravity waves that propagate away from the center and reflect off the domain walls.
 
+```sh
 # Build and run the example app with the splash flag
 swift run -c release Shallow-Water-PDE --splash
-
-# Create animation and remove the intermediate files
-convert Images/Splash-*.jpg Images/Splash.gif
-rm Images/Splash-*.jpg
 ```
+
+Animation of the solution is saved to ` output/splash.gif`.
 
 
 ## Optimization of Initial Water Level
+
+<img alt="Result of initial condition optimization" src="Images/Optimization.gif" align="right">
 
 The following example takes advantage of the end-to-end differentiability of the PDE solution and optimizes the initial condition. The initial condition is the water surface height used to start the simulation. The goal, a very tricky one from the perspective of optimal control theory, is to achieve specific wave pattern when the simulation terminates.
 
 The goal is represented by a MSE cost function that measures difference between the terminal water level and a target picture. Optimization procedure itself is a simple gradient descent that adjust the initial water surface height to achieve smaller cost after every iteration.
 
-<img alt="Result of initial condition optimization" src="Images/Optimization.gif" align="right">
-
 ```sh
-# Make sure you run the example from this directory
-cd swift-models/Examples/Shallow-Water-PDE
-
 # Build and run the example app with the optimization flag
 swift run -c release Shallow-Water-PDE --optimization
-
-# Create animation and remove the intermediate files
-convert Images/Optimization-*.jpg Images/Optimization.gif
-rm Images/Optimization-*.jpg
 ```
+
+Animation of the optimized solution is saved to `output/optimization.gif`.
 
 
 ## Benchmark of 4 Solver Implementations
