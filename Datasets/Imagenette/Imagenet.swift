@@ -13,7 +13,7 @@
 // limitations under the License.
 
 // Imagenet dataset, post-processed:
-// 1) Download Imagenet files (eg ILSVRC2012_img_val.tar (A), ILSVRC2012_img_train.tar (B))
+// 1) Download Imagenet files (eg ILSVRC2012_img_train.tar (A), ILSVRC2012_img_val.tar (B))
 // A) untar tar file to produce 1000 tar files in a folder called 'val'
 //    untar each + create directories:
 //    > mkdir n01440764; tar -xvf n01440764.tar -C n01440764 ; rm n01440764.tar
@@ -130,7 +130,7 @@ func downloadImagenetIfNotPresent(to directory: URL, base: String) {
 
   //guard !directoryExists || directoryEmpty else { return }
 
-  // sadly, this approach tries to work in memory --> ~150GB in-memory download --> swaps out
+  // this approach tries to work in memory --> ~150GB in-memory download --> hits swap  -> stream to file instead?
   // let location = URL(
   //   string: "http://192.168.1.200:9999/imagenet/imagenet.tgz")!
   // let _ = DatasetUtilities.downloadResource(
@@ -155,9 +155,13 @@ func downloadImagenetIfNotPresent(to directory: URL, base: String) {
   // try! process.run()
   // process.waitUntilExit()
 
-  print("Extracting file at '/tmp/imagenet.tgz'.")
-    extractArchive(at: URL(string:"/tmp/imagenet.tgz")!, to: URL(string: downloadPath)!,
-                    fileExtension: "tgz", deleteArchiveWhenDone: false)
+  let wouldLikeToTestLocalExtract = false
+  if (wouldLikeToTestLocalExtract) {
+print("Extracting file at '/tmp/imagenet.tgz'.")
+extractArchive(at: URL(string:"/tmp/imagenet.tgz")!, to: URL(string: downloadPath)!,
+                   fileExtension: "tgz", deleteArchiveWhenDone: false)
+			    print("Done extracting'.")	
+  }
 }
 
 func exploreImagenetDirectory(
