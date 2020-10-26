@@ -66,7 +66,7 @@ public struct FoundationFile: File {
     // The following are needed in order to build on macOS 10.15 (Catalina). They can be removed
     // once macOS 10.16 (Big Sur) is prevalent enough as a build environment.
     fileHandler.seekToEndOfFile()
-    fileHandler.write(value)
+    fileHandler.write(suffix)
     fileHandler.closeFile()
     #else
     try fileHandler.seekToEnd()
