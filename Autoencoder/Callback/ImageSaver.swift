@@ -7,7 +7,7 @@ import TrainingLoop
 /// It's ensured that each epoch will save different images as long as 
 /// count of epochs is less or equal than count of images; `batchSize` is used for hashing the 
 /// image used for current state of `loop`.
-public func makeSaveImageCallback<L: TrainingLoopProtocol>(
+public func imageSaver<L: TrainingLoopProtocol>(
   batchSize: Int, imageWidth: Int, imageHeight: Int
 ) -> TrainingLoopCallback<L> {
   return { (loop, event) throws -> Void in

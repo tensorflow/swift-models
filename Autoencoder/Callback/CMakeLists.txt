@@ -1,5 +1,5 @@
 add_library(AutoencoderCallback
-  SaveImage.swift)
+  ImageSaver.swift)
 target_link_libraries(AutoencoderCallback PRIVATE
   ModelSupport
   TrainingLoop)

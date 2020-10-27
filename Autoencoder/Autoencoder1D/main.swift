@@ -50,7 +50,7 @@ var trainingLoop = TrainingLoop(
   optimizer: optimizer,
   lossFunction: meanSquaredError,
   callbacks: [
-    makeSaveImageCallback(batchSize: batchSize, imageWidth: imageWidth, imageHeight: imageHeight)
+    imageSaver(batchSize: batchSize, imageWidth: imageWidth, imageHeight: imageHeight)
   ])
 
 try! trainingLoop.fit(&autoencoder, epochs: epochCount, on: Device.default)
