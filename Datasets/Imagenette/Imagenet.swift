@@ -214,7 +214,6 @@ func makeImagenetBatch<BatchSamples: Collection>(
   device: Device
 ) -> LabeledImage where BatchSamples.Element == (file: URL, label: Int32) {
   let images = samples.map(\.file).map { url -> Tensor<Float> in
-	  // this line needs to be tweaked to strip alpha data (some of the images are out of spec)
     Image(contentsOf: url).resized(to: (outputSize, outputSize)).tensor
   }
 
