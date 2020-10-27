@@ -51,7 +51,7 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
         let concatanatedImages = batch.source.concatenated(with: batch.target)
         
         let scaledImages = _Raw.resizeNearestNeighbor(images: concatanatedImages, size: [286, 286])
-        var croppedImages = scaledImages.slice(lowerBounds: Tensor<Int32>([0, Int32(random() % 30), Int32(random() % 30), 0]),
+        var croppedImages = scaledImages.slice(lowerBounds: Tensor<Int32>([0, Int32.random(in: 0...29), Int32.random(in: 0...29), 0]),
                                                sizes: [2, 256, 256, 3])
         if Bool.random() {
             croppedImages = _Raw.reverse(croppedImages, dims: [false, false, true, false])
