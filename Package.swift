@@ -12,6 +12,7 @@ let package = Package(
         .library(name: "Checkpoints", targets: ["Checkpoints"]),
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
+        .library(name: "TensorBoard", targets: ["TensorBoard"]),
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
         .library(name: "VideoClassificationModels", targets: ["VideoClassificationModels"]),
         .library(name: "RecommendationModels", targets: ["RecommendationModels"]),
@@ -35,11 +36,12 @@ let package = Package(
         .target(
             name: "ModelSupport", dependencies: ["STBImage"], path: "Support",
             exclude: ["STBImage"]),
+        .target(name: "TensorBoard", dependencies: ["SwiftProtobuf", "ModelSupport"], path: "TensorBoard"),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "VideoClassificationModels", path: "Models/Spatiotemporal"),
         .target(name: "TextModels", dependencies: ["Checkpoints", "Datasets", "SwiftProtobuf"], path: "Models/Text"),
         .target(name: "RecommendationModels", path: "Models/Recommendation"),
-        .target(name: "TrainingLoop", dependencies: ["ModelSupport"], path: "TrainingLoop"),
+        .target(name: "TrainingLoop", dependencies: ["ModelSupport", "TensorBoard"], path: "TrainingLoop"),
         .target(
             name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport", "TrainingLoop", "AutoencoderCallback"],
             path: "Autoencoder/Autoencoder1D"),

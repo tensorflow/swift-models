@@ -57,7 +57,8 @@ var trainingLoop: TrainingLoop = TrainingLoop(
   validation: dataset.validation,
   optimizer: Adam(for: gpt.model, learningRate: 0.001),
   lossFunction: softmaxCrossEntropyReshaped,
-  metrics: [.accuracy])
+  metrics: [.accuracy],
+  callbacks: [tensorBoardStatsWriter()])
 
 print("Starting training...")
 try! trainingLoop.fit(&gpt.model, epochs: 10, on: device)
