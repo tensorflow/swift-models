@@ -12,10 +12,6 @@ add_library(ModelSupport
   Stderr.swift
   AnyLayer.swift
   AnyLayerTangentVector.swift
-  Text/BytePairEncoder.swift
-  Text/SentencePiece/SentencePieceModel.pb.swift
-  Text/TextBatch.swift
-  Text/Tokenization.swift
   Text/WordSeg/Alphabet.swift
   Text/WordSeg/CharacterSequence.swift
   Text/WordSeg/Lexicon.swift)
@@ -24,8 +20,7 @@ set_target_properties(ModelSupport PROPERTIES
 target_compile_options(ModelSupport PRIVATE
   $<$<BOOL:${BUILD_TESTING}>:-enable-testing>)
 target_link_libraries(ModelSupport PUBLIC
-  STBImage
-  SwiftProtobuf)
+  STBImage)
 
 
 install(TARGETS ModelSupport

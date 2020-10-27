@@ -15,7 +15,6 @@
 import Checkpoints
 import Datasets
 import Foundation
-import ModelSupport
 import TensorFlow
 
 extension TransformerEncoderLayer {
