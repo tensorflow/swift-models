@@ -134,7 +134,7 @@ func downloadImagenetIfNotPresent(to directory: URL, base: String) {
 
   // this approach tries to work in memory --> ~150GB in-memory download --> hits swap  -> stream to file instead?
   // let location = URL(
-  //   string: "http://192.168.1.200:9999/imagenet/imagenet.tgz")!
+  //   string: "https://REMOTE-SERVER/imagenet/imagenet.tgz")!
   // let _ = DatasetUtilities.downloadResource(
   //   filename: "\(base)\(size.suffix)", fileExtension: "tgz",
   //   remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
@@ -145,24 +145,16 @@ func downloadImagenetIfNotPresent(to directory: URL, base: String) {
   downloadProcess.environment = ProcessInfo.processInfo.environment
   downloadProcess.executableURL = URL(fileURLWithPath: "/bin/bash")
   // doesn't work, needs to wait for download
-  downloadProcess.arguments = ["wget -O /tmp/imagenet.tgz http://192.168.1.200:9999/imagenet/imagenet.tgz"]
+  downloadProcess.arguments = ["wget -O /tmp/imagenet.tgz https://REMOTE-SERVER/imagenet/imagenet.tgz"]
   try! downloadProcess.run()
   downloadProcess.waitUntilExit()
 
-  // need to create folder for download if does not exist?
-  // let process = Process()
-  // process.environment = ProcessInfo.processInfo.environment
-  // process.executableURL = URL(fileURLWithPath: "/bin/bash")
-  // process.arguments = ["mkdir \(downloadPath)"]
-  // try! process.run()
-  // process.waitUntilExit()
-
   let wouldLikeToTestLocalExtract = false
   if (wouldLikeToTestLocalExtract) {
-print("Extracting file at '/tmp/imagenet.tgz'.")
-extractArchive(at: URL(string:"/tmp/imagenet.tgz")!, to: URL(string: downloadPath)!,
+      print("Extracting file at '/tmp/imagenet.tgz'.")
+      extractArchive(at: URL(string:"/tmp/imagenet.tgz")!, to: URL(string: downloadPath)!,
                    fileExtension: "tgz", deleteArchiveWhenDone: false)
-			    print("Done extracting'.")	
+      print("Done extracting'.")
   }
 }
 
