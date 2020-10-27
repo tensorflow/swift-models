@@ -15,7 +15,11 @@
 #if os(iOS) || os(macOS) || os(tvOS) || os(watchOS)
   import Darwin
 #elseif os(Windows)
-  import ucrt
+  #if canImport(CRT)
+    import CRT
+  #else
+    import MSVCRT
+  #endif
 #else
   import Glibc
 #endif

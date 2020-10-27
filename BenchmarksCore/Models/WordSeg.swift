@@ -18,6 +18,14 @@ import ModelSupport
 import TensorFlow
 import TextModels
 
+#if os(Windows)
+#if canImport(CRT)
+import CRT
+#else
+import MSVCRT
+#endif
+#endif
+
 let WordSegScore = wordSegSuite(
   name: "WordSegScore",
   operation: score)
