@@ -19,7 +19,7 @@ import TrainingLoop
 
 // XLA mode can't load Imagenet, need to use eager mode to limit memory use
 let device = Device.defaultTFEager
-let dataset = Imagenet(batchSize: 32, outputSize: 224, on: device)
+let dataset = ImageNet(batchSize: 32, outputSize: 224, on: device)
 var model = ResNet(classCount: 1000, depth: .resNet50)
 
 // 0.1 for 30, .01 for 30, .001 for 30

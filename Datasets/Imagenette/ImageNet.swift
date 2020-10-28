@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Imagenet dataset, post-processed:
-// 1) Download Imagenet files (eg ILSVRC2012_img_train.tar (A), ILSVRC2012_img_val.tar (B))
+// ImageNet dataset, post-processed:
+// 1) Download ImageNet files (eg ILSVRC2012_img_train.tar (A), ILSVRC2012_img_val.tar (B))
 // A) untar tar file to produce 1000 tar files in a folder called 'train':
 //    untar each + create directories:
 //    > mkdir n01440764; tar -xvf n01440764.tar -C n01440764 ; rm n01440764.tar
@@ -28,7 +28,7 @@ import Foundation
 import ModelSupport
 import TensorFlow
 
-public struct Imagenet<Entropy: RandomNumberGenerator> {
+public struct ImageNet<Entropy: RandomNumberGenerator> {
   /// Type of the collection of non-collated batches.
   public typealias Batches = Slices<Sampling<[(file: URL, label: Int32)], ArraySlice<Int>>>
   /// The type of the training data, represented as a sequence of epochs, which
@@ -76,10 +76,10 @@ public struct Imagenet<Entropy: RandomNumberGenerator> {
     batchSize: Int, entropy: Entropy, device: Device,
     outputSize: Int,
     localStorageDirectory: URL = DatasetUtilities.defaultDirectory
-      .appendingPathComponent("Imagenet", isDirectory: true)
+      .appendingPathComponent("ImageNet", isDirectory: true)
   ) {
     do {
-      let trainingSamples = try loadImagenetTrainingDirectory(
+      let trainingSamples = try loadImageNetTrainingDirectory(
          localStorageDirectory: localStorageDirectory, base: "imagenet")
 
       let mean = Tensor<Float>([0.485, 0.456, 0.406], on: device)
@@ -88,26 +88,26 @@ public struct Imagenet<Entropy: RandomNumberGenerator> {
       training = TrainingEpochs(samples: trainingSamples, batchSize: batchSize, entropy: entropy)
         .lazy.map { (batches: Batches) -> LazyMapSequence<Batches, LabeledImage> in
           return batches.lazy.map {
-            makeImagenetBatch(
+            makeImageNetBatch(
               samples: $0, outputSize: outputSize, mean: mean, standardDeviation: standardDeviation,
               device: device)
           }
         }
 
-      let validationSamples = try loadImagenetValidationDirectory(localStorageDirectory: localStorageDirectory, base: "imagenet")
+      let validationSamples = try loadImageNetValidationDirectory(localStorageDirectory: localStorageDirectory, base: "imagenet")
 
       validation = validationSamples.inBatches(of: batchSize).lazy.map {
-        makeImagenetBatch(
+        makeImageNetBatch(
           samples: $0, outputSize: outputSize, mean: mean, standardDeviation: standardDeviation,
           device: device)
       }
     } catch {
-      fatalError("Could not load Imagenet dataset: \(error)")
+      fatalError("Could not load ImageNet dataset: \(error)")
     }
   }
 }
 
-extension Imagenet: ImageClassificationData where Entropy == SystemRandomNumberGenerator {
+extension ImageNet: ImageClassificationData where Entropy == SystemRandomNumberGenerator {
   /// Creates an instance with `batchSize`, using the SystemRandomNumberGenerator.
   public init(batchSize: Int, on device: Device = Device.default) {
     self.init(batchSize: batchSize, entropy: SystemRandomNumberGenerator(), device: device)
@@ -124,7 +124,7 @@ extension Imagenet: ImageClassificationData where Entropy == SystemRandomNumberG
   }
 }
 
-func downloadImagenetIfNotPresent(to directory: URL, base: String) {
+func downloadImageNetIfNotPresent(to directory: URL, base: String) {
   let downloadPath = directory.appendingPathComponent("\(base)").path
   let directoryExists = FileManager.default.fileExists(atPath: downloadPath)
   let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: downloadPath)
@@ -158,10 +158,10 @@ func downloadImagenetIfNotPresent(to directory: URL, base: String) {
   }
 }
 
-func exploreImagenetDirectory(
+func exploreImageNetDirectory(
   named name: String, in directory: URL, base: String
 ) throws -> [URL] {
-  downloadImagenetIfNotPresent(to: directory, base: base)
+  downloadImageNetIfNotPresent(to: directory, base: base)
   let path = directory.appendingPathComponent("\(base)/\(name)")
   let dirContents = try FileManager.default.contentsOfDirectory(
     at: path, includingPropertiesForKeys: [.isDirectoryKey], options: [.skipsHiddenFiles])
@@ -176,11 +176,11 @@ func exploreImagenetDirectory(
   return urls
 }
 
-func loadImagenetDirectory(
+func loadImageNetDirectory(
   named name: String, in directory: URL, base: String,
   labelDict: [String: Int]? = nil
 ) throws -> [(file: URL, label: Int32)] {
-  let urls = try exploreImagenetDirectory(
+  let urls = try exploreImageNetDirectory(
     named: name, in: directory, base: base)
   let unwrappedLabelDict = labelDict ?? createLabelDict(urls: urls)
   return urls.lazy.map { (url: URL) -> (file: URL, label: Int32) in
@@ -188,28 +188,28 @@ func loadImagenetDirectory(
   }
 }
 
-func loadImagenetTrainingDirectory(
+func loadImageNetTrainingDirectory(
   localStorageDirectory: URL, base: String,
   labelDict: [String: Int]? = nil
 ) throws
   -> [(file: URL, label: Int32)]
 {
-  return try loadImagenetDirectory(
+  return try loadImageNetDirectory(
     named: "train", in: localStorageDirectory, base: base,
     labelDict: labelDict)
 }
 
-func loadImagenetValidationDirectory(
+func loadImageNetValidationDirectory(
   localStorageDirectory: URL, base: String,
   labelDict: [String: Int]? = nil
 ) throws
   -> [(file: URL, label: Int32)]
 {
-  return try loadImagenetDirectory(
+  return try loadImageNetDirectory(
     named: "val", in: localStorageDirectory, base: base, labelDict: labelDict)
 }
 
-func makeImagenetBatch<BatchSamples: Collection>(
+func makeImageNetBatch<BatchSamples: Collection>(
   samples: BatchSamples, outputSize: Int, mean: Tensor<Float>?, standardDeviation: Tensor<Float>?,
   device: Device
 ) -> LabeledImage where BatchSamples.Element == (file: URL, label: Int32) {
