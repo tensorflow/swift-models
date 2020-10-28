@@ -14,6 +14,14 @@
 
 import TensorFlow
 
+#if os(Windows)
+#if canImport(CRT)
+import CRT
+#else
+import MSVCRT
+#endif
+#endif
+
 // MARK: Solution of shallow water equation
 
 /// Differentiable solution of shallow water equation on a unit square.
