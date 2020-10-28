@@ -16,7 +16,21 @@ import Checkpoints
 import Datasets
 import Foundation
 import ModelSupport
+import SwiftProtobuf
 import TensorFlow
+
+extension Vocabulary {
+    public init(fromSentencePieceModel fileURL: URL) throws {
+        self.init(
+            tokensToIds: [String: Int](
+                (try Sentencepiece_ModelProto(serializedData: Data(contentsOf: fileURL)))
+                    .pieces
+                    .map { $0.piece.replacingOccurrences(of: "▁", with: "##") }
+                    .map { $0 == "<unk>" ? "[UNK]" : $0 }
+                    .enumerated().map { ($0.element, $0.offset) },
+                uniquingKeysWith: { (v1, v2) in max(v1, v2) }))
+    }
+}
 
 /// Represents a type that can contribute to the regularization term when training models.
 public protocol Regularizable: Differentiable {
