@@ -33,11 +33,11 @@ let package = Package(
         .target(name: "Datasets", dependencies: ["ModelSupport"], path: "Datasets"),
         .target(name: "STBImage", path: "Support/STBImage"),
         .target(
-            name: "ModelSupport", dependencies: ["SwiftProtobuf", "STBImage"], path: "Support",
+            name: "ModelSupport", dependencies: ["STBImage"], path: "Support",
             exclude: ["STBImage"]),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "VideoClassificationModels", path: "Models/Spatiotemporal"),
-        .target(name: "TextModels", dependencies: ["Checkpoints", "Datasets"], path: "Models/Text"),
+        .target(name: "TextModels", dependencies: ["Checkpoints", "Datasets", "SwiftProtobuf"], path: "Models/Text"),
         .target(name: "RecommendationModels", path: "Models/Recommendation"),
         .target(name: "TrainingLoop", dependencies: ["ModelSupport"], path: "TrainingLoop"),
         .target(

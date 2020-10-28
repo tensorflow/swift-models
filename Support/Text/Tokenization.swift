@@ -88,17 +88,6 @@ extension Vocabulary {
 }
 
 extension Vocabulary {
-    public init(fromSentencePieceModel fileURL: URL) throws {
-        self.init(
-            tokensToIds: [String: Int](
-                (try Sentencepiece_ModelProto(serializedData: Data(contentsOf: fileURL)))
-                    .pieces
-                    .map { $0.piece.replacingOccurrences(of: "▁", with: "##") }
-                    .map { $0 == "<unk>" ? "[UNK]" : $0 }
-                    .enumerated().map { ($0.element, $0.offset) },
-                uniquingKeysWith: { (v1, v2) in max(v1, v2) }))
-    }
-
     public init(fromJSONFile fileURL: URL) throws {
         let json = try String(contentsOfFile: fileURL.path)
         let tokensToIds = try JSONDecoder().decode(

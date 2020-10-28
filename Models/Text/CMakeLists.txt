@@ -10,6 +10,7 @@ add_library(TextModels
   GPT2/TransformerLM.swift
   GPT2/Operators.swift
   GPT2/PythonCheckpointReader.swift
+  SentencePiece/SentencePieceModel.pb.swift
   WordSeg/Lattice.swift
   WordSeg/Model.swift
   WordSeg/SemiRing.swift)
@@ -18,7 +19,8 @@ set_target_properties(TextModels PROPERTIES
 target_compile_options(TextModels PRIVATE
   $<$<BOOL:${BUILD_TESTING}>:-enable-testing>)
 target_link_libraries(TextModels PUBLIC
-  Datasets)
+  Datasets
+  SwiftProtobuf)
 
 install(TARGETS TextModels
   ARCHIVE DESTINATION lib/swift/$<LOWER_CASE:${CMAKE_SYSTEM_NAME}>
