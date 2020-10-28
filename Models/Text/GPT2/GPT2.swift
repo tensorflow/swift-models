@@ -15,7 +15,6 @@
 import Checkpoints
 import Foundation
 import ModelSupport
-import TransformerSupport
 import TensorFlow
 
 public class GPT2 {

@@ -30,11 +30,10 @@ let package = Package(
         .target(
             name: "Checkpoints", dependencies: ["SwiftProtobuf", "ModelSupport"],
             path: "Checkpoints"),
-        .target(name: "TransformerSupport", dependencies: ["SwiftProtobuf"], path: "TransformerSupport"),
-        .target(name: "Datasets", dependencies: ["ModelSupport", "TransformerSupport"], path: "Datasets"),
+        .target(name: "Datasets", dependencies: ["ModelSupport"], path: "Datasets"),
         .target(name: "STBImage", path: "Support/STBImage"),
         .target(
-            name: "ModelSupport", dependencies: ["STBImage"], path: "Support",
+            name: "ModelSupport", dependencies: ["SwiftProtobuf", "STBImage"], path: "Support",
             exclude: ["STBImage"]),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "VideoClassificationModels", path: "Models/Spatiotemporal"),

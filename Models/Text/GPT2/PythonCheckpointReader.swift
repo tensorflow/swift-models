@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import Checkpoints
+import ModelSupport
 import TensorFlow
 
 public struct TransformerLMConfig: Codable {

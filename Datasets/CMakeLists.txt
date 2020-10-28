@@ -25,8 +25,7 @@ add_library(Datasets
   ImageSegmentationDataset.swift
   OxfordIIITPets/OxfordIIITPets.swift)
 target_link_libraries(Datasets PUBLIC
-  ModelSupport
-  TransformerSupport)
+  ModelSupport)
 set_target_properties(Datasets PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
 

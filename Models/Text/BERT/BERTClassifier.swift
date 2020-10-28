@@ -16,7 +16,7 @@
 // Untested.
 
 import Datasets
-import TransformerSupport
+import ModelSupport
 import TensorFlow
 
 public struct BERTClassifier: Module, Regularizable {

@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import Foundation
+import ModelSupport
 import TensorFlow
 
 public typealias Activation<Scalar: TensorFlowFloatingPoint> =

@@ -149,7 +149,6 @@ add_dependencies(ArgumentParser swift-argument-parser-install)
 add_dependencies(turbojpeg libjpeg-turbo-build)
 
 add_subdirectory(Autoencoder)
-add_subdirectory(TransformerSupport)
 add_subdirectory(Support)
 add_subdirectory(Checkpoints)
 add_subdirectory(Datasets)

@@ -12,6 +12,10 @@ add_library(ModelSupport
   Stderr.swift
   AnyLayer.swift
   AnyLayerTangentVector.swift
+  Text/BytePairEncoder.swift
+  Text/SentencePiece/SentencePieceModel.pb.swift
+  Text/TextBatch.swift
+  Text/Tokenization.swift
   Text/WordSeg/Alphabet.swift
   Text/WordSeg/CharacterSequence.swift
   Text/WordSeg/Lexicon.swift)
