@@ -15,7 +15,7 @@
 import Checkpoints
 import Datasets
 import Foundation
-import ModelSupport
+import TransformerSupport
 import TensorFlow
 
 /// Represents a type that can contribute to the regularization term when training models.
