@@ -136,7 +136,7 @@ var trainingLoop: TrainingLoop = TrainingLoop(
         decaySchedule: DecaySchedule(
           shape: .linear,
           warmupSchedule: WarmupSchedule(
-            shape: .linear, endLearningRate: peakLearningRate, endStep: 10),
+            shape: .linear, endLearningRate: peakLearningRate, steps: 10),
           endLearningRate: 0
         ),
         biasCorrectionBeta: (beta1, beta2))),
