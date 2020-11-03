@@ -132,6 +132,7 @@ add_subdirectory(DCGAN)
 add_subdirectory(FastStyleTransfer)
 add_subdirectory(Examples)
 add_subdirectory(TrainingLoop)
+add_subdirectory(pix2pix)
 
 if(BUILD_TESTING)
   add_subdirectory(Tests)
