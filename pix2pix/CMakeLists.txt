@@ -1,12 +1,12 @@
 add_library(Pix2PixLib
-  Pix2Pix/CheckpointWriter.swift
-  Pix2Pix/CLI.swift
-  Pix2Pix/Dataset.swift
-  Pix2Pix/Discriminator.swift
-  Pix2Pix/Generator.swift
-  Pix2Pix/Layers.swift
-  Pix2Pix/Utils.swift
-  Pix2Pix/PythonCheckpointReader.swift)
+  pix2pix/CheckpointWriter.swift
+  pix2pix/CLI.swift
+  pix2pix/Dataset.swift
+  pix2pix/Discriminator.swift
+  pix2pix/Generator.swift
+  pix2pix/Layers.swift
+  pix2pix/Utils.swift
+  pix2pix/PythonCheckpointReader.swift)
   
 set_target_properties(Pix2PixLib PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
