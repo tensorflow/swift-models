@@ -14,7 +14,7 @@
 
 import ArgumentParser
 
-struct Options: ParsableArguments {
+public struct Options: ParsableArguments {
     @Option(help: ArgumentHelp("Path to the dataset folder", valueName: "dataset-path"))
     var datasetPath: String?
 
@@ -23,4 +23,6 @@ struct Options: ParsableArguments {
 
     @Option(default: 20, help: ArgumentHelp("Number of steps to log a sample image into tensorboard", valueName: "sampleLogPeriod"))
     var sampleLogPeriod: Int
+    
+    public init() {}
 }
