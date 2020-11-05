@@ -20,7 +20,7 @@ let package = Package(
         .library(name: "MiniGo", targets: ["MiniGo"]),
         .library(name: "TrainingLoop", targets: ["TrainingLoop"]),
         .library(name: "BenchmarksCore", targets: ["BenchmarksCore"]),
-        .library(name: "Pix2Pix", targets: ["pix2pix"])
+        .library(name: "pix2pix", targets: ["pix2pix"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.10.0"),
@@ -131,7 +131,8 @@ let package = Package(
         .target(
             name: "pix2pix",
             dependencies: ["ArgumentParser", "ModelSupport", "Datasets", "Checkpoints"],
-            path: "pix2pix"
+            path: "pix2pix",
+            exclude: ["main.swift"]
         ),
         .target(
             name: "WordSeg",

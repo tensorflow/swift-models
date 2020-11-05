@@ -1,4 +1,4 @@
-add_library(Pix2Pix
+add_library(pix2pix
   pix2pix/CheckpointWriter.swift
   pix2pix/CLI.swift
   pix2pix/Dataset.swift
@@ -8,18 +8,16 @@ add_library(Pix2Pix
   pix2pix/Utils.swift
   pix2pix/PythonCheckpointReader.swift)
   
-set_target_properties(Pix2Pix PROPERTIES
+set_target_properties(pix2pix PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
   
-target_compile_options(Pix2Pix PRIVATE
+target_compile_options(pix2pix PRIVATE
   $<$<BOOL:${BUILD_TESTING}>:-enable-testing>)
   
-add_executable(Pix2Pix
-  main.swift)
-  
-target_link_libraries(Pix2Pix)
+target_link_libraries(pix2pix PRIVATE
+  pix2pix)
 
-install(TARGETS Pix2Pix
+install(TARGETS pix2pix
   ARCHIVE DESTINATION lib/swift/$<LOWER_CASE:${CMAKE_SYSTEM_NAME}>
   LIBRARY DESTINATION lib/swift/$<LOWER_CASE:${CMAKE_SYSTEM_NAME}>
   RUNTIME DESTINATION bin)
@@ -27,7 +25,7 @@ install(TARGETS Pix2Pix
 get_swift_host_arch(swift_arch)
 
 install(FILES
-  $<TARGET_PROPERTY:Pix2Pix,Swift_MODULE_DIRECTORY>/Pix2Pix.swiftdoc
-  $<TARGET_PROPERTY:Pix2Pix,Swift_MODULE_DIRECTORY>/Pix2Pix.swiftmodule
+  $<TARGET_PROPERTY:pix2ix,Swift_MODULE_DIRECTORY>/pix2pix.swiftdoc
+  $<TARGET_PROPERTY:pix2pix,Swift_MODULE_DIRECTORY>/pix2pix.swiftmodule
   DESTINATION lib/swift$<$<NOT:$<BOOL:${BUILD_SHARED_LIBS}>>:_static>/$<LOWER_CASE:${CMAKE_SYSTEM_NAME}>/${swift_arch})
 
