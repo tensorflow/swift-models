@@ -22,7 +22,7 @@ public struct Options: ParsableArguments {
     public var epochs: Int
 
     @Option(default: 20, help: ArgumentHelp("Number of steps to log a sample image into tensorboard", valueName: "sampleLogPeriod"))
-    var sampleLogPeriod: Int
+    public var sampleLogPeriod: Int
     
     public init() {}
 }
