@@ -16,10 +16,10 @@ import ArgumentParser
 
 public struct Options: ParsableArguments {
     @Option(help: ArgumentHelp("Path to the dataset folder", valueName: "dataset-path"))
-    var datasetPath: String?
+    public var datasetPath: String?
 
     @Option(default: 1, help: ArgumentHelp("Number of epochs", valueName: "epochs"))
-    var epochs: Int
+    public var epochs: Int
 
     @Option(default: 20, help: ArgumentHelp("Number of steps to log a sample image into tensorboard", valueName: "sampleLogPeriod"))
     var sampleLogPeriod: Int
