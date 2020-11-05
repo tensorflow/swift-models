@@ -89,7 +89,7 @@ public struct NetG: Layer {
 
 
 extension NetG {
-    func writeCheckpoint(to location: URL, name: String) throws {
+    public func writeCheckpoint(to location: URL, name: String) throws {
         var tensors = [String: Tensor<Float>]()
         recursivelyObtainTensors(self, scope: "model", tensors: &tensors, separator: "/")
         let writer = CheckpointWriter(tensors: tensors)
