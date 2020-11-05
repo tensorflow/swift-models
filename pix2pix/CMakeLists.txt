@@ -17,13 +17,18 @@ target_compile_options(pix2pix PRIVATE
 target_link_libraries(pix2pix PRIVATE
   pix2pix)
 
+add_executable(pix2pixDemo
+  main.swift)
+target_link_libraries(pix2pixDemo PRIVATE
+  pix2pix)
+  
 install(TARGETS pix2pix
   ARCHIVE DESTINATION lib/swift/$<LOWER_CASE:${CMAKE_SYSTEM_NAME}>
   LIBRARY DESTINATION lib/swift/$<LOWER_CASE:${CMAKE_SYSTEM_NAME}>
   RUNTIME DESTINATION bin)
-
+install(TARGETS pix2pixDemo
+  DESTINATION bin)
 get_swift_host_arch(swift_arch)
-
 install(FILES
   $<TARGET_PROPERTY:pix2ix,Swift_MODULE_DIRECTORY>/pix2pix.swiftdoc
   $<TARGET_PROPERTY:pix2pix,Swift_MODULE_DIRECTORY>/pix2pix.swiftmodule

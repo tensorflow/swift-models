@@ -135,6 +135,8 @@ let package = Package(
             exclude: ["main.swift"]
         ),
         .target(
+            name: "pix2pixDemo", dependencies: ["pix2pix"], path: "pix2pix", sources: ["main.swift"]),
+        .target(
             name: "WordSeg",
             dependencies: ["ArgumentParser", "Datasets", "ModelSupport", "TextModels"],
             path: "Examples/WordSeg"

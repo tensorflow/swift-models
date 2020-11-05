@@ -16,12 +16,12 @@ import TensorFlow
 import Foundation
 
 #if os(macOS)
-func random() -> UInt32 {
+public func random() -> UInt32 {
     arc4random()
 }
 #endif
 
-func createDirectoryIfNeeded(path: String) throws -> URL {
+public func createDirectoryIfNeeded(path: String) throws -> URL {
     try FileManager.default.createDirectory(atPath: path,
                                             withIntermediateDirectories: true,
                                             attributes: nil)

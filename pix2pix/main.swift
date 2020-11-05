@@ -15,6 +15,8 @@ import TensorFlow
 import Foundation
 import Datasets
 import ModelSupport
+import pix2pix
+import Checkpoints
 
 let options = Options.parseOrExit()
 
