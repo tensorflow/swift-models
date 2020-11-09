@@ -1,4 +1,5 @@
 add_library(TensorBoard
+  TensorBoardWriter.swift
   SummaryWriter.swift
   EventLogger.swift
   Support.swift
@@ -14,7 +15,8 @@ target_compile_options(TensorBoard PRIVATE
   $<$<BOOL:${BUILD_TESTING}>:-enable-testing>)
 target_link_libraries(TensorBoard PUBLIC
   SwiftProtobuf
-  ModelSupport)
+  ModelSupport
+  TrainingLoop)
 
 install(TARGETS TensorBoard
   ARCHIVE DESTINATION lib/swift/$<LOWER_CASE:${CMAKE_SYSTEM_NAME}>

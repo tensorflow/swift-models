@@ -1,5 +1,5 @@
 import Foundation
-import TensorBoard
+import TrainingLoop
 import TensorFlow
 
 /// Returns a TrainingLoop callback that writes training and validation statistics

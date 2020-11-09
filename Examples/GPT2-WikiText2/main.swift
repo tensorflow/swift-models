@@ -15,6 +15,7 @@
 import Datasets
 import TensorFlow
 import TextModels
+import TensorBoard
 import TrainingLoop
 
 // Avoid the eager mode runtime from taking all memory 

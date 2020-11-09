@@ -5,11 +5,9 @@ add_library(TrainingLoop
   Callbacks/StatisticsRecorder.swift
   Callbacks/ProgressPrinter.swift
   Callbacks/CSVLogger.swift
-  Callbacks/LearningRateScheduler.swift
-  Callbacks/TensorBoardWriter.swift)
+  Callbacks/LearningRateScheduler.swift)
 target_link_libraries(TrainingLoop PUBLIC
-  ModelSupport
-  TensorBoard)
+  ModelSupport)
 set_target_properties(TrainingLoop PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
 

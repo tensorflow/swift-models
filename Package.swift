@@ -36,12 +36,12 @@ let package = Package(
         .target(
             name: "ModelSupport", dependencies: ["STBImage"], path: "Support",
             exclude: ["STBImage"]),
-        .target(name: "TensorBoard", dependencies: ["SwiftProtobuf", "ModelSupport"], path: "TensorBoard"),
+        .target(name: "TensorBoard", dependencies: ["SwiftProtobuf", "ModelSupport", "TrainingLoop"], path: "TensorBoard"),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "VideoClassificationModels", path: "Models/Spatiotemporal"),
         .target(name: "TextModels", dependencies: ["Checkpoints", "Datasets", "SwiftProtobuf"], path: "Models/Text"),
         .target(name: "RecommendationModels", path: "Models/Recommendation"),
-        .target(name: "TrainingLoop", dependencies: ["ModelSupport", "TensorBoard"], path: "TrainingLoop"),
+        .target(name: "TrainingLoop", dependencies: ["ModelSupport"], path: "TrainingLoop"),
         .target(
             name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport", "TrainingLoop", "AutoencoderCallback"],
             path: "Autoencoder/Autoencoder1D"),
@@ -111,7 +111,7 @@ let package = Package(
             exclude: ["UI/Windows/main.swift", "UI/macOS/main.swift"]),
         .target(
             name: "GPT2-WikiText2",
-            dependencies: ["Datasets", "TextModels", "TrainingLoop"],
+            dependencies: ["Datasets", "TextModels", "TrainingLoop", "TensorBoard"],
             path: "Examples/GPT2-WikiText2",
             exclude: ["UI/Windows/main.swift"]),
         .testTarget(name: "TextTests", dependencies: ["TextModels"]),
