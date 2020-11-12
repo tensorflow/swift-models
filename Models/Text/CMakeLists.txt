@@ -19,6 +19,7 @@ set_target_properties(TextModels PROPERTIES
 target_compile_options(TextModels PRIVATE
   $<$<BOOL:${BUILD_TESTING}>:-enable-testing>)
 target_link_libraries(TextModels PUBLIC
+  Checkpoints
   Datasets
   SwiftProtobuf)
 
