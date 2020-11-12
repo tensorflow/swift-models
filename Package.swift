@@ -23,7 +23,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.10.0"),
-        .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.2.0")),
+        .package(url: "https://github.com/apple/swift-argument-parser", .branch("main")),
         .package(url: "https://github.com/google/swift-benchmark", .revision("f70bf472b00aeaa05e2374373568c2fe459c11c7")),
     ],
     targets: [
