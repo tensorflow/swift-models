@@ -2,9 +2,9 @@ import Foundation
 import TrainingLoop
 import TensorFlow
 
-/// Returns a TrainingLoop callback that writes training and validation statistics
+/// Returns a TrainingLoop callback that logs training and validation statistics
 /// to be consumed by tensorboard. 
-public func tensorBoardStatsWriter<L: TrainingLoopProtocol>(
+public func tensorBoardStatisticsLogger<L: TrainingLoopProtocol>(
   logRootDirectory: String = "run/tensorboard/stats"
 ) -> TrainingLoopCallback<L> {
   var summaryWriters: [String: SummaryWriter] = [:]
