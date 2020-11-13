@@ -51,6 +51,8 @@ Use CMake to develop Swift for TensorFlow models on Windows.
 
 Although all the models build and run, not all of them have been tested.  Particularly, the automated download and extraction may not fully function on all environments.  The transformer model has been tested and is known to fully work on Windows.  Note that these operations must be performed from the `x64 Native Tools Command Prompt for VS2019` (it does not need to be run as Administrator).  This is **not** the same as `Command Prompt`, and is only available after Visual Studio has been installed.
 
+The instructions assume the 0.12 release or the Oct. 29, 2020 snapshot or later.
+
 #### Configure
 
 Ensure that your
@@ -60,13 +62,11 @@ modulemaps since your last Visual Studio update.
 
 ```console
 git clone git://github.com/tensorflow/swift-models %SystemDrive%/SourceCache/swift-models
-set SDKROOT=%SystemDrive%/Library/Developer/Platforms/Windows.platform/Developer/SDKs/Windows.sdk
-set SWIFTFLAGS=-sdk %SDKROOT% -I %SDKROOT%/usr/lib/swift -L %SDKROOT%/usr/lib/swift/windows -Xlinker -ignore:4217 -Xlinker -ignore:4286
 "%ProgramFiles%/CMake/bin/cmake.exe"        ^
   -B %SystemDrive%/BinaryCache/swift-models ^
   -D BUILD_SHARED_LIBS=YES                  ^
   -D CMAKE_BUILD_TYPE=Release               ^
-  -D CMAKE_Swift_FLAGS="%SWIFTFLAGS%"       ^
+  -D CMAKE_Swift_FLAGS="-sdk %SDKROOT%"     ^
   -G Ninja                                  ^
   -S %SystemDrive%/SourceCache/swift-models
 ```
@@ -81,12 +81,7 @@ cmake --build %SystemDrive%/BinaryCache/swift-models --target GPT2InferenceUI
 
 ```console
 md %SystemDrive%\BinaryCache\GPT2InferenceUI
-copy %SystemDrive%\BinaryCache\swift-models\swift-protobuf-prefix\src\swift-protobuf-build\Sources\SwiftProtobuf\SwiftProtobuf.dll %SystemDrive%\BinaryCache\GPT2InferenceUI\
-copy %SystemDrive%\BinaryCache\swift-models\swift-win32-prefix\src\swift-win32-build\SwiftWin32.dll %SystemDrive%\BinaryCache\GPT2InferenceUI\
-copy %SystemDrive%\BinaryCache\swift-models\Batcher\Batcher.dll %SystemDrive%\BinaryCache\GPT2InferenceUI\
-copy %SystemDrive%\BinaryCache\swift-models\Datasets\Datasets.dll %SystemDrive%\BinaryCache\GPT2InferenceUI\
-copy %SystemDrive%\BinaryCache\swift-models\Models\Text\TextModels.dll %SystemDrive%\BinaryCache\GPT2InferenceUI\
-copy %SystemDrive%\BinaryCache\swift-models\Support\ModelSupport.dll %SystemDrive%\BinaryCache\GPT2InferenceUI\
+copy %SystemDrive%\BinaryCache\swift-models\bin\*.dll %SystemDrive%\BinaryCache\GPT2InferenceUI\
 copy %SystemDrive%\BinaryCache\swift-models\Examples\GPT2-Inference\GPT2InferenceUI.exe %SystemDrive%\BinaryCache\GPT2InferenceUI\
 copy %SystemDrive%\BinaryCache\swift-models\Examples\GPT2-Inference\GPT2InferenceUI.exe.manifest %SystemDrive%\BinaryCache\GPT2InferenceUI\
 ```
