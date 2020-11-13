@@ -38,7 +38,7 @@ swift build -Xswiftc -use-ld=lld -c release
 #### Test
 
 ```cmd
-swift test -Xswiftc -use-ld=lld -c release
+swift test -Xswiftc -use-ld=lld -c debug
 ```
 
 ### Using CMake for Development
