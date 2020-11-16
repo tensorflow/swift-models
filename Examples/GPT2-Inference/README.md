@@ -82,8 +82,8 @@ cmake --build %SystemDrive%/BinaryCache/swift-models --target GPT2InferenceUI
 ```console
 md %SystemDrive%\BinaryCache\GPT2InferenceUI
 copy %SystemDrive%\BinaryCache\swift-models\bin\*.dll %SystemDrive%\BinaryCache\GPT2InferenceUI\
-copy %SystemDrive%\BinaryCache\swift-models\Examples\GPT2-Inference\GPT2InferenceUI.exe %SystemDrive%\BinaryCache\GPT2InferenceUI\
-copy %SystemDrive%\BinaryCache\swift-models\Examples\GPT2-Inference\GPT2InferenceUI.exe.manifest %SystemDrive%\BinaryCache\GPT2InferenceUI\
+copy %SystemDrive%\BinaryCache\swift-models\bin\GPT2InferenceUI.exe %SystemDrive%\BinaryCache\GPT2InferenceUI\
+copy %SystemDrive%\BinaryCache\swift-models\bin\GPT2InferenceUI.exe.manifest %SystemDrive%\BinaryCache\GPT2InferenceUI\
 ```
 
 Once all the files have been copied, you should be able to run the demo
