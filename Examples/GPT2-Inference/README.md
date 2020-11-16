@@ -51,7 +51,7 @@ Use CMake to develop Swift for TensorFlow models on Windows.
 
 Although all the models build and run, not all of them have been tested.  Particularly, the automated download and extraction may not fully function on all environments.  The transformer model has been tested and is known to fully work on Windows.  Note that these operations must be performed from the `x64 Native Tools Command Prompt for VS2019` (it does not need to be run as Administrator).  This is **not** the same as `Command Prompt`, and is only available after Visual Studio has been installed.
 
-The instructions assume the 0.12 release or the Oct. 29, 2020 snapshot or later.
+**Note:** These instructions assume the **0.12 release** or the **Oct. 29, 2020 snapshot** or later.
 
 #### Configure
 
@@ -90,4 +90,3 @@ Once all the files have been copied, you should be able to run the demo
 application by either double clicking the `GPT2InferenceUI` executable from
 Windows Explorer or running `build\GPT2InferenceUI\GPT2InferenceUI` from the
 command line.
-
