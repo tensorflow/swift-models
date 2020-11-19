@@ -1,3 +1,3 @@
 #TensorBoard
 
-S4TFversionof[tensorboardX](https://github.com/lanpa/tensorboardX) for writing TensorBoard events.
+Inspired by [tensorboardX](https://github.com/lanpa/tensorboardX), this provides the facilities for directly writing TensorBoard-compatible event logs.
