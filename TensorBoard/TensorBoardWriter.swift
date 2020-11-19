@@ -1,12 +1,15 @@
 import Foundation
-import TrainingLoop
 import TensorFlow
+import TrainingLoop
 
 /// Returns a TrainingLoop callback that logs training and validation statistics
 /// to be consumed by tensorboard. 
 public func tensorBoardStatisticsLogger<L: TrainingLoopProtocol>(
   logRootDirectory: String = "run/tensorboard/stats"
 ) -> TrainingLoopCallback<L> {
+  let logDirTimestampPrefix = String(Date().timeIntervalSince1970)
+  // globalTrainBatchIndex will hold value iff the stats recorded per batch and in training phrase.
+  var globalTrainBatchIndex: Int? = nil
   var summaryWriters: [String: SummaryWriter] = [:]
   let globalQueue = DispatchQueue.global()
 
@@ -19,9 +22,17 @@ public func tensorBoardStatisticsLogger<L: TrainingLoopProtocol>(
       return
     }
 
-    if batchIndex + 1 != batchCount { return }
-
     let learningPhase = Context.local.learningPhase == .inference ? "validation" : "train"
+
+    if learningPhase == "train" && batchIndex + 1 != batchCount {
+      globalTrainBatchIndex = 0
+    } else if learningPhase == "validation" {
+      globalTrainBatchIndex = nil
+    }
+    if globalTrainBatchIndex != nil {
+      globalTrainBatchIndex = epochIndex * batchCount + batchIndex
+    }
+
     for stat in stats {
       let writerKey = stat.name + "/" + learningPhase
       var writer: SummaryWriter
@@ -30,12 +41,18 @@ public func tensorBoardStatisticsLogger<L: TrainingLoopProtocol>(
       } else {
         writer = SummaryWriter(
           logDirectory: URL(fileURLWithPath: logRootDirectory, isDirectory: true)
-            .appendingPathComponent(writerKey).path)
+            .appendingPathComponent(logDirTimestampPrefix).appendingPathComponent(writerKey).path)
         summaryWriters[writerKey] = writer
       }
 
       globalQueue.async {
-        writer.addScalar(tag: stat.name, value: stat.value, step: Int64(epochIndex))
+        if batchIndex + 1 == batchCount {
+          writer.addScalar(tag: "epoch_" + stat.name, value: stat.value, step: Int64(epochIndex))
+        }
+        if let globalTrainBatchIndex = globalTrainBatchIndex {
+          writer.addScalar(
+            tag: "batch_" + stat.name, value: stat.value, step: Int64(globalTrainBatchIndex))
+        }
       }
     }
   }
