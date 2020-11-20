@@ -15,6 +15,7 @@
 import Datasets
 import TensorFlow
 import TextModels
+import TensorBoard
 import TrainingLoop
 
 // Avoid the eager mode runtime from taking all memory 
@@ -57,7 +58,8 @@ var trainingLoop: TrainingLoop = TrainingLoop(
   validation: dataset.validation,
   optimizer: Adam(for: gpt.model, learningRate: 0.001),
   lossFunction: softmaxCrossEntropyReshaped,
-  metrics: [.accuracy])
+  metrics: [.accuracy],
+  callbacks: [tensorBoardStatisticsLogger()])
 
 print("Starting training...")
 try! trainingLoop.fit(&gpt.model, epochs: 10, on: device)

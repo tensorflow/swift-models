@@ -3,7 +3,8 @@ add_executable(GPT2-WikiText2
 target_link_libraries(GPT2-WikiText2 PRIVATE
   Datasets
   TextModels
-  TrainingLoop)
+  TrainingLoop
+  TensorBoard)
 
 
 install(TARGETS GPT2-WikiText2
