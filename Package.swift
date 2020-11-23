@@ -20,7 +20,7 @@ let package = Package(
         .library(name: "FastStyleTransfer", targets: ["FastStyleTransfer"]),
         .library(name: "MiniGo", targets: ["MiniGo"]),
         .library(name: "TrainingLoop", targets: ["TrainingLoop"]),
-        .library(name: "BenchmarksCore", targets: ["BenchmarksCore"]),
+        .library(name: "SwiftModelsBenchmarksCore", targets: ["SwiftModelsBenchmarksCore"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.10.0"),
@@ -125,13 +125,17 @@ let package = Package(
             path: "FastStyleTransfer/Demo"),
         .testTarget(name: "FastStyleTransferTests", dependencies: ["FastStyleTransfer"]),
         .target(
-            name: "BenchmarksCore",
+            name: "SwiftModelsBenchmarksCore",
             dependencies: [
                 "Datasets", "ModelSupport", "ImageClassificationModels", "ArgumentParser",
                 "TextModels", "Benchmark"
             ],
-            path: "BenchmarksCore"),
-        .target(name: "Benchmarks", dependencies: ["BenchmarksCore"], path: "Benchmarks"),
+            path: "SwiftModelsBenchmarksCore"),
+        .target(
+            name: "SwiftModelsBenchmarks",
+            dependencies: ["SwiftModelsBenchmarksCore"],
+            path: "SwiftModelsBenchmarks"
+        ),
         .testTarget(name: "CheckpointTests", dependencies: ["Checkpoints"]),
         .target(
             name: "BERT-CoLA", dependencies: ["TextModels", "Datasets", "TrainingLoop"], path: "Examples/BERT-CoLA"),

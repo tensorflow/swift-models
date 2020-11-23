@@ -13,11 +13,11 @@
 // limitations under the License.
 
 import Benchmark
-import BenchmarksCore
+import SwiftModelsBenchmarksCore
 
 registerCustomColumns()
 let command = BenchmarkCommand.parseOrExit()
 Benchmark.main(
   suites,
   settings: command.arguments.settings,
-  customDefaults: BenchmarksCore.defaultSettings)
+  customDefaults: SwiftModelsBenchmarksCore.defaultSettings)

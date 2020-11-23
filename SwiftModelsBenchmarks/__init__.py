@@ -54,7 +54,7 @@ cwd = '/workspace/benchmarks/perfzero/workspace/site-packages/swift-models'
 def run_swift_benchmark(name):
   print('running swift benchmark {}'.format(name))
   output = subp.check_output([
-      'swift', 'run', '-c', 'release', 'Benchmarks', 
+      'swift', 'run', '-c', 'release', 'SwiftModelsBenchmarks', 
       '--filter', name, '--format', 'json',
       # Run each benchmark for up to 5 minutes.
       '--min-time', '300',  
@@ -130,7 +130,7 @@ def discover_swift_benchmarks():
   """
 
   output = subp.check_output([
-      'swift', 'run', '-c', 'release', 'Benchmarks', 
+      'swift', 'run', '-c', 'release', 'SwiftModelsBenchmarks', 
       '--iterations', '0', '--warmup-iterations', '0',
       '--columns', 'name', '--format', 'json'
   ], cwd=cwd)
