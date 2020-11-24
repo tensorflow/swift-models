@@ -9,6 +9,7 @@ let package = Package(
         .macOS(.v10_13),
     ],
     products: [
+        .executable(name: "Benchmarks", targets: ["SwiftModelsBenchmarks"]),
         .library(name: "Checkpoints", targets: ["Checkpoints"]),
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),

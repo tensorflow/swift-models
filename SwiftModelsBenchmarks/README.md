@@ -18,23 +18,23 @@ installed. Make sure you've added the correct version of `swift` to your path.
 To run all benchmarks, type the following while in the swift-models directory:
 
 ```sh
-swift run -c release SwiftModelsBenchmarks
+swift run -c release Benchmarks
 ```
 
 To run an an individual benchmark, use `--filter`:
 
 ```sh
-swift run -c release SwiftModelsBenchmarks --filter <name>
+swift run -c release Benchmarks --filter <name>
 ```
 
 To show more compact output, you can explicitly specify a subset of columns to show:
 
 ```sh
-swift run -c release SwiftModelsBenchmarks --columns name,median,std
+swift run -c release Benchmarks --columns name,median,std
 ```
 
 To list all benchmarks run benchmarks with 0 iterations: 
 
 ```sh
-swift run -c release SwiftModelsBenchmarks --iterations 0 --warmup-iterations 0 --columns name 
+swift run -c release Benchmarks --iterations 0 --warmup-iterations 0 --columns name 
 ```
