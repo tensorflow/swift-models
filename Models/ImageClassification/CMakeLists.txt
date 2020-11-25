@@ -10,7 +10,8 @@ add_library(ImageClassificationModels
   ShuffleNetV2.swift
   SqueezeNet.swift
   VGG.swift
-  WideResNet.swift)
+  WideResNet.swift
+  Xception.swift)
 set_target_properties(ImageClassificationModels PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
 target_compile_options(ImageClassificationModels PRIVATE
