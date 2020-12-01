@@ -2,7 +2,7 @@
 
 This repository contains TensorFlow models written in Swift.
 
-Active development occurs on the `master` branch.
+Active development occurs on the `main` branch.
 
 Use the ```tensorflow-xx``` branch that corresponds to the release you are using from [Swift for TensorFlow releases](https://github.com/tensorflow/swift/blob/master/Installation.md#releases).  For example, for the 0.6 release, use the ```tensorflow-0.6``` branch.
 
