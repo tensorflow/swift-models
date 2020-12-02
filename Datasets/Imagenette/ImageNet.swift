@@ -12,11 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// ImageNet dataset, post-processed:
+// ImageNet data source:
+// http://www.image-net.org/challenges/LSVRC/2012/index#cite
+// "ImageNet Large Scale Visual Recognition Challenge"
+// https://arxiv.org/abs/1409.0575
+
+// Post-processing applied:
 // 1) Download ImageNet files (eg ILSVRC2012_img_train.tar (A), ILSVRC2012_img_val.tar (B))
 // A) untar tar file to produce 1000 tar files in a folder called 'train':
 //    untar each + create directories:
-//    > mkdir n01440764; tar -xvf n01440764.tar -C n01440764 ; rm n01440764.tar
+//    > mkdir n01440764; tar -xvf n01440764.tar -C n01440764; rm n01440764.tar
 // B) untar 50k images to a folder called `val`:
 //    move images to labeled subfolders using pytorch script:
 //    https://raw.githubusercontent.com/soumith/imagenetloader.torch/master/valprep.sh
