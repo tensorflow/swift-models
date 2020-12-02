@@ -91,10 +91,6 @@ public struct Image {
             if bpp == 1 {
                 loadedTensor = loadedTensor.broadcasted(to: [Int(height), Int(width), 3])
             }
-            if bpp == 4 {  // extra alpha information, dropping to only support .rgb
-                loadedTensor = loadedTensor.slice(
-                    lowerBounds: [0, 0, 0], sizes: [Int(height), Int(width), 3])
-            }
             self.imageData = .uint8(data: loadedTensor)
         }
     }

@@ -219,7 +219,13 @@ func makeImageNetBatch<BatchSamples: Collection>(
   device: Device
 ) -> LabeledImage where BatchSamples.Element == (file: URL, label: Int32) {
   let images = samples.map(\.file).map { url -> Tensor<Float> in
-    Image(contentsOf: url).resized(to: (outputSize, outputSize)).tensor
+    if url.absoluteString.range(of: "n02105855_2933.JPEG") != nil {
+      // this is a png saved as a jpeg, we manually strip an extra alpha channel here
+      return Image(contentsOf: url).resized(to: (outputSize, outputSize)).tensor
+        .slice(lowerBounds: [0, 0, 0], sizes: [outputSize, outputSize, 3])
+    } else {
+      return Image(contentsOf: url).resized(to: (outputSize, outputSize)).tensor
+    }
   }
 
   var imageTensor = Tensor(stacking: images)
