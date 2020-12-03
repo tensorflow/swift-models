@@ -3,8 +3,8 @@ add_executable(ResNet50-ImageNet
 target_link_libraries(ResNet50-ImageNet PRIVATE
   Datasets
   ImageClassificationModels
-  TrainingLoop)
-
+  TrainingLoop
+  TensorBoard)
 
 install(TARGETS ResNet50-ImageNet
   DESTINATION bin)

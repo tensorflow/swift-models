@@ -14,6 +14,7 @@
 
 import Datasets
 import ImageClassificationModels
+import TensorBoard
 import TensorFlow
 import TrainingLoop
 
@@ -40,6 +41,6 @@ var trainingLoop = TrainingLoop(
   optimizer: optimizer,
   lossFunction: softmaxCrossEntropy,
   metrics: [.accuracy],
-  callbacks: [scheduleLearningRate])
+  callbacks: [scheduleLearningRate, tensorBoardStatisticsLogger()])
 
 try! trainingLoop.fit(&model, epochs: 90, on: device)
