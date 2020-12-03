@@ -10,7 +10,7 @@ and used to generate a sequence of text.
 ## Setup
 
 To begin, you'll need the [latest version of Swift for
-TensorFlow](https://github.com/tensorflow/swift/blob/master/Installation.md)
+TensorFlow](https://github.com/tensorflow/swift/blob/main/Installation.md)
 installed. Make sure you've added the correct version of `swift` to your path.
 
 ### macOS and Linux
@@ -56,7 +56,7 @@ Although all the models build and run, not all of them have been tested.  Partic
 #### Configure
 
 Ensure that your
-[installation](https://github.com/tensorflow/swift/blob/master/Installation.md#installation-2)
+[installation](https://github.com/tensorflow/swift/blob/main/Installation.md#installation-2)
 is up-to-date. In particular, ensure that you have deployed Windows SDK
 modulemaps since your last Visual Studio update.
 

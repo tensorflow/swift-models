@@ -12,7 +12,7 @@ Swift for TensorFlow.
 ## Running benchmarks
 
 To begin, you'll need the [latest version of Swift for
-TensorFlow](https://github.com/tensorflow/swift/blob/master/Installation.md)
+TensorFlow](https://github.com/tensorflow/swift/blob/main/Installation.md)
 installed. Make sure you've added the correct version of `swift` to your path.
 
 To run all benchmarks, type the following while in the swift-models directory:
