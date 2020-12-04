@@ -23,9 +23,17 @@
 import ModelSupport
 import TensorFlow
 
+/// Types that can be optimized by an optimizer.
+///
+/// TODO: Consider promoting this into a public protocol in swift-apis?
+fileprivate protocol OptimizableParameters: Differentiable
+where
+  TangentVector: VectorProtocol & ElementaryFunctions & PointwiseMultiplicative & KeyPathIterable
+{}
+
 /// A Segmental Neural Language Model for word segmentation, as described in
 /// the above paper.
-public struct SNLM: EuclideanDifferentiable, KeyPathIterable {
+public struct SNLM: EuclideanDifferentiable, KeyPathIterable, OptimizableParameters {
 
   /// A set of configuration parameters that define model behavior.
   public struct Parameters {
