@@ -54,5 +54,5 @@ swift run -c release WordSeg --help
 
 [model]: https://github.com/tensorflow/swift-models/tree/main/Models/Text/WordSeg
 [paper]: https://www.aclweb.org/anthology/P19-1645.pdf
-[s4tf]: https://github.com/tensorflow/swift/blob/master/Installation.md
+[s4tf]: https://github.com/tensorflow/swift/blob/main/Installation.md
 [understanding]: https://docs.google.com/document/d/1NlFH0_89gB_qggtgzJIKYHL2xPI3IQjWjv18pnT1M0E
