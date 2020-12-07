@@ -214,17 +214,53 @@ func loadImageNetValidationDirectory(
     named: "val", in: localStorageDirectory, base: base, labelDict: labelDict)
 }
 
+func applyImageNetDataAugmentation(image: Image) -> Tensor<Float> {
+    // using the tensorflow imagenet demo from mlperf as reference:
+    // https://github.com/mlcommons/training/blob/4f97c909f3aeaa3351da473d12eba461ace0be76/image_classification/tensorflow/official/resnet/imagenet_preprocessing.py#L94
+    var imageData = image.tensor
+    let (height, width, channels) = (imageData.shape[0], imageData.shape[1], imageData.shape[2])
+
+    let imageSize = Tensor([Int32(height), Int32(width), Int32(channels)])
+    let bboxes = Tensor<Float>(shape: [1, 1, 4], scalars: [0.0, 0.0, 1.0, 1.0])
+
+    // the default values for this op internally are the imagenet settings
+    let randomCrop = _Raw.sampleDistortedBoundingBox(imageSize: imageSize, boundingBoxes: bboxes)
+    let offsets = randomCrop.begin
+    let targets = randomCrop.size
+
+    // we manually convert to normalized coordinates
+    let offsetY = Float(offsets[0].scalar!) / Float(height)
+    let offsetX = Float(offsets[1].scalar!) / Float(width)
+    let targetY = Float(targets[0].scalar!) / Float(height) + offsetY
+    let targetX = Float(targets[1].scalar!) / Float(width) + offsetX
+
+    var cropped = Tensor<Float>([offsetY, offsetX, targetY, targetX])
+    // we add a random flip here by swapping the x coordinates
+    if Bool.random() {
+      cropped = Tensor<Float>([offsetY, targetX, targetY, offsetX])
+    }
+
+    let imageBroadcast = imageData.reshaped(to: [1, height, width, channels])
+    let bboxBroadcast = cropped.reshaped(to: [1, 4])
+
+    let croppedImage = _Raw.cropAndResize(image: imageBroadcast, boxes: bboxBroadcast,
+      boxInd: [0], cropSize: [224, 224])
+    return croppedImage.reshaped(to: [224, 224, 3])
+}
+
 func makeImageNetBatch<BatchSamples: Collection>(
   samples: BatchSamples, outputSize: Int, mean: Tensor<Float>?, standardDeviation: Tensor<Float>?,
   device: Device
 ) -> LabeledImage where BatchSamples.Element == (file: URL, label: Int32) {
   let images = samples.map(\.file).map { url -> Tensor<Float> in
     if url.absoluteString.range(of: "n02105855_2933.JPEG") != nil {
-      // this is a png saved as a jpeg, we manually strip an extra alpha channel here
-      return Image(contentsOf: url).resized(to: (outputSize, outputSize)).tensor
-        .slice(lowerBounds: [0, 0, 0], sizes: [outputSize, outputSize, 3])
+      // this is a png saved as a jpeg, we manually strip an extra alpha channel to start
+      let image = Image(contentsOf: url).tensor.slice(lowerBounds: [0, 0, 0], sizes: [189, 213, 3])
+      let colorOnlyImage = Image(image)
+      return applyImageNetDataAugmentation(image: colorOnlyImage)
     } else {
-      return Image(contentsOf: url).resized(to: (outputSize, outputSize)).tensor
+      let image = Image(contentsOf: url)
+      return applyImageNetDataAugmentation(image: image)
     }
   }
 
