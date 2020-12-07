@@ -123,7 +123,7 @@ func clipGradByGlobalNorm<L: TrainingLoopProtocol>(_ loop: inout L, event: Train
   }
 }
 
-/// A linear curve.
+/// A linear shape to the learning rate in both warmup and decay phases.
 let linear = Shape({ $0 })
 
 var trainingLoop: TrainingLoop = TrainingLoop(
