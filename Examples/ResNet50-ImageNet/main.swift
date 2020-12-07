@@ -23,7 +23,7 @@ let device = Device.defaultTFEager
 let dataset = ImageNet(batchSize: 32, outputSize: 224, on: device)
 var model = ResNet(classCount: 1000, depth: .resNet50)
 
-// 0.1 for 30, .01 for 30, .001 for 30
+// https://github.com/mlcommons/training/blob/4f97c909f3aeaa3351da473d12eba461ace0be76/image_classification/tensorflow/official/resnet/imagenet_main.py#L286
 let optimizer = SGD(for: model, learningRate: 0.1, momentum: 0.9)
 public func scheduleLearningRate<L: TrainingLoopProtocol>(
   _ loop: inout L, event: TrainingLoopEvent
@@ -32,6 +32,7 @@ public func scheduleLearningRate<L: TrainingLoopProtocol>(
     guard let epoch = loop.epochIndex else  { return }
     if epoch > 30 { loop.optimizer.learningRate = 0.01 }
     if epoch > 60 { loop.optimizer.learningRate = 0.001 }
+    if epoch > 80 { loop.optimizer.learningRate = 0.0001 }
   }
 }
 
