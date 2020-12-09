@@ -9,9 +9,11 @@ let package = Package(
         .macOS(.v10_13),
     ],
     products: [
+        .executable(name: "Benchmarks", targets: ["SwiftModelsBenchmarks"]),
         .library(name: "Checkpoints", targets: ["Checkpoints"]),
         .library(name: "Datasets", targets: ["Datasets"]),
         .library(name: "ModelSupport", targets: ["ModelSupport"]),
+        .library(name: "TensorBoard", targets: ["TensorBoard"]),
         .library(name: "ImageClassificationModels", targets: ["ImageClassificationModels"]),
         .library(name: "VideoClassificationModels", targets: ["VideoClassificationModels"]),
         .library(name: "RecommendationModels", targets: ["RecommendationModels"]),
@@ -19,12 +21,12 @@ let package = Package(
         .library(name: "FastStyleTransfer", targets: ["FastStyleTransfer"]),
         .library(name: "MiniGo", targets: ["MiniGo"]),
         .library(name: "TrainingLoop", targets: ["TrainingLoop"]),
-        .library(name: "BenchmarksCore", targets: ["BenchmarksCore"]),
+        .library(name: "SwiftModelsBenchmarksCore", targets: ["SwiftModelsBenchmarksCore"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.10.0"),
-        .package(url: "https://github.com/apple/swift-argument-parser", .upToNextMinor(from: "0.2.0")),
-        .package(url: "https://github.com/google/swift-benchmark", .revision("f70bf472b00aeaa05e2374373568c2fe459c11c7")),
+        .package(url: "https://github.com/apple/swift-argument-parser", .branch("main")),
+        .package(url: "https://github.com/google/swift-benchmark", from: "0.1.0"),
     ],
     targets: [
         .target(
@@ -33,15 +35,16 @@ let package = Package(
         .target(name: "Datasets", dependencies: ["ModelSupport"], path: "Datasets"),
         .target(name: "STBImage", path: "Support/STBImage"),
         .target(
-            name: "ModelSupport", dependencies: ["SwiftProtobuf", "STBImage"], path: "Support",
+            name: "ModelSupport", dependencies: ["STBImage"], path: "Support",
             exclude: ["STBImage"]),
+        .target(name: "TensorBoard", dependencies: ["SwiftProtobuf", "ModelSupport", "TrainingLoop"], path: "TensorBoard"),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "VideoClassificationModels", path: "Models/Spatiotemporal"),
-        .target(name: "TextModels", dependencies: ["Checkpoints", "Datasets"], path: "Models/Text"),
+        .target(name: "TextModels", dependencies: ["Checkpoints", "Datasets", "SwiftProtobuf"], path: "Models/Text"),
         .target(name: "RecommendationModels", path: "Models/Recommendation"),
         .target(name: "TrainingLoop", dependencies: ["ModelSupport"], path: "TrainingLoop"),
         .target(
-            name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport"],
+            name: "Autoencoder1D", dependencies: ["Datasets", "ModelSupport", "TrainingLoop", "AutoencoderCallback"],
             path: "Autoencoder/Autoencoder1D"),
         .target(
             name: "Autoencoder2D", dependencies: ["Datasets", "ModelSupport"],
@@ -49,11 +52,15 @@ let package = Package(
         .target(
             name: "VariationalAutoencoder1D", dependencies: ["Datasets", "ModelSupport"],
             path: "Autoencoder/VAE1D"),
+        .target(
+            name: "AutoencoderCallback", dependencies: ["ModelSupport", "TrainingLoop"],
+            path: "Autoencoder/Callback"),
         .target(name: "Catch", path: "Catch"),
         .target(name: "Gym-FrozenLake", path: "Gym/FrozenLake"),
         .target(name: "Gym-CartPole", path: "Gym/CartPole"),
         .target(name: "Gym-Blackjack", path: "Gym/Blackjack"),
         .target(name: "Gym-DQN", path: "Gym/DQN"),
+        .target(name: "Gym-PPO", path: "Gym/PPO"),
         .target(
             name: "VGG-Imagewoof",
             dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
@@ -69,6 +76,10 @@ let package = Package(
             dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
             path: "Examples/ResNet-CIFAR10"),
         .target(
+            name: "Shallow-Water-PDE",
+            dependencies: ["ArgumentParser", "Benchmark", "ModelSupport"],
+            path: "Examples/Shallow-Water-PDE"),
+        .target(
             name: "LeNet-MNIST",
             dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
             path: "Examples/LeNet-MNIST"),
@@ -80,6 +91,9 @@ let package = Package(
             name: "MobileNetV2-Imagenette",
             dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
             path: "Examples/MobileNetV2-Imagenette"),
+        .target(
+            name: "PersonLab", dependencies: ["Checkpoints", "ModelSupport", .product(name: "ArgumentParser", package: "swift-argument-parser")],
+            path: "PersonLab"),
         .target(
             name: "MiniGo", dependencies: ["Checkpoints"], path: "MiniGo", exclude: ["main.swift"]),
         .target(
@@ -98,7 +112,7 @@ let package = Package(
             exclude: ["UI/Windows/main.swift", "UI/macOS/main.swift"]),
         .target(
             name: "GPT2-WikiText2",
-            dependencies: ["Datasets", "TextModels"],
+            dependencies: ["Datasets", "TextModels", "TrainingLoop", "TensorBoard"],
             path: "Examples/GPT2-WikiText2",
             exclude: ["UI/Windows/main.swift"]),
         .testTarget(name: "TextTests", dependencies: ["TextModels"]),
@@ -112,17 +126,20 @@ let package = Package(
             path: "FastStyleTransfer/Demo"),
         .testTarget(name: "FastStyleTransferTests", dependencies: ["FastStyleTransfer"]),
         .target(
-            name: "BenchmarksCore",
+            name: "SwiftModelsBenchmarksCore",
             dependencies: [
                 "Datasets", "ModelSupport", "ImageClassificationModels", "ArgumentParser",
                 "TextModels", "Benchmark"
             ],
-            path: "BenchmarksCore"),
-        .target(name: "Benchmarks", dependencies: ["BenchmarksCore"], path: "Benchmarks"),
-        .testTarget(
-            name: "CheckpointTests", dependencies: ["Checkpoints", "ImageClassificationModels"]),
+            path: "SwiftModelsBenchmarksCore"),
         .target(
-            name: "BERT-CoLA", dependencies: ["TextModels", "Datasets"], path: "Examples/BERT-CoLA"),
+            name: "SwiftModelsBenchmarks",
+            dependencies: ["SwiftModelsBenchmarksCore"],
+            path: "SwiftModelsBenchmarks"
+        ),
+        .testTarget(name: "CheckpointTests", dependencies: ["Checkpoints", "ImageClassificationModels"]),
+        .target(
+            name: "BERT-CoLA", dependencies: ["TextModels", "Datasets", "TrainingLoop"], path: "Examples/BERT-CoLA"),
         .testTarget(name: "SupportTests", dependencies: ["ModelSupport"]),
         .target(
             name: "CycleGAN",
@@ -143,6 +160,11 @@ let package = Package(
            name: "Fractals",
            dependencies: ["ArgumentParser", "ModelSupport"],
            path: "Examples/Fractals"
+       ),
+       .target(
+           name: "GrowingNeuralCellularAutomata",
+           dependencies: ["ArgumentParser", "ModelSupport"],
+           path: "Examples/GrowingNeuralCellularAutomata"
        )
     ]
 )

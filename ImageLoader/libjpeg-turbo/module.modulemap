@@ -1,0 +1,7 @@
+module TurboJPEG {
+  header "jinclude.h"
+  header "jpeglib.h"
+  header "turbojpeg.h"
+  export *
+  link "turbojpeg"
+}

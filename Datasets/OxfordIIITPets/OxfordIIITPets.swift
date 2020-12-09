@@ -173,7 +173,7 @@ fileprivate func makeBatch<BatchSamples: Collection>(
   samples: BatchSamples, imageSize: Int, device: Device
 ) -> SegmentedImage where BatchSamples.Element == (file: URL, annotation: URL) {
   let images = samples.map(\.file).map { url -> Tensor<Float> in
-    Image(jpeg: url).resized(to: (imageSize, imageSize)).tensor[0..., 0..., 0..<3]
+    Image(contentsOf: url).resized(to: (imageSize, imageSize)).tensor[0..., 0..., 0..<3]
   }
 
   var imageTensor = Tensor(stacking: images)
@@ -182,7 +182,7 @@ fileprivate func makeBatch<BatchSamples: Collection>(
 
   let annotations = samples.map(\.annotation).map { url -> Tensor<Int32> in
     Tensor<Int32>(
-      Image(jpeg: url).resized(to: (imageSize, imageSize)).tensor[0..., 0..., 0...0] - 1)
+      Image(contentsOf: url).resized(to: (imageSize, imageSize)).tensor[0..., 0..., 0...0] - 1)
   }
   var annotationTensor = Tensor(stacking: annotations)
   annotationTensor = Tensor(copying: annotationTensor, to: device)

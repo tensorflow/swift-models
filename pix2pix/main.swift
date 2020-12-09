@@ -25,7 +25,6 @@ let dataset = try! Pix2PixDataset(
     testBatchSize: 1)
 
 var validationImage = dataset.testSamples[0].source.expandingShape(at: 0)
-let validationImageURL = URL(string: FileManager.default.currentDirectoryPath)!.appendingPathComponent("sample.jpg")
 
 var generator = NetG(inputChannels: 3, outputChannels: 3, ngf: 64, useDropout: false)
 var discriminator = NetD(inChannels: 6, lastConvFilters: 64)
@@ -52,7 +51,7 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
         let concatanatedImages = batch.source.concatenated(with: batch.target)
         
         let scaledImages = _Raw.resizeNearestNeighbor(images: concatanatedImages, size: [286, 286])
-        var croppedImages = scaledImages.slice(lowerBounds: Tensor<Int32>([0, Int32(random() % 30), Int32(random() % 30), 0]),
+        var croppedImages = scaledImages.slice(lowerBounds: Tensor<Int32>([0, Int32.random(in: 0...29), Int32.random(in: 0...29), 0]),
                                                sizes: [2, 256, 256, 3])
         if Bool.random() {
             croppedImages = _Raw.reverse(croppedImages, dims: [false, false, true, false])
@@ -103,9 +102,7 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
             Context.local.learningPhase = .inference
             
             let fakeSample = generator(validationImage) * 0.5 + 0.5
-
-            let fakeSampleImage = Image(tensor: fakeSample[0] * 255)
-            fakeSampleImage.save(to: validationImageURL, format: .rgb)
+            try fakeSample[0].scaled(by: 255).saveImage(directory: "output", name: "sample")
         }
         
         discriminatorCount += 1
@@ -122,7 +119,6 @@ Context.local.learningPhase = .inference
 var totalLoss = Tensor<Float>(0)
 var count = 0
 
-let resultsFolder = try createDirectoryIfNeeded(path: FileManager.default.currentDirectoryPath + "/results")
 for batch in dataset.testing {
     let fakeImages = generator(batch.source)
 
@@ -130,9 +126,7 @@ for batch in dataset.testing {
                            .concatenated(with: fakeImages,
                                          alongAxis: 2) / 2.0 + 0.5
 
-    let image = Image(tensor: (tensorImage * 255)[0])
-    let saveURL = resultsFolder.appendingPathComponent("\(count).jpg", isDirectory: false)
-    image.save(to: saveURL, format: .rgb)
+    try tensorImage[0].scaled(by: 255).saveImage(directory: "output/results", name: "\(count)")
 
     let ganLoss = sigmoidCrossEntropy(logits: fakeImages,
                                       labels: Tensor.one.broadcasted(to: fakeImages.shape))

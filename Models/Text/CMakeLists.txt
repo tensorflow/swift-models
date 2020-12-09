@@ -1,18 +1,16 @@
 add_library(TextModels
-  Attention.swift
-  BERT.swift
-  BERTClassifier.swift
+  BERT/Attention.swift
+  BERT/BERT.swift
+  BERT/BERTClassifier.swift
   BERT/BERTCheckpointReader.swift
-  Evaluation.swift
+  BERT/TransformerBERT.swift
+  BERT/Utilities.swift
   GPT2/CheckpointWriter.swift
   GPT2/GPT2.swift
   GPT2/TransformerLM.swift
   GPT2/Operators.swift
   GPT2/PythonCheckpointReader.swift
-  ScheduledParameters.swift
-  TransformerBERT.swift
-  Utilities.swift
-  WeightDecayedAdam.swift
+  SentencePiece/SentencePieceModel.pb.swift
   WordSeg/Lattice.swift
   WordSeg/Model.swift
   WordSeg/SemiRing.swift)
@@ -21,7 +19,9 @@ set_target_properties(TextModels PROPERTIES
 target_compile_options(TextModels PRIVATE
   $<$<BOOL:${BUILD_TESTING}>:-enable-testing>)
 target_link_libraries(TextModels PUBLIC
-  Datasets)
+  Checkpoints
+  Datasets
+  SwiftProtobuf)
 
 install(TARGETS TextModels
   ARCHIVE DESTINATION lib/swift/$<LOWER_CASE:${CMAKE_SYSTEM_NAME}>

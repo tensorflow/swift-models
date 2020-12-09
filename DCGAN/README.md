@@ -14,7 +14,7 @@ You can read the tutorial on creating this model [here](https://rickwierenga.com
 ## Setup
 
 To begin, you'll need the [latest version of Swift for
-TensorFlow](https://github.com/tensorflow/swift/blob/master/Installation.md)
+TensorFlow](https://github.com/tensorflow/swift/blob/main/Installation.md)
 installed. Make sure you've added the correct version of `swift` to your path.
 
 To train the model, run:

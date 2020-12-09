@@ -79,12 +79,38 @@ ExternalProject_Add(swift-protobuf
     ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_IMPORT_LIBRARY_PREFIX}SwiftProtobuf${CMAKE_IMPORT_LIBRARY_SUFFIX}
   STEP_TARGETS install)
 
+ExternalProject_Add(libjpeg-turbo
+  GIT_REPOSITORY
+    git://github.com/libjpeg-turbo/libjpeg-turbo
+  GIT_TAG
+    master
+  UPDATE_DISCONNECTED
+    TRUE
+  CMAKE_ARGS
+    -D CMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
+    -D ENABLE_SHARED=NO
+  INSTALL_COMMAND
+    ${CMAKE_COMMAND} -E copy_if_different ${CMAKE_SOURCE_DIR}/ImageLoader/libjpeg-turbo/module.modulemap <SOURCE_DIR>
+  BUILD_BYPRODUCTS
+    <BINARY_DIR>/${CMAKE_STATIC_LIBRARY_PREFIX}turbojpeg${CMAKE_STATIC_LIBRARY_SUFFIX}
+  STEP_TARGETS
+    build)
+
+add_library(turbojpeg STATIC IMPORTED)
 add_library(SwiftProtobuf SHARED IMPORTED)
+
 set_target_properties(SwiftProtobuf PROPERTIES
   IMPORTED_LOCATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_SHARED_LIBRARY_PREFIX}SwiftProtobuf${CMAKE_SHARED_LIBRARY_SUFFIX}
   IMPORTED_IMPLIB ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_IMPORT_LIBRARY_PREFIX}SwiftProtobuf${CMAKE_IMPORT_LIBRARY_SUFFIX}
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
 add_dependencies(SwiftProtobuf swift-protobuf-install)
+
+ExternalProject_Get_Property(libjpeg-turbo BINARY_DIR)
+ExternalProject_Get_Property(libjpeg-turbo SOURCE_DIR)
+
+set_target_properties(turbojpeg PROPERTIES
+  IMPORTED_LOCATION ${BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}turbojpeg${CMAKE_STATIC_LIBRARY_SUFFIX}
+  IMPORTED_INCLUDE_DIRECTORIES "${BINARY_DIR};${SOURCE_DIR}")
 
 if(CMAKE_SYSTEM_NAME STREQUAL Windows)
   set(_copy_swift_argument_parser_import_library
@@ -92,7 +118,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Windows)
 endif()
 ExternalProject_Add(swift-argument-parser
   GIT_REPOSITORY git://github.com/apple/swift-argument-parser.git
-  GIT_TAG master
+  GIT_TAG main
   CMAKE_ARGS
     -DBUILD_SHARED_LIBS=YES
     -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
@@ -120,8 +146,10 @@ set_target_properties(ArgumentParser PROPERTIES
   IMPORTED_IMPLIB ${CMAKE_LIBRARY_OUTPUT_DIRECTORY}/${CMAKE_IMPORT_LIBRARY_PREFIX}ArgumentParser${CMAKE_IMPORT_LIBRARY_SUFFIX}
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
 add_dependencies(ArgumentParser swift-argument-parser-install)
+add_dependencies(turbojpeg libjpeg-turbo-build)
 
 add_subdirectory(Autoencoder)
+add_subdirectory(TensorBoard)
 add_subdirectory(Support)
 add_subdirectory(Checkpoints)
 add_subdirectory(Datasets)
@@ -132,6 +160,7 @@ add_subdirectory(DCGAN)
 add_subdirectory(FastStyleTransfer)
 add_subdirectory(Examples)
 add_subdirectory(TrainingLoop)
+add_subdirectory(ImageLoader)
 
 if(BUILD_TESTING)
   add_subdirectory(Tests)

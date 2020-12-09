@@ -117,7 +117,7 @@ public struct CycleGANDataset<Entropy: RandomNumberGenerator> {
                 options: [.skipsHiddenFiles])
             .filter { $0.pathExtension == "jpg" }
             .map {
-                Image(jpeg: $0).tensor / 127.5 - 1.0
+                Image(contentsOf: $0).tensor / 127.5 - 1.0
             }
     }
 }

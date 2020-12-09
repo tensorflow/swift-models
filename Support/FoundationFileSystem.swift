@@ -58,4 +58,20 @@ public struct FoundationFile: File {
     // TODO: Incorporate file offset.
     try value.write(to: location)
   }
+
+  /// Appends the bytes in `suffix` to the file.
+  public func append(_ suffix: Data) throws {
+    let fileHandler = try FileHandle(forUpdating: location)
+    #if os(macOS)
+    // The following are needed in order to build on macOS 10.15 (Catalina). They can be removed
+    // once macOS 10.16 (Big Sur) is prevalent enough as a build environment.
+    fileHandler.seekToEndOfFile()
+    fileHandler.write(suffix)
+    fileHandler.closeFile()
+    #else
+    try fileHandler.seekToEnd()
+    try fileHandler.write(contentsOf: suffix)
+    try fileHandler.close()
+    #endif
+  }
 }
