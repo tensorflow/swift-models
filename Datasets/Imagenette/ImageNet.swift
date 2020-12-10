@@ -135,7 +135,7 @@ func downloadImageNetIfNotPresent(to directory: URL, base: String) {
   let contentsOfDir = try? FileManager.default.contentsOfDirectory(atPath: downloadPath)
   let directoryEmpty = (contentsOfDir == nil) || (contentsOfDir!.isEmpty)
 
-  //guard !directoryExists || directoryEmpty else { return }
+  guard !directoryExists || directoryEmpty else { return }
 
   // this approach tries to work in memory --> ~150GB in-memory download --> hits swap  -> stream to file instead?
   // let location = URL(
@@ -145,22 +145,10 @@ func downloadImageNetIfNotPresent(to directory: URL, base: String) {
   //   remoteRoot: location.deletingLastPathComponent(), localStorageDirectory: directory)
   // END ORIGINAL CODE
 
-  print("Downloading file to '/tmp/imagenet.tgz'.")
-  let downloadProcess = Process()
-  downloadProcess.environment = ProcessInfo.processInfo.environment
-  downloadProcess.executableURL = URL(fileURLWithPath: "/bin/bash")
-  // doesn't work, needs to wait for download
-  downloadProcess.arguments = ["wget -O /tmp/imagenet.tgz https://REMOTE-SERVER/imagenet/imagenet.tgz"]
-  try! downloadProcess.run()
-  downloadProcess.waitUntilExit()
-
-  let wouldLikeToTestLocalExtract = false
-  if (wouldLikeToTestLocalExtract) {
-      print("Extracting file at '/tmp/imagenet.tgz'.")
-      extractArchive(at: URL(string:"/tmp/imagenet.tgz")!, to: URL(string: downloadPath)!,
-                   fileExtension: "tgz", deleteArchiveWhenDone: false)
-      print("Done extracting'.")
-  }
+  print("Assuming you have downloaded ImageNet to '/tmp/imagenet.tgz', starting extract.")
+  extractArchive(at: URL(string:"/tmp/imagenet.tgz")!, to: URL(string: downloadPath)!,
+               fileExtension: "tgz", deleteArchiveWhenDone: false)
+  print("Done extracting'.")
 }
 
 func exploreImageNetDirectory(
@@ -217,7 +205,7 @@ func loadImageNetValidationDirectory(
 func applyImageNetDataAugmentation(image: Image) -> Tensor<Float> {
     // using the tensorflow imagenet demo from mlperf as reference:
     // https://github.com/mlcommons/training/blob/4f97c909f3aeaa3351da473d12eba461ace0be76/image_classification/tensorflow/official/resnet/imagenet_preprocessing.py#L94
-    var imageData = image.tensor
+    let imageData = image.tensor
     let (height, width, channels) = (imageData.shape[0], imageData.shape[1], imageData.shape[2])
 
     let imageSize = Tensor([Int32(height), Int32(width), Int32(channels)])
