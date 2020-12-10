@@ -5,6 +5,7 @@ public enum TrainingMetrics {
   case loss
   case accuracy
   case matthewsCorrelationCoefficient
+  case perplexity
 
   public var name: String {
     switch self {
@@ -14,6 +15,8 @@ public enum TrainingMetrics {
       return "accuracy"
     case .matthewsCorrelationCoefficient:
       return "mcc"
+    case .perplexity:
+      return "ppl"
     }
   }
 
@@ -25,6 +28,8 @@ public enum TrainingMetrics {
       return AccuracyMeasurer(self.name)
     case .matthewsCorrelationCoefficient:
       return MCCMeasurer(self.name)
+    case .perplexity:
+      return PerplexityMeasurer(self.name)
     }
   }
 }
@@ -188,5 +193,43 @@ public struct MCCMeasurer: MetricsMeasurer {
     let nominator = Float(tp * tn - fp * fn)
     let denominator = Float((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)).squareRoot()
     return denominator != 0 ? nominator / denominator : 0
+  }
+}
+
+/// A measurer for measuring perplexity.
+public struct PerplexityMeasurer: MetricsMeasurer {
+  /// Name of the PerplexityMeasurer.
+  public var name: String
+
+  /// Sum of losses cumulated from batches.
+  private var totalBatchLoss: Float = 0
+
+  /// Count of batchs cumulated so far.
+  private var batchCount: Int32 = 0
+
+  /// Creates an instance with the PerplexityMeasurer named `name`.
+  public init(_ name: String = "ppl") {
+    self.name = name
+  }
+
+  /// Resets totalBatchLoss and batchCount to zero.
+  public mutating func reset() {
+    totalBatchLoss = 0
+    batchCount = 0
+  }
+
+  /// Adds `loss` to totalBatchLoss and increases batchCount by one.
+  public mutating func accumulate<Output, Target>(
+    loss: Tensor<Float>?, predictions: Output?, labels: Target?
+  ) {
+    if let newBatchLoss = loss {
+      totalBatchLoss += newBatchLoss.scalarized()
+      batchCount += 1
+    }
+  }
+
+  /// Computes averaged perplexity as e^(averaged loss).
+  public func measure() -> Float {
+    return exp(totalBatchLoss / Float(batchCount))
   }
 }
