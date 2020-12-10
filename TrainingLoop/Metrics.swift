@@ -16,7 +16,7 @@ public enum TrainingMetrics {
     case .matthewsCorrelationCoefficient:
       return "mcc"
     case .perplexity:
-      return "ppl"
+      return "perplexity"
     }
   }
 
@@ -204,11 +204,11 @@ public struct PerplexityMeasurer: MetricsMeasurer {
   /// Sum of losses cumulated from batches.
   private var totalBatchLoss: Float = 0
 
-  /// Count of batchs cumulated so far.
+  /// Count of batches cumulated so far.
   private var batchCount: Int32 = 0
 
   /// Creates an instance with the PerplexityMeasurer named `name`.
-  public init(_ name: String = "ppl") {
+  public init(_ name: String = "perplexity") {
     self.name = name
   }
 
@@ -218,7 +218,8 @@ public struct PerplexityMeasurer: MetricsMeasurer {
     batchCount = 0
   }
 
-  /// Adds `loss` to totalBatchLoss and increases batchCount by one.
+  /// Adds `loss` to totalBatchLoss and increases batchCount by one; the loss
+  /// is expected to be per token cross entropy loss averaged over a batch.
   public mutating func accumulate<Output, Target>(
     loss: Tensor<Float>?, predictions: Output?, labels: Target?
   ) {
@@ -228,8 +229,11 @@ public struct PerplexityMeasurer: MetricsMeasurer {
     }
   }
 
-  /// Computes averaged perplexity as e^(averaged loss).
+  /// Computes perplexity as e^(averaged per token cross entropy loss).
   public func measure() -> Float {
+    guard batchCount > 0 else {
+      return 0
+    }
     return exp(totalBatchLoss / Float(batchCount))
   }
 }
