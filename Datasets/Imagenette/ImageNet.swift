@@ -148,7 +148,7 @@ func downloadImageNetIfNotPresent(to directory: URL, base: String) {
   print("Assuming you have downloaded ImageNet to '/tmp/imagenet.tgz', starting extract.")
   extractArchive(at: URL(string:"/tmp/imagenet.tgz")!, to: URL(string: downloadPath)!,
                fileExtension: "tgz", deleteArchiveWhenDone: false)
-  print("Done extracting'.")
+  print("Done extracting.")
 }
 
 func exploreImageNetDirectory(
