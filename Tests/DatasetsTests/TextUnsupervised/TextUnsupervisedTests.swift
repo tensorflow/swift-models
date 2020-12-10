@@ -41,23 +41,6 @@ final class TextUnsupervisedTests: XCTestCase {
         }
     }
 
-    func testCreateWikiText103WithoutBpe() {
-        let dataset = TextUnsupervised(variant: .wikiText103)
-
-        var totalCount = 0
-        for example in dataset.trainingDataset {
-            XCTAssertEqual(example.first.shape[0], 1024)
-            XCTAssertEqual(example.second.shape[0], 1024)
-            totalCount += 1
-        }
-        for example in dataset.validationDataset {
-            XCTAssertEqual(example.first.shape[0], 1024)
-            XCTAssertEqual(example.second.shape[0], 1024)
-            totalCount += 1
-        }
-        XCTAssertEqual(totalCount, 24)
-    }
-
     func testCreateWikiText2WithBpe() {
         do {
             let gpt2 = try GPT2()

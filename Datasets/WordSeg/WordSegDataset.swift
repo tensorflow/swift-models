@@ -147,13 +147,19 @@ public struct WordSegDataset {
       contentsOf: URL(fileURLWithPath: trainingFile),
       options: .alwaysMapped)
 
-    let validationData = try Data(
-      contentsOf: URL(fileURLWithPath: validationFile ?? "/dev/null"),
-      options: .alwaysMapped)
+    let validationData: Data
+    if let file = validationFile {
+      validationData = try Data(contentsOf: URL(fileURLWithPath: file), options: .alwaysMapped)
+    } else {
+      validationData = Data()
+    }
 
-    let testingData = try Data(
-      contentsOf: URL(fileURLWithPath: testingFile ?? "/dev/null"),
-      options: .alwaysMapped)
+    let testingData: Data
+    if let file = testingFile {
+      testingData = try Data(contentsOf: URL(fileURLWithPath: file), options: .alwaysMapped)
+    } else {
+      testingData = Data()
+    }
 
     self.init(
       training: trainingData, validation: validationData, testing: testingData)

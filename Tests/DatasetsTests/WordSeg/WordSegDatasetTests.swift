@@ -49,7 +49,7 @@ class WordSegDatasetTests: XCTestCase {
     do {
       let localStorageDirectory: URL = DatasetUtilities.defaultDirectory
         .appendingPathComponent("WordSeg", isDirectory: true)
-      let trainingFile = localStorageDirectory.appendingPathComponent("/seg/br/br-text/tr.txt")
+      let trainingFile = localStorageDirectory.appendingPathComponent("seg/br/br-text/tr.txt")
       let dataset = try WordSegDataset(training: trainingFile.path)
       XCTAssertEqual(dataset.trainingPhrases.count, 7832)
       XCTAssertEqual(dataset.validationPhrases.count, 0)
