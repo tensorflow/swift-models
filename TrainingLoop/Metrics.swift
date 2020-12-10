@@ -5,6 +5,7 @@ public enum TrainingMetrics {
   case loss
   case accuracy
   case matthewsCorrelationCoefficient
+  case perplexity
 
   public var name: String {
     switch self {
@@ -14,6 +15,8 @@ public enum TrainingMetrics {
       return "accuracy"
     case .matthewsCorrelationCoefficient:
       return "mcc"
+    case .perplexity:
+      return "perplexity"
     }
   }
 
@@ -25,6 +28,8 @@ public enum TrainingMetrics {
       return AccuracyMeasurer(self.name)
     case .matthewsCorrelationCoefficient:
       return MCCMeasurer(self.name)
+    case .perplexity:
+      return PerplexityMeasurer(self.name)
     }
   }
 }
@@ -188,5 +193,47 @@ public struct MCCMeasurer: MetricsMeasurer {
     let nominator = Float(tp * tn - fp * fn)
     let denominator = Float((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn)).squareRoot()
     return denominator != 0 ? nominator / denominator : 0
+  }
+}
+
+/// A measurer for measuring perplexity.
+public struct PerplexityMeasurer: MetricsMeasurer {
+  /// Name of the PerplexityMeasurer.
+  public var name: String
+
+  /// Sum of losses cumulated from batches.
+  private var totalBatchLoss: Float = 0
+
+  /// Count of batches cumulated so far.
+  private var batchCount: Int32 = 0
+
+  /// Creates an instance with the PerplexityMeasurer named `name`.
+  public init(_ name: String = "perplexity") {
+    self.name = name
+  }
+
+  /// Resets totalBatchLoss and batchCount to zero.
+  public mutating func reset() {
+    totalBatchLoss = 0
+    batchCount = 0
+  }
+
+  /// Adds `loss` to totalBatchLoss and increases batchCount by one; the loss
+  /// is expected to be per token cross entropy loss averaged over a batch.
+  public mutating func accumulate<Output, Target>(
+    loss: Tensor<Float>?, predictions: Output?, labels: Target?
+  ) {
+    if let newBatchLoss = loss {
+      totalBatchLoss += newBatchLoss.scalarized()
+      batchCount += 1
+    }
+  }
+
+  /// Computes perplexity as e^(averaged per token cross entropy loss).
+  public func measure() -> Float {
+    guard batchCount > 0 else {
+      return 0
+    }
+    return exp(totalBatchLoss / Float(batchCount))
   }
 }
