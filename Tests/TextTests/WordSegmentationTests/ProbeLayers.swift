@@ -185,7 +185,7 @@ class WordSegProbeLayerTests: XCTestCase {
     XCTAssert(lattice.isAlmostEqual(to: Example1.lattice, tolerance: 1e-5))
 
 /*
-// TODO: renable once SR-13945 is fixed.
+// TODO: re-enable once SR-13945 is fixed.
     func f(_ x: SNLM) -> Float {
       x.buildLattice(abab, maxLen: 5, device: device)[4].semiringScore.logr
     }
