@@ -4,6 +4,7 @@ import TensorFlow
 public enum TrainingMetrics {
   case loss
   case accuracy
+  case top1
   case top5
   case matthewsCorrelationCoefficient
   case perplexity
@@ -14,6 +15,8 @@ public enum TrainingMetrics {
       return "loss"
     case .accuracy:
       return "accuracy"
+    case .top1:
+      return "top1"
     case .top5:
       return "top5"
     case .matthewsCorrelationCoefficient:
@@ -28,6 +31,8 @@ public enum TrainingMetrics {
     case .loss:
       return LossMeasurer(self.name)
     case .accuracy:
+      return AccuracyMeasurer(self.name)
+    case .top1:
       return AccuracyMeasurer(self.name)
     case .top5:
       var measurer = AccuracyMeasurer(self.name)
