@@ -7,6 +7,7 @@ add_library(Datasets
   CoLA/CoLA.swift
   CoLA/DataUtilities.swift
   ImageClassificationDataset.swift
+  Imagenette/ImageNet.swift
   Imagenette/Imagenette.swift
   Imagenette/Imagewoof.swift
   LanguageModelDataset.swift
