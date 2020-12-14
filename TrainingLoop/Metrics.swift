@@ -30,12 +30,10 @@ public enum TrainingMetrics {
     switch self {
     case .loss:
       return LossMeasurer(self.name)
-    case .accuracy:
-      return AccuracyMeasurer(self.name)
-    case .top1:
-      return AccuracyMeasurer(self.name)
+    case .accuracy, .top1:
+      return TopKAccuracyMeasurer(self.name)
     case .top5:
-      var measurer = AccuracyMeasurer(self.name)
+      var measurer = TopKAccuracyMeasurer(self.name)
       measurer.k = 5
       return measurer
     case .matthewsCorrelationCoefficient:
@@ -101,8 +99,8 @@ public struct LossMeasurer: MetricsMeasurer {
   }
 }
 
-/// A measurer for measuring accuracy (top k)
-public struct AccuracyMeasurer: MetricsMeasurer {
+/// A measurer for measuring accuracy (top k, default k=1)
+public struct TopKAccuracyMeasurer: MetricsMeasurer {
   /// Name of the AccuracyMeasurer.
   public var name: String
   public var k: Int32 = 1
