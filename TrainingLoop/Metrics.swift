@@ -4,8 +4,7 @@ import TensorFlow
 public enum TrainingMetrics {
   case loss
   case accuracy
-  case top1
-  case top5
+  case top5Accuracy
   case matthewsCorrelationCoefficient
   case perplexity
 
@@ -15,10 +14,8 @@ public enum TrainingMetrics {
       return "loss"
     case .accuracy:
       return "accuracy"
-    case .top1:
-      return "top1"
-    case .top5:
-      return "top5"
+    case .top5Accuracy:
+      return "top5Accuracy"
     case .matthewsCorrelationCoefficient:
       return "mcc"
     case .perplexity:
@@ -30,12 +27,10 @@ public enum TrainingMetrics {
     switch self {
     case .loss:
       return LossMeasurer(self.name)
-    case .accuracy, .top1:
+    case .accuracy:
       return TopKAccuracyMeasurer(self.name)
-    case .top5:
-      var measurer = TopKAccuracyMeasurer(self.name)
-      measurer.k = 5
-      return measurer
+    case .top5Accuracy:
+      return TopKAccuracyMeasurer(self.name, n: 5)
     case .matthewsCorrelationCoefficient:
       return MCCMeasurer(self.name)
     case .perplexity:
@@ -111,9 +106,10 @@ public struct TopKAccuracyMeasurer: MetricsMeasurer {
   /// Count of total guesses.
   private var totalGuessCount: Int32 = 0
 
-  /// Creates an instance with the AccuracyMeasurerTop5 named `name`. 
-  public init(_ name: String = "accuracy") {
+  /// Creates an instance with the TopKAccuracyMeasurer named `name`.
+  public init(_ name: String = "accuracy", n: Int32 = 1) {
     self.name = name
+    self.k = n
   }
 
   /// Resets correctGuessCount and totalGuessCount to zero.
