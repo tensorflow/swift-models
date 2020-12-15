@@ -19,7 +19,7 @@ import TensorFlow
 // François Chollet
 // https://arxiv.org/abs/1610.02357
 
-public struct ConvBlock: Layer {
+public struct ConvBlockModule: Layer {
   @noDerivative public var depthActivation: Bool
   public var conv: Conv2D<Float>
   public var batchNorm: BatchNorm<Float>
@@ -95,12 +95,12 @@ public struct Xception: Layer {
   @noDerivative let pooling: String
 
   public var maxPool = MaxPool2D<Float>(poolSize: (3, 3), strides: (2, 2), padding: .same)
-  public var convBlock1: ConvBlock
-  public var convBlock2: ConvBlock
-  public var residualBlock1: ConvBlock
-  public var residualBlock2: ConvBlock
-  public var residualBlock3: ConvBlock
-  public var residualBlock4: ConvBlock
+  public var convBlock1: ConvBlockModule
+  public var convBlock2: ConvBlockModule
+  public var residualBlock1: ConvBlockModule
+  public var residualBlock2: ConvBlockModule
+  public var residualBlock3: ConvBlockModule
+  public var residualBlock4: ConvBlockModule
   public var sepConvBlock1a: SeparableConvBlock
   public var sepConvBlock2a: SeparableConvBlock
   public var sepConvBlock3a: SeparableConvBlock
@@ -130,9 +130,9 @@ public struct Xception: Layer {
     self.includeTop = includeTop
     self.pooling = pooling
 
-    convBlock1 = ConvBlock(filterShape: (3, 3, 3, 32), strides: (2,2))
-    convBlock2 = ConvBlock(filterShape: (3, 3, 32, 64))
-    residualBlock1 = ConvBlock(filterShape: (1, 1, 64, 128), strides: (2,2), padding: .same, depthActivation: false)
+    convBlock1 = ConvBlockModule(filterShape: (3, 3, 3, 32), strides: (2,2))
+    convBlock2 = ConvBlockModule(filterShape: (3, 3, 32, 64))
+    residualBlock1 = ConvBlockModule(filterShape: (1, 1, 64, 128), strides: (2,2), padding: .same, depthActivation: false)
 
     sepConvBlock1a = SeparableConvBlock(
       filterShape: (3, 3, 64, 128),
@@ -147,7 +147,7 @@ public struct Xception: Layer {
       depthActivation: false
     )
     
-    residualBlock2 = ConvBlock(filterShape: (1, 1, 128, 256), strides: (2,2), padding: .same, depthActivation: false)
+    residualBlock2 = ConvBlockModule(filterShape: (1, 1, 128, 256), strides: (2,2), padding: .same, depthActivation: false)
 
     sepConvBlock3a = SeparableConvBlock(
       filterShape: (3, 3, 128, 256),
@@ -162,7 +162,7 @@ public struct Xception: Layer {
       depthActivation: false
     )
 
-    residualBlock3 = ConvBlock(filterShape: (1, 1, 256, 728), strides: (2,2), padding: .same, depthActivation: false)
+    residualBlock3 = ConvBlockModule(filterShape: (1, 1, 256, 728), strides: (2,2), padding: .same, depthActivation: false)
 
     sepConvBlock5a = SeparableConvBlock(
       filterShape: (3, 3, 256, 728),
@@ -196,7 +196,7 @@ public struct Xception: Layer {
       depthActivation: false
     )
 
-    residualBlock4 = ConvBlock(filterShape: (1, 1, 728, 1024), strides: (2,2), padding: .same, depthActivation: false)
+    residualBlock4 = ConvBlockModule(filterShape: (1, 1, 728, 1024), strides: (2,2), padding: .same, depthActivation: false)
     
     sepConvBlock1c = SeparableConvBlock(
       filterShape: (3, 3, 728, 728),
