@@ -59,7 +59,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Windows)
 endif()
 ExternalProject_Add(swift-protobuf
   GIT_REPOSITORY git://github.com/apple/swift-protobuf.git
-  GIT_TAG master
+  GIT_TAG main
   CMAKE_ARGS
     -DBUILD_SHARED_LIBS=YES
     -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
