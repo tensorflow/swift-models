@@ -363,6 +363,24 @@ final class ImageClassificationInferenceTests: XCTestCase {
         let vgg19Result = vgg19(input)
         XCTAssertEqual(vgg19Result.shape, [1, 1000])
     }
+    
+    func testXception() {
+        // ImageNet size
+        let inputImageNet = Tensor<Float>(
+            randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
+            standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
+        let xception = Xception(classCount: 1000)
+        let xceptionResult = xception(inputImageNet)
+        XCTAssertEqual(xceptionResult.shape, [1, 1000])
+
+        // CIFAR10 size
+        let inputCIFAR = Tensor<Float>(
+            randomNormal: [1, 32, 32, 3], mean: Tensor<Float>(0.5),
+            standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
+        let xceptionCIFAR = Xception(classCount: 10)
+        let xceptionCIFARResult = xceptionCIFAR(inputCIFAR)
+        XCTAssertEqual(xceptionCIFARResult.shape, [1, 10])
+    }
 }
 
 extension ImageClassificationInferenceTests {
@@ -381,5 +399,6 @@ extension ImageClassificationInferenceTests {
         ("testWideResNet", testWideResNet),
         ("testVGG16", testVGG16),
         ("testVGG19", testVGG19),
+        ("testXception", testXception),
     ]
 }

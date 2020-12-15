@@ -29,13 +29,12 @@ public struct ConvBlockModule: Layer {
     strides: (Int, Int) = (1,1),
     padding: Padding = .valid,
     dilations: (Int, Int) = (1,1),
-    useBias: Bool = true,
     depthActivation: Bool = true
   ){
     self.depthActivation = depthActivation
     conv = Conv2D<Float>(
-      filterShape: filterShape, strides: strides, 
-      padding: padding, dilations: dilations, useBias: useBias)
+      filterShape: filterShape, strides: strides,
+      padding: padding, dilations: dilations, useBias: false)
     batchNorm = BatchNorm<Float>(featureCount: filterShape.3)
   }
 
@@ -50,41 +49,57 @@ public struct ConvBlockModule: Layer {
 
 
 public struct SeparableConvBlock: Layer {
+  @noDerivative public var startWithRelu: Bool
   @noDerivative public var depthActivation: Bool
   public var sepConv: SeparableConv2D<Float>
   public var batchNorm: BatchNorm<Float>
 
   public init(
     filterShape: (Int, Int, Int, Int),
-    widthMultiplier: Float = 1.0,
-    depthMultiplier: Int = 1,
-    strides: (Int, Int) = (1,1), 
-    depthActivation: Bool = true
+    strides: (Int, Int) = (1,1),
+    startWithRelu: Bool = true,
+    depthActivation: Bool = false
     ) {
-      precondition(widthMultiplier > 0, "Width multiplier must be positive")
-      precondition(depthMultiplier > 0, "Depth multiplier must be positive")
-
-      let scaledFilterCount = Int(Float(filterShape.2) * widthMultiplier)
-      let scaledPointwiseFilterCount = Int(Float(filterShape.3) * widthMultiplier)
-
+      self.startWithRelu = startWithRelu
       self.depthActivation = depthActivation
 
       sepConv = SeparableConv2D<Float>(
-        depthwiseFilterShape: (filterShape.0, filterShape.1, scaledFilterCount, depthMultiplier),
-        pointwiseFilterShape: (1, 1, scaledFilterCount * depthMultiplier, scaledPointwiseFilterCount),
+        depthwiseFilterShape: (filterShape.0, filterShape.1, filterShape.2, 1),
+        pointwiseFilterShape: (1, 1, filterShape.2, filterShape.3),
         strides: strides,
         padding: .same,
         useBias: false)
-      batchNorm = BatchNorm<Float>(featureCount: scaledPointwiseFilterCount)
+      batchNorm = BatchNorm<Float>(featureCount: filterShape.3)
       }
 
   @differentiable
   public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-    if self.depthActivation {
-      return relu(input.sequenced(through: sepConv, batchNorm))
-    } else {
-      return input.sequenced(through: sepConv, batchNorm)
+    var convolve = input
+    if self.startWithRelu {
+      convolve = relu(input)
     }
+    convolve = input.sequenced(through: sepConv, batchNorm)
+
+    if self.depthActivation {
+      return relu(convolve)
+    }
+    else {return convolve}
+  }
+}
+
+
+public struct MiddleFlow: Layer {
+  public var middleBlock: [SeparableConvBlock] = []
+
+  public init() {
+    middleBlock.append(SeparableConvBlock(filterShape: (3, 3, 728, 728)))
+    middleBlock.append(SeparableConvBlock(filterShape: (3, 3, 728, 728)))
+    middleBlock.append(SeparableConvBlock(filterShape: (3, 3, 728, 728)))
+  }
+
+  @differentiable
+  public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
+    return middleBlock.differentiableReduce(input) {$1($0)}
   }
 }
 
@@ -97,32 +112,20 @@ public struct Xception: Layer {
   public var maxPool = MaxPool2D<Float>(poolSize: (3, 3), strides: (2, 2), padding: .same)
   public var convBlock1: ConvBlockModule
   public var convBlock2: ConvBlockModule
-  public var residualBlock1: ConvBlockModule
-  public var residualBlock2: ConvBlockModule
-  public var residualBlock3: ConvBlockModule
-  public var residualBlock4: ConvBlockModule
-  public var sepConvBlock1a: SeparableConvBlock
-  public var sepConvBlock2a: SeparableConvBlock
-  public var sepConvBlock3a: SeparableConvBlock
-  public var sepConvBlock4a: SeparableConvBlock
-  public var sepConvBlock5a: SeparableConvBlock
-  public var sepConvBlock6a: SeparableConvBlock
-  public var sepConvBlock1b: SeparableConvBlock
-  public var sepConvBlock2b: SeparableConvBlock
-  public var sepConvBlock3b: SeparableConvBlock
-  public var sepConvBlock1c: SeparableConvBlock
-  public var sepConvBlock2c: SeparableConvBlock
-  public var sepConvBlock3c: SeparableConvBlock
-  public var sepConvBlock4c: SeparableConvBlock
+  public var residualBlock: [ConvBlockModule] = []
+  public var sepConvEntryBlock: [SeparableConvBlock] = []
+  public var sepConvMiddleBlock: [MiddleFlow] = []
+  public var sepConvExitBlock: [SeparableConvBlock] = []
+  
   public var denseLast: Dense<Float>
   public var globalAvgPool = GlobalAvgPool2D<Float>()
   public var globalMaxPool = GlobalMaxPool2D<Float>()
 
   public init(
-    classCount: Int, 
-    widthMultiplier: Float = 1.0, 
+    classCount: Int,
+    widthMultiplier: Float = 1.0,
     depthMultiplier: Int = 1,
-    includeTop: Bool = true, 
+    includeTop: Bool = true,
     pooling: String = "max"
   ) {
 
@@ -130,145 +133,114 @@ public struct Xception: Layer {
     self.includeTop = includeTop
     self.pooling = pooling
 
-    convBlock1 = ConvBlockModule(filterShape: (3, 3, 3, 32), strides: (2,2))
+    // Entry Flow
+    convBlock1 = ConvBlockModule(filterShape: (3, 3, 3, 32), strides: (2, 2))
     convBlock2 = ConvBlockModule(filterShape: (3, 3, 32, 64))
-    residualBlock1 = ConvBlockModule(filterShape: (1, 1, 64, 128), strides: (2,2), padding: .same, depthActivation: false)
 
-    sepConvBlock1a = SeparableConvBlock(
+    residualBlock.append(ConvBlockModule(
+      filterShape: (1, 1, 64, 128),
+      strides: (2, 2),
+      padding: .same,
+      depthActivation: false))
+    
+    sepConvEntryBlock.append(SeparableConvBlock(
       filterShape: (3, 3, 64, 128),
-      widthMultiplier: widthMultiplier,
-      depthMultiplier: depthMultiplier,
-      depthActivation: true
-    )
-    sepConvBlock2a = SeparableConvBlock(
-      filterShape: (3, 3, 128, 128),
-      widthMultiplier: widthMultiplier,
-      depthMultiplier: depthMultiplier,
-      depthActivation: false
-    )
+      startWithRelu: false))
+
+    sepConvEntryBlock.append(SeparableConvBlock(filterShape: (3, 3, 128, 128)))
+
+    residualBlock.append(ConvBlockModule(
+      filterShape: (1, 1, 128, 256),
+      strides: (2, 2),
+      padding: .same,
+      depthActivation: false))
+
+    sepConvEntryBlock.append(SeparableConvBlock(filterShape: (3, 3, 128, 256)))
+    sepConvEntryBlock.append(SeparableConvBlock(filterShape: (3, 3, 256, 256)))
+
+    residualBlock.append(ConvBlockModule(
+      filterShape: (1, 1, 256, 728),
+      strides: (2, 2),
+      padding: .same,
+      depthActivation: false))
+
+    sepConvEntryBlock.append(SeparableConvBlock(filterShape: (3, 3, 256, 728)))
+    sepConvEntryBlock.append(SeparableConvBlock(filterShape: (3, 3, 728, 728)))
+
+    // Middle Flow
+    sepConvMiddleBlock = Array(repeating: MiddleFlow(), count: 8)
+
+    // Exit Flow
+    residualBlock.append(ConvBlockModule(
+      filterShape: (1, 1, 728, 1024),
+      strides: (2, 2),
+      padding: .same,
+      depthActivation: false))
     
-    residualBlock2 = ConvBlockModule(filterShape: (1, 1, 128, 256), strides: (2,2), padding: .same, depthActivation: false)
-
-    sepConvBlock3a = SeparableConvBlock(
-      filterShape: (3, 3, 128, 256),
-      widthMultiplier: widthMultiplier,
-      depthMultiplier: depthMultiplier,
-      depthActivation: true
-    )
-    sepConvBlock4a = SeparableConvBlock(
-      filterShape: (3, 3, 256, 256),
-      widthMultiplier: widthMultiplier,
-      depthMultiplier: depthMultiplier,
-      depthActivation: false
-    )
-
-    residualBlock3 = ConvBlockModule(filterShape: (1, 1, 256, 728), strides: (2,2), padding: .same, depthActivation: false)
-
-    sepConvBlock5a = SeparableConvBlock(
-      filterShape: (3, 3, 256, 728),
-      widthMultiplier: widthMultiplier,
-      depthMultiplier: depthMultiplier,
-      depthActivation: true
-    )
-    sepConvBlock6a = SeparableConvBlock(
-      filterShape: (3, 3, 728, 728),
-      widthMultiplier: widthMultiplier,
-      depthMultiplier: depthMultiplier,
-      depthActivation: false
-    )
+    sepConvExitBlock.append(SeparableConvBlock(filterShape: (3, 3, 728, 728)))
+    sepConvExitBlock.append(SeparableConvBlock(filterShape: (3, 3, 728, 1024)))
     
-    sepConvBlock1b = SeparableConvBlock(
-      filterShape: (3, 3, 728, 728),
-      widthMultiplier: widthMultiplier,
-      depthMultiplier: depthMultiplier,
-      depthActivation: true
-    )
-    sepConvBlock2b = SeparableConvBlock(
-      filterShape: (3, 3, 728, 728),
-      widthMultiplier: widthMultiplier,
-      depthMultiplier: depthMultiplier,
-      depthActivation: true
-    )
-    sepConvBlock3b = SeparableConvBlock(
-      filterShape: (3, 3, 728, 728),
-      widthMultiplier: widthMultiplier,
-      depthMultiplier: depthMultiplier,
-      depthActivation: false
-    )
-
-    residualBlock4 = ConvBlockModule(filterShape: (1, 1, 728, 1024), strides: (2,2), padding: .same, depthActivation: false)
-    
-    sepConvBlock1c = SeparableConvBlock(
-      filterShape: (3, 3, 728, 728),
-      widthMultiplier: widthMultiplier,
-      depthMultiplier: depthMultiplier,
-      depthActivation: true
-    )
-    sepConvBlock2c = SeparableConvBlock(
-      filterShape: (3, 3, 728, 1024),
-      widthMultiplier: widthMultiplier,
-      depthMultiplier: depthMultiplier,
-      depthActivation: false
-    )
-
-    sepConvBlock3c = SeparableConvBlock(
+    sepConvExitBlock.append(SeparableConvBlock(
       filterShape: (3, 3, 1024, 1536),
-      widthMultiplier: widthMultiplier,
-      depthMultiplier: depthMultiplier,
-      depthActivation: true
-    )
-    sepConvBlock4c = SeparableConvBlock(
-      filterShape: (3, 3, 1536, 2048),
-      widthMultiplier: widthMultiplier,
-      depthMultiplier: depthMultiplier,
-      depthActivation: true
-    )
+      startWithRelu: false,
+      depthActivation: true))
     
-    denseLast = Dense<Float>(inputSize: 2048, outputSize: classCount, activation: softmax)
+    sepConvExitBlock.append(SeparableConvBlock(
+      filterShape: (3, 3, 1536, 2048),
+      startWithRelu: false,
+      depthActivation: true))
+    
+    denseLast = Dense<Float>(inputSize: 2048, outputSize: classCount)
   }
 
   @differentiable
   public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
-    var convolved = input.sequenced(through: convBlock1, convBlock2)
+    var entryFlow: Tensor<Float>
     var residual: Tensor<Float>
-    
-    residual = residualBlock1(convolved)
-    convolved = convolved.sequenced(through: sepConvBlock1a, sepConvBlock2a, maxPool)
-    convolved = convolved + residual
-    
-    residual = residualBlock2(convolved)
-    convolved = relu(convolved)
-    convolved = convolved.sequenced(through: sepConvBlock3a, sepConvBlock4a, maxPool)
-    convolved = convolved + residual
-    
-    residual = residualBlock3(convolved)
-    convolved = relu(convolved)
-    convolved = convolved.sequenced(through: sepConvBlock5a, sepConvBlock6a, maxPool)
-    convolved = convolved + residual
+    entryFlow = input.sequenced(through: convBlock1, convBlock2)
 
-    for _ in 0..<8 {
-      residual = convolved
-      convolved = relu(convolved)
-      convolved = convolved.sequenced(through: sepConvBlock1b, sepConvBlock2b, sepConvBlock3b)
-      convolved = convolved + residual
+    // Block 1
+    residual = residualBlock[0](entryFlow)
+    entryFlow = entryFlow.sequenced(through: sepConvEntryBlock[0], sepConvEntryBlock[1], maxPool)
+    entryFlow = entryFlow + residual
+
+    // Block 2
+    residual = residualBlock[1](entryFlow)
+    entryFlow = entryFlow.sequenced(through: sepConvEntryBlock[2], sepConvEntryBlock[3], maxPool)
+    entryFlow = entryFlow + residual
+
+    // Block 3
+    residual = residualBlock[2](entryFlow)
+    entryFlow = entryFlow.sequenced(through: sepConvEntryBlock[4], sepConvEntryBlock[5], maxPool)
+    entryFlow = entryFlow + residual
+    
+    // Middle Flow
+    var middleFlow = entryFlow
+    for idx in 0..<8 {
+      residual = middleFlow
+      middleFlow = sepConvMiddleBlock[idx](middleFlow)
+      middleFlow = middleFlow + residual
     }
 
-    residual = residualBlock4(convolved)
-    convolved = relu(convolved)
-    convolved = convolved.sequenced(through: sepConvBlock1c, sepConvBlock2c, maxPool)
-    convolved = convolved + residual
-    convolved = convolved.sequenced(through: sepConvBlock3c, sepConvBlock4c)
+    // Exit Flow
+    var exitFlow = middleFlow
+    residual = residualBlock[3](exitFlow)
+    exitFlow = exitFlow.sequenced(through: sepConvExitBlock[0], sepConvExitBlock[1], maxPool)
+    exitFlow = exitFlow + residual
 
-    if includeTop {
-      convolved = globalAvgPool(convolved)
-      convolved = denseLast(convolved)
-    } else {
-      if pooling == "avg" {
-        convolved = globalAvgPool(convolved)
+    exitFlow = exitFlow.sequenced(through: sepConvExitBlock[2], sepConvExitBlock[3])
+
+    if self.includeTop {
+      exitFlow = globalAvgPool(exitFlow)
+      exitFlow = denseLast(exitFlow)
+    }
+    else {
+      if self.pooling == "avg" {
+        exitFlow = globalAvgPool(exitFlow)
       } else if pooling == "max" {
-        convolved = globalMaxPool(convolved)
+        exitFlow = globalMaxPool(exitFlow)
       }
     }
-    return convolved
+    return exitFlow
   }
 }
