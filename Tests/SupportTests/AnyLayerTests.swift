@@ -16,6 +16,13 @@ import XCTest
 import ModelSupport
 import TensorFlow
 
+// TODO: Re-enable these once AnyLayer can be aligned with the new VectorProtocol.
+#if TENSORFLOW_USE_STANDARD_TOOLCHAIN
+final class AnyLayerTests: XCTestCase {
+    static var allTests = [(String, (XCTestCase) -> () -> Void)]()
+}
+#else
+
 struct ElementaryFunctionsTests<WrapperTestType: XCTestCase, Reference: ElementaryFunctions, Test: ElementaryFunctions> {
     let createReference: ([Float]) -> Reference
     let referenceToTest: (Reference) -> Test
@@ -167,3 +174,4 @@ final class AnyLayerTests: XCTestCase {
         ("testTangentVectorElementaryFunctions", testTangentVectorElementaryFunctions),
     ]
 }
+#endif
