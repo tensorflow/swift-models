@@ -4,6 +4,7 @@ import TensorFlow
 public enum TrainingMetrics {
   case loss
   case accuracy
+  case top5Accuracy
   case matthewsCorrelationCoefficient
   case perplexity
 
@@ -13,6 +14,8 @@ public enum TrainingMetrics {
       return "loss"
     case .accuracy:
       return "accuracy"
+    case .top5Accuracy:
+      return "top5Accuracy"
     case .matthewsCorrelationCoefficient:
       return "mcc"
     case .perplexity:
@@ -25,7 +28,9 @@ public enum TrainingMetrics {
     case .loss:
       return LossMeasurer(self.name)
     case .accuracy:
-      return AccuracyMeasurer(self.name)
+      return TopKAccuracyMeasurer(self.name)
+    case .top5Accuracy:
+      return TopKAccuracyMeasurer(self.name, n: 5)
     case .matthewsCorrelationCoefficient:
       return MCCMeasurer(self.name)
     case .perplexity:
@@ -89,10 +94,11 @@ public struct LossMeasurer: MetricsMeasurer {
   }
 }
 
-/// A measurer for measuring accuracy
-public struct AccuracyMeasurer: MetricsMeasurer {
+/// A measurer for measuring accuracy (top k, default k=1)
+public struct TopKAccuracyMeasurer: MetricsMeasurer {
   /// Name of the AccuracyMeasurer.
   public var name: String
+  public var k: Int32 = 1
 
   /// Count of correct guesses.
   private var correctGuessCount: Int32 = 0
@@ -100,9 +106,10 @@ public struct AccuracyMeasurer: MetricsMeasurer {
   /// Count of total guesses.
   private var totalGuessCount: Int32 = 0
 
-  /// Creates an instance with the AccuracyMeasurer named `name`. 
-  public init(_ name: String = "accuracy") {
+  /// Creates an instance with the TopKAccuracyMeasurer named `name`.
+  public init(_ name: String = "accuracy", n: Int32 = 1) {
     self.name = name
+    self.k = n
   }
 
   /// Resets correctGuessCount and totalGuessCount to zero.
@@ -123,8 +130,15 @@ public struct AccuracyMeasurer: MetricsMeasurer {
         "For accuracy measurements, the model output must be Tensor<Float>, and the labels must be Tensor<Int>."
       )
     }
-    correctGuessCount += Tensor<Int32>(predictions.argmax(squeezingAxis: -1) .== labels).sum()
-      .scalarized()
+    let predictionsReshaped = predictions.reshaped(
+      to: [predictions.shape.dropLast().reduce(1, *), predictions.shape.last!])
+    let labelsReshaped = labels.reshaped(to: [labels.shape.reduce(1, *)])
+
+    correctGuessCount += Int32(
+      Tensor<Int32>(
+        _Raw.inTopKV2(
+          predictions: predictionsReshaped, targets: labelsReshaped, k: Tensor<Int32>(k))).sum()
+        .scalar ?? 0)
     totalGuessCount += Int32(labels.shape.reduce(1, *))
   }
 
