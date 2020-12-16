@@ -130,9 +130,15 @@ public struct TopKAccuracyMeasurer: MetricsMeasurer {
         "For accuracy measurements, the model output must be Tensor<Float>, and the labels must be Tensor<Int>."
       )
     }
-    let topK = _Raw.inTopKV2(predictions: predictions, targets: labels, k: Tensor<Int32>(k))
-    let correctCount = Tensor<Int32>(topK).sum()
-    correctGuessCount += Int32(correctCount.scalar ?? 0)
+    let predictionsReshaped = predictions.reshaped(
+      to: [predictions.shape.dropLast().reduce(1, *), predictions.shape.last!])
+    let labelsReshaped = labels.reshaped(to: [labels.shape.reduce(1, *)])
+
+    correctGuessCount += Int32(
+      Tensor<Int32>(
+        _Raw.inTopKV2(
+          predictions: predictionsReshaped, targets: labelsReshaped, k: Tensor<Int32>(k))).sum()
+        .scalar ?? 0)
     totalGuessCount += Int32(labels.shape.reduce(1, *))
   }
 
