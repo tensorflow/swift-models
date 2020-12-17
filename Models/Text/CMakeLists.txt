@@ -23,7 +23,7 @@ target_compile_options(TextModels PRIVATE
 target_link_libraries(TextModels PUBLIC
   Checkpoints
   Datasets
-#  $<$<AND:$<BOOL:${ENABLE_SWIFT_NUMERICS}>,$<BOOL:${TENSORFLOW_USE_STANDARD_TOOLCHAIN}>>:Numerics>
+  $<$<AND:$<BOOL:${ENABLE_SWIFT_NUMERICS}>,$<BOOL:${TENSORFLOW_USE_STANDARD_TOOLCHAIN}>>:Numerics>
   SwiftProtobuf)
 
 install(TARGETS TextModels
