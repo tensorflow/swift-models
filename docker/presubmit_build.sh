@@ -31,8 +31,8 @@ sudo -E docker build -t built-img -f docker/Dockerfile --build-arg swift_tf_url 
 
 # SwiftPM-based build.
 docker run built-img /bin/bash -c "
-swift build ${STOCK_TOOLCHAIN:+"-D -Xswiftc -D TENSORFLOW_USE_STANDARD_TOOLCHAIN"} ;
-swift test ${STOCK_TOOLCHAIN:+"-D -Xswiftc -D TENSORFLOW_USE_STANDARD_TOOLCHAIN"} ;
+swift build ${STOCK_TOOLCHAIN:+"-Xswiftc -D -Xswiftc TENSORFLOW_USE_STANDARD_TOOLCHAIN"} ;
+swift test ${STOCK_TOOLCHAIN:+"-Xswiftc -D -Xswiftc TENSORFLOW_USE_STANDARD_TOOLCHAIN"} ;
 "
 
 # CMake-based build.
