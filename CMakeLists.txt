@@ -148,6 +148,27 @@ set_target_properties(ArgumentParser PROPERTIES
 add_dependencies(ArgumentParser swift-argument-parser-install)
 add_dependencies(turbojpeg libjpeg-turbo-build)
 
+option(ENABLE_SWIFT_NUMERICS
+  "Enable integrating swift-numerics" YES)
+
+include(CheckSwiftSourceCompiles)
+check_swift_source_compiles("struct S : KeyPathIterable { }" SWIFT_COMPILER_HAS_KEYPATHITERABLE_PROTOCOL)
+if(SWIFT_COMPILER_HAS_KEYPATHITERABLE_PROTOCOL)
+  set(TENSORFLOW_USE_STANDARD_TOOLCHAIN_DEFAULT OFF)
+else()
+  # if(CMAKE_Swift_COMPILER_VERSION VERSION_GREATER 5.3)
+  message(WARNING "Swift compiler does not support KeyPathIterable protocol - assuming stock toolchain")
+  set(TENSORFLOW_USE_STANDARD_TOOLCHAIN_DEFAULT ON)
+  # endif()
+endif()
+
+include(CMakeDependentOption)
+cmake_dependent_option(TENSORFLOW_USE_STANDARD_TOOLCHAIN
+  "Experimental support to use a standard toolchain"
+  ${TENSORFLOW_USE_STANDARD_TOOLCHAIN_DEFAULT}
+  "ENABLE_SWIFT_NUMERICS"
+  NO)
+
 add_subdirectory(Autoencoder)
 add_subdirectory(TensorBoard)
 add_subdirectory(Support)

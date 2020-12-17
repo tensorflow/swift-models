@@ -16,11 +16,14 @@ add_library(TextModels
   WordSeg/SemiRing.swift)
 set_target_properties(TextModels PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})
+target_compile_definitions(TextModels PRIVATE
+  $<$<BOOL:${TENSORFLOW_USE_STANDARD_TOOLCHAIN}>:TENSORFLOW_USE_STANDARD_TOOLCHAIN>)
 target_compile_options(TextModels PRIVATE
   $<$<BOOL:${BUILD_TESTING}>:-enable-testing>)
 target_link_libraries(TextModels PUBLIC
   Checkpoints
   Datasets
+#  $<$<AND:$<BOOL:${ENABLE_SWIFT_NUMERICS}>,$<BOOL:${TENSORFLOW_USE_STANDARD_TOOLCHAIN}>>:Numerics>
   SwiftProtobuf)
 
 install(TARGETS TextModels
