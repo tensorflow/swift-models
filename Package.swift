@@ -27,6 +27,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-protobuf.git", from: "1.10.0"),
         .package(url: "https://github.com/apple/swift-argument-parser", .branch("main")),
         .package(url: "https://github.com/google/swift-benchmark", from: "0.1.0"),
+        .package(url: "https://github.com/apple/swift-numerics", .branch("main")),
     ],
     targets: [
         .target(
@@ -35,12 +36,15 @@ let package = Package(
         .target(name: "Datasets", dependencies: ["ModelSupport"], path: "Datasets"),
         .target(name: "STBImage", path: "Support/STBImage"),
         .target(
-            name: "ModelSupport", dependencies: ["STBImage"], path: "Support",
-            exclude: ["STBImage"]),
+            name: "ModelSupport",
+            dependencies: ["STBImage", .product(name: "Numerics", package: "swift-numerics"),],
+            path: "Support", exclude: ["STBImage"]),
         .target(name: "TensorBoard", dependencies: ["SwiftProtobuf", "ModelSupport", "TrainingLoop"], path: "TensorBoard"),
         .target(name: "ImageClassificationModels", path: "Models/ImageClassification"),
         .target(name: "VideoClassificationModels", path: "Models/Spatiotemporal"),
-        .target(name: "TextModels", dependencies: ["Checkpoints", "Datasets", "SwiftProtobuf"], path: "Models/Text"),
+        .target(name: "TextModels",
+            dependencies: ["Checkpoints", "Datasets", "SwiftProtobuf", .product(name: "Numerics", package: "swift-numerics")],
+            path: "Models/Text"),
         .target(name: "RecommendationModels", path: "Models/Recommendation"),
         .target(name: "TrainingLoop", dependencies: ["ModelSupport"], path: "TrainingLoop"),
         .target(
