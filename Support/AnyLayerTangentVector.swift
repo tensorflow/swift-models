@@ -188,12 +188,11 @@ internal class AnyLayerTangentVectorBox {
     mustOverride()
   }
   
-  #if TENSORFLOW_USE_STANDARD_TOOLCHAIN
   /// The expMinusOne function.
   func _expMinusOne() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
-  #else    
+
   /// The exp10 function.
   func _exp10() -> AnyLayerTangentVectorBox {
     mustOverride()
@@ -218,7 +217,6 @@ internal class AnyLayerTangentVectorBox {
   func _log10() -> AnyLayerTangentVectorBox {
     mustOverride()
   }
-  #endif
   
   /// The log function.
   func _log() -> AnyLayerTangentVectorBox {
@@ -414,24 +412,27 @@ where Underlying.TangentVector == Underlying, Underlying.VectorSpaceScalar == Fl
   override func _exp() -> AnyLayerTangentVectorBox {
     return ConcreteAnyLayerTangentVectorBox(Underlying.exp(underlying));
   }
-  #if TENSORFLOW_USE_STANDARD_TOOLCHAIN
   override func _expMinusOne() -> AnyLayerTangentVectorBox {
-    return ConcreteAnyLayerTangentVectorBox(Underlying.expMinusOne(underlying));
+    // TODO: Re-enable this once we have settled on a single toolchain.
+    fatalError("expMinusOne() is currently unimplemented for this toolchain.")
+//    return ConcreteAnyLayerTangentVectorBox(Underlying.expMinusOne(underlying));
   }
   override func _log1p() -> AnyLayerTangentVectorBox {
-    return ConcreteAnyLayerTangentVectorBox(Underlying.log(onePlus: underlying));
+    // TODO: Re-enable this once we have settled on a single toolchain.
+    fatalError("log1p() is currently unimplemented for this toolchain.")
+    // return ConcreteAnyLayerTangentVectorBox(Underlying.log(onePlus: underlying));
+    // return ConcreteAnyLayerTangentVectorBox(Underlying.log1p(underlying));
   }
-  #else
   override func _exp2() -> AnyLayerTangentVectorBox {
-    return ConcreteAnyLayerTangentVectorBox(Underlying.exp2(underlying));
+    // TODO: Re-enable this once we have settled on a single toolchain.
+    fatalError("exp2() is currently unimplemented for this toolchain.")
+    // return ConcreteAnyLayerTangentVectorBox(Underlying.exp2(underlying));
   }
   override func _exp10() -> AnyLayerTangentVectorBox {
-    return ConcreteAnyLayerTangentVectorBox(Underlying.exp10(underlying));
+    // TODO: Re-enable this once we have settled on a single toolchain.
+    fatalError("exp10() is currently unimplemented for this toolchain.")
+    // return ConcreteAnyLayerTangentVectorBox(Underlying.exp10(underlying));
   }
-  override func _log1p() -> AnyLayerTangentVectorBox {
-    return ConcreteAnyLayerTangentVectorBox(Underlying.log1p(underlying));
-  }
-  #endif
   override func _log() -> AnyLayerTangentVectorBox {
     return ConcreteAnyLayerTangentVectorBox(Underlying.log(underlying));
   }
@@ -622,16 +623,17 @@ public struct AnyLayerTangentVector: KeyPathIterable {
       return OpaqueScalar(Float.exp(x.value))
     }
 
-    #if TENSORFLOW_USE_STANDARD_TOOLCHAIN
     @usableFromInline static func expMinusOne(_ x: OpaqueScalar) -> OpaqueScalar {
-      return OpaqueScalar(Float.expMinusOne(x.value))
+      // TODO: Re-enable this once we have settled on a single toolchain.
+      fatalError("expMinusOne() is currently unimplemented for this toolchain.")
+      // return OpaqueScalar(Float.expMinusOne(x.value))
     }
 
     @usableFromInline static func log(onePlus x: OpaqueScalar) -> OpaqueScalar {
-      return OpaqueScalar(Float.log(onePlus: x.value))
+      // TODO: Re-enable this once we have settled on a single toolchain.
+      fatalError("log(onePlus:) is currently unimplemented for this toolchain.")
+      // return OpaqueScalar(Float.log(onePlus: x.value))
     }
-    #else
-    #endif
 
     @usableFromInline static func log(_ x: OpaqueScalar) -> OpaqueScalar {
       return OpaqueScalar(Float.log(x.value))
@@ -801,14 +803,12 @@ extension AnyLayerTangentVector: ElementaryFunctions {
   public static func exp(_ x: Self) -> Self {
     return .init(box: x.box._exp())
   }
-  #if TENSORFLOW_USE_STANDARD_TOOLCHAIN
   public static func expMinusOne(_ x: Self) -> Self {
     return .init(box: x.box._expMinusOne())
   }
   public static func log(onePlus x: Self) -> Self {
     return .init(box: x.box._log1p())
   }
-  #else
   public static func exp2(_ x: Self) -> Self {
     return .init(box: x.box._exp2())
   }
@@ -827,7 +827,6 @@ extension AnyLayerTangentVector: ElementaryFunctions {
   public static func log1p(_ x: Self) -> Self {
     return .init(box: x.box._log1p())
   }
-  #endif
   public static func log(_ x: Self) -> Self {
     return .init(box: x.box._log())
   }
