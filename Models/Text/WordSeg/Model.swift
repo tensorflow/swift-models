@@ -23,10 +23,6 @@
 import ModelSupport
 import TensorFlow
 
-#if TENSORFLOW_USE_STANDARD_TOOLCHAIN
-import Numerics
-#endif
-
 /// Types that can be optimized by an optimizer.
 ///
 /// TODO: Consider promoting this into a public protocol in swift-apis?
