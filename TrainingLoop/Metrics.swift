@@ -137,7 +137,9 @@ public struct TopKAccuracyMeasurer: MetricsMeasurer {
     correctGuessCount += Int32(
       Tensor<Int32>(
         _Raw.inTopKV2(
-          predictions: predictionsReshaped, targets: labelsReshaped, k: Tensor<Int32>(k))).sum()
+          predictions: predictionsReshaped, targets: labelsReshaped,
+          k: Tensor<Int32>(k, on: predictions.device))
+      ).sum()
         .scalar ?? 0)
     totalGuessCount += Int32(labels.shape.reduce(1, *))
   }
@@ -170,7 +172,7 @@ public struct MCCMeasurer: MetricsMeasurer {
     groundTruths = []
   }
 
-  /// Appends boolean values computed from `predictions` and `labels` 
+  /// Appends boolean values computed from `predictions` and `labels`
   /// to self.predictions and self.groundTruths.
   public mutating func accumulate<Output, Target>(
     loss: Tensor<Float>?, predictions: Output?, labels: Target?
