@@ -22,6 +22,15 @@ final class ImageClassificationInferenceTests: XCTestCase {
         Context.local.learningPhase = .inference
     }
 
+    func testBigTransfer() {
+        let input = Tensor<Float>(
+            randomNormal: [1, 32, 32, 3], mean: Tensor<Float>(0.5),
+            standardDeviation: Tensor<Float>(0.1), seed: (0xffeffe, 0xfffe))
+        let bigTransfer = BigTransfer(classCount: 1000, depth: .resNet50, loadWeights: false)
+        let bigTransferResult = bigTransfer(input)
+        XCTAssertEqual(bigTransferResult.shape, [1, 1000])
+    }
+    
     func testDenseNet121() {
         let input = Tensor<Float>(
             randomNormal: [1, 224, 224, 3], mean: Tensor<Float>(0.5),
@@ -385,6 +394,7 @@ final class ImageClassificationInferenceTests: XCTestCase {
 
 extension ImageClassificationInferenceTests {
     static var allTests = [
+        ("testBigTransfer", testBigTransfer),
         ("testDenseNet121", testDenseNet121),
         ("testEfficientNet", testEfficientNet),
         ("testLeNet", testLeNet),
