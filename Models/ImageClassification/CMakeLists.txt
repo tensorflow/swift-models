@@ -1,4 +1,5 @@
 add_library(ImageClassificationModels
+  BigTransfer.swift
   DenseNet121.swift
   EfficientNet.swift
   LeNet-5.swift

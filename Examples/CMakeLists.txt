@@ -1,3 +1,4 @@
+add_subdirectory(BigTransfer-CIFAR100)
 add_subdirectory(Custom-CIFAR10)
 add_subdirectory(ResNet-CIFAR10)
 add_subdirectory(LeNet-MNIST)
