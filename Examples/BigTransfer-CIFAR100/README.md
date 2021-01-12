@@ -1,8 +1,8 @@
-# ResNet-50 with CIFAR-10
+# Big Transfer with CIFAR-100
 
-This example demonstrates how to train the [ResNet-50 network]( https://arxiv.org/abs/1512.03385) against the [CIFAR-10 image classification dataset](https://www.cs.toronto.edu/~kriz/cifar.html).
+This script illustrates how to train Big Transfer (https://arxiv.org/abs/1912.11370) against the [CIFAR-100 image classification dataset](https://www.cs.toronto.edu/~kriz/cifar.html).
 
-A modified ResNet-50 network is instantiated from the ImageClassificationModels library of standard models, and applied to an instance of the CIFAR-10 dataset. A custom training loop is defined, and the training and test losses and accuracies for each epoch are shown during training.
+This model uses a pre-defined rule based on dataset size to determine the optimal parameters for fine tuning using a slightly modified ResnetV2 transfer learning model.
 
 ## Setup
 
@@ -14,5 +14,5 @@ To train the model, run:
 
 ```sh
 cd swift-models
-swift run -c release ResNet-CIFAR10
+swift run BigTransfer-CIFAR100
 ```
