@@ -113,6 +113,8 @@ project, add ImageClassificationModels as a dependency and import the module:
 import ImageClassificationModels
 ```
 
+These models include:
+
 - DenseNet121
 - EfficientNet
 - LeNet-5
@@ -137,6 +139,8 @@ project, add RecommendationModels as a dependency and import the module:
 import RecommendationModels
 ```
 
+These models include:
+
 - DLRM
 - MLP
 - NeuMF
@@ -151,13 +155,15 @@ project, add TextModels as a dependency and import the module:
 import TextModels
 ```
 
+These models include:
+
 - [BERT](Models/Text/BERT)
 - [GPT-2](Models/Text/GPT2)
 - [WordSeg](Models/Text/WordSeg)
 
 ### Datasets
 
-In addition to the machine learning model itself, a dataset is usually required to train the model.
+In addition to the machine learning model itself, a dataset is usually required when training.
 Swift wrappers have been built for many common datasets to ease their use within machine learning
 applications. Most of these use the
 [Epochs](https://github.com/tensorflow/swift-apis/tree/main/Sources/TensorFlow/Epochs) API that 
@@ -188,7 +194,7 @@ These are the currently provided dataset wrappers:
 
 ### Model checkpoints
 
-Model saving and loading is provided by the [Checkpoints](Checkpoints). To use the model
+Model saving and loading is provided by the [Checkpoints](Checkpoints) module. To use the model
 checkpointing functionality, add Checkpoints as a dependency and import the module:
 
 ```swift
@@ -198,7 +204,11 @@ import Checkpoints
 ### Image loading and saving
 
 The [ModelSupport](Support) module contains many shared utilites that are needed within the Swift
-machine learning examples. This includes 
+machine learning examples. This includes the loading, saving, and processing of
+[still images](Support/Image.swift) via the
+[stb_image](https://github.com/nothings/stb) library.
+[Animated images](Support/AnimatedImage.swift) can also be written out as GIF files from multiple
+tensors.
 
 Experimental support for libjpeg-turbo as an accelerated image loader [is present](ImageLoader), 
 but has not yet been incorporated into the main image loading capabilities.
@@ -213,7 +223,7 @@ training loop from scratch. Other examples are being gradually converted to use 
 ### TensorBoard integration
 
 [TensorBoard](https://www.tensorflow.org/tensorboard) integration is provided in the
-[TensorBoard](TensorBoard) module as a callback for the generalized training loop. TensorBoard 
+[TensorBoard module](TensorBoard) as a callback for the generalized training loop. TensorBoard 
 lets you visualize the progress of your model as it trains by plotting model statistics as they
 update, or to review the training process afterward.
 
