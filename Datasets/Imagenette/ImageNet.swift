@@ -18,16 +18,19 @@
 // https://arxiv.org/abs/1409.0575
 
 // Post-processing applied:
-// 1) Download ImageNet files (eg ILSVRC2012_img_train.tar (A), ILSVRC2012_img_val.tar (B))
-// A) untar tar file to produce 1000 tar files in a folder called 'train':
-//    untar each + create directories:
-//    > mkdir n01440764; tar -xvf n01440764.tar -C n01440764; rm n01440764.tar
-// B) untar 50k images to a folder called `val`:
-//    move images to labeled subfolders using pytorch script:
-//    https://raw.githubusercontent.com/soumith/imagenetloader.torch/master/valprep.sh
-//    remove blacklisted validation images:
-//    https://raw.githubusercontent.com/fastai/imagenet-fast/master/imagenet_nv/blacklist.sh
-// 2) create imagenet.tgz: tar -czvf imagenet.tgz train val
+// 1) Download ImageNet files.
+//    A) ILSVRC2012_img_train.tar
+//    B) ILSVRC2012_img_val.tar
+// A) Untar tar files to produce 1000 tar files in a folder called "train".
+//    Untar each + create directories:
+//    mkdir n01440764; tar -xvf n01440764.tar -C n01440764; rm n01440764.tar
+// B) Untar 50k images to a folder called "val".
+//    - Move images to labeled subfolders using PyTorch script:
+//      https://raw.githubusercontent.com/soumith/imagenetloader.torch/master/valprep.sh
+//    - Remove denylisted validation images:
+//      https://raw.githubusercontent.com/fastai/imagenet-fast/master/imagenet_nv/blacklist.sh
+// 2) Create imagenet.tgz from "train" and "val".
+//    tar -czvf imagenet.tgz train val
 
 import Foundation
 import ModelSupport
