@@ -12,96 +12,80 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Checkpoints
+import Foundation
+import ModelSupport
 import TensorFlow
 
-protocol ExportableLayer {
-    var nameMappings: [String: String] { get }
-}
+extension GPT2 {
+  public func writeCheckpoint(
+    to location: URL, name: String, fileSystem: FileSystem = FoundationFileSystem()
+  ) throws {
+    try model.writeCheckpoint(to: location, name: name, fileSystem: fileSystem)
 
-extension TransformerLM: ExportableLayer {
-    var nameMappings: [String: String] {
-        ["layers": "", "norm": "ln_f", "embedding": "", "positionalEmbeddings": "wpe"]
+    // Copy auxiliary files if they need to be in different location than current
+    // local storage.
+    if location != storage {
+        try writeAuxiliary(to: location)
     }
+  }
+
+  public func writeAuxiliary(to location: URL) throws {
+      let fileSystem = FoundationFileSystem()
+      let vocabularyFileURL: URL = storage.appendingPathComponent("encoder.json")
+      let mergesFileURL: URL = storage.appendingPathComponent("vocab.bpe")
+      let hparamsFileURL: URL = storage.appendingPathComponent("hparams.json")
+      let destinationEncoderURL: URL = location.appendingPathComponent("encoder.json")
+      let destinationMergesURL: URL = location.appendingPathComponent("vocab.bpe")
+      let destinationHparamsURL: URL = location.appendingPathComponent("hparams.json")
+
+      try fileSystem.copy(source: vocabularyFileURL, dest: destinationEncoderURL)
+      try fileSystem.copy(source: mergesFileURL, dest: destinationMergesURL)
+      try fileSystem.copy(source: hparamsFileURL, dest: destinationHparamsURL)
+  }
 }
 
-extension Embedding: ExportableLayer {
-    var nameMappings: [String: String] { ["embeddings": "wte"] }
-}
+extension TransformerLM: Checkpointable {
+  public var ignoredTensorPaths: Set<String> {
+    return ["Attention.scale"]
+  }
+  
+  public var tensorNameMap: (String) -> String {
+    return { name in
+      let components = name.split(separator: "/")
+      guard components.count >= 1 else { return name }
+      let normNames = ["offset": "b", "scale": "g"]
+      let denseNames = ["weight": "w", "bias": "b"]
+      let feedForwardNames = ["dense1": "c_fc", "dense2": "c_proj"]
+      let selfAttentionNames = ["wqkv": "c_attn", "wo": "c_proj"]
 
-extension LayerNorm: ExportableLayer {
-    var nameMappings: [String: String] { ["offset": "b", "scale": "g"] }
-}
-
-extension Dense: ExportableLayer {
-    var nameMappings: [String: String] { ["weight": "w", "bias": "b"] }
-}
-
-extension TimeDistributed: ExportableLayer {
-    var nameMappings: [String: String] { ["dense": ""] }
-}
-
-extension FeedForward: ExportableLayer {
-    var nameMappings: [String: String] { ["dense1": "c_fc", "dense2": "c_proj"] }
-}
-
-extension MultiHeadAttentionGPT2: ExportableLayer {
-    var nameMappings: [String: String] { ["attention": "attn", "wqkv": "c_attn", "wo": "c_proj"] }
-}
-
-extension Attention: ExportableLayer {
-    var nameMappings: [String: String] { ["dropout": "drop", "scale": "sc"] }
-}
-
-extension EncoderLayer: ExportableLayer {
-    var nameMappings: [String: String] {
-        [
-            "selfAttention": "attn", "selfAttentionNorm": "ln_1", "feedForward": "mlp",
-            "feedForwardNorm": "ln_2",
-        ]
-    }
-}
-
-extension Array: ExportableLayer {
-    var nameMappings: [String: String] { ["h": "h"] }
-}
-
-public func recursivelyObtainTensors(
-    _ obj: Any, scope: String? = nil, tensors: inout [String: Tensor<Float>], separator: String
-) {
-    let m = Mirror(reflecting: obj)
-    let nameMappings: [String: String]
-    if let exportableLayer = obj as? ExportableLayer {
-        nameMappings = exportableLayer.nameMappings
-    } else {
-        nameMappings = [:]
-    }
-
-    var repeatedLabels: [String: Int] = [:]
-    func suffix(for label: String) -> String {
-        if let currentSuffix = repeatedLabels[label] {
-            repeatedLabels[label] = currentSuffix + 1
-            return "\(currentSuffix + 1)"
-        } else {
-            repeatedLabels[label] = 0
-            return "0"
+      switch components[0] {
+      case "layers":
+        let layerIndex = Int(components[1].dropFirst().dropLast())!
+        let base = "model/h\(layerIndex)"
+        switch components[2] {
+        case "feedForward":
+          return
+            "\(base)/mlp/\(feedForwardNames[String(components[3])]!)/\(denseNames[String(components[5])]!)"
+        case "feedForwardNorm":
+          return "\(base)/ln_2/\(normNames[String(components[3])]!)"
+        case "selfAttention":
+          return
+            "\(base)/attn/\(selfAttentionNames[String(components[3])]!)/\(denseNames[String(components[5])]!)"
+        case "selfAttentionNorm":
+          return "\(base)/ln_1/\(normNames[String(components[3])]!)"
+        default:
+          return name
         }
+      case "norm":
+        return "model/ln_f/\(normNames[String(components[1])]!)"
+      case "positionalEmbeddings":
+        return "model/wpe"
+      case "embedding":
+        return "model/wte"
+      default:
+        return name
+      }
     }
-
-    let hasSuffix = (m.children.first?.label == nil)
-
-    var path = scope
-    for child in m.children {
-        let label = child.label ?? "h"
-
-        if let remappedLabel = nameMappings[label] {
-            let labelSuffix = hasSuffix ? suffix(for: remappedLabel) : ""
-            let conditionalSeparator = remappedLabel == "" ? "" : separator
-
-            path = (scope != nil ? scope! + conditionalSeparator : "") + remappedLabel + labelSuffix
-            if let tensor = child.value as? Tensor<Float> {
-                tensors[path!] = tensor
-            }
-        }
-        recursivelyObtainTensors(child.value, scope: path, tensors: &tensors, separator: separator)
-    }
+  }
 }

@@ -35,7 +35,7 @@ public class GPT2 {
     private var states: [AttentionContext]
     private let endOfText = "<|endoftext|>"
     private var endOfTextId = 0
-    private var storage: URL
+    internal var storage: URL
 
     public init(checkpoint: URL = GPT2.remoteCheckpoint) throws {
         var parameters = TransformerLMConfig(
@@ -148,33 +148,5 @@ public class GPT2 {
         }
 
         throw GPT2Error.invalidEncoding(id: id)
-    }
-
-    public func writeCheckpoint(to location: URL, name: String) throws {
-        var tensors = [String: Tensor<Float>]()
-        recursivelyObtainTensors(model, scope: "model", tensors: &tensors, separator: "/")
-
-        let writer = CheckpointWriter(tensors: tensors)
-        try writer.write(to: location, name: name)
-        
-        // Copy auxiliary files if they need to be in different location than current
-        // local storage.
-        if location != storage {
-            try writeAuxiliary(to: location)
-        }
-    }
-    
-    public func writeAuxiliary(to location: URL) throws {
-        let fileSystem = FoundationFileSystem()
-        let vocabularyFileURL: URL = storage.appendingPathComponent("encoder.json")
-        let mergesFileURL: URL = storage.appendingPathComponent("vocab.bpe")
-        let hparamsFileURL: URL = storage.appendingPathComponent("hparams.json")
-        let destinationEncoderURL: URL = location.appendingPathComponent("encoder.json")
-        let destinationMergesURL: URL = location.appendingPathComponent("vocab.bpe")
-        let destinationHparamsURL: URL = location.appendingPathComponent("hparams.json")
-
-        try fileSystem.copy(source: vocabularyFileURL, dest: destinationEncoderURL)
-        try fileSystem.copy(source: mergesFileURL, dest: destinationMergesURL)
-        try fileSystem.copy(source: hparamsFileURL, dest: destinationHparamsURL)
     }
 }

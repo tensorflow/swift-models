@@ -290,6 +290,24 @@ open class CheckpointReader {
     }
 }
 
+extension CheckpointReader {
+    static func recursivelyObtainTensorNames(
+        _ current: Any, scope: String? = nil, tensors: inout [String],
+        separator: String, ignoredTensorPaths: Set<String> = []
+    ) {
+        CheckpointWriter.recursivelyVisitTensors(
+            current, scope: scope, separator: separator, ignoredTensorPaths: ignoredTensorPaths
+        ) { child, path in
+            if child.value is Tensor<Float> {
+                tensors.append(path)
+                return false
+            } else {
+                return true
+            }
+        }
+    }
+}
+
 extension Tensorflow_TensorShapeProto {
     var shapeArray: [Int] {
         return self.dim.map { Int($0.size) }

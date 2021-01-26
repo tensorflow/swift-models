@@ -142,7 +142,7 @@ let package = Package(
             dependencies: ["SwiftModelsBenchmarksCore"],
             path: "SwiftModelsBenchmarks"
         ),
-        .testTarget(name: "CheckpointTests", dependencies: ["Checkpoints"]),
+        .testTarget(name: "CheckpointTests", dependencies: ["Checkpoints", "ImageClassificationModels"]),
         .target(
             name: "BERT-CoLA", dependencies: ["TextModels", "Datasets", "TrainingLoop"], path: "Examples/BERT-CoLA"),
         .testTarget(name: "SupportTests", dependencies: ["ModelSupport"]),
