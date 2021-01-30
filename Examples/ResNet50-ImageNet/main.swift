@@ -17,6 +17,10 @@ import ImageClassificationModels
 import TensorBoard
 import TensorFlow
 import TrainingLoop
+import Checkpoints
+import Foundation
+
+extension ResNet: Checkpointable {}
 
 // XLA mode can't load Imagenet, need to use eager mode to limit memory use
 let device = Device.defaultTFEager
@@ -36,12 +40,25 @@ public func scheduleLearningRate<L: TrainingLoopProtocol>(
   }
 }
 
+public func saveCallback<L: TrainingLoopProtocol>(
+  _ loop: inout L, event: TrainingLoopEvent
+) throws where L.Opt.Scalar == Float {
+  if event == .epochStart {
+    guard let epoch = loop.epochIndex else  { return }
+
+    let temporaryDirectory = URL(fileURLWithPath: "/tmp/ImageNet/")
+
+    print("saving model: \(epoch)")
+    try model.writeCheckpoint(to: temporaryDirectory, name: "ResNet")
+  }
+}
+
 var trainingLoop = TrainingLoop(
   training: dataset.training,
   validation: dataset.validation,
   optimizer: optimizer,
   lossFunction: softmaxCrossEntropy,
   metrics: [.accuracy],
-  callbacks: [scheduleLearningRate, tensorBoardStatisticsLogger()])
+  callbacks: [scheduleLearningRate, tensorBoardStatisticsLogger(), saveCallback])
 
 try! trainingLoop.fit(&model, epochs: 90, on: device)
