@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 import TensorFlow
 import Foundation
 import Datasets
@@ -49,11 +50,8 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
     for batch in epochBatches {
         print("Batch \(step) started at \(Date())")
         defer { step += 1 }
-
         Context.local.learningPhase = .training
- 
         let concatanatedImages = batch.source.concatenated(with: batch.target)
-                 
         let scaledImages = _Raw.resizeNearestNeighbor(images: concatanatedImages, size: [286, 286])
         var croppedImages = scaledImages.slice(lowerBounds: Tensor<Int32>([0, Int32(random() % 30), Int32(random() % 30), 0]),
                                                sizes: [2, 256, 256, 3])
@@ -86,15 +84,12 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
             let fakePrediction = d(fakeAB)
             let fakeLoss = sigmoidCrossEntropy(logits: fakePrediction,
                                                labels: Tensor<Float>.zero.broadcasted(to: fakePrediction.shape))
-            
             let realAB = sourceImages.concatenated(with: targetImages,
                                                    alongAxis: 3)
             let realPrediction = d(realAB)
             let realLoss = sigmoidCrossEntropy(logits: realPrediction,
                                                labels: Tensor<Float>.one.broadcasted(to: fakePrediction.shape))
-            
             discriminatorTotalLoss += (fakeLoss + realLoss) * 0.5
-            
             return (fakeLoss + realLoss) * 0.5
         }
         
@@ -104,37 +99,11 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
         // MARK: Sample Inference
         if step % options.sampleLogPeriod == 0 {
             Context.local.learningPhase = .inference
-                        
             let fakeSample = generator(validationImage) * 0.5 + 0.5
-
             let fakeSampleImage = Image(tensor: fakeSample[0] * 255)
             let name = "sample" + String(epoch) + String(step) + ".jpg"
             validationImageURL = URL(string: FileManager.default.currentDirectoryPath)!.appendingPathComponent(name)
             fakeSampleImage.save(to: validationImageURL, format: .rgb)
-
-
-/*            // uncomment to test model persistence
-             
-            // save and restore the models and then check restored generator loss vs orginal
-            let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent("Transformer")
-            try generator.writeCheckpoint(to: temporaryDirectory, name: "gen.ckpt")
-            let recreatedmodel = try NetG(checkpoint: temporaryDirectory.appendingPathComponent("gen.ckpt"))
-            let recreatedFakeSample = recreatedmodel(validationImage) * 0.5 + 0.5
-            let recreatedSampleImage = Image(tensor: recreatedFakeSample[0] * 255)
-            let fileName = "recreated_sample" + String(epoch) + String(step) + ".jpg"
-            recreatedValidationImageURL = URL(string: FileManager.default.currentDirectoryPath)!.appendingPathComponent(fileName)
-            recreatedSampleImage.save(to: recreatedValidationImageURL, format: .rgb)
-            if generator == recreatedmodel {
-                print("models are equal")
-            }
-            if fakeSample == recreatedFakeSample {
-                print("fake sample tensors are equal")
-            }
-            if fakeSampleImage == recreatedSampleImage {
-                print("image from sample is equal to restored image")
-            }
-*/
-            
         }
         discriminatorCount += 1
     }

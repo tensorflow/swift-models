@@ -6,7 +6,7 @@ add_library(pix2pix
   pix2pix/Generator.swift
   pix2pix/Layers.swift
   pix2pix/Utils.swift
-  pix2pix/PythonCheckpointReader.swift)
+  pix2pix/CheckpointReader.swift)
   
 set_target_properties(pix2pix PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES ${CMAKE_Swift_MODULE_DIRECTORY})

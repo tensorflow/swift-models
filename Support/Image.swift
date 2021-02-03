@@ -148,10 +148,3 @@ public func saveImage(
     let outputURL = URL(fileURLWithPath: "\(directory)\(name).jpg")
     resizedImage.save(to: outputURL, format: format, quality: quality)
 }
-
-extension Image: Equatable {
-    public static func == (left: Image, right: Image) -> Bool {
-        return left.tensor == right.tensor
-    }
-}
-

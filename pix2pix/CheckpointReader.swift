@@ -1,10 +1,21 @@
-
-
+// Copyright 2021 The TensorFlow Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 import Checkpoints
+import Foundation
 import ModelSupport
 import TensorFlow
-import Foundation
 
 public struct NetGConfig: Codable {
     public let inChannels: Int
@@ -53,71 +64,6 @@ protocol InitializableFromPythonCheckpoint3 {
     init(reader: CheckpointReader, config: NetGConfig, scope: String, submodule: Sublayer)
 }
 
-//extension Dense: InitializableFromPythonCheckpoint {
-//    init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
-//        var kernel: Tensor<Scalar> = reader.readTensor(name: scope  "/w")
-//        if kernel.shape.dimensions.count > 2 {
-//            // The OpenAI checkpoints have a batch dimension, and our checkpoints do not.
-//            kernel = kernel.squeezingShape(at: 0)
-//        }
-//        self.init(
-//            weight: kernel,
-//            bias: reader.readTensor(name: scope  "/b"),
-//            activation: identity)
-//    }
-//
-//    init(
-//        reader: CheckpointReader,
-//        config: TransformerLMConfig,
-//        scope: String,
-//        activation: String
-//    ) {
-//        var kernel: Tensor<Scalar> = reader.readTensor(name: scope  "/w")
-//        if kernel.shape.dimensions.count > 2 {
-//            // The OpenAI checkpoints have a batch dimension, and our checkpoints do not.
-//            kernel = kernel.squeezingShape(at: 0)
-//        }
-//        self.init(
-//            weight: kernel,
-//            bias: reader.readTensor(name: scope  "/b"),
-//            activation: gelu)
-//    }
-//}
-//
-//extension LayerNorm: InitializableFromPythonCheckpoint {
-//    init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
-//        self.init(
-//            offset: reader.readTensor(name: scope  "/b"),
-//            scale: reader.readTensor(name: scope  "/g"),
-//            axis: -1,
-//            epsilon: 1e-5)
-//    }
-//}
-//
-//extension FeedForward: InitializableFromPythonCheckpoint {
-//    init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
-//        dense1 = TimeDistributed(
-//            Dense<Float>(reader: reader, config: config, scope: scope  "/c_fc", activation: "gelu")
-//        )
-//        dense2 = TimeDistributed(
-//            Dense<Float>(reader: reader, config: config, scope: scope  "/c_proj"))
-//    }
-//}
-//
-//extension EncoderLayer: InitializableFromPythonCheckpoint {
-//    init(reader: CheckpointReader, config: TransformerLMConfig, scope: String) {
-//        selfAttention = MultiHeadAttentionGPT2(
-//            reader: reader, config: config, scope: scope  "/attn")
-//        selfAttentionDropout = Dropout(probability: 0.1)
-//        selfAttentionNorm = LayerNorm(reader: reader, config: config, scope: scope  "/ln_1")
-//        feedForward = FeedForward(reader: reader, config: config, scope: scope  "/mlp")
-//        feedForwardDropout = Dropout(probability: 0.1)
-//        feedForwardNorm = LayerNorm(reader: reader, config: config, scope: scope  "/ln_2")
-//    }
-//}
-//
-
-
 extension ConvLayer: InitializableFromPythonCheckpoint2 {
     init(reader: CheckpointReader, config: NetGConfig, scope: String) {
         conv2d = Conv2D<Float>(reader: reader, config: config, scope: scope + "/conv2d")
@@ -131,11 +77,7 @@ extension Conv2D: InitializableFromPythonCheckpoint2 {
     init(reader: CheckpointReader, config: NetGConfig, scope: String) {
         let filter: Tensor<Scalar> = reader.readTensor(name: scope + "/fil")
         let bias: Tensor<Scalar> = reader.readTensor(name: scope + "/bias")
-        // TODO: read/write these from checkpoint file
-//        let activation: Tensor<Scalar> = reader.readTensor(name: scope + "/act")
-//        let strides: Tensor<Scalar> = reader.readTensor(name: scope + "/str")
-//        let padding: Tensor<Scalar> = reader.readTensor(name: scope + "/pad")
-//        let dialations: Tensor<Scalar> = reader.readTensor(name: scope + "dia")
+        // TODO: read/write activation, strides, padding, and dialations from checkpoint file
         self.init(filter: filter, bias: bias, strides: (2,2), padding: .same)
     }
 }
@@ -164,10 +106,7 @@ extension TransposedConv2D: InitializableFromPythonCheckpoint2 {
     init(reader: CheckpointReader, config: NetGConfig, scope: String) {
         let filter: Tensor<Scalar> = reader.readTensor(name: scope + "/fil")
         let bias: Tensor<Scalar> = reader.readTensor(name: scope + "/bias")
-        // TODO: read/write these from checkpoint file
-//        let activation: Tensor<Scalar> = reader.readTensor(name: scope + "/act")
-//        let strides: Tensor<Scalar> = reader.readTensor(name: scope + "/str")
-//        let padding: Tensor<Scalar> = reader.readTensor(name: scope + "/pad")
+        // TODO: read/write activation, strides, and padding from checkpoint file
         self.init(filter: filter, bias: bias, strides: (2,2), padding: .same)
     }
 }
@@ -255,7 +194,3 @@ extension NetD: InitializableFromPythonCheckpoint2 {
         self.module = module2
     }
 }
-
-
- 
-

@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import TensorFlow
 import Checkpoints
 import Foundation
 import ModelSupport
-
+import TensorFlow
 
 public struct NetG: Layer {
     
@@ -96,29 +95,5 @@ extension NetG {
         try writer.write(to: location, name: name)
         
         // TODO: Copy auxiliary files if they need to be in different location than current
-        // local storage.
-//        if location != storage {
-//            try writeAuxiliary(to: location)
-//        }
-    }
-    
-//    public func writeAuxiliary(to location: URL) throws {
-//        let fileSystem = FoundationFileSystem()
-//        let vocabularyFileURL: URL = storage.appendingPathComponent("encoder.json")
-//        let mergesFileURL: URL = storage.appendingPathComponent("vocab.bpe")
-//        let hparamsFileURL: URL = storage!.appendingPathComponent("hparams.json")
-////        let destinationEncoderURL: URL = location.appendingPathComponent("encoder.json")
-//        let destinationMergesURL: URL = location.appendingPathComponent("vocab.bpe")
-//        let destinationHparamsURL: URL = location.appendingPathComponent("hparams.json")
-
-//        try fileSystem.copy(source: vocabularyFileURL, dest: destinationEncoderURL)
-//        try fileSystem.copy(source: mergesFileURL, dest: destinationMergesURL)
-//        try fileSystem.copy(source: hparamsFileURL, dest: destinationHparamsURL)
-//    }
-}
-
-extension NetG: Equatable {
-    public static func == (left: NetG, right: NetG) -> Bool {
-        return left.module == right.module
     }
 }

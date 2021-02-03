@@ -11,9 +11,10 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+import Datasets
 import Foundation
 import ModelSupport
-import Datasets
 import TensorFlow
 
 public enum Pix2PixDatasetVariant: String {
@@ -58,27 +59,27 @@ public struct Pix2PixDataset<Entropy: RandomNumberGenerator> {
         entropy: Entropy) throws {
         
         let rootDirPath = rootDirPath ?? Pix2PixDataset.downloadIfNotPresent(
-            variant: variant ?? .maps,
+            variant: variant ?? .facades,
             to: DatasetUtilities.defaultDirectory.appendingPathComponent("pix2pix", isDirectory: true))
         let rootDirURL = URL(fileURLWithPath: rootDirPath, isDirectory: true)
         
         trainSamples = Array(zip(
             try Pix2PixDataset.loadSortedSamples(
-                  from: rootDirURL.appendingPathComponent("trainA"),
+                  from: rootDirURL.appendingPathComponent("trainB"),
                   fileIndexRetriever: "_"
                 ),
             try Pix2PixDataset.loadSortedSamples(
-                  from: rootDirURL.appendingPathComponent("trainB"),
+                  from: rootDirURL.appendingPathComponent("trainA"),
                   fileIndexRetriever: "_"
                 )
         ))
         testSamples = Array(zip(
             try Pix2PixDataset.loadSortedSamples(
-                  from: rootDirURL.appendingPathComponent("testA"),
+                  from: rootDirURL.appendingPathComponent("testB"),
                   fileIndexRetriever: "_"
                 ),
             try Pix2PixDataset.loadSortedSamples(
-                  from: rootDirURL.appendingPathComponent("testB"),
+                  from: rootDirURL.appendingPathComponent("testA"),
                   fileIndexRetriever: "_"
                 )
         ))
@@ -135,8 +136,8 @@ public struct Pix2PixDataset<Entropy: RandomNumberGenerator> {
                 options: [.skipsHiddenFiles])
             .filter { $0.pathExtension == "jpg" }
             .sorted {
-                Int($0.lastPathComponent.components(separatedBy: fileIndexRetriever)[0])! <
-                Int($1.lastPathComponent.components(separatedBy: fileIndexRetriever)[0])!
+                Int($0.lastPathComponent.numbers)! <
+                Int($1.lastPathComponent.numbers)!
             }
             .map {
                 var image = Image(jpeg: $0)
@@ -161,5 +162,11 @@ extension Pix2PixDataset where Entropy == SystemRandomNumberGenerator {
             testBatchSize: testBatchSize,
             entropy: SystemRandomNumberGenerator()
         )
+    }
+}
+
+private extension String {
+    var numbers: String {
+        return filter { "0"..."9" ~= $0 }
     }
 }
