@@ -98,7 +98,7 @@ public struct ImageNet<Entropy: RandomNumberGenerator> {
           return batches.lazy.map {
             makeImageNetBatch(
               samples: $0, outputSize: outputSize, mean: mean, standardDeviation: standardDeviation,
-              device: device)
+              device: device, applyAugmentation: true)
           }
         }
 
@@ -107,7 +107,7 @@ public struct ImageNet<Entropy: RandomNumberGenerator> {
       validation = validationSamples.inBatches(of: batchSize).lazy.map {
         makeImageNetBatch(
           samples: $0, outputSize: outputSize, mean: mean, standardDeviation: standardDeviation,
-          device: device)
+          device: device, applyAugmentation: false)
       }
     } catch {
       fatalError("Could not load ImageNet dataset: \(error)")
@@ -205,7 +205,7 @@ func loadImageNetValidationDirectory(
     named: "val", in: localStorageDirectory, base: base, labelDict: labelDict)
 }
 
-func applyImageNetDataAugmentation(image: Image) -> Tensor<Float> {
+func applyImageNetDataAugmentation(image: Image, applyAugmentation: Bool) -> Tensor<Float> {
     // using the tensorflow imagenet demo from mlperf as reference:
     // https://github.com/mlcommons/training/blob/4f97c909f3aeaa3351da473d12eba461ace0be76/image_classification/tensorflow/official/resnet/imagenet_preprocessing.py#L94
     let imageData = image.tensor
@@ -231,6 +231,11 @@ func applyImageNetDataAugmentation(image: Image) -> Tensor<Float> {
       cropped = Tensor<Float>([offsetY, targetX, targetY, offsetX])
     }
 
+    // we skip the above for validation images, but keep the resize operation
+    if !applyAugmentation {
+      cropped = Tensor<Float>([0.0, 0.0, 1.0, 1.0])
+    }
+
     let imageBroadcast = imageData.reshaped(to: [1, height, width, channels])
     let bboxBroadcast = cropped.reshaped(to: [1, 4])
 
@@ -241,17 +246,17 @@ func applyImageNetDataAugmentation(image: Image) -> Tensor<Float> {
 
 func makeImageNetBatch<BatchSamples: Collection>(
   samples: BatchSamples, outputSize: Int, mean: Tensor<Float>?, standardDeviation: Tensor<Float>?,
-  device: Device
+  device: Device, applyAugmentation: Bool
 ) -> LabeledImage where BatchSamples.Element == (file: URL, label: Int32) {
   let images = samples.map(\.file).map { url -> Tensor<Float> in
     if url.absoluteString.range(of: "n02105855_2933.JPEG") != nil {
       // this is a png saved as a jpeg, we manually strip an extra alpha channel to start
       let image = Image(contentsOf: url).tensor.slice(lowerBounds: [0, 0, 0], sizes: [189, 213, 3])
       let colorOnlyImage = Image(image)
-      return applyImageNetDataAugmentation(image: colorOnlyImage)
+      return applyImageNetDataAugmentation(image: colorOnlyImage, applyAugmentation: applyAugmentation)
     } else {
       let image = Image(contentsOf: url)
-      return applyImageNetDataAugmentation(image: image)
+      return applyImageNetDataAugmentation(image: image, applyAugmentation: applyAugmentation)
     }
   }
 
