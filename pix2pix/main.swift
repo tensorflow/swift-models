@@ -17,7 +17,7 @@ import Foundation
 import Datasets
 import ModelSupport
 import pix2pix
-//import Checkpoints
+import Checkpoints
 
 let options = Options.parseOrExit()
 

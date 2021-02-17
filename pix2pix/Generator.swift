@@ -87,13 +87,13 @@ public struct NetG: Layer {
 }
 
 
-extension NetG {
-    public func writeCheckpoint(to location: URL, name: String) throws {
-        var tensors = [String: Tensor<Float>]()
-        recursivelyObtainTensors(self, scope: "model", tensors: &tensors, separator: "/")
-        let writer = CheckpointWriter(tensors: tensors)
-        try writer.write(to: location, name: name)
-        
-        // TODO: Copy auxiliary files if they need to be in different location than current
-    }
-}
+//extension NetG {
+//    public func writeCheckpoint(to location: URL, name: String) throws {
+//        var tensors = [String: Tensor<Float>]()
+//        recursivelyObtainTensors(self, scope: "model", tensors: &tensors, separator: "/")
+//        let writer = CheckpointWriter(tensors: tensors)
+//        try writer.write(to: location, name: name)
+//
+//        // TODO: Copy auxiliary files if they need to be in different location than current
+//    }
+//}
