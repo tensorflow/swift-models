@@ -42,7 +42,6 @@ let _ones = Tensorf.one
 var step = 0
 
 var validationImage = dataset.trainSamples[0].domainA.expandingShape(at: 0)
-let validationImageURL = URL(string: FileManager.default.currentDirectoryPath)!.appendingPathComponent("sample.jpg")
 
 // MARK: Train
 
@@ -62,7 +61,7 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
         let scaledImages = resize(images: concatanatedImages,
                                   size: (286, 286),
                                   method: .nearest)
-        var croppedImages = scaledImages.slice(lowerBounds: Tensor<Int32>([0, Int32(random() % 30), Int32(random() % 30), 0]),
+        var croppedImages = scaledImages.slice(lowerBounds: Tensor<Int32>([0, Int32.random(in: 0...29), Int32.random(in: 0...29), 0]),
                                                sizes: [2, 256, 256, 3])
         if Bool.random() {
             croppedImages = croppedImages.reversed(inAxes: 2)
@@ -151,9 +150,7 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
             Context.local.learningPhase = .inference
             
             let fakeSample = generatorG(validationImage) * 0.5 + 0.5
-
-            let fakeSampleImage = Image(tensor: fakeSample[0] * 255)
-            fakeSampleImage.save(to: validationImageURL, format: .rgb)
+            try fakeSample[0].scaled(by: 255).saveImage(directory: "output", name: "sample")
 
             print("GeneratorG loss: \(gLoss.scalars[0])")
             print("GeneratorF loss: \(fLoss.scalars[0])")
@@ -167,11 +164,6 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
 
 // MARK: Final test
 
-let aResultsFolder = try createDirectoryIfNeeded(path: FileManager.default
-                                                                  .currentDirectoryPath + "/testA_results")
-let bResultsFolder = try createDirectoryIfNeeded(path: FileManager.default
-                                                                  .currentDirectoryPath + "/testB_results")
-
 var testStep = 0
 for testBatch in dataset.testing {
     let realX = testBatch.domainA
@@ -183,13 +175,10 @@ for testBatch in dataset.testing {
     let resultX = realX.concatenated(with: fakeY, alongAxis: 2) * 0.5 + 0.5
     let resultY = realY.concatenated(with: fakeX, alongAxis: 2) * 0.5 + 0.5
 
-    let imageX = Image(tensor: resultX[0] * 255)
-    let imageY = Image(tensor: resultY[0] * 255)
-
-    imageX.save(to: aResultsFolder.appendingPathComponent("\(String(testStep)).jpg", isDirectory: false),
-                format: .rgb)
-    imageY.save(to: bResultsFolder.appendingPathComponent("\(String(testStep)).jpg", isDirectory: false),
-                format: .rgb)
+    try resultX[0].scaled(by: 255)
+        .saveImage(directory: "output/testA_results", name: "\(String(testStep))")
+    try resultY[0].scaled(by: 255)
+        .saveImage(directory: "output/testA_results", name: "\(String(testStep))")
 
     testStep += 1
 }

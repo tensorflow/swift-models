@@ -18,11 +18,11 @@ public struct Options: ParsableArguments {
     @Option(help: ArgumentHelp("Path to the dataset folder", valueName: "dataset-path"))
     public var datasetPath: String?
 
-    @Option(default: 1, help: ArgumentHelp("Number of epochs", valueName: "epochs"))
-    public var epochs: Int
+    @Option(help: ArgumentHelp("Number of epochs", valueName: "epochs"))
+    public var epochs: Int = 1
 
-    @Option(default: 20, help: ArgumentHelp("Number of steps to log a sample image into tensorboard", valueName: "sampleLogPeriod"))
-    public var sampleLogPeriod: Int
+    @Option(help: ArgumentHelp("Number of steps to log a sample image into tensorboard", valueName: "sampleLogPeriod"))
+    public var sampleLogPeriod: Int = 20
     
     public init() {}
 }

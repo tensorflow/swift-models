@@ -17,6 +17,14 @@ import ModelSupport
 import TensorFlow
 import TextModels
 
+#if os(Windows)
+#if canImport(CRT)
+import CRT
+#else
+import MSVCRT
+#endif
+#endif
+
 internal func runTraining(settings: WordSegSettings) throws {
   var trainingLossHistory = [Float]()  // Keep track of loss.
   var validationLossHistory = [Float]()  // Keep track of loss.

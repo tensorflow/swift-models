@@ -1,4 +1,5 @@
 add_library(Checkpoints
+  Checkpointable.swift
   CheckpointIndexReader.swift
   CheckpointIndexWriter.swift
   CheckpointReader.swift

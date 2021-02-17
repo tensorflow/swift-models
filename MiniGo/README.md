@@ -18,7 +18,7 @@ and can be modified.
 Building MiniGo requires a Swift for TensorFlow toolchain.
 To get a toolchain, you can:
 
-1. [Download a pre-built package](https://github.com/tensorflow/swift/blob/master/Installation.md).
+1. [Download a pre-built package](https://github.com/tensorflow/swift/blob/main/Installation.md).
 2. [Compile a toolchain from source](https://github.com/apple/swift/tree/tensorflow#building-swift-for-tensorflow).
 
 ### Usage

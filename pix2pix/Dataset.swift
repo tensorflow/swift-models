@@ -76,11 +76,11 @@ public struct Pix2PixDataset<Entropy: RandomNumberGenerator> {
         testSamples = Array(zip(
             try Pix2PixDataset.loadSortedSamples(
                   from: rootDirURL.appendingPathComponent("testB"),
-                  fileIndexRetriever: "_"
+                  fileIndexRetriever: "."
                 ),
             try Pix2PixDataset.loadSortedSamples(
                   from: rootDirURL.appendingPathComponent("testA"),
-                  fileIndexRetriever: "_"
+                  fileIndexRetriever: "."
                 )
         ))
         training = TrainingEpochs(
@@ -140,10 +140,7 @@ public struct Pix2PixDataset<Entropy: RandomNumberGenerator> {
                 Int($1.lastPathComponent.numbers)!
             }
             .map {
-                var image = Image(jpeg: $0)
-                image = image.resized(to: (256,256))
-                let imageScaled = image.tensor / 127.5 - 1.0
-                return imageScaled
+                Image(contentsOf: $0).tensor / 127.5 - 1.0
             }
     }
 }

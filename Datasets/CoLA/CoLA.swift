@@ -42,7 +42,7 @@ public struct CoLA<Entropy: RandomNumberGenerator> {
   public let directoryURL: URL
 
   /// A `TextBatch` with the corresponding labels.
-  public typealias LabeledTextBatch = (data: TextBatch, label: Tensor<Int32>)
+  public typealias LabeledTextBatch = LabeledData<TextBatch, Tensor<Int32>>
   /// The type of the labeled samples.
   public typealias Samples = LazyMapSequence<[CoLAExample], LabeledTextBatch>
   /// The training texts.
@@ -158,7 +158,7 @@ extension CoLA {
       samples: trainingExamples, batchSize: batchSize / maxSequenceLength, entropy: entropy
     ).lazy.map { (batches: Batches) -> LazyMapSequence<Batches, LabeledTextBatch> in
       batches.lazy.map{ 
-        (
+        LabeledData(
           data: $0.map(\.data).paddedAndCollated(to: maxSequenceLength, on: device),
           label: Tensor(copying: Tensor($0.map(\.label)), to: device)
         )
@@ -167,7 +167,7 @@ extension CoLA {
     
     // Create the validation collection of batches.
     validationBatches = validationExamples.inBatches(of: batchSize / maxSequenceLength).lazy.map{ 
-      (
+      LabeledData(
         data: $0.map(\.data).paddedAndCollated(to: maxSequenceLength, on: device),
         label: Tensor(copying: Tensor($0.map(\.label)), to: device)
       )

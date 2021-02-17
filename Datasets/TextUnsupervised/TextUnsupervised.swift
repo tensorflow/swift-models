@@ -64,7 +64,7 @@ public struct TextUnsupervised<Entropy: RandomNumberGenerator> {
   }
 
   public typealias Samples = LanguageModelDataset<[[Int]]>
-  public typealias LabeledTextBatch = (data: Tensor<Int32>, label: Tensor<Int32>)
+  public typealias LabeledTextBatch = LabeledData<Tensor<Int32>, Tensor<Int32>>
 
   public typealias Batches = Slices<Sampling<Samples, ArraySlice<Int>>>
   public typealias Training = LazyMapSequence<
@@ -91,7 +91,8 @@ public struct TextUnsupervised<Entropy: RandomNumberGenerator> {
     variant: TextUnsupervisedVariant = TextUnsupervisedVariant.wikiText2,
     trainingBatchSize: Int = 8, validationBatchSize: Int = 4, sequenceLength: Int = 1024,
     trainingDocumentCount: Int = 4, validationDocumentCount: Int = 4,
-    entropy: Entropy
+    entropy: Entropy,
+    on device: Device = Device.defaultTFEager
   ) {
     do {
       self.bpe = bpe
@@ -124,17 +125,17 @@ public struct TextUnsupervised<Entropy: RandomNumberGenerator> {
         entropy: entropy
       ).lazy.map { (batches: Batches) -> LazyMapSequence<Batches, LabeledTextBatch> in
         batches.lazy.map {
-          (
-            data: Tensor<Int32>($0.map(\.first)),
-            label: Tensor<Int32>($0.map(\.second))
+          LabeledData(
+            data: Tensor<Int32>($0.map(\.first).map { Tensor<Int32>($0.scalars, on: device) }),
+            label: Tensor<Int32>($0.map(\.second).map { Tensor<Int32>($0.scalars, on: device) })
           )
         }
       }
 
       validation = validationDataset.inBatches(of: validationBatchSize).lazy.map {
-        (
-          data: Tensor<Int32>($0.map(\.first)),
-          label: Tensor<Int32>($0.map(\.second))
+        LabeledData(
+          data: Tensor<Int32>($0.map(\.first).map { Tensor<Int32>($0.scalars, on: device) }),
+          label: Tensor<Int32>($0.map(\.second).map { Tensor<Int32>($0.scalars, on: device) })
         )
       }
 
@@ -270,7 +271,8 @@ extension TextUnsupervised where Entropy == SystemRandomNumberGenerator {
     bpe: BytePairEncoder? = nil,
     variant: TextUnsupervisedVariant = TextUnsupervisedVariant.wikiText2,
     trainingBatchSize: Int = 8, validationBatchSize: Int = 4, sequenceLength: Int = 1024,
-    trainingDocumentCount: Int = 4, validationDocumentCount: Int = 4
+    trainingDocumentCount: Int = 4, validationDocumentCount: Int = 4,
+    on device: Device = Device.defaultTFEager
   ) {
     self.init(
       bpe: bpe,
@@ -280,7 +282,8 @@ extension TextUnsupervised where Entropy == SystemRandomNumberGenerator {
       sequenceLength: sequenceLength,
       trainingDocumentCount: trainingDocumentCount,
       validationDocumentCount: validationDocumentCount,
-      entropy: SystemRandomNumberGenerator()
+      entropy: SystemRandomNumberGenerator(),
+      on: device
     )
   }
 }

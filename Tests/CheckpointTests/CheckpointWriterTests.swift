@@ -16,6 +16,15 @@ import TensorFlow
 import XCTest
 
 @testable import Checkpoints
+import ImageClassificationModels
+
+extension LeNet: Checkpointable {}
+
+extension SqueezeNetV1_0: Checkpointable {
+    public var checkpointSeparator: String {
+      return "_"
+    }
+}
 
 final class CheckpointWriterTests: XCTestCase {
     let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
@@ -50,8 +59,8 @@ final class CheckpointWriterTests: XCTestCase {
         ]
 
         do {
-            let writer = CheckpointWriter(tensors: tensors)
-            try writer.write(to: temporaryDirectory, name: "testmodel.ckpt")
+            let writer = CheckpointWriter()
+            try writer.write(tensors: tensors, to: temporaryDirectory, name: "testmodel.ckpt")
             let reader = try CheckpointReader(
                 checkpointLocation: temporaryDirectory.appendingPathComponent("testmodel.ckpt"),
                 modelName: "TestCase", additionalFiles: [])
@@ -69,10 +78,58 @@ final class CheckpointWriterTests: XCTestCase {
             XCTFail("Checkpoint writing / reading failed with error: \(error).")
         }
     }
+    
+    func testLeNetCheckpointing() {
+        do {
+            let model = LeNet()
+            try model.writeCheckpoint(to: temporaryDirectory, name: "LeNet")
+            
+            let reader = try CheckpointReader(
+                checkpointLocation: temporaryDirectory.appendingPathComponent("LeNet"),
+                modelName: "LeNet", additionalFiles: [])
+
+            XCTAssertEqual(reader.tensorCount, 10)
+            let loadedTensor1: ShapedArray<Float> = reader.loadTensor(named: "conv2/filter")
+            XCTAssertEqual(loadedTensor1.shape, [5, 5, 6, 16])
+            let loadedTensor2: ShapedArray<Float> = reader.loadTensor(named: "fc2/bias")
+            XCTAssertEqual(loadedTensor2.shape, [84])
+          
+            var newModel = LeNet()
+            try newModel.readCheckpoint(
+              from: temporaryDirectory.appendingPathComponent("LeNet"), name: "LeNet")
+        } catch {
+            XCTFail("LeNet checkpoint writing / reading failed with error: \(error).")
+        }
+    }
+
+    func testSqueezeNetCheckpointing() {
+        do {
+            let model = SqueezeNetV1_0(classCount: 1000)
+            try model.writeCheckpoint(to: temporaryDirectory, name: "SqueezeNet")
+            
+            let reader = try CheckpointReader(
+                checkpointLocation: temporaryDirectory.appendingPathComponent("SqueezeNet"),
+                modelName: "SqueezeNet", additionalFiles: [])
+
+            XCTAssertEqual(reader.tensorCount, 52)
+            let loadedTensor1: ShapedArray<Float> = reader.loadTensor(named: "fire2_expand3_filter")
+            XCTAssertEqual(loadedTensor1.shape, [3, 3, 16, 64])
+            let loadedTensor2: ShapedArray<Float> = reader.loadTensor(named: "conv10_filter")
+            XCTAssertEqual(loadedTensor2.shape, [1, 1, 512, 1000])
+
+            var newModel = SqueezeNetV1_0(classCount: 1000)
+            try newModel.readCheckpoint(
+              from: temporaryDirectory.appendingPathComponent("SqueezeNet"), name: "SqueezeNet")
+        } catch {
+            XCTFail("SqueezeNet checkpoint writing / reading failed with error: \(error).")
+        }
+    }
 }
 
 extension CheckpointWriterTests {
     static var allTests = [
         ("testCheckpointRoundtrip", testCheckpointRoundtrip),
+        ("testLeNetCheckpointing", testLeNetCheckpointing),
+        ("testSqueezeNetCheckpointing", testSqueezeNetCheckpointing),
     ]
 }

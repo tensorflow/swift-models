@@ -111,12 +111,14 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
         let testLogVars = testOutputs[2]
         if epoch == 0 || (epoch + 1) % 10 == 0 {
             do {
-                try saveImage(
-                    sampleImages[0..<1], shape: (imageWidth, imageHeight), format: .grayscale,
-                    directory: outputFolder, name: "epoch-\(epoch)-input")
-                try saveImage(
-                    testImages[0..<1], shape: (imageWidth, imageHeight), format: .grayscale,
-                    directory: outputFolder, name: "epoch-\(epoch)-output")
+                let inputExample = sampleImages[0..<1].normalizedToGrayscale()
+                    .reshaped(to: [imageWidth, imageHeight, 1])
+                try inputExample.saveImage(
+                    directory: outputFolder, name: "epoch-\(epoch)-input", format: .png)
+                let outputExample = testImages[0..<1].normalizedToGrayscale()
+                    .reshaped(to: [imageWidth, imageHeight, 1])
+                try outputExample.saveImage(
+                    directory: outputFolder, name: "epoch-\(epoch)-output", format: .png)
             } catch {
                 print("Could not save image with error: \(error)")
             }

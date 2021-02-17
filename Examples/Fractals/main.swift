@@ -30,10 +30,10 @@ struct FractalCommand: ParsableCommand {
 extension FractalCommand {
   struct Parameters: ParsableArguments {
     @Flag(help: "Use eager backend.")
-    var eager: Bool
+    var eager: Bool = false
 
     @Flag(help: "Use X10 backend.")
-    var x10: Bool
+    var x10: Bool = false
 
     @Option(help: "Number of iterations to run.")
     var iterations: Int?

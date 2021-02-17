@@ -1,17 +1,18 @@
 add_subdirectory(STBImage)
 
 add_library(ModelSupport
+  AnimatedImage.swift
   BijectiveDictionary.swift
   FileManagement.swift
   FileSystem.swift
   FoundationFileSystem.swift
+  GIF.swift
   LabeledData.swift
   Image.swift
   Stderr.swift
   AnyLayer.swift
   AnyLayerTangentVector.swift
   Text/BytePairEncoder.swift
-  Text/SentencePiece/SentencePieceModel.pb.swift
   Text/TextBatch.swift
   Text/Tokenization.swift
   Text/WordSeg/Alphabet.swift

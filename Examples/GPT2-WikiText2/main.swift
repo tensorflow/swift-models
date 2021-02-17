@@ -15,73 +15,51 @@
 import Datasets
 import TensorFlow
 import TextModels
+import TensorBoard
+import TrainingLoop
+
+// Avoid the eager mode runtime from taking all memory 
+// and leaving none to X10 when run on the GPU.
+_ = _ExecutionContext.global
+// Until https://github.com/tensorflow/swift-apis/issues/993 is fixed, default to the eager-mode
+// device on macOS instead of X10.
+#if os(macOS)
+  let device = Device.defaultTFEager
+#else
+  let device = Device.defaultXLA
+#endif
 
 var gpt = try GPT2()
 
 let sequenceLength = gpt.contextSize
 let trainingBatchSize = 2
 let validationBatchSize = 2
-let numWorkers = 1
-// Use default WikiText2 dataset.
 let dataset = TextUnsupervised(bpe: gpt.bpe, variant: .wikiText2,
     trainingBatchSize: trainingBatchSize, validationBatchSize: validationBatchSize,
-    sequenceLength: sequenceLength)
-
+    sequenceLength: sequenceLength, on: device)
 print("Dataset acquired.")
 
-var optimizer = Adam(for: gpt.model, learningRate: 0.001)
+/// Reshape the `logits` and `labels` to required shape before calling
+/// standard softmaxCrossEntropy API.
+///
+/// - Note: This can potentially be added to standard softmaxCrossEntropy API.
+@differentiable
+public func softmaxCrossEntropyReshaped<Scalar>(logits: Tensor<Scalar>, labels: Tensor<Int32>) -> Tensor<
+  Scalar
+> where Scalar: TensorFlowFloatingPoint {
+  return softmaxCrossEntropy(
+  	logits: logits.reshaped(to: [logits.shape.dropLast().reduce(1, *), logits.shape.last!]), 
+  	labels: labels.reshaped(to: [labels.shape.reduce(1, *)]), 
+  	reduction: _mean)
+}
+
+var trainingLoop: TrainingLoop = TrainingLoop(
+  training: dataset.training,
+  validation: dataset.validation,
+  optimizer: Adam(for: gpt.model, learningRate: 0.001),
+  lossFunction: softmaxCrossEntropyReshaped,
+  metrics: [.accuracy, .perplexity],
+  callbacks: [tensorBoardStatisticsLogger()])
 
 print("Starting training...")
-
-let epochCount = 10
-for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
-    Context.local.learningPhase = .training
-    var trainingLossSum: Float = 0
-    var trainingBatchCount = 0
-    for batch in epochBatches {
-        let (documents, labels) = (batch.data, batch.label)
-        let (loss, gradients) = valueWithGradient(at: gpt.model) { model -> Tensor<Float> in
-            let logits = model(documents)
-            let shape = logits.shape
-            return softmaxCrossEntropy(
-                logits: logits.reshaped(to: [shape[0] * shape[1], shape[2]]),
-                labels: labels.reshaped(to: [shape[0] * shape[1]])
-            )
-        }
-        trainingLossSum += loss.scalarized()
-        trainingBatchCount += 1
-        optimizer.update(&gpt.model, along: gradients)
-    }
-
-    Context.local.learningPhase = .inference
-    var testLossSum: Float = 0
-    var testBatchCount = 0
-    var correctGuessCount = 0
-    var totalGuessCount = 0
-    for batch in dataset.validation {
-        let (documents, labels) = (batch.data, batch.label)
-        let logits = gpt.model(documents)
-        let shape = logits.shape
-        testLossSum += softmaxCrossEntropy(
-            logits: logits.reshaped(to: [shape[0] * shape[1], shape[2]]),
-            labels: labels.reshaped(to: [shape[0] * shape[1]])
-        ).scalarized()
-        testBatchCount += 1
-
-        let correctPredictions = logits.argmax(squeezingAxis: 2) .== labels
-        correctGuessCount =
-            correctGuessCount
-            + Int(
-                Tensor<Int32>(correctPredictions).sum().scalarized())
-        totalGuessCount = totalGuessCount + (shape[0] * shape[1])
-    }
-
-    let accuracy = Float(correctGuessCount) / Float(totalGuessCount)
-    print(
-        """
-        [Epoch \(epoch)] \
-        Accuracy: \(correctGuessCount)/\(totalGuessCount) (\(accuracy)) \
-        Loss: \(testLossSum / Float(testBatchCount))
-        """
-    )
-}
+try! trainingLoop.fit(&gpt.model, epochs: 10, on: device)

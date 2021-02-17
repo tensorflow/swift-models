@@ -184,6 +184,8 @@ class WordSegProbeLayerTests: XCTestCase {
     let lattice = model.buildLattice(abab, maxLen: 5, device: device)
     XCTAssert(lattice.isAlmostEqual(to: Example1.lattice, tolerance: 1e-5))
 
+/*
+// TODO: re-enable once SR-13945 is fixed.
     func f(_ x: SNLM) -> Float {
       x.buildLattice(abab, maxLen: 5, device: device)[4].semiringScore.logr
     }
@@ -193,6 +195,7 @@ class WordSegProbeLayerTests: XCTestCase {
     if !almostEqual(grad, expectedGrad, relTol: 1e-5, zeroTol: 1e-6) {
       XCTAssert(false, "Gradients wrong")
     }
+    */
   }
 
   static var allTests = [
