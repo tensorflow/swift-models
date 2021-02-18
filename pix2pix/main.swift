@@ -35,7 +35,7 @@ let optimizerD = Adam(for: discriminator, learningRate: 0.0002, beta1: 0.5)
 let epochCount = options.epochs
 var step = 0
 let lambdaL1 = Tensor<Float>(100)
-let checkPoint = true
+fileprivate let writeCheckPoint = true
 
 for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
     print("Epoch \(epoch) started at: \(Date())")
@@ -134,17 +134,11 @@ for batch in dataset.testing {
 let testLoss = totalLoss / Float(count)
 print("Generator test loss: \(testLoss.scalars[0])")
 
-// test checkpoint
-if checkPoint {
+// MARK: Checkpoint
+if writeCheckPoint {
     do {
         let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent("NetG")
         try generator.writeCheckpoint(to: temporaryDirectory, name: "NetG")
-        try generator.readCheckpoint(from: temporaryDirectory.appendingPathComponent("NetG"), name: "NetG")
-        
-        // now generate a sample from the restored generator
-        Context.local.learningPhase = .inference
-        let fakeSample = generator(validationImage) * 0.5 + 0.5
-        try fakeSample[0].scaled(by: 255).saveImage(directory: "output", name: "checkpoint_sample")
     } catch {
         fatalError("ERROR: checkpoint failed")
     }
