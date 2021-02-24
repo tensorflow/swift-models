@@ -43,6 +43,8 @@ let knownDatasetSizes:[String: (Int, Int)] = [
 let cifar100TrainingSize = 50000
 let batchSize = 128
 
+/// This error indicates that BiT-Hyperrule cannot find the name of the dataset in the
+/// knownDatasetSizes dictionary
 enum DatasetNotFoundError: Error {
   case invalidInput(String)
 }
