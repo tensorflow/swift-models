@@ -2,7 +2,7 @@
 
 This script illustrates how to train Big Transfer (https://arxiv.org/abs/1912.11370) against the [CIFAR-100 image classification dataset](https://www.cs.toronto.edu/~kriz/cifar.html).
 
-This model uses a pre-defined rule based on dataset size to determine the optimal parameters for fine tuning using a slightly modified ResnetV2 transfer learning model.
+This model uses a pre-defined rule based on dataset size to determine the optimal parameters for fine tuning using a modified ResnetV2 transfer learning model.
 
 ## Setup
 

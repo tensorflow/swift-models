@@ -1,3 +1,17 @@
+// Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Original source:
 // "Big Transfer (BiT): General Visual Representation Learning"
 // Alexander Kolesnikov, Lucas Beyer, Xiaohua Zhai, Joan Puigcerver, Jessica Yung, Sylvain Gelly, Neil Houlsby.
@@ -27,14 +41,18 @@ let knownDatasetSizes:[String: (Int, Int)] = [
 ]
 
 let cifar100TrainingSize = 50000
-
-// Suggested using smaller batch size with no GPU
 let batchSize = 128
 
-enum ValueError: Error {
+enum DatasetNotFoundError: Error {
   case invalidInput(String)
 }
 
+/// Return relevent ResNet enumerated type based on weights loaded
+///
+/// - Parameters:
+///   - modelName: the name of the model pulled from the big transfer repository
+///                to grab the enumerated type for
+/// - Returns: ResNet enumerated type for BigTransfer model
 func getModelUnits(modelName: String) -> BigTransfer.Depth {
   if modelName.contains("R50") {
     return .resNet50
@@ -47,24 +65,46 @@ func getModelUnits(modelName: String) -> BigTransfer.Depth {
   }
 }
 
+/// Get updated image resolution based on the specifications in BiT-Hyperrule
+///
+/// - Parameters:
+///   - originalResolution: the source resolution for the current image dataset
+/// - Returns: new resolution for images based on BiT-Hyperrule
 func getResolution(originalResolution: (Int, Int)) -> (Int, Int) {
   let area = originalResolution.0 * originalResolution.1
   return area < 96*96 ? (160, 128) : (512, 480)
 }
 
-func getResolutionFromDataset(dataset: String) throws -> (Int, Int) {
-  if let resolution = knownDatasetSizes[dataset] {
+/// Get the source resolution for the current image dataset from the knownDatasetSizes dictionary
+///
+/// - Parameters:
+///   - datasetName: name of the current dataset you are using
+/// - Returns: new resolution for specified dataset
+/// - Throws:
+///   - DatasetNotFoundError: will throw an error if the dataset cannot be found in knownDatasetSizes dictionary
+func getResolutionFromDataset(datasetName: String) throws -> (Int, Int) {
+  if let resolution = knownDatasetSizes[datasetName] {
     return getResolution(originalResolution: resolution)
   }
-  print("Unsupported dataset " + dataset + ". Add your own here :)")
-  throw ValueError.invalidInput(dataset)
+  print("Unsupported dataset " + datasetName + ". Add your own here :)")
+  throw DatasetNotFoundError.invalidInput(datasetName)
 
 }
 
+/// Get training mixup parameters based on Bit-Hyperrule specification for dataset sizes
+///
+/// - Parameters:
+///   - datasetSize: number of images in the current dataset
+/// - Returns: mixup alpha based on number of images
 func getMixUp(datasetSize: Int) -> Double {
   return datasetSize < 20000 ? 0.0 : 0.1
 }
 
+/// Get the learning rate schedule based on the dataset size
+///
+/// - Parameters:
+///   - datasetSize: number of images in the current dataset
+/// - Returns: learning rate schedule based on the current dataset
 func getSchedule(datasetSize: Int) -> Array<Int> {
   if datasetSize < 20000{
     return [100, 200, 300, 400, 500]
@@ -77,9 +117,14 @@ func getSchedule(datasetSize: Int) -> Array<Int> {
   }
 }
 
-
+/// Get learning rate at the current step given the dataset size and base learning rate
+///
+/// - Parameters:
+///   - step: current training step
+///   - datasetSize: number of images in the dataset
+///   - baseLearningRate: starting learning rate to modify
+/// - Returns: learning rate at the current step in training
 func getLearningRate(step: Int, datasetSize: Int, baseLearningRate: Float = 0.003) -> Float? {
-  /* Returns learning-rate for `step` or nil at the end. */
   let supports = getSchedule(datasetSize: datasetSize)
   // Linear warmup
   if step < supports[0] {
@@ -101,7 +146,9 @@ func getLearningRate(step: Int, datasetSize: Int, baseLearningRate: Float = 0.00
   }
 }
 
-struct Statistics {
+/// Stores the training statistics for the BigTransfer training process which are different than usual
+/// because the mixedup labels must be accounted for while running training statistics.
+struct BigTransferTrainingStatistics {
   var correctGuessCount = Tensor<Int32>(0, on: Device.default)
   var totalGuessCount = Tensor<Int32>(0, on: Device.default)
   var totalLoss = Tensor<Float>(0, on: Device.default)
@@ -126,9 +173,10 @@ struct Statistics {
   }
 }
 
-var bitModel = BigTransfer(classCount: 100, depth: getModelUnits(modelName: modelName), modelName: modelName)
+let classCount = 100
+var bitModel = BigTransfer(classCount: classCount, depth: getModelUnits(modelName: modelName), modelName: modelName)
 let dataset = CIFAR100(batchSize: batchSize, on: Device.default)
-var optimizer = SGD(for: bitModel, learningRate: 0.001, momentum: 0.9)
+var optimizer = SGD(for: bitModel, learningRate: 0.003, momentum: 0.9)
 optimizer = SGD(copying: optimizer, to: device)
 
 print("Beginning training...")
@@ -143,8 +191,8 @@ let beta = np.random.beta(mixupAlpha, mixupAlpha)
 
 for (epoch, batches) in dataset.training.prefix(epochCount).enumerated() {
     let start = Date()
-    var trainStats = Statistics(on: device)
-    var testStats = Statistics(on: device)
+    var trainStats = BigTransferTrainingStatistics(on: device)
+    var testStats = BigTransferTrainingStatistics(on: device)
     
     Context.local.learningPhase = .training
     for batch in batches {
@@ -155,14 +203,12 @@ for (epoch, batches) in dataset.training.prefix(epochCount).enumerated() {
       else {
         continue
       }
-
       var (eagerImages, eagerLabels) = (batch.data, batch.label)
-      let npImages = eagerImages.makeNumpyArray()
-      let resized = tf.image.resize(npImages, [resizeSize.0, resizeSize.0])
+      let resized = resize(images: eagerImages, size: (resizeSize.0, resizeSize.1)).makeNumpyArray()
       let cropped = tf.image.random_crop(resized, [batchSize, resizeSize.1, resizeSize.1, 3])
       let flipped = tf.image.random_flip_left_right(cropped)
       var mixedUp = flipped
-      var newLabels = Tensor<Float>(Tensor<Int32>(oneHotAtIndices: eagerLabels, depth: 100))
+      var newLabels = Tensor<Float>(Tensor<Int32>(oneHotAtIndices: eagerLabels, depth: classCount))
       if mixupAlpha > 0.0 {
         var npLabels = newLabels.makeNumpyArray()
         mixedUp = beta * mixedUp + (1 - beta) * tf.reverse(mixedUp, axis: [0])
@@ -190,7 +236,7 @@ for (epoch, batches) in dataset.training.prefix(epochCount).enumerated() {
       let npImages = eagerImages.makeNumpyArray()
       let resized = tf.image.resize(npImages, [resizeSize.0, resizeSize.0])
       eagerImages = Tensor<Float>(numpy: resized.numpy())!
-      let newLabels = Tensor<Float>(Tensor<Int32>(oneHotAtIndices: eagerLabels, depth: 100))
+      let newLabels = Tensor<Float>(Tensor<Int32>(oneHotAtIndices: eagerLabels, depth: classCount))
       let images = Tensor(copying: eagerImages, to: device)
       let labels = Tensor(copying: newLabels, to: device)
       let ŷ = bitModel(images)

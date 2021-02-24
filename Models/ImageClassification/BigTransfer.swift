@@ -1,3 +1,17 @@
+// Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Original source:
 // "Big Transfer (BiT): General Visual Representation Learning"
 // Alexander Kolesnikov, Lucas Beyer, Xiaohua Zhai, Joan Puigcerver, Jessica Yung, Sylvain Gelly, Neil Houlsby.
@@ -10,11 +24,20 @@ import PythonKit
 let subprocess = Python.import("subprocess")
 let np  = Python.import("numpy")
 
-struct Weights {
+
+/// Convenient layer wrapper used to load all of the trained layers from the .npz file downloaded from the 
+/// BigTransfer weights repository
+struct BigTransferNamedLayer {
     let name: String
     let layer: Tensor<Float>
 }
 
+/// Get the necessary padding to maintain the network size specified in the BigTransfer architecture
+///
+/// - Parameters:
+///   - kernelSize: size n which represents the height and width of the nxn kernel
+/// - Returns: the left / top padding and the right / bottom padding necessary to maintain correct output sizes
+///            after convolution
 func paddingFromKernelSize(kernelSize: Int) -> [(before: Int, after: Int)] {
   let padTotal = kernelSize - 1
   let padBeginning = Int(padTotal / 2)
@@ -27,7 +50,13 @@ func paddingFromKernelSize(kernelSize: Int) -> [(before: Int, after: Int)] {
   return padding
 }
 
-func getPretrainedWeightsDict(modelName: String) -> Array<Weights> {
+/// Get all of the pre-trained layers from the .npz file into a Swift array to load into the BigTransfer model
+///
+/// - Parameters:
+///   - modelName: model name that represents the weights to load from the BigTransfer weights repository 
+///                ("BiT-M-R50x1" for example)
+/// - Returns: an array of layers and their associated name in the .npz file downloaded from the weights repository
+func getPretrainedWeightsDict(modelName: String) -> Array<BigTransferNamedLayer> {
   let validTypes = ["BiT-S", "BiT-M"]
   let validSizes = [(50, 1), (50, 3), (101, 1), (101, 3), (152, 4)]
   let bitURL = "https://storage.googleapis.com/bit_models/"
@@ -46,13 +75,15 @@ func getPretrainedWeightsDict(modelName: String) -> Array<Weights> {
 
   let weights = np.load("./" + modelName + ".npz")
 
-  var weightsArray = Array<Weights>()
+  var weightsArray = Array<BigTransferNamedLayer>()
   for param in weights {
-      weightsArray.append(Weights(name: String(param)!, layer: Tensor<Float>(numpy: weights[param])!))
+      weightsArray.append(BigTransferNamedLayer(name: String(param)!, layer: Tensor<Float>(numpy: weights[param])!))
   }
   return weightsArray
 }
 
+/// A 2D Convolution layer that standardizes the weights before the forward pass. This has been implemented in
+/// accordance with the implementation in https://github.com/google-research/big_transfer/blob/49afe42338b62af9fbe18f0258197a33ee578a6b/bit_pytorch/models.py#L25
 public struct StandardizedConv2D: Layer {
   public var conv: Conv2D<Float>
 
@@ -80,7 +111,8 @@ public struct StandardizedConv2D: Layer {
 
 }
 
-public struct ConvGNV2: Layer {
+/// A standardized convolution and group norm layer as specified in the BigTransfer architecture
+public struct ConvGNV2BiT: Layer {
     public var conv: StandardizedConv2D
     public var norm: GroupNorm<Float>
     @noDerivative public var isSecond: Bool
@@ -119,6 +151,7 @@ public struct ConvGNV2: Layer {
     }
 }
 
+/// The shortcut in a residual block with standardized convolution and group normalization
 public struct ShortcutBiT: Layer {
     public var projection: StandardizedConv2D
     public var norm: GroupNorm<Float>
@@ -152,21 +185,22 @@ public struct ShortcutBiT: Layer {
     }
 }
 
+/// Residual block for BigTransfer with standardized convolution and group normalization layers
 public struct ResidualBlockBiT: Layer {
     public var shortcut: ShortcutBiT
-    public var convs: [ConvGNV2]
+    public var convs: [ConvGNV2BiT]
 
     public init(inFilters: Int, outFilters: Int, stride: Int, expansion: Int){
         if expansion == 1 {
             convs = [
-                ConvGNV2(inFilters: inFilters,  outFilters: outFilters, kernelSize: 3, stride: stride),
-                ConvGNV2(inFilters: outFilters, outFilters: outFilters, kernelSize: 3, isSecond: true)
+                ConvGNV2BiT(inFilters: inFilters,  outFilters: outFilters, kernelSize: 3, stride: stride),
+                ConvGNV2BiT(inFilters: outFilters, outFilters: outFilters, kernelSize: 3, isSecond: true)
             ]
         } else {
             convs = [
-                ConvGNV2(inFilters: inFilters,    outFilters: outFilters/4),
-                ConvGNV2(inFilters: outFilters/4, outFilters: outFilters/4, kernelSize: 3, stride: stride, isSecond: true),
-                ConvGNV2(inFilters: outFilters/4, outFilters: outFilters)
+                ConvGNV2BiT(inFilters: inFilters,    outFilters: outFilters/4),
+                ConvGNV2BiT(inFilters: outFilters/4, outFilters: outFilters/4, kernelSize: 3, stride: stride, isSecond: true),
+                ConvGNV2BiT(inFilters: outFilters/4, outFilters: outFilters)
             ]
         }
         shortcut = ShortcutBiT(inFilters: inFilters, outFilters: outFilters, stride: stride)
@@ -179,6 +213,7 @@ public struct ResidualBlockBiT: Layer {
     }
 }
 
+/// An implementation of the BigTransfer architecture with variable sizes
 public struct BigTransfer: Layer {
   public var inputStem: StandardizedConv2D
   public var maxPool: MaxPool2D<Float>
@@ -189,6 +224,13 @@ public struct BigTransfer: Layer {
   public var avgPool = GlobalAvgPool2D<Float>()
   @noDerivative public var finalOutFilter : Int = 0
 
+  /// Initialize the BigTransfer Model
+  ///
+  /// - Parameters:
+  ///   - classCount: the number of output classes
+  ///   - depth: the specified depht of the network based on the various ResNet architectures
+  ///   - inputChannels: the number of input channels for the dataset
+  ///   - stemFilters: the number of filters in the first three convolutions
   public init(
         classCount: Int, 
         depth: Depth, 
@@ -224,7 +266,7 @@ public struct BigTransfer: Layer {
         if loadWeights {
             let weightsArray = getPretrainedWeightsDict(modelName: modelName)
 
-            //Load weights from model .npz file into the BigTransfer model
+            // Load weights from model .npz file into the BigTransfer model
             let convs = weightsArray.filter {key in return key.name.contains("/block") && key.name.contains("standardized_conv2d/kernel") && !(key.name.contains("proj"))}
             
             var k = 0
