@@ -19,7 +19,7 @@ import TensorFlow
 
 public class GPT2 {
     public static let remoteCheckpoint: URL =
-        URL(string: "https://storage.googleapis.com/gpt-2/models/117M/model.ckpt")!
+        URL(string: "https://openaipublic.blob.core.windows.net/gpt-2/models/117M/model.ckpt")!
 
     public enum GPT2Error: Error {
         case invalidEncoding(id: Int32)
