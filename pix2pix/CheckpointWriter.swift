@@ -1,4 +1,4 @@
-// Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+// Copyright 2020 The TensorFlow Authors. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,17 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import ArgumentParser
+import Checkpoints
 
-public struct Options: ParsableArguments {
-    @Option(help: ArgumentHelp("Path to the dataset folder", valueName: "dataset-path"))
-    public var datasetPath: String?
-
-    @Option(help: ArgumentHelp("Number of epochs", valueName: "epochs"))
-    public var epochs: Int = 1
-
-    @Option(help: ArgumentHelp("Number of steps to log a sample image into tensorboard", valueName: "sampleLogPeriod"))
-    public var sampleLogPeriod: Int = 20
-    
-    public init() {}
+extension NetG: Checkpointable {
+    public var ignoredTensorPaths: Set<String> {
+       return ["BatchNorm<Float>.runningMean", "BatchNorm<Float>.runningVariance"]
+    }
 }

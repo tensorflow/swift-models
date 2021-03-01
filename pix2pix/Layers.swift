@@ -11,8 +11,9 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-import TensorFlow
+
 import Foundation
+import TensorFlow
 
 public struct Identity: ParameterlessLayer {
     public typealias TangentVector = EmptyTangentVector
@@ -116,17 +117,22 @@ public struct UNetSkipConnectionInnermost: Layer {
                                                                     standardDeviation: Tensor<Float>(0.02)) })
     }
     
+    public init(downConv: Conv2D<Float>, upConv: TransposedConv2D<Float>, upNorm: BatchNorm<Float>) {
+        self.downConv = downConv
+        self.upConv = upConv
+        self.upNorm = upNorm
+    }
+    
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         var x = leakyRelu(input)
         x = self.downConv(x)
         x = relu(x)
         x = x.sequenced(through: self.upConv, self.upNorm)
-
+        
         return input.concatenated(with: x, alongAxis: 3)
     }
 }
-
 
 public struct UNetSkipConnection<Sublayer: Layer>: Layer where Sublayer.TangentVector.VectorSpaceScalar == Float, Sublayer.Input == Tensor<Float>, Sublayer.Output == Tensor<Float> {
     public var downConv: Conv2D<Float>
@@ -149,15 +155,22 @@ public struct UNetSkipConnection<Sublayer: Layer>: Layer where Sublayer.TangentV
                                filterInitializer: { Tensor<Float>(randomNormal: $0, standardDeviation: Tensor<Float>(0.02)) })
         self.downNorm = BatchNorm(featureCount: innerChannels)
         self.upNorm = BatchNorm(featureCount: outChannels)
-        
         self.upConv = TransposedConv2D(filterShape: (4, 4, outChannels, innerChannels * 2),
                                        strides: (2, 2),
                                        padding: .same,
                                        filterInitializer: { Tensor<Float>(randomNormal: $0,
                                                                     standardDeviation: Tensor<Float>(0.02)) })
-    
         self.submodule = submodule
-        
+        self.useDropOut = useDropOut
+    }
+    
+    public init(downConv: Conv2D<Float>, downNorm: BatchNorm<Float>, upConv: TransposedConv2D<Float>, upNorm: BatchNorm<Float>, dropOut: Dropout<Float>, submodule: Sublayer, useDropOut: Bool = false) {
+        self.downConv = downConv
+        self.downNorm = downNorm
+        self.upConv = upConv
+        self.upNorm = upNorm
+        self.dropOut = dropOut
+        self.submodule = submodule
         self.useDropOut = useDropOut
     }
     
@@ -201,12 +214,18 @@ public struct UNetSkipConnectionOutermost<Sublayer: Layer>: Layer where Sublayer
         self.submodule = submodule
     }
     
+    public init(downConv: Conv2D<Float>, upConv: TransposedConv2D<Float>, submodule: Sublayer) {
+        self.downConv = downConv
+        // TODO: need to persist the activation function.  Until then, manually set it to tanh.
+        self.upConv = TransposedConv2D(filter: upConv.filter, bias: upConv.bias, activation: tanh, strides: upConv.strides, padding: upConv.padding)
+        self.submodule = submodule
+    }
+
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         var x = input.sequenced(through: self.downConv, self.submodule)
         x = relu(x)
         x = self.upConv(x)
-
         return x
     }
 }

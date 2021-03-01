@@ -12,10 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import TensorFlow
-import Foundation
 import Datasets
-import ModelSupport
+import Foundation
+import pix2pix
+import TensorFlow
 
 let options = Options.parseOrExit()
 
@@ -35,6 +35,7 @@ let optimizerD = Adam(for: discriminator, learningRate: 0.0002, beta1: 0.5)
 let epochCount = options.epochs
 var step = 0
 let lambdaL1 = Tensor<Float>(100)
+fileprivate let writeCheckPoint = true
 
 for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
     print("Epoch \(epoch) started at: \(Date())")
@@ -44,12 +45,10 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
     var discriminatorCount = 0
     
     for batch in epochBatches {
+        print("Batch \(step) started at \(Date())")
         defer { step += 1 }
-
         Context.local.learningPhase = .training
-        
         let concatanatedImages = batch.source.concatenated(with: batch.target)
-        
         let scaledImages = _Raw.resizeNearestNeighbor(images: concatanatedImages, size: [286, 286])
         var croppedImages = scaledImages.slice(lowerBounds: Tensor<Int32>([0, Int32.random(in: 0...29), Int32.random(in: 0...29), 0]),
                                                sizes: [2, 256, 256, 3])
@@ -75,36 +74,31 @@ for (epoch, epochBatches) in dataset.training.prefix(epochCount).enumerated() {
         }
         
         let fakeImages = generator(sourceImages)
+                
         let descriminatorGradient = TensorFlow.gradient(at: discriminator) { d -> Tensor<Float> in
             let fakeAB = sourceImages.concatenated(with: fakeImages,
                                                    alongAxis: 3)
             let fakePrediction = d(fakeAB)
             let fakeLoss = sigmoidCrossEntropy(logits: fakePrediction,
                                                labels: Tensor<Float>.zero.broadcasted(to: fakePrediction.shape))
-            
             let realAB = sourceImages.concatenated(with: targetImages,
                                                    alongAxis: 3)
             let realPrediction = d(realAB)
             let realLoss = sigmoidCrossEntropy(logits: realPrediction,
                                                labels: Tensor<Float>.one.broadcasted(to: fakePrediction.shape))
-            
             discriminatorTotalLoss += (fakeLoss + realLoss) * 0.5
-            
             return (fakeLoss + realLoss) * 0.5
         }
         
         optimizerG.update(&generator, along: generatorGradient)
         optimizerD.update(&discriminator, along: descriminatorGradient)
-        
+                
         // MARK: Sample Inference
-
         if step % options.sampleLogPeriod == 0 {
             Context.local.learningPhase = .inference
-            
             let fakeSample = generator(validationImage) * 0.5 + 0.5
-            try fakeSample[0].scaled(by: 255).saveImage(directory: "output", name: "sample")
+            try fakeSample[0].scaled(by: 255).saveImage(directory: "output", name: "sample" + String(epoch) + String(step))
         }
-        
         discriminatorCount += 1
     }
     
@@ -139,3 +133,14 @@ for batch in dataset.testing {
 
 let testLoss = totalLoss / Float(count)
 print("Generator test loss: \(testLoss.scalars[0])")
+
+// MARK: Checkpoint
+if writeCheckPoint {
+    do {
+        let temporaryDirectory = FileManager.default.temporaryDirectory.appendingPathComponent("NetG")
+        try generator.writeCheckpoint(to: temporaryDirectory, name: "NetG")
+    } catch {
+        fatalError("ERROR: checkpoint failed")
+    }
+}
+

@@ -12,13 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Checkpoints
+import Foundation
+import ModelSupport
 import TensorFlow
 
 public struct NetG: Layer {
     
+    // TODO: need to persist a sample generator and set this URL
+    public static let remoteCheckpoint: URL =
+        URL(string: "")!
+
     var module: UNetSkipConnectionOutermost<UNetSkipConnection<UNetSkipConnection<UNetSkipConnection<UNetSkipConnection<UNetSkipConnection<UNetSkipConnection<UNetSkipConnectionInnermost>>>>>>>
-
-
     public init(inputChannels: Int, outputChannels: Int, ngf: Int, useDropout: Bool = false) {
         let firstBlock = UNetSkipConnectionInnermost(inChannels: ngf * 8, innerChannels: ngf * 8, outChannels: ngf * 8)
         
@@ -39,7 +44,7 @@ public struct NetG: Layer {
         self.module = UNetSkipConnectionOutermost(inChannels: inputChannels, innerChannels: ngf, outChannels: outputChannels,
                                                   submodule: module6)
     }
-
+    
     @differentiable
     public func callAsFunction(_ input: Tensor<Float>) -> Tensor<Float> {
         return self.module(input)

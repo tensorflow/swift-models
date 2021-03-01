@@ -21,6 +21,7 @@ let package = Package(
         .library(name: "FastStyleTransfer", targets: ["FastStyleTransfer"]),
         .library(name: "MiniGo", targets: ["MiniGo"]),
         .library(name: "TrainingLoop", targets: ["TrainingLoop"]),
+        .library(name: "pix2pix", targets: ["pix2pix"]),
         .library(name: "SwiftModelsBenchmarksCore", targets: ["SwiftModelsBenchmarksCore"]),
     ],
     dependencies: [
@@ -153,9 +154,12 @@ let package = Package(
         ),
         .target(
             name: "pix2pix",
-            dependencies: ["ArgumentParser", "ModelSupport", "Datasets"],
-            path: "pix2pix"
+            dependencies: ["ArgumentParser", "ModelSupport", "Datasets", "Checkpoints"],
+            path: "pix2pix",
+            exclude: ["main.swift"]
         ),
+        .target(
+            name: "pix2pixDemo", dependencies: ["pix2pix"], path: "pix2pix", sources: ["main.swift"]),
         .target(
             name: "WordSeg",
             dependencies: ["ArgumentParser", "Datasets", "ModelSupport", "TextModels"],
