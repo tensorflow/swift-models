@@ -23,7 +23,7 @@ import TensorFlow
 import Foundation
 import PythonKit
 
-let tf = Python.import("tensorflow")
+// let tf = Python.import("tensorflow")
 let np  = Python.import("numpy")
 
 // Optional to enable GPU training
@@ -190,7 +190,6 @@ let epochCount = scheduleLength / stepsPerEpoch
 let resizeSize = getResolution(originalResolution: (32, 32))
 let mixupAlpha = getMixUp(datasetSize: cifar100TrainingSize)
 let beta = np.random.beta(mixupAlpha, mixupAlpha)
-
 for (epoch, batches) in dataset.training.prefix(epochCount).enumerated() {
     let start = Date()
     var trainStats = BigTransferTrainingStatistics(on: device)
@@ -206,19 +205,21 @@ for (epoch, batches) in dataset.training.prefix(epochCount).enumerated() {
         continue
       }
       var (eagerImages, eagerLabels) = (batch.data, batch.label)
-      let resized = resize(images: eagerImages, size: (resizeSize.0, resizeSize.1)).makeNumpyArray()
-      let cropped = tf.image.random_crop(resized, [batchSize, resizeSize.1, resizeSize.1, 3])
-      let flipped = tf.image.random_flip_left_right(cropped)
-      var mixedUp = flipped
+      let resized = resize(images: eagerImages, size: (resizeSize.0, resizeSize.1))
+      // Future work to change these calls from Python TensorFlow to Swift for Tensorflow
+      // let cropped = tf.image.random_crop(resized, [batchSize, resizeSize.1, resizeSize.1, 3])
+      // let flipped = tf.image.random_flip_left_right(cropped)
+      // var mixedUp = flipped
       var newLabels = Tensor<Float>(Tensor<Int32>(oneHotAtIndices: eagerLabels, depth: classCount))
-      if mixupAlpha > 0.0 {
-        var npLabels = newLabels.makeNumpyArray()
-        mixedUp = beta * mixedUp + (1 - beta) * tf.reverse(mixedUp, axis: [0])
-        npLabels = beta * npLabels + (1 - beta) * tf.reverse(npLabels, axis: [0])
-        newLabels = Tensor<Float>(numpy: npLabels.numpy())!
-      }
-      eagerImages = Tensor<Float>(numpy: mixedUp.numpy())!
-      let images = Tensor(copying: eagerImages, to: device)
+      //if mixupAlpha > 0.0 {
+      //  var npLabels = newLabels.makeNumpyArray()
+      //  mixedUp = beta * mixedUp + (1 - beta) * tf.reverse(mixedUp, axis: [0])
+      //  npLabels = beta * npLabels + (1 - beta) * tf.reverse(npLabels, axis: [0])
+      //  newLabels = Tensor<Float>(numpy: npLabels.numpy())!
+      //}
+      // eagerImages = Tensor<Float>(numpy: mixedUp.numpy())!
+      // let images = Tensor(copying: eagerImages, to: device)
+      let images = Tensor(copying: resized, to: device)
       let labels = Tensor(copying: newLabels, to: device)
 
       let 𝛁model = TensorFlow.gradient(at: bitModel) { bitModel -> Tensor<Float> in
@@ -235,11 +236,9 @@ for (epoch, batches) in dataset.training.prefix(epochCount).enumerated() {
     Context.local.learningPhase = .inference
     for batch in dataset.validation {
       var (eagerImages, eagerLabels) = (batch.data, batch.label)
-      let npImages = eagerImages.makeNumpyArray()
-      let resized = tf.image.resize(npImages, [resizeSize.0, resizeSize.0])
-      eagerImages = Tensor<Float>(numpy: resized.numpy())!
+      let resized = resize(images: eagerImages, size: (resizeSize.0, resizeSize.1))
       let newLabels = Tensor<Float>(Tensor<Int32>(oneHotAtIndices: eagerLabels, depth: classCount))
-      let images = Tensor(copying: eagerImages, to: device)
+      let images = Tensor(copying: resized, to: device)
       let labels = Tensor(copying: newLabels, to: device)
       let ŷ = bitModel(images)
       let loss = softmaxCrossEntropy(logits: ŷ, probabilities: labels)
