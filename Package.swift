@@ -77,6 +77,9 @@ let package = Package(
             name: "ResNet-CIFAR10",
             dependencies: ["Datasets", "ImageClassificationModels", "TrainingLoop"],
             path: "Examples/ResNet-CIFAR10"),
+        .target(name: "BigTransfer-CIFAR100", 
+            dependencies: ["Datasets", "ImageClassificationModels"], 
+            path: "Examples/BigTransfer-CIFAR100"),
         .target(
             name: "Shallow-Water-PDE",
             dependencies: ["ArgumentParser", "Benchmark", "ModelSupport"],

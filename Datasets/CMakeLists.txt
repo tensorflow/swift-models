@@ -1,5 +1,6 @@
 add_library(Datasets
   CIFAR10/CIFAR10.swift
+  CIFAR100/CIFAR100.swift
   DatasetUtilities.swift
   COCO/COCO.swift
   COCO/COCODataset.swift
