@@ -1,5 +1,8 @@
 # Swift for TensorFlow Models
 
+
+Swift for TensorFlow was an experiment in the next-generation platform for machine learning, incorporating the latest research across machine learning, compilers, differentiable programming, systems design, and beyond. It was archived in February 2021.
+
 This repository contains many examples of how Swift for TensorFlow can be used to build machine
 learning applications, as well as the models, datasets, and other components required to build them.
 These examples are intended to demonstrate best practices for the use of 
